@@ -153,6 +153,180 @@ function has_role(array $roles): bool {
     return in_array($role, $roles, true);
 }
 
+function level_from_xp(int $xp): array {
+    $levels = [
+        1 => ['name' => 'Katyuvadasz Tanonc',      'min' => 0],
+        2 => ['name' => 'Szemfules Szomszed',      'min' => 100],
+        3 => ['name' => 'Helyi Vagany',           'min' => 250],
+        4 => ['name' => 'Tombfelelos',            'min' => 500],
+        5 => ['name' => 'Jardaszegely-lovag',     'min' => 800],
+        6 => ['name' => 'Keruleti Kiskiraly',     'min' => 1200],
+        7 => ['name' => 'Varosi Vagyonor',        'min' => 1700],
+        8 => ['name' => 'Aszfaltbetyar Fejedelem','min' => 2300],
+        9 => ['name' => 'Varosgazda Fomagus',     'min' => 3000],
+        10 => ['name' => 'A Varos Lelkiismerete', 'min' => 4000],
+    ];
+
+    $current = 1;
+    foreach ($levels as $lvl => $meta) {
+        if ($xp >= $meta['min']) $current = $lvl;
+    }
+    return ['level' => $current, 'name' => $levels[$current]['name']];
+}
+
+function add_user_xp(int $userId, int $points, string $reason, ?int $reportId = null): void {
+    if ($points === 0) return;
+    try {
+        $pdo = db();
+        $pdo->beginTransaction();
+
+        $pdo->prepare("UPDATE users SET total_xp = total_xp + :p WHERE id = :id")
+            ->execute([':p' => $points, ':id' => $userId]);
+
+        // best-effort XP log (optional table)
+        try {
+            $pdo->prepare("INSERT INTO user_xp_log (user_id, points, reason, report_id) VALUES (:uid,:p,:r,:rid)")
+                ->execute([':uid' => $userId, ':p' => $points, ':r' => $reason, ':rid' => $reportId]);
+        } catch (Throwable $e) { /* ignore */ }
+
+        $stmt = $pdo->prepare("SELECT total_xp FROM users WHERE id = :id LIMIT 1");
+        $stmt->execute([':id' => $userId]);
+        $xp = (int)$stmt->fetchColumn();
+        $lvl = level_from_xp($xp);
+        $pdo->prepare("UPDATE users SET level = :lvl WHERE id = :id")
+            ->execute([':lvl' => $lvl['level'], ':id' => $userId]);
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
+    }
+}
+
+function add_user_xp_once(int $userId, int $points, string $eventKey, string $reason, ?int $reportId = null): void {
+    try {
+        $pdo = db();
+        $stmt = $pdo->prepare("SELECT 1 FROM user_xp_events WHERE user_id = :uid AND event_key = :ek LIMIT 1");
+        $stmt->execute([':uid' => $userId, ':ek' => $eventKey]);
+        if ($stmt->fetchColumn()) return;
+
+        $pdo->prepare("INSERT INTO user_xp_events (user_id, event_key) VALUES (:uid, :ek)")
+            ->execute([':uid' => $userId, ':ek' => $eventKey]);
+        add_user_xp($userId, $points, $reason, $reportId);
+    } catch (Throwable $e) {
+        // If table does not exist, just award directly (best effort)
+        add_user_xp($userId, $points, $reason, $reportId);
+    }
+}
+
+function update_user_streak(int $userId): int {
+    try {
+        $pdo = db();
+        $stmt = $pdo->prepare("SELECT last_active_date, streak_days FROM users WHERE id = :id LIMIT 1");
+        $stmt->execute([':id' => $userId]);
+        $row = $stmt->fetch();
+        if (!$row) return 0;
+
+        $last = $row['last_active_date'] ? (string)$row['last_active_date'] : null;
+        $streak = (int)($row['streak_days'] ?? 0);
+        $today = date('Y-m-d');
+        $yesterday = date('Y-m-d', strtotime('-1 day'));
+
+        if ($last === $today) {
+            return $streak;
+        }
+        if ($last === $yesterday) {
+            $streak += 1;
+        } else {
+            $streak = 1;
+        }
+
+        $pdo->prepare("UPDATE users SET streak_days = :s, last_active_date = :d WHERE id = :id")
+            ->execute([':s' => $streak, ':d' => $today, ':id' => $userId]);
+
+        return $streak;
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+function award_badge(int $userId, string $badgeCode): void {
+    try {
+        $pdo = db();
+        $stmt = $pdo->prepare("SELECT id FROM badges WHERE code = :c LIMIT 1");
+        $stmt->execute([':c' => $badgeCode]);
+        $bid = $stmt->fetchColumn();
+        if (!$bid) return;
+
+        $stmt = $pdo->prepare("SELECT 1 FROM user_badges WHERE user_id = :uid AND badge_id = :bid LIMIT 1");
+        $stmt->execute([':uid' => $userId, ':bid' => $bid]);
+        if ($stmt->fetchColumn()) return;
+
+        $pdo->prepare("INSERT INTO user_badges (user_id, badge_id) VALUES (:uid,:bid)")
+            ->execute([':uid' => $userId, ':bid' => $bid]);
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+function gps_is_precise($val): bool {
+    if ($val === null) return false;
+    $s = trim((string)$val);
+    if ($s === '' || strpos($s, '.') === false) return false;
+    $parts = explode('.', $s, 2);
+    return isset($parts[1]) && strlen($parts[1]) >= 5;
+}
+
+function check_category_badges(int $userId, string $category): void {
+    $map = [
+        'road' => ['code' => 'bad_katyuvadasz', 'need' => 10],
+        'trash' => ['code' => 'bad_szemet_szemle', 'need' => 15],
+        'lighting' => ['code' => 'bad_lampas_ember', 'need' => 5],
+        'green' => ['code' => 'bad_zold_ujju', 'need' => 10],
+    ];
+    if (!isset($map[$category])) return;
+    $need = (int)$map[$category]['need'];
+    $code = (string)$map[$category]['code'];
+
+    try {
+        $stmt = db()->prepare("SELECT COUNT(*) FROM reports WHERE user_id = :uid AND category = :cat");
+        $stmt->execute([':uid' => $userId, ':cat' => $category]);
+        $cnt = (int)$stmt->fetchColumn();
+        if ($cnt >= $need) {
+            award_badge($userId, $code);
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+function check_description_badge(int $userId, int $descLen): void {
+    if ($descLen < 300) return;
+    try {
+        $stmt = db()->prepare("SELECT COUNT(*) FROM reports WHERE user_id = :uid AND CHAR_LENGTH(description) >= 300");
+        $stmt->execute([':uid' => $userId]);
+        $cnt = (int)$stmt->fetchColumn();
+        if ($cnt >= 5) {
+            award_badge($userId, 'bad_diktalas');
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
+function check_gps_badge(int $userId, bool $isPrecise): void {
+    if (!$isPrecise) return;
+    try {
+        $stmt = db()->prepare("SELECT COUNT(*) FROM reports WHERE user_id = :uid AND (lat REGEXP '\\\\.[0-9]{5,}$' AND lng REGEXP '\\\\.[0-9]{5,}$')");
+        $stmt->execute([':uid' => $userId]);
+        $cnt = (int)$stmt->fetchColumn();
+        if ($cnt >= 10) {
+            award_badge($userId, 'bad_terkepesz');
+        }
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+
 // -----------------------------------------------------------------------------
 // Missing helpers (re-added)
 // -----------------------------------------------------------------------------

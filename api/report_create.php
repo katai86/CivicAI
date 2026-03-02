@@ -13,9 +13,12 @@ $body = read_json_body();
 $category = safe_str($body['category'] ?? null, 32);
 $title    = safe_str($body['title'] ?? null, 120);
 $desc     = safe_str($body['description'] ?? null, 5000);
+$descLen  = $desc ? (function_exists('mb_strlen') ? mb_strlen($desc) : strlen($desc)) : 0;
 
-$lat = $body['lat'] ?? null;
-$lng = $body['lng'] ?? null;
+$latRaw = $body['lat'] ?? null;
+$lngRaw = $body['lng'] ?? null;
+$lat = $latRaw;
+$lng = $lngRaw;
 
 $forceDuplicate = !empty($body['force_duplicate']); // bool
 
@@ -103,6 +106,7 @@ if (!$sessionUserId && (($wantsNotify === 1) || ($createAccount === 1))) {
 // === User session / regisztráció kezelése ===
 $userId = $sessionUserId;
 $userRole = $sessionUserId ? (current_user_role() ?: null) : null;
+$prevReportCount = 0;
 
 // ha regisztrálni akar a beküldéskor és nincs session
 if ($createAccount === 1 && !$userId) {
@@ -192,6 +196,13 @@ if ($category === 'civil_event') {
   if (!in_array($role, ['civil','admin','superadmin'], true)) {
     json_response(['ok' => false, 'error' => 'Nincs jogosultság a civil kategóriához.'], 403);
   }
+}
+
+// Előző bejelentés-szám (first report XP-hez)
+if ($userId) {
+  $stmt = db()->prepare("SELECT COUNT(*) FROM reports WHERE user_id = :uid");
+  $stmt->execute([':uid' => $userId]);
+  $prevReportCount = (int)$stmt->fetchColumn();
 }
 
 // értesítés token
@@ -377,6 +388,51 @@ $stmt->execute([
 ]);
 
 $id = (int)db()->lastInsertId();
+
+// ===== XP + badge rendszer (best-effort) =====
+if ($userId) {
+  $points = 15; // bejelentes letrehozasa
+  if ($prevReportCount === 0) $points += 20; // elso bejelentes
+  if ($descLen >= 200) $points += 10; // reszletes leiras
+  if (gps_is_precise($latRaw) && gps_is_precise($lngRaw)) $points += 5; // pontos GPS (heurisztika)
+
+  $catBonus = [
+    'road' => 5,
+    'trash' => 10,
+    'lighting' => 10,
+    'traffic' => 15,
+  ];
+  if (isset($catBonus[$category])) $points += (int)$catBonus[$category];
+
+  add_user_xp($userId, $points, 'report_create', $id);
+
+  $weekKey = 'week3:' . date('o-W');
+  $monthKey = 'month10:' . date('Y-m');
+  try {
+    $stmt = db()->prepare("SELECT COUNT(*) FROM reports WHERE user_id = :uid AND created_at >= (NOW() - INTERVAL 7 DAY)");
+    $stmt->execute([':uid' => $userId]);
+    $c7 = (int)$stmt->fetchColumn();
+    if ($c7 >= 3) add_user_xp_once($userId, 15, $weekKey, 'bonus_week3', $id);
+  } catch (Throwable $e) { /* ignore */ }
+
+  try {
+    $stmt = db()->prepare("SELECT COUNT(*) FROM reports WHERE user_id = :uid AND created_at >= (NOW() - INTERVAL 1 MONTH)");
+    $stmt->execute([':uid' => $userId]);
+    $c30 = (int)$stmt->fetchColumn();
+    if ($c30 >= 10) add_user_xp_once($userId, 50, $monthKey, 'bonus_month10', $id);
+  } catch (Throwable $e) { /* ignore */ }
+
+  $streak = update_user_streak($userId);
+  if ($streak >= 30) {
+    $streakKey = 'streak30:' . date('Y-m-d');
+    add_user_xp_once($userId, 100, $streakKey, 'bonus_streak30', $id);
+  }
+
+  check_category_badges($userId, $category);
+  check_description_badge($userId, $descLen);
+  check_gps_badge($userId, gps_is_precise($latRaw) && gps_is_precise($lngRaw));
+}
+// ===== /XP + badge =====
 
 json_response([
   'ok' => true,

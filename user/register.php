@@ -56,6 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ':ua' => $ua,
       ]);
 
+      $newUserId = (int)db()->lastInsertId();
+      if ($newUserId > 0) {
+        add_user_xp($newUserId, 10, 'register', null);
+      }
+
       // MVP: email küldés később (D/E-nél).
       // Most kiírjuk a verify linket (admin/dev mód).
       $verifyUrl = app_url('/user/verify.php?token=' . $token);

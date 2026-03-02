@@ -97,6 +97,9 @@ try {
   json_response(['ok'=>false,'error'=>'DB error: '.$e->getMessage()], 500);
 }
 
+// XP: foto csatolas
+add_user_xp($uid, 10, 'photo_upload', $rid);
+
 json_response([
   'ok'=>true,
   'file'=>[

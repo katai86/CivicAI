@@ -106,7 +106,8 @@ $pdo->beginTransaction();
 try {
   $stmt = $pdo->prepare("
     SELECT id, status, title, address_approx, created_at,
-           reporter_email, notify_enabled, notify_token
+           reporter_email, notify_enabled, notify_token,
+           user_id
     FROM reports
     WHERE id=:id
     FOR UPDATE
@@ -142,6 +143,22 @@ try {
   ]);
 
   $pdo->commit();
+
+  // ===== XP (best-effort) =====
+  $uid = (int)($r['user_id'] ?? 0);
+  if ($uid > 0) {
+    if ($new === 'approved') {
+      add_user_xp($uid, 20, 'status_approved', (int)$r['id']);
+    } elseif ($new === 'solved') {
+      add_user_xp($uid, 50, 'status_solved', (int)$r['id']);
+    } elseif ($new === 'rejected') {
+      $noteStr = $note ? (function_exists('mb_strtolower') ? mb_strtolower($note) : strtolower($note)) : '';
+      if ($noteStr && (strpos($noteStr, 'duplik') !== false)) {
+        add_user_xp($uid, -5, 'status_duplicate', (int)$r['id']);
+      }
+    }
+  }
+  // ===== /XP =====
 
   // ===== EMAIL (best-effort) =====
   $to = (string)($r['reporter_email'] ?? '');

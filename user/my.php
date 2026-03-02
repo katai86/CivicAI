@@ -10,12 +10,19 @@ if ($userId <= 0) {
   exit;
 }
 
-$stmt = db()->prepare("SELECT email, display_name FROM users WHERE id=:id LIMIT 1");
+$stmt = db()->prepare("SELECT email, display_name, total_xp, level, streak_days FROM users WHERE id=:id LIMIT 1");
 $stmt->execute([':id' => $userId]);
 $u = $stmt->fetch();
 
+$xp = (int)($u['total_xp'] ?? 0);
+$lvlInfo = level_from_xp($xp);
+$lvlName = $lvlInfo['name'] ?? 'Szint';
+$lvlNum = (int)($u['level'] ?? $lvlInfo['level'] ?? 1);
+$streak = (int)($u['streak_days'] ?? 0);
+
 // Biztonság: ha a DB sémában eltérés van (pl. notify_* mezők hiányoznak), ne 500-zunk.
 $rows = [];
+$badges = [];
 try {
   $stmt = db()->prepare("
     SELECT
@@ -41,6 +48,21 @@ try {
   ");
   $stmt->execute([':uid' => $userId]);
   $rows = $stmt->fetchAll();
+}
+
+try {
+  $stmt = db()->prepare("
+    SELECT b.name, b.icon, b.description, ub.earned_at
+    FROM user_badges ub
+    JOIN badges b ON b.id = ub.badge_id
+    WHERE ub.user_id = :uid
+    ORDER BY ub.earned_at DESC, ub.id DESC
+    LIMIT 50
+  ");
+  $stmt->execute([':uid' => $userId]);
+  $badges = $stmt->fetchAll() ?: [];
+} catch (Throwable $e) {
+  $badges = [];
 }
 
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
@@ -101,6 +123,11 @@ $catLabel = [
       <div>
         <div style="font-weight:900;font-size:18px">Saját ügyeim</div>
         <div class="muted"><?php echo h($u['display_name'] ?: $u['email']); ?></div>
+        <div class="row" style="margin-top:6px">
+          <span class="pill">Szint: <b><?php echo h($lvlName); ?></b> (#<?php echo (int)$lvlNum; ?>)</span>
+          <span class="pill">XP: <b><?php echo (int)$xp; ?></b></span>
+          <span class="pill">Streak: <b><?php echo (int)$streak; ?></b> nap</span>
+        </div>
       </div>
       <div class="row">
         <a class="btn" href="<?php echo h(app_url('/')); ?>">Térkép</a>
@@ -118,6 +145,22 @@ $catLabel = [
       <div class="muted">Menj vissza a térképre, kattints egy pontra és küldj bejelentést úgy, hogy belépve vagy.</div>
     </div>
   <?php else: ?>
+    <div class="card" style="margin-bottom:12px">
+      <div class="title">Jelvenyek</div>
+      <?php if (!$badges): ?>
+        <div class="muted">Meg nincs jelvenyed.</div>
+      <?php else: ?>
+        <div class="row" style="margin-top:8px">
+          <?php foreach ($badges as $b): ?>
+            <span class="pill">
+              <?php echo h($b['icon'] ?: '🏅'); ?>
+              <?php echo h($b['name']); ?>
+            </span>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </div>
+
     <div class="grid">
       <?php foreach ($rows as $r): ?>
         <div class="card">
