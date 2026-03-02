@@ -64,7 +64,7 @@ try {
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function badge_icon_url($code){
   if (!$code) return null;
-  return app_url('/assets/badges/' . $code . '.svg');
+  return app_url('/assets/badges/' . $code . '.png');
 }
 ?>
 <!doctype html>
