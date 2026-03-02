@@ -34,6 +34,8 @@ $lvlName = $lvlInfo['name'] ?? 'Szint';
 $lvlNum = (int)($u['level'] ?? $lvlInfo['level'] ?? 1);
 $streak = (int)($u['streak_days'] ?? 0);
 
+ensure_level_badge((int)$u['id'], $lvlNum);
+
 $badges = [];
 try {
   $stmt = db()->prepare("

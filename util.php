@@ -269,6 +269,11 @@ function award_badge(int $userId, string $badgeCode): void {
     }
 }
 
+function ensure_level_badge(int $userId, int $level): void {
+    if ($level < 1) return;
+    award_badge($userId, 'level_' . $level);
+}
+
 function gps_is_precise($val): bool {
     if ($val === null) return false;
     $s = trim((string)$val);

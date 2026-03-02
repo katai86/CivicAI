@@ -20,6 +20,8 @@ $lvlName = $lvlInfo['name'] ?? 'Szint';
 $lvlNum = (int)($u['level'] ?? $lvlInfo['level'] ?? 1);
 $streak = (int)($u['streak_days'] ?? 0);
 
+ensure_level_badge((int)$userId, $lvlNum);
+
 // Biztonság: ha a DB sémában eltérés van (pl. notify_* mezők hiányoznak), ne 500-zunk.
 $rows = [];
 $badges = [];
