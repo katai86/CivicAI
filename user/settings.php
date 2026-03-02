@@ -105,6 +105,9 @@ a{color:#2563eb;text-decoration:none}
         <small>(<?= htmlspecialchars($u['consent_at'],ENT_QUOTES,'UTF-8') ?>, <?= htmlspecialchars($u['consent_version'] ?? 'v1',ENT_QUOTES,'UTF-8') ?>)</small>
       <?php endif; ?>
     </div>
+    <div style="margin-top:6px">
+      <a href="<?= htmlspecialchars(app_url('/user/profile.php?id=' . (int)$uid), ENT_QUOTES, 'UTF-8') ?>" target="_blank">Profilom megnyitása</a>
+    </div>
   </div>
 
   <form method="post">

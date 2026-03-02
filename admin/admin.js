@@ -138,6 +138,16 @@ function statusLabel(st){
   return STATUS_LABEL[st] || st;
 }
 
+function reporterLine(r){
+  const name = r.reporter_display_name || r.reporter_name || '';
+  if (!name) return '';
+  const level = r.reporter_level ? ` • ${esc(r.reporter_level)}` : '';
+  if (r.reporter_profile_public && r.reporter_user_id) {
+    return `<div class="meta"><b>Beküldő:</b> <a href="${BASE}/user/profile.php?id=${encodeURIComponent(r.reporter_user_id)}" target="_blank">${esc(name)}</a>${level}</div>`;
+  }
+  return `<div class="meta"><b>Beküldő:</b> ${esc(name)}${level}</div>`;
+}
+
 async function loadCounts(){
   // gyors, de érthető pillák
   const keys = ['pending','new','approved','in_progress','solved','rejected'];
@@ -245,6 +255,7 @@ function renderRow(r){
     ${r.title ? `<div>${esc(r.title)}</div>` : ''}
     <div>${esc(r.description)}</div>
     ${r.address_approx ? `<div class="meta">${esc(r.address_approx)}</div>` : ''}
+    ${reporterLine(r)}
     <div class="meta">${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)} • ${esc(r.created_at || '')}</div>
 
     <div class="btns" style="align-items:center; gap:8px; flex-wrap:wrap">

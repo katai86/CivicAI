@@ -28,12 +28,18 @@ if ($status !== 'all') {
 }
 
 $sql = "
-  SELECT id, category, title, description, lat, lng,
-         address_approx, house_number_approx, road, suburb, city, postcode,
-         status, created_at
-  FROM reports
+  SELECT r.id, r.category, r.title, r.description, r.lat, r.lng,
+         r.address_approx, r.house_number_approx, r.road, r.suburb, r.city, r.postcode,
+         r.status, r.created_at,
+         r.reporter_name, r.reporter_is_anonymous,
+         u.id AS reporter_user_id,
+         u.display_name AS reporter_display_name,
+         u.profile_public AS reporter_profile_public,
+         u.level AS reporter_level
+  FROM reports r
+  LEFT JOIN users u ON u.id = r.user_id
   $where
-  ORDER BY created_at DESC
+  ORDER BY r.created_at DESC
   LIMIT 2000
 ";
 
