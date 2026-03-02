@@ -52,7 +52,7 @@ try {
 
 try {
   $stmt = db()->prepare("
-    SELECT b.name, b.icon, b.description, ub.earned_at
+    SELECT b.code, b.name, b.icon, b.description, ub.earned_at
     FROM user_badges ub
     JOIN badges b ON b.id = ub.badge_id
     WHERE ub.user_id = :uid
@@ -66,6 +66,10 @@ try {
 }
 
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+function badge_icon_url($code){
+  if (!$code) return null;
+  return app_url('/assets/badges/' . $code . '.svg');
+}
 
 $statusLabel = [
   'pending' => 'Ellenőrzés alatt',
@@ -153,7 +157,11 @@ $catLabel = [
         <div class="row" style="margin-top:8px">
           <?php foreach ($badges as $b): ?>
             <span class="pill">
-              <?php echo h($b['icon'] ?: '🏅'); ?>
+              <?php if (!empty($b['code'])): ?>
+                <img src="<?= h(badge_icon_url($b['code'])) ?>" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:6px">
+              <?php else: ?>
+                <?php echo h($b['icon'] ?: '🏅'); ?>
+              <?php endif; ?>
               <?php echo h($b['name']); ?>
             </span>
           <?php endforeach; ?>

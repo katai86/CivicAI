@@ -37,7 +37,7 @@ $streak = (int)($u['streak_days'] ?? 0);
 $badges = [];
 try {
   $stmt = db()->prepare("
-    SELECT b.name, b.icon
+    SELECT b.code, b.name, b.icon
     FROM user_badges ub
     JOIN badges b ON b.id = ub.badge_id
     WHERE ub.user_id = :uid
@@ -62,6 +62,10 @@ try {
 } catch (Throwable $e) { $reports = []; }
 
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+function badge_icon_url($code){
+  if (!$code) return null;
+  return app_url('/assets/badges/' . $code . '.svg');
+}
 ?>
 <!doctype html>
 <html lang="hu">
@@ -110,7 +114,14 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
       <?php else: ?>
         <div class="row" style="margin-top:8px">
           <?php foreach ($badges as $b): ?>
-            <span class="pill"><?= h($b['icon'] ?: '🏅') ?> <?= h($b['name']) ?></span>
+            <span class="pill">
+              <?php if (!empty($b['code'])): ?>
+                <img src="<?= h(badge_icon_url($b['code'])) ?>" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:6px">
+              <?php else: ?>
+                <?= h($b['icon'] ?: '🏅') ?>
+              <?php endif; ?>
+              <?= h($b['name']) ?>
+            </span>
           <?php endforeach; ?>
         </div>
       <?php endif; ?>
