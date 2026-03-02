@@ -68,6 +68,8 @@ try {
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function badge_icon_url($code){
   if (!$code) return null;
+  $path = __DIR__ . '/../assets/badges/' . $code . '.png';
+  if (!is_file($path)) return null;
   return app_url('/assets/badges/' . $code . '.png');
 }
 
@@ -158,8 +160,9 @@ $catLabel = [
         <div class="row" style="margin-top:8px">
           <?php foreach ($badges as $b): ?>
             <span class="pill">
-              <?php if (!empty($b['code'])): ?>
-                <img src="<?= h(badge_icon_url($b['code'])) ?>" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:6px">
+              <?php $burl = !empty($b['code']) ? badge_icon_url($b['code']) : null; ?>
+              <?php if ($burl): ?>
+                <img src="<?= h($burl) ?>" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:6px">
               <?php else: ?>
                 <?php echo h($b['icon'] ?: '🏅'); ?>
               <?php endif; ?>
