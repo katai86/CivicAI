@@ -137,7 +137,6 @@ $catLabel = [
         <a class="btn" href="<?php echo h(app_url('/')); ?>">Térkép</a>
         <a class="btn" href="<?php echo h(app_url('/user/profile.php?id=' . (int)$userId)); ?>">Profilom</a>
         <a class="btn" href="<?php echo h(app_url('/user/settings.php')); ?>">Beállítások</a>
-        <a class="btn" href="<?php echo h(app_url('/admin/index.php')); ?>">Admin</a>
         <a class="btn" href="<?php echo h(app_url('/user/logout.php')); ?>">Kilépés</a>
       </div>
     </div>
