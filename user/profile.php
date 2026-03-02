@@ -121,14 +121,21 @@ function badge_icon_url($code){
       <?php else: ?>
         <div class="row" style="margin-top:8px">
           <?php foreach ($badges as $b): ?>
-            <span class="pill">
-              <?php $burl = !empty($b['code']) ? badge_icon_url($b['code']) : null; ?>
+            <?php
+              $code = (string)($b['code'] ?? '');
+              $isLevel = strpos($code, 'level_') === 0;
+              $burl = $code ? badge_icon_url($code) : null;
+              $imgSize = $isLevel ? 64 : 20;
+            ?>
+            <span class="pill" style="<?= $isLevel ? 'padding:8px 12px;gap:8px;display:inline-flex;align-items:center' : '' ?>">
               <?php if ($burl): ?>
-                <img src="<?= h($burl) ?>" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:6px">
+                <img src="<?= h($burl) ?>" alt="" style="width:<?= (int)$imgSize ?>px;height:<?= (int)$imgSize ?>px;vertical-align:middle;margin-right:<?= $isLevel ? '0' : '6px' ?>">
               <?php else: ?>
                 <?= h($b['icon'] ?: '🏅') ?>
               <?php endif; ?>
-              <?= h($b['name']) ?>
+              <?php if (!$isLevel): ?>
+                <?= h($b['name']) ?>
+              <?php endif; ?>
             </span>
           <?php endforeach; ?>
         </div>
