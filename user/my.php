@@ -168,7 +168,7 @@ $catLabel = [
               $code = (string)($b['code'] ?? '');
               $isLevel = strpos($code, 'level_') === 0;
               $burl = $code ? badge_icon_url($code) : null;
-              $imgSize = $isLevel ? 64 : 20;
+              $imgSize = $isLevel ? 100 : 20;
             ?>
             <span class="pill" style="<?= $isLevel ? 'padding:8px 12px;gap:8px;display:inline-flex;align-items:center' : '' ?>">
               <?php if ($burl): ?>
