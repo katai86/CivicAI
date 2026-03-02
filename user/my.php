@@ -70,6 +70,9 @@ try {
 $lbWeek = get_leaderboard('week', 10);
 $lbMonth = get_leaderboard('month', 10);
 $lbAll = get_leaderboard('all', 10);
+$rankWeek = get_user_rank('week', (int)$userId);
+$rankMonth = get_user_rank('month', (int)$userId);
+$rankAll = get_user_rank('all', (int)$userId);
 
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function badge_icon_url($code){
@@ -191,6 +194,11 @@ $catLabel = [
 
     <div class="card" style="margin-bottom:12px">
       <div class="title">Toplista (Top 10)</div>
+      <div class="row" style="gap:8px;margin:8px 0 0 0;flex-wrap:wrap">
+        <span class="pill">Helyezésem (heti): <?= $rankWeek ? ('#' . (int)$rankWeek['rank'] . ' • ' . (int)$rankWeek['points'] . ' XP') : 'nincs adat' ?></span>
+        <span class="pill">Helyezésem (havi): <?= $rankMonth ? ('#' . (int)$rankMonth['rank'] . ' • ' . (int)$rankMonth['points'] . ' XP') : 'nincs adat' ?></span>
+        <span class="pill">Helyezésem (összes): <?= $rankAll ? ('#' . (int)$rankAll['rank'] . ' • ' . (int)$rankAll['points'] . ' XP') : 'nincs adat' ?></span>
+      </div>
       <div class="row" style="gap:8px;margin-top:8px">
         <div style="min-width:220px">
           <div class="small"><b>Heti</b></div>
@@ -199,7 +207,11 @@ $catLabel = [
           <?php else: ?>
             <?php foreach ($lbWeek as $i => $row): ?>
               <div class="small">
-                #<?= (int)($i+1) ?> <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?> (<?= (int)$row['points'] ?> XP)
+                #<?= (int)($i+1) ?>
+                <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
+                  <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                </a>
+                (<?= (int)$row['points'] ?> XP)
               </div>
             <?php endforeach; ?>
           <?php endif; ?>
@@ -211,7 +223,11 @@ $catLabel = [
           <?php else: ?>
             <?php foreach ($lbMonth as $i => $row): ?>
               <div class="small">
-                #<?= (int)($i+1) ?> <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?> (<?= (int)$row['points'] ?> XP)
+                #<?= (int)($i+1) ?>
+                <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
+                  <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                </a>
+                (<?= (int)$row['points'] ?> XP)
               </div>
             <?php endforeach; ?>
           <?php endif; ?>
@@ -223,7 +239,11 @@ $catLabel = [
           <?php else: ?>
             <?php foreach ($lbAll as $i => $row): ?>
               <div class="small">
-                #<?= (int)($i+1) ?> <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?> (<?= (int)$row['points'] ?> XP)
+                #<?= (int)($i+1) ?>
+                <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
+                  <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                </a>
+                (<?= (int)$row['points'] ?> XP)
               </div>
             <?php endforeach; ?>
           <?php endif; ?>

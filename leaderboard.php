@@ -5,6 +5,11 @@ $lbWeek = get_leaderboard('week', 10);
 $lbMonth = get_leaderboard('month', 10);
 $lbAll = get_leaderboard('all', 10);
 
+$uid = current_user_id() ?: 0;
+$rankWeek = $uid ? get_user_rank('week', $uid) : null;
+$rankMonth = $uid ? get_user_rank('month', $uid) : null;
+$rankAll = $uid ? get_user_rank('all', $uid) : null;
+
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 ?>
 <!doctype html>
@@ -24,6 +29,11 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
     @media(min-width:860px){ .grid{grid-template-columns:1fr 1fr 1fr} }
     .title{font-size:16px;font-weight:800;margin:0 0 6px 0}
     .muted{color:var(--m)}
+    .list{display:grid;gap:6px}
+    .rank{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:10px}
+    .rank.me{background:#eef2ff;border:1px solid #c7d2fe}
+    .rank .name a{color:#2563eb;text-decoration:none}
+    .pill{display:inline-block;padding:3px 10px;border-radius:999px;border:1px solid var(--b);background:#f9fafb;font-size:12px}
   </style>
 </head>
 <body>
@@ -37,15 +47,37 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 </header>
 
 <div class="wrap">
+  <?php if ($uid): ?>
+  <div class="card" style="margin-bottom:12px">
+    <div class="title">Saját helyezésem</div>
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <span class="pill">Heti: <?= $rankWeek ? ('#' . (int)$rankWeek['rank'] . ' • ' . (int)$rankWeek['points'] . ' XP') : 'nincs adat' ?></span>
+      <span class="pill">Havi: <?= $rankMonth ? ('#' . (int)$rankMonth['rank'] . ' • ' . (int)$rankMonth['points'] . ' XP') : 'nincs adat' ?></span>
+      <span class="pill">Összesített: <?= $rankAll ? ('#' . (int)$rankAll['rank'] . ' • ' . (int)$rankAll['points'] . ' XP') : 'nincs adat' ?></span>
+    </div>
+  </div>
+  <?php endif; ?>
+
   <div class="grid">
     <div class="card">
       <div class="title">Heti</div>
       <?php if (!$lbWeek): ?>
         <div class="muted">Nincs adat.</div>
       <?php else: ?>
-        <?php foreach ($lbWeek as $i => $row): ?>
-          <div>#<?= (int)($i+1) ?> <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?> (<?= (int)$row['points'] ?> XP)</div>
-        <?php endforeach; ?>
+        <div class="list">
+          <?php foreach ($lbWeek as $i => $row): ?>
+            <?php $isMe = ($uid && (int)$row['id'] === (int)$uid); ?>
+            <div class="rank <?= $isMe ? 'me' : '' ?>">
+              <div class="name">
+                #<?= (int)($i+1) ?>
+                <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
+                  <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                </a>
+              </div>
+              <div class="muted"><?= (int)$row['points'] ?> XP</div>
+            </div>
+          <?php endforeach; ?>
+        </div>
       <?php endif; ?>
     </div>
 
@@ -54,9 +86,20 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
       <?php if (!$lbMonth): ?>
         <div class="muted">Nincs adat.</div>
       <?php else: ?>
-        <?php foreach ($lbMonth as $i => $row): ?>
-          <div>#<?= (int)($i+1) ?> <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?> (<?= (int)$row['points'] ?> XP)</div>
-        <?php endforeach; ?>
+        <div class="list">
+          <?php foreach ($lbMonth as $i => $row): ?>
+            <?php $isMe = ($uid && (int)$row['id'] === (int)$uid); ?>
+            <div class="rank <?= $isMe ? 'me' : '' ?>">
+              <div class="name">
+                #<?= (int)($i+1) ?>
+                <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
+                  <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                </a>
+              </div>
+              <div class="muted"><?= (int)$row['points'] ?> XP</div>
+            </div>
+          <?php endforeach; ?>
+        </div>
       <?php endif; ?>
     </div>
 
@@ -65,9 +108,20 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
       <?php if (!$lbAll): ?>
         <div class="muted">Nincs adat.</div>
       <?php else: ?>
-        <?php foreach ($lbAll as $i => $row): ?>
-          <div>#<?= (int)($i+1) ?> <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?> (<?= (int)$row['points'] ?> XP)</div>
-        <?php endforeach; ?>
+        <div class="list">
+          <?php foreach ($lbAll as $i => $row): ?>
+            <?php $isMe = ($uid && (int)$row['id'] === (int)$uid); ?>
+            <div class="rank <?= $isMe ? 'me' : '' ?>">
+              <div class="name">
+                #<?= (int)($i+1) ?>
+                <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
+                  <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                </a>
+              </div>
+              <div class="muted"><?= (int)$row['points'] ?> XP</div>
+            </div>
+          <?php endforeach; ?>
+        </div>
       <?php endif; ?>
     </div>
   </div>

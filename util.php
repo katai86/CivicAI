@@ -303,6 +303,52 @@ function get_leaderboard(string $period, int $limit = 10): array {
     }
 }
 
+function get_user_rank(string $period, int $userId): ?array {
+    if ($userId <= 0) return null;
+    $where = '';
+    if ($period === 'week') {
+        $where = "AND x.created_at >= (NOW() - INTERVAL 7 DAY)";
+    } elseif ($period === 'month') {
+        $where = "AND x.created_at >= (NOW() - INTERVAL 1 MONTH)";
+    }
+
+    try {
+        $sqlPoints = "
+            SELECT SUM(x.points) AS points
+            FROM user_xp_log x
+            JOIN users u ON u.id = x.user_id
+            WHERE x.user_id = :uid
+              AND (COALESCE(u.profile_public, 1) = 1 OR u.id = :uid)
+              $where
+        ";
+        $stmt = db()->prepare($sqlPoints);
+        $stmt->execute([':uid' => $userId]);
+        $points = (int)($stmt->fetchColumn() ?: 0);
+        if ($points <= 0) return null;
+
+        $sqlRank = "
+            SELECT COUNT(*) + 1 AS rank
+            FROM (
+              SELECT u.id, SUM(x.points) AS points
+              FROM user_xp_log x
+              JOIN users u ON u.id = x.user_id
+              WHERE (COALESCE(u.profile_public, 1) = 1 OR u.id = :uid)
+                $where
+              GROUP BY u.id
+              HAVING points > :p
+            ) t
+        ";
+        $stmt = db()->prepare($sqlRank);
+        $stmt->execute([':uid' => $userId, ':p' => $points]);
+        $rank = (int)($stmt->fetchColumn() ?: 0);
+        if ($rank <= 0) return null;
+
+        return ['rank' => $rank, 'points' => $points];
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
 function gps_is_precise($val): bool {
     if ($val === null) return false;
     $s = trim((string)$val);
