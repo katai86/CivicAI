@@ -99,6 +99,17 @@ function statusLabel(st){
   return m[st] || st;
 }
 
+function userLine(r){
+  if (!r) return '';
+  const name = r.reporter_display_name || r.reporter_name_public;
+  const level = r.reporter_level ? ` • ${esc(r.reporter_level)}` : '';
+  if (!name) return '';
+  if (r.reporter_profile_public && r.reporter_user_id) {
+    return `<small><b>Beküldő:</b> <a href="${BASE}/user/profile.php?id=${encodeURIComponent(r.reporter_user_id)}" target="_blank">${esc(name)}</a>${level}</small><br>`;
+  }
+  return `<small><b>Beküldő:</b> ${esc(name)}${level}</small><br>`;
+}
+
 function badgeIcon(cat){
   const info = ICON[cat] || { tw:'2753', color:'#999' };
   const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${info.tw}.svg`;
@@ -162,7 +173,7 @@ async function loadApprovedMarkers(){
         `<b>#${r.id}</b><br>` +
         `<b>${esc(catLabel(r.category))}</b><br>` +
         (r.status ? `<small><b>Státusz:</b> ${esc(statusLabel(r.status))}</small><br>` : '') +
-        (r.reporter_name_public ? `<small><b>Beküldő:</b> ${esc(r.reporter_name_public)}</small><br>` : '') +
+        userLine(r) +
         (r.title ? `<b>${esc(r.title)}</b><br>` : '') +
         `${esc(r.description)}`
       );

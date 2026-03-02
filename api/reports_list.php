@@ -26,8 +26,13 @@ $sql = "
     CASE
       WHEN r.reporter_is_anonymous = 0 THEN r.reporter_name
       ELSE NULL
-    END AS reporter_name_public
+    END AS reporter_name_public,
+    u.id AS reporter_user_id,
+    u.display_name AS reporter_display_name,
+    u.profile_public AS reporter_profile_public,
+    u.level AS reporter_level
   FROM reports r
+  LEFT JOIN users u ON u.id = r.user_id
   LEFT JOIN (
     SELECT report_id, MAX(changed_at) AS last_changed_at
     FROM report_status_log

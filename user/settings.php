@@ -15,7 +15,7 @@ $ok  = null;
 
 // aktuális adatok
 $stmt = db()->prepare("
-  SELECT id, email, display_name,
+  SELECT id, email, display_name, avatar_filename, profile_public,
          consent_data, consent_share, consent_marketing,
          consent_version, consent_at
   FROM users
@@ -37,12 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   // csak az opcionális hozzájárulások állíthatók itt
   $consentShare     = !empty($_POST['consent_share']) ? 1 : 0;
   $consentMarketing = !empty($_POST['consent_marketing']) ? 1 : 0;
+  $profilePublic    = !empty($_POST['profile_public']) ? 1 : 0;
 
   $stmt = db()->prepare("
     UPDATE users
     SET display_name = :n,
         consent_share = :cs,
         consent_marketing = :cm,
+        profile_public = :pp,
         consent_updated_at = NOW()
     WHERE id = :id
     LIMIT 1
@@ -51,7 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ':n'  => $name,
     ':cs' => $consentShare,
     ':cm' => $consentMarketing,
-    ':id' => $uid
+    ':id' => $uid,
+    ':pp' => $profilePublic
   ]);
 
   $ok = 'Mentve.';
@@ -60,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $u['display_name'] = $name;
   $u['consent_share'] = $consentShare;
   $u['consent_marketing'] = $consentMarketing;
+  $u['profile_public'] = $profilePublic;
 }
 
 function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
@@ -127,8 +131,36 @@ a{color:#2563eb;text-decoration:none}
 
     <div class="hr"></div>
 
+    <label class="chk">
+      <input type="checkbox" name="profile_public" value="1" <?= checked($u['profile_public'] ?? 1) ?>>
+      <span>
+        Profilom nyilv&#225;nos (a nevem &#233;s rangom megjelenhet a bejelent&#233;sekn&#233;l).
+        <br><small>Ha kikapcsolod, m&#225;sok nem l&#225;tj&#225;k a profilodat.</small>
+      </span>
+    </label>
+
+    <div class="hr"></div>
+
     <button type="submit">Mentés</button>
   </form>
+
+  <div class="hr"></div>
+
+  <div>
+    <b>Profilk&#233;p</b>
+    <div class="row" style="margin-top:8px;align-items:center">
+      <?php if (!empty($u['avatar_filename'])): ?>
+        <img src="<?= htmlspecialchars(app_url('/uploads/avatars/' . $u['avatar_filename']), ENT_QUOTES, 'UTF-8') ?>" alt="avatar" style="width:64px;height:64px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
+      <?php else: ?>
+        <div style="width:64px;height:64px;border-radius:999px;border:1px solid #e5e7eb;background:#f3f4f6;display:grid;place-items:center;color:#6b7280">?</div>
+      <?php endif; ?>
+      <form method="post" action="<?= htmlspecialchars(app_url('/api/avatar_upload.php'), ENT_QUOTES, 'UTF-8') ?>" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center">
+        <input type="file" name="file" accept="image/*" required>
+        <button type="submit">Felt&#246;lt&#233;s</button>
+      </form>
+    </div>
+    <small>JPG/PNG/WebP, max. 2 MB. A r&#233;gi profilk&#233;p fel&#252;l&#237;r&#243;dik.</small>
+  </div>
 
   <div style="margin-top:12px">
     <small>Adatkezelési hozzájárulás visszavonása: fiók törlése (későbbi fejlesztés), vagy írásban az üzemeltetőnek.</small>
