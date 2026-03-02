@@ -2,6 +2,7 @@
 require_once __DIR__ . '/util.php';
 start_secure_session();
 $uid = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+$role = current_user_role() ?: 'guest';
 ?><!doctype html>
 <html lang="hu">
 <head>
@@ -52,6 +53,7 @@ $uid = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
       <div class="legend-item"><span class="legend-badge b-green">🌳</span><span>Zöldterület / veszélyes fa</span></div>
       <div class="legend-item"><span class="legend-badge b-traffic">🚦</span><span>Közlekedés / tábla</span></div>
       <div class="legend-item"><span class="legend-badge b-idea">❗</span><span>Ötlet / javaslat</span></div>
+      <div class="legend-item"><span class="legend-badge b-civil">🤝</span><span>Civil esemény</span></div>
 
       <div class="legend-foot muted">
         Tipp: a jelölőre kattintva megnyílik a részletek.
@@ -60,11 +62,15 @@ $uid = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
   </div>
 </div>
 
-<script>window.TERKEP_LOGGED_IN = <?php echo ($uid > 0 ? 'true' : 'false'); ?>;</script>
+<script>
+  window.TERKEP_LOGGED_IN = <?php echo ($uid > 0 ? 'true' : 'false'); ?>;
+  window.TERKEP_ROLE = <?php echo json_encode($role, JSON_UNESCAPED_UNICODE); ?>;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   // JS oldalon ebből tudjuk, hogy belépett-e a felhasználó
   window.TERKEP_LOGGED_IN = <?php echo ($uid > 0) ? 'true' : 'false'; ?>;
+  window.TERKEP_ROLE = <?php echo json_encode($role, JSON_UNESCAPED_UNICODE); ?>;
 </script>
 <script src="/terkep/assets/app.js?v=26"></script>
 </body>

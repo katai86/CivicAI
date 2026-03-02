@@ -116,6 +116,9 @@ function require_admin(): void {
 
     if (!empty($_SESSION['admin_logged_in'])) return;
 
+    $role = $_SESSION['user_role'] ?? '';
+    if (in_array($role, ['admin', 'superadmin'], true)) return;
+
     // Optional legacy token support
     if (defined('ADMIN_TOKEN') && ADMIN_TOKEN && isset($_GET['token']) && hash_equals((string)ADMIN_TOKEN, (string)$_GET['token'])) {
         $_SESSION['admin_logged_in'] = true;
@@ -136,6 +139,18 @@ function current_user_id(): ?int {
     start_secure_session();
     if (empty($_SESSION['user_id'])) return null;
     return (int)$_SESSION['user_id'];
+}
+
+function current_user_role(): ?string {
+    start_secure_session();
+    if (empty($_SESSION['user_role'])) return null;
+    return (string)$_SESSION['user_role'];
+}
+
+function has_role(array $roles): bool {
+    start_secure_session();
+    $role = $_SESSION['user_role'] ?? '';
+    return in_array($role, $roles, true);
 }
 
 // -----------------------------------------------------------------------------

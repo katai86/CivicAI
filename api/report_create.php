@@ -60,7 +60,7 @@ if ($sessionUserId) {
 }
 
 // Validációk – kategória, leírás, koordináta
-$allowedCats = ['road','sidewalk','lighting','trash','green','traffic','idea'];
+$allowedCats = ['road','sidewalk','lighting','trash','green','traffic','idea','civil_event'];
 if (!$category || !in_array($category, $allowedCats, true)) {
   json_response(['ok' => false, 'error' => 'Invalid category'], 400);
 }
@@ -102,6 +102,7 @@ if (!$sessionUserId && (($wantsNotify === 1) || ($createAccount === 1))) {
 
 // === User session / regisztráció kezelése ===
 $userId = $sessionUserId;
+$userRole = $sessionUserId ? (current_user_role() ?: null) : null;
 
 // ha regisztrálni akar a beküldéskor és nincs session
 if ($createAccount === 1 && !$userId) {
@@ -130,12 +131,13 @@ if ($createAccount === 1 && !$userId) {
     $hash = password_hash($password, PASSWORD_DEFAULT);
 
     try {
-      $ins = db()->prepare("INSERT INTO users (email, pass_hash, display_name, is_verified, verify_token)
-                            VALUES (:e,:h,:n,1,NULL)");
+      $ins = db()->prepare("INSERT INTO users (email, pass_hash, display_name, role, is_verified, verify_token)
+                            VALUES (:e,:h,:n,:role,1,NULL)");
       $ins->execute([
         ':e' => $emailLc,
         ':h' => $hash,
-        ':n' => $reporterName
+        ':n' => $reporterName,
+        ':role' => 'user'
       ]);
       $userId = (int)db()->lastInsertId();
     } catch (Throwable $e) {
@@ -146,16 +148,22 @@ if ($createAccount === 1 && !$userId) {
   // session beállítás
   session_regenerate_id(true);
   $_SESSION['user_id'] = $userId;
+  $_SESSION['user_role'] = 'user';
 }
 
 // Belépett user esetén: ha kell, töltsük ki a hiányzó mezőket a profilból
 if ($userId) {
-  $stmt = db()->prepare("SELECT email, display_name FROM users WHERE id=:id LIMIT 1");
+  $stmt = db()->prepare("SELECT email, display_name, role FROM users WHERE id=:id LIMIT 1");
   $stmt->execute([':id' => $userId]);
   $u = $stmt->fetch();
 
   $uEmail = $u ? safe_str($u['email'] ?? null, 190) : null;
   $uName  = $u ? safe_str($u['display_name'] ?? null, 80) : null;
+  $uRole  = $u ? (string)($u['role'] ?? '') : '';
+  if (!$userRole && $uRole !== '') {
+    $userRole = $uRole;
+    $_SESSION['user_role'] = $uRole;
+  }
 
   // ha nem anonim és nem adott nevet, legyen a fiók neve
   if ($reporterIsAnonymous === 0 && !$reporterName) {
@@ -172,6 +180,17 @@ if ($userId) {
   }
   if ($wantsNotify === 1 && (!$reporterEmail || !filter_var($reporterEmail, FILTER_VALIDATE_EMAIL))) {
     json_response(['ok' => false, 'error' => 'Valid email missing in profile'], 400);
+  }
+}
+
+// Civil kategória: csak civil/admin/superadmin használhatja
+if ($category === 'civil_event') {
+  if (!$userId) {
+    json_response(['ok' => false, 'error' => 'Civil kategóriához bejelentkezés szükséges.'], 401);
+  }
+  $role = $userRole ?: (current_user_role() ?: '');
+  if (!in_array($role, ['civil','admin','superadmin'], true)) {
+    json_response(['ok' => false, 'error' => 'Nincs jogosultság a civil kategóriához.'], 403);
   }
 }
 

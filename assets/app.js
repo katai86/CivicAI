@@ -1,6 +1,7 @@
 // Public map (bejelentés + jóváhagyott jelölők)
 const BASE = '/terkep';
 const IS_LOGGED_IN = !!window.TERKEP_LOGGED_IN;
+const USER_ROLE = window.TERKEP_ROLE || 'guest';
 const API_LIST   = `${BASE}/api/reports_list.php`;
 const API_CREATE = `${BASE}/api/report_create.php`;
 const API_NEARBY = `${BASE}/api/reports_nearby.php`;
@@ -45,7 +46,8 @@ const CAT_LABEL = {
   trash:'Szemét / illegális',
   green:'Zöldterület / veszélyes fa',
   traffic:'Közlekedés / tábla',
-  idea:'Ötlet / javaslat'
+  idea:'Ötlet / javaslat',
+  civil_event:'Civil esemény'
 };
 
 const ICON = {
@@ -55,10 +57,31 @@ const ICON = {
   trash:    { tw: '1f5d1', color:'#34495e' }, // 🗑️
   green:    { tw: '1f333', color:'#27ae60' }, // 🌳
   traffic:  { tw: '1f6a6', color:'#9b59b6' }, // 🚦
-  idea:     { tw: '2757',  color:'#ff7a00' }  // ❗
+  idea:     { tw: '2757',  color:'#ff7a00' }, // ❗
+  civil_event: { tw: '1f91d', color:'#0ea5e9' } // 🤝
 };
 
 function catLabel(cat){ return CAT_LABEL[cat] || cat; }
+
+function canUseCivil(){
+  return ['civil','admin','superadmin'].includes(USER_ROLE);
+}
+
+function buildCategoryOptions(){
+  const opts = [
+    { id:'road', label:'Úthiba / kátyú' },
+    { id:'sidewalk', label:'Járda / burkolat hiba' },
+    { id:'lighting', label:'Közvilágítás' },
+    { id:'trash', label:'Szemét / illegális' },
+    { id:'green', label:'Zöldterület / veszélyes fa' },
+    { id:'traffic', label:'Közlekedés / tábla' },
+    { id:'idea', label:'Ötlet / javaslat' }
+  ];
+  if (canUseCivil()) {
+    opts.push({ id:'civil_event', label:'Civil esemény' });
+  }
+  return opts.map(o => `<option value="${o.id}">${o.label}</option>`).join('');
+}
 
 function statusLabel(st){
   const m = {
@@ -180,13 +203,7 @@ function openModal(latlng){
       <div class="modal-scroll">
         <h3>Kategória</h3>
         <select id="mCategory">
-          <option value="road">Úthiba / kátyú</option>
-          <option value="sidewalk">Járda / burkolat hiba</option>
-          <option value="lighting">Közvilágítás</option>
-          <option value="trash">Szemét / illegális</option>
-          <option value="green">Zöldterület / veszélyes fa</option>
-          <option value="traffic">Közlekedés / tábla</option>
-          <option value="idea">Ötlet / javaslat</option>
+          ${buildCategoryOptions()}
         </select>
 
         <label>Rövid cím (opcionális)</label>

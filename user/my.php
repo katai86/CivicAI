@@ -65,6 +65,7 @@ $catLabel = [
   'green'=>'Zöldterület / veszélyes fa',
   'traffic'=>'Közlekedés / tábla',
   'idea'=>'Ötlet / javaslat',
+  'civil_event'=>'Civil esemény',
 ];
 ?>
 <!doctype html>

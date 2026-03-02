@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // FONTOS: util.php -> require_admin() ezt a kulcsot ellenőrzi
     $_SESSION['admin_logged_in'] = true;
     $_SESSION['admin_user'] = $u;
+    $_SESSION['user_role'] = 'superadmin';
 
     header('Location: ' . app_url('/admin/index.php'));
     exit;

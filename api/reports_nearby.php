@@ -12,7 +12,7 @@ $lng = $_GET['lng'] ?? null;
 $category = isset($_GET['category']) ? trim((string)$_GET['category']) : '';
 $radius = isset($_GET['radius']) ? (int)$_GET['radius'] : 50;
 
-$allowedCats = ['road','sidewalk','lighting','trash','green','traffic','idea'];
+$allowedCats = ['road','sidewalk','lighting','trash','green','traffic','idea','civil_event'];
 
 if (!is_numeric($lat) || !is_numeric($lng)) {
   json_response(['ok' => false, 'error' => 'Invalid coordinates'], 400);

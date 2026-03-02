@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $email = mb_strtolower(trim($_POST['email'] ?? ''));
   $pass  = (string)($_POST['pass'] ?? '');
 
-  $stmt = db()->prepare("SELECT id, pass_hash, is_verified FROM users WHERE email=:e LIMIT 1");
+  $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role FROM users WHERE email=:e LIMIT 1");
   $stmt->execute([':e'=>$email]);
   $u = $stmt->fetch();
 
@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // MVP: is_verified-t egyelőre nem kényszerítjük (később E/D)
     session_regenerate_id(true);
     $_SESSION['user_id'] = (int)$u['id'];
+    $_SESSION['user_role'] = $u['role'] ? (string)$u['role'] : 'user';
     header('Location: ' . app_url('/'));
     exit;
   }

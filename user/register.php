@@ -34,11 +34,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
       $stmt = db()->prepare("
         INSERT INTO users
-          (email, pass_hash, display_name, verify_token,
+          (email, pass_hash, display_name, role, verify_token,
            consent_data, consent_share, consent_marketing,
            consent_version, consent_at, consent_ip_hash, consent_user_agent)
         VALUES
-          (:e,:h,:n,:t,
+          (:e,:h,:n,:role,:t,
            :cd,:cs,:cm,
            :cv, NOW(), :ip, :ua)
       ");
@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ':e'  => $email_lc,
         ':h'  => $hash,
         ':n'  => $name,
+        ':role' => 'user',
         ':t'  => $token,
         ':cd' => $consentData ? 1 : 0,
         ':cs' => $consentShare ? 1 : 0,

@@ -100,7 +100,8 @@ function catLabel(cat){
     trash:'Szemét / illegális',
     green:'Zöldterület / veszélyes fa',
     traffic:'Közlekedés / tábla',
-    idea:'Ötlet / javaslat'
+    idea:'Ötlet / javaslat',
+    civil_event:'Civil esemény'
   };
   return m[cat] || cat;
 }
