@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS report_attachments (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  report_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NULL,
+  filename VARCHAR(255) NOT NULL,
+  stored_name VARCHAR(255) NOT NULL,
+  mime VARCHAR(64) NOT NULL,
+  size_bytes INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_att_report (report_id),
+  KEY idx_att_user (user_id),
+  CONSTRAINT fk_att_report FOREIGN KEY (report_id) REFERENCES reports(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
