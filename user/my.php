@@ -68,9 +68,12 @@ try {
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function badge_icon_url($code){
   if (!$code) return null;
-  $path = __DIR__ . '/../assets/badges/' . $code . '.png';
-  if (!is_file($path)) return null;
-  return app_url('/assets/badges/' . $code . '.png');
+  $base = __DIR__ . '/../assets/badges/' . $code;
+  $pathLower = $base . '.png';
+  $pathUpper = $base . '.PNG';
+  if (is_file($pathLower)) return app_url('/assets/badges/' . $code . '.png');
+  if (is_file($pathUpper)) return app_url('/assets/badges/' . $code . '.PNG');
+  return null;
 }
 
 $statusLabel = [
