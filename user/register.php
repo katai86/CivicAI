@@ -59,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $newUserId = (int)db()->lastInsertId();
       if ($newUserId > 0) {
         add_user_xp($newUserId, 10, 'register', null);
+        award_badge($newUserId, 'level_1');
       }
 
       // MVP: email küldés később (D/E-nél).

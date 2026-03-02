@@ -195,6 +195,7 @@ function add_user_xp(int $userId, int $points, string $reason, ?int $reportId = 
         $lvl = level_from_xp($xp);
         $pdo->prepare("UPDATE users SET level = :lvl WHERE id = :id")
             ->execute([':lvl' => $lvl['level'], ':id' => $userId]);
+        award_badge($userId, 'level_' . $lvl['level']);
 
         $pdo->commit();
     } catch (Throwable $e) {
