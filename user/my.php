@@ -67,6 +67,10 @@ try {
   $badges = [];
 }
 
+$lbWeek = get_leaderboard('week', 10);
+$lbMonth = get_leaderboard('month', 10);
+$lbAll = get_leaderboard('all', 10);
+
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function badge_icon_url($code){
   if (!$code) return null;
@@ -183,6 +187,48 @@ $catLabel = [
           <?php endforeach; ?>
         </div>
       <?php endif; ?>
+    </div>
+
+    <div class="card" style="margin-bottom:12px">
+      <div class="title">Toplista (Top 10)</div>
+      <div class="row" style="gap:8px;margin-top:8px">
+        <div style="min-width:220px">
+          <div class="small"><b>Heti</b></div>
+          <?php if (!$lbWeek): ?>
+            <div class="muted">Nincs adat.</div>
+          <?php else: ?>
+            <?php foreach ($lbWeek as $i => $row): ?>
+              <div class="small">
+                #<?= (int)($i+1) ?> <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?> (<?= (int)$row['points'] ?> XP)
+              </div>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </div>
+        <div style="min-width:220px">
+          <div class="small"><b>Havi</b></div>
+          <?php if (!$lbMonth): ?>
+            <div class="muted">Nincs adat.</div>
+          <?php else: ?>
+            <?php foreach ($lbMonth as $i => $row): ?>
+              <div class="small">
+                #<?= (int)($i+1) ?> <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?> (<?= (int)$row['points'] ?> XP)
+              </div>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </div>
+        <div style="min-width:220px">
+          <div class="small"><b>Összesített</b></div>
+          <?php if (!$lbAll): ?>
+            <div class="muted">Nincs adat.</div>
+          <?php else: ?>
+            <?php foreach ($lbAll as $i => $row): ?>
+              <div class="small">
+                #<?= (int)($i+1) ?> <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?> (<?= (int)$row['points'] ?> XP)
+              </div>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </div>
+      </div>
     </div>
 
     <div class="grid">

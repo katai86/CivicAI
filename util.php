@@ -274,6 +274,35 @@ function ensure_level_badge(int $userId, int $level): void {
     award_badge($userId, 'level_' . $level);
 }
 
+function get_leaderboard(string $period, int $limit = 10): array {
+    $limit = max(1, min(50, $limit));
+    $where = '';
+    if ($period === 'week') {
+        $where = "AND x.created_at >= (NOW() - INTERVAL 7 DAY)";
+    } elseif ($period === 'month') {
+        $where = "AND x.created_at >= (NOW() - INTERVAL 1 MONTH)";
+    }
+
+    try {
+        $sql = "
+            SELECT u.id, u.display_name, u.level, SUM(x.points) AS points
+            FROM user_xp_log x
+            JOIN users u ON u.id = x.user_id
+            WHERE COALESCE(u.profile_public, 1) = 1
+            $where
+            GROUP BY u.id, u.display_name, u.level
+            HAVING points > 0
+            ORDER BY points DESC
+            LIMIT $limit
+        ";
+        $stmt = db()->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll() ?: [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
 function gps_is_precise($val): bool {
     if ($val === null) return false;
     $s = trim((string)$val);

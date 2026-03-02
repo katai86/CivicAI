@@ -50,6 +50,10 @@ try {
   $badges = $stmt->fetchAll() ?: [];
 } catch (Throwable $e) { $badges = []; }
 
+$lbWeek = get_leaderboard('week', 10);
+$lbMonth = get_leaderboard('month', 10);
+$lbAll = get_leaderboard('all', 10);
+
 $reports = [];
 try {
   $stmt = db()->prepare("
@@ -109,6 +113,48 @@ function badge_icon_url($code){
           <span class="pill">XP: <b><?= (int)$xp ?></b></span>
           <span class="pill">Streak: <b><?= (int)$streak ?></b> nap</span>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div class="title">Toplista (Top 10)</div>
+    <div class="row" style="gap:8px;margin-top:8px">
+      <div style="min-width:220px">
+        <div class="small"><b>Heti</b></div>
+        <?php if (!$lbWeek): ?>
+          <div class="muted">Nincs adat.</div>
+        <?php else: ?>
+          <?php foreach ($lbWeek as $i => $row): ?>
+            <div class="small">
+              #<?= (int)($i+1) ?> <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?> (<?= (int)$row['points'] ?> XP)
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+      <div style="min-width:220px">
+        <div class="small"><b>Havi</b></div>
+        <?php if (!$lbMonth): ?>
+          <div class="muted">Nincs adat.</div>
+        <?php else: ?>
+          <?php foreach ($lbMonth as $i => $row): ?>
+            <div class="small">
+              #<?= (int)($i+1) ?> <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?> (<?= (int)$row['points'] ?> XP)
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+      <div style="min-width:220px">
+        <div class="small"><b>Összesített</b></div>
+        <?php if (!$lbAll): ?>
+          <div class="muted">Nincs adat.</div>
+        <?php else: ?>
+          <?php foreach ($lbAll as $i => $row): ?>
+            <div class="small">
+              #<?= (int)($i+1) ?> <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?> (<?= (int)$row['points'] ?> XP)
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
       </div>
     </div>
   </div>
