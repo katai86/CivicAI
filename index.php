@@ -32,9 +32,17 @@ $lbCatMini = get_category_leaderboard('week', $cat, 5);
 <header class="topbar">
   <div class="topbar-inner">
     <div class="brand">
-      <b>Problématérkép</b>
-      <span class="muted">Kattints a térképre → kategória → leírás → <b>Beküldés</b> (ellenőrzés után látszik).</span>
+      <span class="brand-logo" aria-hidden="true"></span>
+      <b>Köz.Tér</b>
     </div>
+
+    <form class="topbar-search" id="mapSearchForm">
+      <div class="search-wrap">
+        <input id="mapSearchInput" type="search" placeholder="Cím keresése (pl. Orosháza, Szabadság utca 12)" aria-label="Cím keresés">
+        <div id="mapSearchResults" class="search-results" role="listbox" aria-label="Cím találatok"></div>
+      </div>
+      <button type="submit">Keresés</button>
+    </form>
 
     <div class="topbar-links">
       <?php if ($uid > 0 && $rankAll): ?>
@@ -82,10 +90,10 @@ $lbCatMini = get_category_leaderboard('week', $cat, 5);
   </div>
 
   <div class="leaderboard-mini" id="lbMini" aria-label="Toplista">
-    <button class="lb-toggle" type="button" id="lbToggle" aria-expanded="true">
-      Toplista (heti) – <?= htmlspecialchars($categories[$cat], ENT_QUOTES, 'UTF-8') ?>
+    <button class="lb-toggle" type="button" id="lbToggle" aria-expanded="false">
+      Toplista (heti) – <?= htmlspecialchars($categories[$cat], ENT_QUOTES, 'UTF-8') ?> <span class="lb-arrow">&gt;&gt;&gt;</span>
     </button>
-    <div class="lb-body" id="lbBody">
+    <div class="lb-body" id="lbBody" style="display:none">
     <div class="lb-tabs">
       <?php foreach ($categories as $key => $label): ?>
         <a class="lb-tab <?= $key === $cat ? 'active' : '' ?>" href="<?php echo htmlspecialchars(app_url('/?cat=' . $key), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></a>

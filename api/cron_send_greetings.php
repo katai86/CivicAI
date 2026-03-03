@@ -62,8 +62,16 @@ try {
       $to = (string)$u['email'];
       if (!filter_var($to, FILTER_VALIDATE_EMAIL)) continue;
       $first = (string)($u['first_name'] ?? '');
-      $norm = normalize_name($first);
-      if ($norm === '' || !in_array($norm, $nameList, true)) continue;
+      $variants = normalize_name_variants($first);
+      if (!$variants) continue;
+      $matched = false;
+      foreach ($variants as $v) {
+        if (in_array($v, $nameList, true)) {
+          $matched = true;
+          break;
+        }
+      }
+      if (!$matched) continue;
       $subject = "Boldog névnapot kíván a Köz.Tér csapata!";
       $body = "Szia {$first}!\n\nBoldog névnapot kíván a Köz.Tér csapata!\n\n— Köz.Tér";
       if (send_mail($to, $subject, $body)) {

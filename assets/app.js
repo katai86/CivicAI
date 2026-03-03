@@ -5,6 +5,7 @@ const USER_ROLE = window.TERKEP_ROLE || 'guest';
 const API_LIST   = `${BASE}/api/reports_list.php`;
 const API_CREATE = `${BASE}/api/report_create.php`;
 const API_NEARBY = `${BASE}/api/reports_nearby.php`;
+const GEO_SEARCH = 'https://nominatim.openstreetmap.org/search';
 
 // ====== Map init ======
 const map = L.map('map').setView([46.565, 20.667], 13);
@@ -16,6 +17,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 let markerLayers = []; // { marker, data }
+let searchMarker = null;
+let searchMarkerTimeout = null;
 
 // ====== Utils ======
 function esc(s){
@@ -36,6 +39,23 @@ async function fetchJson(url, opts){
     throw new Error(`HTTP ${res.status}: ${msg}`);
   }
   return j;
+}
+
+async function geocodeAddress(query, limit = 5){
+  const url = `${GEO_SEARCH}?format=json&limit=${encodeURIComponent(limit)}&countrycodes=hu&q=${encodeURIComponent(query)}`;
+  const res = await fetchJson(url);
+  return Array.isArray(res) ? res : [];
+}
+
+function placeSearchMarker(lat, lon){
+  if (searchMarker) map.removeLayer(searchMarker);
+  if (searchMarkerTimeout) clearTimeout(searchMarkerTimeout);
+  searchMarker = L.marker([lat, lon]).addTo(map);
+  map.setView([lat, lon], 16, { animate: true });
+  searchMarkerTimeout = setTimeout(() => {
+    if (searchMarker) map.removeLayer(searchMarker);
+    searchMarker = null;
+  }, 10000);
 }
 
 // ====== Category labels + badge icons ======
@@ -185,6 +205,81 @@ async function loadApprovedMarkers(){
 }
 
 loadApprovedMarkers().catch(err => console.error(err));
+
+// ====== Address search ======
+(function initSearch(){
+  const form = document.getElementById('mapSearchForm');
+  const input = document.getElementById('mapSearchInput');
+  const results = document.getElementById('mapSearchResults');
+  if (!form || !input) return;
+
+  const hideResults = () => {
+    if (!results) return;
+    results.style.display = 'none';
+    results.innerHTML = '';
+  };
+
+  const showResults = (items) => {
+    if (!results) return;
+    if (!items.length) {
+      hideResults();
+      return;
+    }
+    results.innerHTML = items.map((it, idx) => {
+      const label = it.display_name || it.name || 'Találat';
+      return `<button type="button" class="search-result" data-idx="${idx}">${esc(label)}</button>`;
+    }).join('');
+    results.style.display = 'block';
+  };
+
+  if (results) {
+    results.addEventListener('click', (e) => {
+      const btn = e.target.closest('.search-result');
+      if (!btn) return;
+      const idx = parseInt(btn.getAttribute('data-idx'), 10);
+      const list = results._items || [];
+      const hit = list[idx];
+      if (!hit) return;
+      const lat = parseFloat(hit.lat);
+      const lon = parseFloat(hit.lon);
+      if (isFinite(lat) && isFinite(lon)) placeSearchMarker(lat, lon);
+      hideResults();
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!results) return;
+    if (!form.contains(e.target)) hideResults();
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (!q) return;
+
+    try{
+      const hits = await geocodeAddress(q, 5);
+      if (!hits.length) {
+        alert('Nem található a cím. Kérlek pontosíts!');
+        return;
+      }
+      if (hits.length === 1) {
+        const lat = parseFloat(hits[0].lat);
+        const lon = parseFloat(hits[0].lon);
+        if (isFinite(lat) && isFinite(lon)) placeSearchMarker(lat, lon);
+        hideResults();
+        return;
+      }
+      if (results) {
+        results._items = hits;
+        showResults(hits);
+      }
+    }catch(err){
+      console.error(err);
+      alert('Hiba a keresésnél. Próbáld újra később.');
+    }
+  });
+})();
 
 // ====== Report modal ======
 let tempMarker = null;

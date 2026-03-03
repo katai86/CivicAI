@@ -438,12 +438,31 @@ function gps_is_precise($val): bool {
 }
 
 function normalize_name(string $name): string {
-    $name = trim(mb_strtolower($name));
+    $name = trim($name);
+    if ($name === '') return '';
+    $lower = function_exists('mb_strtolower') ? mb_strtolower($name) : strtolower($name);
+    $name = trim($lower);
     if ($name === '') return '';
     $trans = @iconv('UTF-8', 'ASCII//TRANSLIT', $name);
     if ($trans !== false) $name = $trans;
     $name = preg_replace('/[^a-z]/', '', $name);
     return $name ?: '';
+}
+
+function normalize_name_variants(string $name): array {
+    $name = trim($name);
+    if ($name === '') return [];
+    $variants = [$name];
+    foreach (preg_split('/[\\s\\-]+/', $name) as $part) {
+        $part = trim($part);
+        if ($part !== '') $variants[] = $part;
+    }
+    $out = [];
+    foreach ($variants as $v) {
+        $norm = normalize_name($v);
+        if ($norm !== '') $out[] = $norm;
+    }
+    return array_values(array_unique($out));
 }
 
 function load_name_days(): array {

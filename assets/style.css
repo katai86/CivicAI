@@ -134,9 +134,46 @@ body.intro-open #mapWrap{
 .topbtn{display:inline-flex;align-items:center;justify-content:center;padding:8px 10px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#111827;font-weight:700;text-decoration:none}
 .topbtn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
 
+.topbar-search{display:flex;gap:8px;align-items:center;flex:1;min-width:260px}
+.search-wrap{position:relative;flex:1;min-width:220px}
+.topbar-search input{
+  flex:1;
+  min-width:220px;
+  padding:8px 10px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#fff;
+  font:inherit;
+}
+.topbar-search button{
+  padding:8px 12px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#fff;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.search-results{
+  position:absolute;left:0;right:0;top:calc(100% + 6px);
+  z-index:1200;background:#fff;border:1px solid var(--border);
+  border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.12);
+  display:none;max-height:240px;overflow:auto;
+}
+.search-result{
+  width:100%;text-align:left;border:0;background:#fff;
+  padding:8px 10px;cursor:pointer;font:inherit;
+}
+.search-result:hover{background:#f3f4f6}
+
+.brand-logo{
+  width:28px;height:28px;border-radius:8px;border:1px dashed var(--border);
+  display:inline-block;flex:0 0 auto;
+}
+
 /* ===== Mini leaderboard ===== */
 .leaderboard-mini{
-  position:absolute;left:14px;bottom:14px;z-index:800;
+  position:absolute;right:14px;bottom:14px;z-index:800;
   width:260px;max-width:85vw;background:#fff;border:1px solid var(--border);
   border-radius:14px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.08)
 }
@@ -145,6 +182,7 @@ body.intro-open #mapWrap{
   border:1px solid var(--border);background:#fff;border-radius:12px;padding:6px 8px;
   cursor:pointer;font-weight:800;margin-bottom:6px
 }
+.lb-arrow{color:var(--muted);font-weight:700}
 .lb-body{display:block}
 .lb-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
 .lb-tab{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:#fff;color:#111827;text-decoration:none;font-size:11px}
