@@ -50,28 +50,9 @@ function avatar_url($filename){
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Toplista</title>
-  <style>
-    :root{--b:#e5e7eb;--p:#2563eb;--m:#6b7280;}
-    body{font:14px system-ui;background:#f6f7f9;margin:0}
-    header{background:#fff;border-bottom:1px solid var(--b)}
-    .wrap{max-width:1100px;margin:0 auto;padding:12px 14px}
-    .top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-    .card{background:#fff;border:1px solid var(--b);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:14px}
-    .grid{display:grid;gap:12px}
-    @media(min-width:860px){ .grid{grid-template-columns:1fr 1fr 1fr} }
-    .title{font-size:16px;font-weight:800;margin:0 0 6px 0}
-    .muted{color:var(--m)}
-    .list{display:grid;gap:6px}
-    .rank{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:10px}
-    .rank.me{background:#eef2ff;border:1px solid #c7d2fe}
-    .rank .name a{color:#2563eb;text-decoration:none}
-    .pill{display:inline-block;padding:3px 10px;border-radius:999px;border:1px solid var(--b);background:#f9fafb;font-size:12px}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap}
-    .tab{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;border:1px solid var(--b);background:#fff;text-decoration:none;color:#111827;font-size:12px}
-    .tab.active{background:#eef2ff;border-color:#c7d2fe;color:#1e3a8a}
-  </style>
+  <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
-<body>
+<body class="page">
 <header>
   <div class="wrap">
     <div class="top">
@@ -93,7 +74,7 @@ function avatar_url($filename){
   </div>
   <?php endif; ?>
 
-  <div class="grid">
+  <div class="grid cols-3">
     <div class="card">
       <div class="title">Heti</div>
       <?php if (!$lbWeek): ?>

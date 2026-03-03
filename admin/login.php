@@ -36,26 +36,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Admin belépés</title>
-  <style>
-    body{font:14px system-ui;background:#f6f7f9;margin:0}
-    .wrap{max-width:420px;margin:0 auto;padding:80px 16px}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:18px}
-    h1{font-size:18px;margin:0 0 12px 0}
-    input{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;margin:6px 0}
-    button{width:100%;padding:10px 12px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-weight:700;margin-top:8px}
-    .err{background:#fee2e2;color:#991b1b;padding:10px 12px;border-radius:12px;margin:10px 0}
-    .muted{color:#6b7280;font-size:12px;margin-top:10px}
-  </style>
+  <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
-<body>
-<div class="wrap">
+<body class="page auth-page">
+<div class="auth-wrap">
   <div class="card">
     <h1>Admin belépés</h1>
     <?php if ($error): ?><div class="err"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></div><?php endif; ?>
     <form method="post">
       <input name="user" placeholder="Felhasználó" autocomplete="username" required>
       <input name="pass" type="password" placeholder="Jelszó" autocomplete="current-password" required>
-      <button type="submit">Belépés</button>
+      <button type="submit" class="primary">Belépés</button>
     </form>
     <div class="muted">Problématérkép admin</div>
   </div>

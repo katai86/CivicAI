@@ -83,20 +83,10 @@ unset($_SESSION['flash']);
 <html lang="hu"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Regisztráció</title>
-<style>
-body{font:14px system-ui;background:#f6f7f9;margin:0;display:grid;place-items:center;height:100vh}
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:18px;min-width:360px;max-width:420px}
-input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #d1d5db;border-radius:10px;margin:6px 0}
-button{width:100%;padding:10px;border:0;border-radius:10px;background:#16a34a;color:#fff;cursor:pointer}
-.err{background:#fee2e2;border:1px solid #fecaca;color:#991b1b;padding:8px 10px;border-radius:10px;margin-bottom:10px}
-.ok{background:#dcfce7;border:1px solid #bbf7d0;color:#166534;padding:8px 10px;border-radius:10px;margin-bottom:10px}
-a{color:#2563eb;text-decoration:none}
-.chk{display:flex;gap:10px;align-items:flex-start;margin:10px 0}
-.chk input{width:auto;margin-top:3px}
-.small{font-size:12px;color:#6b7280;line-height:1.35}
-.hr{height:1px;background:#e5e7eb;margin:12px 0}
-</style></head>
-<body>
+<link rel="stylesheet" href="/terkep/assets/style.css">
+</head>
+<body class="page auth-page">
+<div class="auth-wrap">
 <div class="card">
   <h3 style="margin:0 0 10px">Regisztráció</h3>
   <?php if($flash): ?><div class="ok"><?= htmlspecialchars($flash,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
@@ -133,9 +123,10 @@ a{color:#2563eb;text-decoration:none}
       </span>
     </label>
 
-    <button type="submit">Regisztráció</button>
+    <button type="submit" class="primary">Regisztráció</button>
   </form>
 
   <div style="margin-top:10px"><a href="<?= htmlspecialchars(app_url('/user/login.php')) ?>">Van fiókod? Belépés</a></div>
+</div>
 </div>
 </body></html>

@@ -30,23 +30,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="hu"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Belépés</title>
-<style>
-body{font:14px system-ui;background:#f6f7f9;margin:0;display:grid;place-items:center;height:100vh}
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:18px;min-width:340px}
-input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #d1d5db;border-radius:10px;margin:6px 0}
-button{width:100%;padding:10px;border:0;border-radius:10px;background:#2563eb;color:#fff;cursor:pointer}
-.err{background:#fee2e2;border:1px solid #fecaca;color:#991b1b;padding:8px 10px;border-radius:10px;margin-bottom:10px}
-a{color:#2563eb;text-decoration:none}
-</style></head>
-<body>
+<link rel="stylesheet" href="/terkep/assets/style.css">
+</head>
+<body class="page auth-page">
+<div class="auth-wrap">
 <div class="card">
   <h3 style="margin:0 0 10px">Belépés</h3>
   <?php if($err): ?><div class="err"><?= htmlspecialchars($err,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
   <form method="post">
     <input name="email" placeholder="E-mail" required>
     <input name="pass" type="password" placeholder="Jelszó" required>
-    <button type="submit">Belépés</button>
+    <button type="submit" class="primary">Belépés</button>
   </form>
   <div style="margin-top:10px"><a href="<?= htmlspecialchars(app_url('/user/register.php')) ?>">Regisztráció</a></div>
+</div>
 </div>
 </body></html>

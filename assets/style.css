@@ -229,3 +229,136 @@ body.intro-open #mapWrap{
 .lb-badge{width:18px;height:18px;object-fit:cover}
 .lb-foot{margin-top:6px;font-size:12px}
 .lb-foot a{color:#7dd3fc;text-decoration:none}
+
+/* ===== Subpages (shared) ===== */
+.page{
+  color:var(--text);
+  background:linear-gradient(160deg,var(--bg),#0f2431 55%,#10242f);
+  min-height:100vh;
+}
+.page header{
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(10px);
+}
+.page .wrap{
+  max-width:1100px;
+  margin:0 auto;
+  padding:16px;
+  display:grid;
+  gap:12px;
+}
+.page .card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  box-shadow:var(--shadow);
+  padding:16px;
+  backdrop-filter:blur(10px);
+}
+.page .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.page .grid{display:grid;gap:12px}
+.page .grid.cols-2{grid-template-columns:1fr 1fr}
+.page .grid.cols-3{grid-template-columns:1fr 1fr 1fr}
+.page .grid.cols-split{grid-template-columns:1.2fr .8fr}
+@media (max-width: 920px){
+  .page .grid.cols-2,
+  .page .grid.cols-3,
+  .page .grid.cols-split{grid-template-columns:1fr}
+}
+.page .title{font-size:16px;font-weight:800;margin:0 0 6px 0}
+.page .muted{color:var(--muted)}
+.page .meta{color:var(--muted);font-size:12px;margin-top:4px}
+.page .small{font-size:12px;color:var(--muted)}
+.page .top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.page .list{display:grid;gap:6px}
+.page .pill{
+  display:inline-block;padding:4px 10px;border-radius:999px;
+  border:1px solid var(--border);background:rgba(15,23,33,0.6);
+  font-size:12px;color:var(--text)
+}
+.page .rank{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-radius:10px}
+.page .rank.me{background:rgba(0,196,140,0.12);border:1px solid rgba(0,196,140,0.35)}
+.page .tabs{display:flex;gap:8px;flex-wrap:wrap}
+.page .tab{
+  display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;
+  border:1px solid var(--border);background:var(--card-2);color:var(--text);
+  text-decoration:none;font-size:12px
+}
+.page .tab.active{background:rgba(0,196,140,0.2);border-color:rgba(0,196,140,0.5);color:#cffff2}
+.page a{color:#7dd3fc;text-decoration:none}
+.page a:hover{text-decoration:underline}
+
+.page table{width:100%;border-collapse:collapse}
+.page th,.page td{text-align:left;padding:10px;border-bottom:1px solid var(--border);vertical-align:top}
+.page th{font-size:12px;color:var(--muted);font-weight:800}
+
+.page .btn, .page a.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:9px 12px;border-radius:12px;text-decoration:none;
+  border:1px solid var(--border);background:var(--card-2);color:var(--text);font-weight:700
+}
+.page .btn.primary, .page a.btn.primary{
+  background:var(--accent);border-color:var(--accent);color:#1b0f00;box-shadow:0 0 24px rgba(255,122,0,0.35)
+}
+.page .btn.soft{background:rgba(255,255,255,0.06)}
+.page .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+
+.page .kv{display:grid;grid-template-columns:160px 1fr;gap:8px 12px;margin-top:10px}
+.page .k{color:var(--muted)}
+.page .v{font-weight:600}
+.page .note{color:var(--text)}
+
+.page input, .page select, .page textarea{
+  width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);
+  border-radius:12px;background:rgba(15,23,33,0.7);color:var(--text)
+}
+.page input::placeholder, .page textarea::placeholder{color:var(--muted)}
+.page button{
+  padding:10px 12px;border:1px solid var(--border);border-radius:12px;
+  background:var(--card-2);color:var(--text);font-weight:700;cursor:pointer
+}
+.page button.primary{background:var(--primary);color:#0f1721;box-shadow:0 0 24px rgba(0,196,140,0.35)}
+.page .err{background:rgba(255,59,59,0.15);border:1px solid rgba(255,59,59,0.35);color:#ffd1d1;padding:8px 10px;border-radius:10px}
+.page .ok{background:rgba(0,196,140,0.15);border:1px solid rgba(0,196,140,0.35);color:#cffff2;padding:8px 10px;border-radius:10px}
+.page .hr{height:1px;background:var(--border);margin:12px 0}
+.page .chk{display:flex;gap:10px;align-items:flex-start;margin:10px 0}
+.page .chk input{width:auto;margin-top:3px}
+.page .badge{display:inline-block;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:999px;padding:2px 10px;font-size:12px;color:var(--text)}
+
+.page .gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+@media (max-width: 920px){.page .gallery{grid-template-columns:repeat(2,1fr)}}
+.page .thumb{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--card-2)}
+.page .thumb img{width:100%;height:160px;object-fit:cover;display:block}
+.page .thumb .cap{padding:8px 10px;font-size:12px;color:var(--muted);word-break:break-word}
+
+/* Auth pages */
+.auth-page{
+  min-height:100vh;display:grid;place-items:center;padding:24px;
+  background:linear-gradient(160deg,var(--bg),#0f2431 55%,#10242f);
+  color:var(--text);
+}
+.auth-wrap{width:min(420px, 92vw)}
+
+/* Admin page */
+.admin-page #wrap{
+  height:100vh;display:grid;grid-template-columns:1fr 520px;gap:12px;padding:12px;box-sizing:border-box;
+}
+.admin-page #map{height:100%;border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+.admin-page #side{height:100%;display:flex;flex-direction:column;gap:12px}
+.admin-page .topcard{padding:12px;display:grid;gap:10px}
+.admin-page .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.admin-page .listcard{padding:10px;overflow:auto;flex:1}
+.admin-page .item{border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px;background:var(--card-2)}
+.admin-page .item:hover{box-shadow:var(--shadow)}
+.admin-page .counts{display:flex;gap:10px;flex-wrap:wrap}
+.admin-page .hint{color:var(--muted);font-size:12px;line-height:1.35;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.admin-page .btnbar{display:flex;gap:10px}
+.admin-page button.ok{background:#16a34a;color:#fff}
+.admin-page button.no{background:#ef4444;color:#fff}
+.admin-page button.del{background:var(--card-2)}
+@media (max-width: 980px){
+  .admin-page #wrap{grid-template-columns:1fr;grid-template-rows:55vh 45vh}
+  .admin-page #side{height:auto}
+}

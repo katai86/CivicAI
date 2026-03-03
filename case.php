@@ -95,49 +95,9 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><?= h($caseNo) ?> – Ügykövetés</title>
-  <style>
-    :root{
-      --bg:#f5f7fb;
-      --card:#fff;
-      --border:#e6eaf2;
-      --muted:#6b7280;
-      --shadow:0 10px 30px rgba(0,0,0,.08);
-      --radius:16px;
-    }
-    body{ margin:0; background:var(--bg); font:14px system-ui,-apple-system,Segoe UI,Roboto,Arial; color:#111827; }
-    .wrap{ max-width:980px; margin:24px auto; padding:0 12px; display:grid; gap:12px; }
-    .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; }
-    .top{ display:flex; gap:12px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; }
-    .h1{ font-size:18px; font-weight:800; margin:0; }
-    .meta{ color:var(--muted); margin-top:6px; line-height:1.35; }
-    .grid{ display:grid; grid-template-columns: 1.2fr .8fr; gap:12px; }
-    @media (max-width: 920px){ .grid{ grid-template-columns: 1fr; } }
-
-    .pill{ display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid var(--border); background:#fff; font-size:12px; }
-    .pill b{ font-weight:800; }
-
-    a{ color:#2563eb; text-decoration:none; }
-    a:hover{ text-decoration:underline; }
-
-    .kv{ display:grid; grid-template-columns: 160px 1fr; gap:8px 12px; margin-top:10px; }
-    .k{ color:var(--muted); }
-    .v{ font-weight:600; }
-
-    table{ width:100%; border-collapse:collapse; }
-    th, td{ text-align:left; padding:10px; border-bottom:1px solid var(--border); vertical-align:top; }
-    th{ font-size:12px; color:var(--muted); font-weight:700; }
-    .note{ color:#111827; }
-    .small{ font-size:12px; color:var(--muted); }
-
-    .actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
-    .btn{
-      display:inline-block; padding:10px 12px; border-radius:12px; border:1px solid var(--border);
-      background:#fff; color:#111827; font-weight:700;
-    }
-    .btn.primary{ background:#2563eb; color:#fff; border-color:#2563eb; }
-  </style>
+  <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
-<body>
+<body class="page">
 
 <div class="wrap">
 
@@ -153,7 +113,7 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
       <div class="pill">Státusz: <b><?= h($stHuman) ?></b></div>
     </div>
 
-    <div class="grid" style="margin-top:12px">
+    <div class="grid cols-split" style="margin-top:12px">
       <div class="card" style="box-shadow:none">
         <div style="font-weight:800; margin-bottom:6px">Leírás</div>
         <div><?= nl2br(h($r['description'])) ?></div>

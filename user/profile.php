@@ -110,20 +110,9 @@ function avatar_url($filename){
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Profil</title>
-  <style>
-    :root{--b:#e5e7eb;--p:#2563eb;--m:#6b7280;}
-    body{font:14px system-ui;background:#f6f7f9;margin:0}
-    .wrap{max-width:1000px;margin:0 auto;padding:18px}
-    .card{background:#fff;border:1px solid var(--b);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:14px}
-    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-    .pill{display:inline-block;padding:3px 10px;border-radius:999px;border:1px solid var(--b);background:#f9fafb;font-size:12px}
-    .muted{color:var(--m)}
-    .grid{display:grid;gap:12px}
-    @media(min-width:860px){ .grid{grid-template-columns:1fr 1fr} }
-    .title{font-size:16px;font-weight:800;margin:0 0 6px 0}
-  </style>
+  <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
-<body>
+<body class="page">
 <div class="wrap">
   <div class="card">
     <div class="row">
@@ -310,7 +299,7 @@ function avatar_url($filename){
     </div>
   </div>
 
-  <div class="grid" style="margin-top:12px">
+  <div class="grid cols-2" style="margin-top:12px">
     <div class="card">
       <div class="title">Jelvenyek</div>
       <?php if (!$badges): ?>

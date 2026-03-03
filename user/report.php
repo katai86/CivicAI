@@ -86,37 +86,9 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><?= h($caseNo) ?> – Saját ügy</title>
-  <style>
-    :root{--bg:#f5f7fb;--card:#fff;--border:#e6eaf2;--muted:#6b7280;--shadow:0 10px 30px rgba(0,0,0,.08);--r:16px;--p:#2563eb;}
-    body{margin:0;background:var(--bg);font:14px system-ui,-apple-system,Segoe UI,Roboto,Arial;color:#111827;}
-    .wrap{max-width:980px;margin:24px auto;padding:0 12px;display:grid;gap:12px;}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;}
-    .top{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;}
-    h1{font-size:18px;font-weight:900;margin:0;}
-    .meta{color:var(--muted);margin-top:6px;line-height:1.35;}
-    .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#fff;font-size:12px;}
-    .pill b{font-weight:800;}
-    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;}
-    @media (max-width: 920px){.grid{grid-template-columns:1fr;}}
-    a{color:var(--p);text-decoration:none;}
-    a:hover{text-decoration:underline;}
-    .btn{display:inline-block;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#111827;font-weight:800;text-decoration:none;}
-    .btn.primary{background:var(--p);border-color:var(--p);color:#fff;}
-    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
-    table{width:100%;border-collapse:collapse;}
-    th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border);vertical-align:top;}
-    th{font-size:12px;color:var(--muted);font-weight:800;}
-    .small{font-size:12px;color:var(--muted);}
-    .urow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-    .urow input[type=file]{max-width:320px}
-    .gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px;}
-    @media (max-width: 920px){.gallery{grid-template-columns:repeat(2,1fr);}}
-    .thumb{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff;}
-    .thumb img{width:100%;height:160px;object-fit:cover;display:block;}
-    .thumb .cap{padding:8px 10px;font-size:12px;color:var(--muted);word-break:break-word;}
-  </style>
+  <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
-<body>
+<body class="page">
 
 <div class="wrap">
   <div class="card">
@@ -131,7 +103,7 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
       <div class="pill">Státusz: <b><?= h($stHuman) ?></b></div>
     </div>
 
-    <div class="grid" style="margin-top:12px">
+    <div class="grid cols-split" style="margin-top:12px">
       <div class="card" style="box-shadow:none">
         <div style="font-weight:900;margin-bottom:6px">Leírás</div>
         <div><?= nl2br(h($r['description'])) ?></div>

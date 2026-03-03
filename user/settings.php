@@ -124,22 +124,10 @@ function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
 <html lang="hu"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Beállítások</title>
-<style>
-body{font:14px system-ui;background:#f6f7f9;margin:0;display:grid;place-items:center;min-height:100vh;padding:24px}
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:18px;min-width:360px;max-width:520px;width:100%}
-.row{display:flex;gap:10px;justify-content:space-between;align-items:center}
-input[type=text]{width:100%;box-sizing:border-box;padding:10px;border:1px solid #d1d5db;border-radius:10px;margin:6px 0}
-small{color:#6b7280}
-button{padding:10px 14px;border:0;border-radius:10px;background:#2563eb;color:#fff;cursor:pointer}
-a{color:#2563eb;text-decoration:none}
-.err{background:#fee2e2;border:1px solid #fecaca;color:#991b1b;padding:8px 10px;border-radius:10px;margin-bottom:10px}
-.ok{background:#dcfce7;border:1px solid #bbf7d0;color:#166534;padding:8px 10px;border-radius:10px;margin-bottom:10px}
-.chk{display:flex;gap:10px;align-items:flex-start;margin:10px 0}
-.chk input{width:auto;margin-top:3px}
-.hr{height:1px;background:#e5e7eb;margin:12px 0}
-.badge{display:inline-block;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:999px;padding:2px 10px;font-size:12px;color:#374151}
-</style></head>
-<body>
+<link rel="stylesheet" href="/terkep/assets/style.css">
+</head>
+<body class="page auth-page">
+<div class="auth-wrap">
 <div class="card">
   <div class="row">
     <h3 style="margin:0">Beállítások</h3>
@@ -252,5 +240,6 @@ a{color:#2563eb;text-decoration:none}
   <div style="margin-top:12px">
     <small>Adatkezelési hozzájárulás visszavonása: fiók törlése (későbbi fejlesztés), vagy írásban az üzemeltetőnek.</small>
   </div>
+</div>
 </div>
 </body></html>

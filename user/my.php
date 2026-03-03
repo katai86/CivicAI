@@ -137,27 +137,9 @@ $catLabel = [
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Saját ügyeim</title>
-  <style>
-    :root{--b:#e5e7eb;--p:#2563eb;--m:#6b7280;}
-    body{font:14px system-ui;background:#f6f7f9;margin:0}
-    header{background:#fff;border-bottom:1px solid var(--b)}
-    .wrap{max-width:1100px;margin:0 auto;padding:12px 14px}
-    .top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-    a.btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 12px;border-radius:12px;
-      text-decoration:none;border:1px solid var(--b);background:#fff;color:#111827;font-weight:700}
-    a.btn.primary{background:var(--p);border-color:var(--p);color:#fff}
-    .muted{color:var(--m)}
-    .card{background:#fff;border:1px solid var(--b);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:14px}
-    .grid{display:grid;gap:12px}
-    @media(min-width:860px){ .grid{grid-template-columns:1fr 1fr} }
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .pill{display:inline-block;padding:3px 10px;border-radius:999px;border:1px solid var(--b);background:#f9fafb;font-size:12px}
-    .title{font-size:16px;font-weight:800;margin:0 0 4px 0}
-    .small{font-size:12px;color:var(--m)}
-    .hr{height:1px;background:var(--b);margin:10px 0}
-  </style>
+  <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
-<body>
+<body class="page">
 <header>
   <div class="wrap">
     <div class="top">
@@ -382,7 +364,7 @@ $catLabel = [
       </div>
     </div>
 
-    <div class="grid">
+  <div class="grid cols-2">
       <?php foreach ($rows as $r): ?>
         <div class="card">
           <div class="row" style="justify-content:space-between">
