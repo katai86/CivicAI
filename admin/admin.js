@@ -6,6 +6,9 @@ const API_SET_STATUS  = `${BASE}/api/report_set_status.php`;
 const API_STATUS_LOG  = `${BASE}/api/report_status_log.php`;
 const API_ATTACH_LIST = `${BASE}/api/report_attachments.php`;
 const API_ATTACH_DEL  = `${BASE}/api/report_attachment_delete.php`;
+const API_STATS       = `${BASE}/api/admin_stats.php`;
+const API_USERS       = `${BASE}/api/admin_users.php`;
+const API_LAYERS      = `${BASE}/api/admin_layers.php`;
 const LOGOUT_URL      = `${BASE}/admin/logout.php`;
 // ========================================================
 
@@ -19,11 +22,17 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let markers = [];
 let markerById = new Map();
+let layerMarkers = [];
 
 function clearMarkers(){
   markers.forEach(m => map.removeLayer(m));
   markers = [];
   markerById.clear();
+}
+
+function clearLayerMarkers(){
+  layerMarkers.forEach(m => map.removeLayer(m));
+  layerMarkers = [];
 }
 
 function esc(s){
@@ -92,6 +101,26 @@ function getIcon(category){
   return badgeIcon(category);
 }
 
+function layerIcon(category){
+  const map = {
+    election: { emoji: '🗳️', border: '#ff7a00' },
+    public: { emoji: '🏥', border: '#00c48c' },
+    tourism: { emoji: '🏛️', border: '#8e44ff' },
+    trees: { emoji: '🌳', border: '#22c55e' },
+    default: { emoji: '📍', border: '#60a5fa' }
+  };
+  const info = map[category] || map.default;
+  return L.divIcon({
+    className: '',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -14],
+    html: `<div class="badge-marker" style="border-color:${info.border}">
+             <span class="badge-emoji">${info.emoji}</span>
+           </div>`
+  });
+}
+
 function catLabel(cat){
   const m = {
     road:'Úthiba / kátyú',
@@ -148,29 +177,44 @@ function reporterLine(r){
   return `<div class="meta"><b>Beküldő:</b> ${esc(name)}${level}</div>`;
 }
 
-async function loadCounts(){
-  // gyors, de érthető pillák
-  const keys = ['pending','new','approved','in_progress','solved','rejected'];
-  const counts = {};
+async function loadStats(){
+  try{
+    const j = await fetchJson(API_STATS);
+    const data = j.data || {};
+    const reports7 = data.reports_7d ?? 0;
+    const users7 = data.users_7d ?? 0;
+    const status = data.status || {};
 
-  for(const st of keys){
-    try{
-      const j = await fetchJson(`${API_LIST}?status=${encodeURIComponent(st)}`);
-      counts[st] = (j.data || []).length;
-    }catch(_){
-      counts[st] = 0;
+    const elReports = document.getElementById('kpiReports7');
+    const elUsers = document.getElementById('kpiUsers7');
+    const elStatus = document.getElementById('kpiStatus');
+    if (elReports) elReports.textContent = String(reports7);
+    if (elUsers) elUsers.textContent = String(users7);
+
+    if (elStatus){
+      const parts = [
+        `Új: ${status.new || 0}`,
+        `Publikált: ${status.approved || 0}`,
+        `Folyamatban: ${status.in_progress || 0}`,
+        `Megoldva: ${status.solved || 0}`,
+        `Elutasítva: ${status.rejected || 0}`
+      ];
+      elStatus.textContent = parts.join(' • ');
     }
-  }
 
-  const el = document.getElementById('counts');
-  el.innerHTML = `
-    <div class="pill">Új: <b>${counts.new||0}</b></div>
-    <div class="pill">Publikált: <b>${counts.approved||0}</b></div>
-    <div class="pill">Folyamatban: <b>${counts.in_progress||0}</b></div>
-    <div class="pill">Megoldva: <b>${counts.solved||0}</b></div>
-    <div class="pill">Elutasítva: <b>${counts.rejected||0}</b></div>
-    <div class="pill">Pending (régi): <b>${counts.pending||0}</b></div>
-  `;
+    const countsEl = document.getElementById('counts');
+    if (countsEl){
+      countsEl.innerHTML = `
+        <div class="pill">Új: <b>${status.new || 0}</b></div>
+        <div class="pill">Publikált: <b>${status.approved || 0}</b></div>
+        <div class="pill">Folyamatban: <b>${status.in_progress || 0}</b></div>
+        <div class="pill">Megoldva: <b>${status.solved || 0}</b></div>
+        <div class="pill">Elutasítva: <b>${status.rejected || 0}</b></div>
+      `;
+    }
+  }catch(e){
+    console.error(e);
+  }
 }
 
 async function loadLogInto(el, reportId){
@@ -242,7 +286,7 @@ async function loadAttachmentsInto(el, reportId){
 
 function renderRow(r){
   const wrap = document.createElement('div');
-  wrap.className = 'item';
+  wrap.className = 'admin-item';
 
   const optionsHtml = STATUS_OPTIONS.map(s =>
     `<option value="${s}" ${r.status===s?'selected':''}>${esc(statusLabel(s))}</option>`
@@ -260,7 +304,7 @@ function renderRow(r){
 
     <div class="btns" style="align-items:center; gap:8px; flex-wrap:wrap">
       <select data-role="status" style="min-width:220px">${optionsHtml}</select>
-      <input data-role="note" placeholder="Megjegyzés (opcionális)" style="min-width:240px; padding:10px; border:1px solid #e6eaf2; border-radius:12px">
+      <input data-role="note" placeholder="Megjegyzés (opcionális)" style="min-width:240px">
       <button data-action="save" class="primary">Mentés</button>
       <button data-action="delete" class="del">Törlés</button>
     </div>
@@ -352,19 +396,43 @@ function renderRow(r){
   return wrap;
 }
 
-async function loadData(){
-  const status = document.getElementById('status').value;
-  const list = document.getElementById('list');
-  list.textContent = 'Betöltés...';
+let reportRows = [];
 
+function filterReports(rows, q){
+  if (!q) return rows;
+  const qq = q.toLowerCase();
+  return rows.filter(r =>
+    String(r.id).includes(qq) ||
+    (r.title || '').toLowerCase().includes(qq) ||
+    (r.description || '').toLowerCase().includes(qq) ||
+    (r.reporter_name || '').toLowerCase().includes(qq) ||
+    (r.reporter_display_name || '').toLowerCase().includes(qq)
+  );
+}
+
+function renderReports(rows){
+  const list = document.getElementById('reportList');
+  list.innerHTML = '';
+  if (!rows.length){
+    list.innerHTML = `<div class="meta">Nincs találat ehhez a szűréshez.</div>`;
+    return;
+  }
+  rows.forEach(r => list.appendChild(renderRow(r)));
+}
+
+async function loadReports(){
+  const status = document.getElementById('statusFilter').value;
+  const q = (document.getElementById('reportSearch').value || '').trim();
+  const list = document.getElementById('reportList');
+  list.textContent = 'Betöltés...';
   clearMarkers();
+  clearLayerMarkers();
 
   try{
-    await loadCounts();
-
     const j = await fetchJson(`${API_LIST}?status=${encodeURIComponent(status)}`);
-    const rows = j.data || [];
-    list.innerHTML = '';
+    reportRows = j.data || [];
+    const rows = filterReports(reportRows, q);
+    renderReports(rows);
 
     for(const r of rows){
       const mk = L.marker([r.lat, r.lng], { icon: getIcon(r.category) })
@@ -380,16 +448,12 @@ async function loadData(){
 
       markers.push(mk);
       markerById.set(r.id, mk);
-
-      list.appendChild(renderRow(r));
     }
 
     if(rows.length){
       map.setView([rows[0].lat, rows[0].lng], 14);
-    }else{
-      list.innerHTML = `<div class="meta">Nincs találat ehhez a szűréshez.</div>`;
     }
-
+    loadLayerMarkers();
   }catch(e){
     console.error(e);
     list.innerHTML = '';
@@ -397,9 +461,295 @@ async function loadData(){
   }
 }
 
-document.getElementById('load')?.addEventListener('click', loadData);
-document.getElementById('refresh')?.addEventListener('click', loadData);
+async function loadUsers(){
+  const q = (document.getElementById('userSearch').value || '').trim();
+  const role = document.getElementById('userRoleFilter').value || '';
+  const active = document.getElementById('userActiveFilter').value || '';
+  const list = document.getElementById('userList');
+  list.textContent = 'Betöltés...';
 
-document.getElementById('logout')?.addEventListener('click', () => {
-  window.location.href = LOGOUT_URL;
+  try{
+    const qs = new URLSearchParams();
+    if (q) qs.set('q', q);
+    if (role) qs.set('role', role);
+    if (active !== '') qs.set('active', active);
+    const j = await fetchJson(`${API_USERS}?${qs.toString()}`);
+    const rows = j.data || [];
+    if (!rows.length){
+      list.innerHTML = '<div class="meta">Nincs találat.</div>';
+      return;
+    }
+
+    const roleOpts = ['user','civil','admin','superadmin'].map(r => `<option value="${r}">${r}</option>`).join('');
+    list.innerHTML = `
+      <table class="admin-users-table">
+        <thead>
+          <tr>
+            <th>ID</th><th>Név</th><th>E-mail</th><th>Szint</th><th>Role</th><th>Állapot</th><th>Művelet</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(u => `
+            <tr data-user="${u.id}">
+              <td>${u.id}</td>
+              <td>${esc(u.display_name || '')}</td>
+              <td>${esc(u.email || '')}</td>
+              <td>${esc(u.level || 0)}</td>
+              <td>
+                <select class="user-role">
+                  ${roleOpts}
+                </select>
+              </td>
+              <td>${Number(u.is_active) === 0 ? 'Tiltott' : 'Aktív'}</td>
+              <td>
+                <button class="soft user-toggle">${Number(u.is_active) === 0 ? 'Aktivál' : 'Tilt'}</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    list.querySelectorAll('tr[data-user]').forEach(tr => {
+      const id = Number(tr.getAttribute('data-user'));
+      const roleSel = tr.querySelector('.user-role');
+      const toggleBtn = tr.querySelector('.user-toggle');
+
+      const current = rows.find(x => Number(x.id) === id);
+      if (roleSel && current) roleSel.value = current.role || 'user';
+
+      roleSel?.addEventListener('change', async () => {
+        try{
+          await fetchJson(API_USERS, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ action:'update_role', user_id:id, role: roleSel.value })
+          });
+        }catch(e){
+          alert('Role frissítés hiba: ' + e.message);
+        }
+      });
+
+      toggleBtn?.addEventListener('click', async () => {
+        const next = (current && Number(current.is_active) === 0) ? 1 : 0;
+        try{
+          await fetchJson(API_USERS, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ action:'toggle_active', user_id:id, is_active: next })
+          });
+          await loadUsers();
+        }catch(e){
+          alert('Állapot frissítés hiba: ' + e.message);
+        }
+      });
+    });
+  }catch(e){
+    console.error(e);
+    list.innerHTML = '<div class="meta">Hiba a betöltésnél.</div>';
+  }
+}
+
+async function loadLayers(){
+  const list = document.getElementById('layerList');
+  list.textContent = 'Betöltés...';
+  try{
+    const j = await fetchJson(API_LAYERS);
+    const rows = j.data || [];
+    if (!rows.length){
+      list.innerHTML = '<div class="meta">Nincs layer.</div>';
+    } else {
+      list.innerHTML = rows.map(l => `
+        <div class="admin-item" data-layer="${l.id}">
+          <div><b>${esc(l.name)}</b> <span class="meta">(${esc(l.layer_key)})</span></div>
+          <div class="meta">${esc(l.category)} • pontok: ${l.point_count || 0}</div>
+          <div class="actions">
+            <label class="check"><input type="checkbox" class="layer-active" ${Number(l.is_active) ? 'checked' : ''}> Aktív</label>
+            <button class="soft layer-points">Pontok</button>
+            <button class="del layer-delete">Törlés</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    const sel = document.getElementById('pointLayerSelect');
+    sel.innerHTML = rows.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('');
+
+    list.querySelectorAll('[data-layer]').forEach(item => {
+      const id = Number(item.getAttribute('data-layer'));
+      item.querySelector('.layer-active')?.addEventListener('change', async (e) => {
+        const checked = e.target.checked ? 1 : 0;
+        await fetchJson(API_LAYERS, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ action:'toggle_layer', id, is_active: checked })
+        });
+        await loadLayers();
+        await loadLayerMarkers();
+      });
+      item.querySelector('.layer-points')?.addEventListener('click', async () => {
+        await loadPoints(id);
+      });
+      item.querySelector('.layer-delete')?.addEventListener('click', async () => {
+        if (!confirm('Biztos törlöd a layert és pontjait?')) return;
+        await fetchJson(API_LAYERS, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ action:'delete_layer', id })
+        });
+        await loadLayers();
+        await loadLayerMarkers();
+      });
+    });
+  }catch(e){
+    console.error(e);
+    list.innerHTML = '<div class="meta">Hiba a betöltésnél.</div>';
+  }
+}
+
+async function loadPoints(layerId){
+  const list = document.getElementById('pointList');
+  list.textContent = 'Betöltés...';
+  try{
+    const j = await fetchJson(`${API_LAYERS}?layer_id=${encodeURIComponent(layerId)}`);
+    const rows = j.data || [];
+    if (!rows.length){
+      list.innerHTML = '<div class="meta">Nincs pont.</div>';
+      return;
+    }
+    list.innerHTML = rows.map(p => `
+      <div class="admin-item" data-point="${p.id}">
+        <div><b>${esc(p.name || 'Pont')}</b></div>
+        <div class="meta">${esc(p.address || '')}</div>
+        <div class="meta">${Number(p.lat).toFixed(6)}, ${Number(p.lng).toFixed(6)}</div>
+        <div class="actions">
+          <button class="del point-delete">Törlés</button>
+        </div>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('[data-point]').forEach(item => {
+      const id = Number(item.getAttribute('data-point'));
+      item.querySelector('.point-delete')?.addEventListener('click', async () => {
+        if (!confirm('Biztos törlöd a pontot?')) return;
+        await fetchJson(API_LAYERS, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ action:'delete_point', id })
+        });
+        await loadPoints(layerId);
+      });
+    });
+  }catch(e){
+    console.error(e);
+    list.innerHTML = '<div class="meta">Hiba a betöltésnél.</div>';
+  }
+}
+
+async function loadLayerMarkers(){
+  clearLayerMarkers();
+  try{
+    const j = await fetchJson(API_LAYERS);
+    const rows = j.data || [];
+    if (!rows.length) return;
+    for (const l of rows.filter(x => Number(x.is_active) === 1)) {
+      const j2 = await fetchJson(`${API_LAYERS}?layer_id=${encodeURIComponent(l.id)}`);
+      const pts = j2.data || [];
+      for (const p of pts){
+        const mk = L.marker([p.lat, p.lng], { icon: layerIcon(l.category) })
+          .addTo(map)
+          .bindPopup(
+            `<b>${esc(l.name)}</b><br>` +
+            `${p.name ? `<b>${esc(p.name)}</b><br>` : ''}` +
+            `${p.address ? `<small>${esc(p.address)}</small>` : ''}`
+          );
+        layerMarkers.push(mk);
+      }
+    }
+  }catch(e){
+    console.warn('layer markers load failed', e);
+  }
+}
+
+function initTabs(){
+  const tabs = document.querySelectorAll('.admin-tabs .tab');
+  const bodies = {
+    reports: document.getElementById('tab-reports'),
+    users: document.getElementById('tab-users'),
+    layers: document.getElementById('tab-layers')
+  };
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-tab');
+      tabs.forEach(t => t.classList.toggle('active', t === btn));
+      Object.keys(bodies).forEach(k => {
+        bodies[k].hidden = (k !== key);
+      });
+      if (key === 'users') loadUsers();
+      if (key === 'layers') loadLayers();
+    });
+  });
+}
+
+document.getElementById('loadReports')?.addEventListener('click', loadReports);
+document.getElementById('refreshReports')?.addEventListener('click', loadReports);
+document.getElementById('reportSearch')?.addEventListener('input', () => {
+  const q = (document.getElementById('reportSearch').value || '').trim();
+  renderReports(filterReports(reportRows, q));
 });
+
+document.getElementById('refreshUsers')?.addEventListener('click', loadUsers);
+document.getElementById('userSearch')?.addEventListener('input', () => loadUsers());
+document.getElementById('userRoleFilter')?.addEventListener('change', () => loadUsers());
+document.getElementById('userActiveFilter')?.addEventListener('change', () => loadUsers());
+
+document.getElementById('createLayer')?.addEventListener('click', async () => {
+  const body = {
+    action:'create_layer',
+    layer_key: document.getElementById('layerKey').value.trim(),
+    name: document.getElementById('layerName').value.trim(),
+    category: document.getElementById('layerCategory').value,
+    is_active: document.getElementById('layerActive').checked ? 1 : 0,
+    is_temporary: document.getElementById('layerTemporary').checked ? 1 : 0,
+    visible_from: document.getElementById('layerFrom').value || null,
+    visible_to: document.getElementById('layerTo').value || null
+  };
+  try{
+    await fetchJson(API_LAYERS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    document.getElementById('layerKey').value = '';
+    document.getElementById('layerName').value = '';
+    await loadLayers();
+    await loadLayerMarkers();
+  }catch(e){
+    alert('Layer mentés hiba: ' + e.message);
+  }
+});
+
+document.getElementById('createPoint')?.addEventListener('click', async () => {
+  const body = {
+    action:'create_point',
+    layer_id: Number(document.getElementById('pointLayerSelect').value || 0),
+    name: document.getElementById('pointName').value.trim(),
+    lat: document.getElementById('pointLat').value.trim(),
+    lng: document.getElementById('pointLng').value.trim(),
+    address: document.getElementById('pointAddress').value.trim(),
+    meta_json: document.getElementById('pointMeta').value.trim() || null
+  };
+  try{
+    await fetchJson(API_LAYERS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    document.getElementById('pointName').value = '';
+    document.getElementById('pointLat').value = '';
+    document.getElementById('pointLng').value = '';
+    document.getElementById('pointAddress').value = '';
+    document.getElementById('pointMeta').value = '';
+    await loadPoints(body.layer_id);
+    await loadLayerMarkers();
+  }catch(e){
+    alert('Pont mentés hiba: ' + e.message);
+  }
+});
+
+initTabs();
+loadStats();
+loadReports();
+loadLayerMarkers();

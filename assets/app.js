@@ -5,6 +5,7 @@ const USER_ROLE = document.body?.dataset?.role || window.TERKEP_ROLE || 'guest';
 const API_LIST   = `${BASE}/api/reports_list.php`;
 const API_CREATE = `${BASE}/api/report_create.php`;
 const API_NEARBY = `${BASE}/api/reports_nearby.php`;
+const API_LAYERS = `${BASE}/api/layers_public.php`;
 const GEO_SEARCH = 'https://nominatim.openstreetmap.org/search';
 
 // ====== Map init ======
@@ -19,6 +20,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let markerLayers = []; // { marker, data }
 let searchMarker = null;
 let searchMarkerTimeout = null;
+let layerMarkers = [];
 
 // ====== Utils ======
 function esc(s){
@@ -149,6 +151,24 @@ function badgeIcon(cat){
   });
 }
 
+function layerIcon(cat){
+  const map = {
+    election: { tw: '1f5f3', color: '#ff7a00' },   // 🗳️
+    public: { tw: '1f3e5', color: '#00c48c' },     // 🏥
+    tourism: { tw: '1f3db', color: '#8e44ff' },    // 🏛️
+    trees: { tw: '1f333', color: '#22c55e' },      // 🌳
+    default: { tw: '1f4cd', color: '#60a5fa' }     // 📍
+  };
+  const info = map[cat] || map.default;
+  const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${info.tw}.svg`;
+  const html = `
+    <div class="badge-marker" style="--ring:${info.color}">
+      <img src="${url}" alt="" />
+    </div>
+  `;
+  return L.divIcon({ className:'', html, iconSize:[34,34], iconAnchor:[17,17], popupAnchor:[0,-14] });
+}
+
 // ====== Legend toggle ======
 (function initLegend(){
   const legend = document.getElementById('legend');
@@ -205,6 +225,40 @@ async function loadApprovedMarkers(){
 }
 
 loadApprovedMarkers().catch(err => console.error(err));
+
+function clearLayerMarkers(){
+  layerMarkers.forEach(m => map.removeLayer(m));
+  layerMarkers = [];
+}
+
+async function loadLayerMarkers(){
+  clearLayerMarkers();
+  try{
+    const j = await fetchJson(API_LAYERS);
+    const data = j.data || {};
+    const layers = data.layers || [];
+    const points = data.points || [];
+    if (!layers.length || !points.length) return;
+
+    const layerById = new Map(layers.map(l => [Number(l.id), l]));
+    for (const p of points){
+      const layer = layerById.get(Number(p.layer_id));
+      if (!layer) continue;
+      const mk = L.marker([p.lat, p.lng], { icon: layerIcon(layer.category) })
+        .addTo(map)
+        .bindPopup(
+          `<b>${esc(layer.name)}</b><br>` +
+          `${p.name ? `<b>${esc(p.name)}</b><br>` : ''}` +
+          `${p.address ? `<small>${esc(p.address)}</small><br>` : ''}`
+        );
+      layerMarkers.push(mk);
+    }
+  }catch(e){
+    console.warn('layer load failed', e);
+  }
+}
+
+loadLayerMarkers().catch(err => console.error(err));
 
 // ====== Address search ======
 (function initSearch(){

@@ -10,12 +10,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $email = mb_strtolower(trim($_POST['email'] ?? ''));
   $pass  = (string)($_POST['pass'] ?? '');
 
-  $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role FROM users WHERE email=:e LIMIT 1");
-  $stmt->execute([':e'=>$email]);
-  $u = $stmt->fetch();
+  try {
+    $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role, is_active FROM users WHERE email=:e LIMIT 1");
+    $stmt->execute([':e'=>$email]);
+    $u = $stmt->fetch();
+  } catch (Throwable $e) {
+    $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role FROM users WHERE email=:e LIMIT 1");
+    $stmt->execute([':e'=>$email]);
+    $u = $stmt->fetch();
+    if ($u) $u['is_active'] = 1;
+  }
 
   if (!$u || !password_verify($pass, $u['pass_hash'])) {
     $err = 'Hibás belépési adatok.';
+  } elseif (isset($u['is_active']) && (int)$u['is_active'] === 0) {
+    $err = 'A fiók le van tiltva.';
   } else {
     // MVP: is_verified-t egyelőre nem kényszerítjük (később E/D)
     session_regenerate_id(true);
