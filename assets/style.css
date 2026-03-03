@@ -32,6 +32,7 @@ body{
 }
 .topbar-inner{max-width:1200px;margin:0 auto;padding:10px 14px}
 .brand{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.brand b{display:none}
 .muted{color:var(--muted)}
 
 #mapWrap{position:relative;height:calc(100vh - 52px)}
@@ -158,10 +159,11 @@ body.intro-open #mapWrap{
 .topbtn.primary{background:var(--accent);border-color:var(--accent);color:#1b0f00;box-shadow:0 0 24px rgba(255,122,0,0.45)}
 
 .topbar-search{display:flex;gap:8px;align-items:center;flex:1;min-width:320px}
-.search-wrap{position:relative;flex:1;min-width:220px}
+.search-wrap{position:relative;flex:1;min-width:220px;width:100%}
 .topbar-search input{
   flex:1;
-  min-width:320px;
+  min-width:100%;
+  width:100%;
   padding:8px 10px;
   border:1px solid var(--border);
   border-radius:12px;
@@ -194,7 +196,7 @@ body.intro-open #mapWrap{
 .search-result:hover{background:rgba(255,255,255,0.06)}
 
 .brand-logo{
-  width:64px;height:64px;border-radius:8px;border:1px dashed var(--border);
+  width:100px;height:100px;border-radius:8px;border:1px dashed var(--border);
   display:inline-block;flex:0 0 auto;
   background:url('/terkep/assets/logo.png') center/contain no-repeat;
 }
