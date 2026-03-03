@@ -65,6 +65,13 @@ require_admin();
             <option value="all">Összes</option>
           </select>
           <input id="reportSearch" type="search" placeholder="Keresés cím/ID/szöveg">
+          <select id="reportLimit">
+            <option value="200">200</option>
+            <option value="300" selected>300</option>
+            <option value="500">500</option>
+            <option value="1000">1000</option>
+            <option value="2000">2000</option>
+          </select>
           <div class="btnbar">
             <button id="loadReports" class="primary" type="button">Betöltés</button>
             <button id="refreshReports" class="soft" type="button">Frissítés</button>

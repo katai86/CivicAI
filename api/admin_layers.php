@@ -6,6 +6,7 @@ require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   $layerId = isset($_GET['layer_id']) ? (int)$_GET['layer_id'] : 0;
+  $withPoints = !empty($_GET['with_points']);
   try {
     if ($layerId > 0) {
       $stmt = db()->prepare("SELECT id, layer_id, name, lat, lng, address, meta_json FROM map_layer_points WHERE layer_id = :id ORDER BY id DESC");
@@ -23,7 +24,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       ORDER BY l.id DESC
     ";
     $rows = db()->query($sql)->fetchAll() ?: [];
-    json_response(['ok'=>true,'data'=>$rows]);
+    if (!$withPoints) {
+      json_response(['ok'=>true,'data'=>$rows]);
+    }
+
+    $activeIds = array_map(fn($l) => (int)$l['id'], array_filter($rows, fn($l) => (int)$l['is_active'] === 1));
+    if (!$activeIds) {
+      json_response(['ok'=>true,'data'=>['layers'=>$rows,'points'=>[]]]);
+    }
+    $in = implode(',', array_fill(0, count($activeIds), '?'));
+    $stmt = db()->prepare("SELECT id, layer_id, name, lat, lng, address, meta_json FROM map_layer_points WHERE layer_id IN ($in)");
+    $stmt->execute($activeIds);
+    $points = $stmt->fetchAll() ?: [];
+    json_response(['ok'=>true,'data'=>['layers'=>$rows,'points'=>$points]]);
   } catch (Throwable $e) {
     json_response(['ok'=>false,'error'=>'Layer táblák hiányoznak. Futtasd az SQL-t.'], 500);
   }

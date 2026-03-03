@@ -309,7 +309,10 @@ function renderRow(r){
       <button data-action="delete" class="del">Törlés</button>
     </div>
 
-    <div class="meta" data-role="log" style="margin-top:8px"></div>
+    <div class="meta" style="margin-top:8px">
+      <button class="soft" data-action="log-toggle">Státusz napló</button>
+      <div data-role="log" style="margin-top:8px; display:none"></div>
+    </div>
     <div class="meta" style="margin-top:8px">
       <button class="soft" data-action="att-toggle">Csatolmányok</button>
       <div data-role="att-list" style="margin-top:8px; display:none"></div>
@@ -323,9 +326,9 @@ function renderRow(r){
     if (mk) mk.openPopup();
   });
 
-  // log betöltés azonnal (ha van)
   const logEl = wrap.querySelector('[data-role="log"]');
-  loadLogInto(logEl, r.id).catch(()=>{});
+  const logToggle = wrap.querySelector('[data-action="log-toggle"]');
+  let logLoaded = false;
 
   const attList = wrap.querySelector('[data-role="att-list"]');
   const attToggle = wrap.querySelector('[data-action="att-toggle"]');
@@ -368,6 +371,16 @@ function renderRow(r){
         return;
       }
 
+      if (action === 'log-toggle'){
+        const isOpen = logEl.style.display !== 'none';
+        logEl.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen && !logLoaded){
+          logLoaded = true;
+          await loadLogInto(logEl, r.id);
+        }
+        return;
+      }
+
       // MENTÉS (státusz)
       const st   = wrap.querySelector('[data-role="status"]').value;
       const note = wrap.querySelector('[data-role="note"]').value;
@@ -383,8 +396,9 @@ function renderRow(r){
         r.status = st;
         wrap.querySelector('[data-role="status-text"]').textContent = statusLabel(st);
 
-        // log frissítés
-        await loadLogInto(logEl, r.id);
+        if (logLoaded){
+          await loadLogInto(logEl, r.id);
+        }
 
       }catch(e){
         console.error(e);
@@ -394,20 +408,6 @@ function renderRow(r){
   });
 
   return wrap;
-}
-
-let reportRows = [];
-
-function filterReports(rows, q){
-  if (!q) return rows;
-  const qq = q.toLowerCase();
-  return rows.filter(r =>
-    String(r.id).includes(qq) ||
-    (r.title || '').toLowerCase().includes(qq) ||
-    (r.description || '').toLowerCase().includes(qq) ||
-    (r.reporter_name || '').toLowerCase().includes(qq) ||
-    (r.reporter_display_name || '').toLowerCase().includes(qq)
-  );
 }
 
 function renderReports(rows){
@@ -423,15 +423,19 @@ function renderReports(rows){
 async function loadReports(){
   const status = document.getElementById('statusFilter').value;
   const q = (document.getElementById('reportSearch').value || '').trim();
+  const limit = Number(document.getElementById('reportLimit').value || 300);
   const list = document.getElementById('reportList');
   list.textContent = 'Betöltés...';
   clearMarkers();
   clearLayerMarkers();
 
   try{
-    const j = await fetchJson(`${API_LIST}?status=${encodeURIComponent(status)}`);
-    reportRows = j.data || [];
-    const rows = filterReports(reportRows, q);
+    const qs = new URLSearchParams();
+    qs.set('status', status);
+    if (q) qs.set('q', q);
+    if (limit) qs.set('limit', String(limit));
+    const j = await fetchJson(`${API_LIST}?${qs.toString()}`);
+    const rows = j.data || [];
     renderReports(rows);
 
     for(const r of rows){
@@ -649,22 +653,23 @@ async function loadPoints(layerId){
 async function loadLayerMarkers(){
   clearLayerMarkers();
   try{
-    const j = await fetchJson(API_LAYERS);
-    const rows = j.data || [];
-    if (!rows.length) return;
-    for (const l of rows.filter(x => Number(x.is_active) === 1)) {
-      const j2 = await fetchJson(`${API_LAYERS}?layer_id=${encodeURIComponent(l.id)}`);
-      const pts = j2.data || [];
-      for (const p of pts){
-        const mk = L.marker([p.lat, p.lng], { icon: layerIcon(l.category) })
-          .addTo(map)
-          .bindPopup(
-            `<b>${esc(l.name)}</b><br>` +
-            `${p.name ? `<b>${esc(p.name)}</b><br>` : ''}` +
-            `${p.address ? `<small>${esc(p.address)}</small>` : ''}`
-          );
-        layerMarkers.push(mk);
-      }
+    const j = await fetchJson(`${API_LAYERS}?with_points=1`);
+    const data = j.data || {};
+    const layers = data.layers || [];
+    const points = data.points || [];
+    if (!layers.length || !points.length) return;
+    const layerById = new Map(layers.map(l => [Number(l.id), l]));
+    for (const p of points){
+      const l = layerById.get(Number(p.layer_id));
+      if (!l) continue;
+      const mk = L.marker([p.lat, p.lng], { icon: layerIcon(l.category) })
+        .addTo(map)
+        .bindPopup(
+          `<b>${esc(l.name)}</b><br>` +
+          `${p.name ? `<b>${esc(p.name)}</b><br>` : ''}` +
+          `${p.address ? `<small>${esc(p.address)}</small><br>` : ''}`
+        );
+      layerMarkers.push(mk);
     }
   }catch(e){
     console.warn('layer markers load failed', e);
@@ -693,10 +698,12 @@ function initTabs(){
 
 document.getElementById('loadReports')?.addEventListener('click', loadReports);
 document.getElementById('refreshReports')?.addEventListener('click', loadReports);
+let searchTimer = null;
 document.getElementById('reportSearch')?.addEventListener('input', () => {
-  const q = (document.getElementById('reportSearch').value || '').trim();
-  renderReports(filterReports(reportRows, q));
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadReports(), 300);
 });
+document.getElementById('reportLimit')?.addEventListener('change', () => loadReports());
 
 document.getElementById('refreshUsers')?.addEventListener('click', loadUsers);
 document.getElementById('userSearch')?.addEventListener('input', () => loadUsers());

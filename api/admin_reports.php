@@ -9,6 +9,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 $status = $_GET['status'] ?? 'pending';
+$q = trim((string)($_GET['q'] ?? ''));
+$limit = (int)($_GET['limit'] ?? 300);
+$offset = (int)($_GET['offset'] ?? 0);
+if ($limit < 50 || $limit > 2000) $limit = 300;
+if ($offset < 0) $offset = 0;
 
 // bővített státusz készlet + legacy
 $allowed = [
@@ -19,12 +24,22 @@ $allowed = [
 
 if (!in_array($status, $allowed, true)) $status = 'pending';
 
-$where = "";
+$whereParts = [];
 $params = [];
 
 if ($status !== 'all') {
-  $where = "WHERE status = :st";
+  $whereParts[] = "r.status = :st";
   $params[':st'] = $status;
+}
+
+$where = "";
+if ($q !== '') {
+  $whereParts[] = "(r.title LIKE :q OR r.description LIKE :q OR r.reporter_name LIKE :q OR u.display_name LIKE :q)";
+  $params[':q'] = '%' . $q . '%';
+}
+
+if ($whereParts) {
+  $where = "WHERE " . implode(" AND ", $whereParts);
 }
 
 $sql = "
@@ -40,7 +55,7 @@ $sql = "
   LEFT JOIN users u ON u.id = r.user_id
   $where
   ORDER BY r.created_at DESC
-  LIMIT 2000
+  LIMIT $limit OFFSET $offset
 ";
 
 $stmt = db()->prepare($sql);

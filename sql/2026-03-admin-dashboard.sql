@@ -7,6 +7,20 @@ ALTER TABLE users
 -- Optional index if you filter often
 CREATE INDEX idx_users_is_active ON users (is_active);
 
+-- Reports indexes for admin filtering
+-- (skip if you already added similar indexes)
+CREATE INDEX idx_reports_created ON reports (created_at);
+CREATE INDEX idx_reports_status_created ON reports (status, created_at);
+CREATE INDEX idx_reports_category_created ON reports (category, created_at);
+CREATE INDEX idx_reports_user ON reports (user_id);
+CREATE INDEX idx_reports_geo ON reports (category, lat, lng);
+
+-- Status log index for faster latest-status join
+CREATE INDEX idx_status_log_report_changed ON report_status_log (report_id, changed_at);
+
+-- Users created_at index for stats
+CREATE INDEX idx_users_created ON users (created_at);
+
 -- 2) map layers
 CREATE TABLE map_layers (
   id INT AUTO_INCREMENT PRIMARY KEY,
