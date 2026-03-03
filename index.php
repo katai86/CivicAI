@@ -16,7 +16,7 @@ $categories = [
 ];
 $cat = isset($_GET['cat']) ? (string)$_GET['cat'] : 'road';
 if (!isset($categories[$cat])) $cat = 'road';
-$lbCatMini = get_category_leaderboard('week', $cat, 3);
+$lbCatMini = get_category_leaderboard('week', $cat, 5);
 ?><!doctype html>
 <html lang="hu">
 <head>
@@ -82,7 +82,10 @@ $lbCatMini = get_category_leaderboard('week', $cat, 3);
   </div>
 
   <div class="leaderboard-mini" id="lbMini" aria-label="Toplista">
-    <div class="lb-title">Toplista (heti) – <?= htmlspecialchars($categories[$cat], ENT_QUOTES, 'UTF-8') ?></div>
+    <button class="lb-toggle" type="button" id="lbToggle" aria-expanded="true">
+      Toplista (heti) – <?= htmlspecialchars($categories[$cat], ENT_QUOTES, 'UTF-8') ?>
+    </button>
+    <div class="lb-body" id="lbBody">
     <div class="lb-tabs">
       <?php foreach ($categories as $key => $label): ?>
         <a class="lb-tab <?= $key === $cat ? 'active' : '' ?>" href="<?php echo htmlspecialchars(app_url('/?cat=' . $key), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></a>
@@ -92,10 +95,22 @@ $lbCatMini = get_category_leaderboard('week', $cat, 3);
       <div class="muted">Nincs adat.</div>
     <?php else: ?>
       <?php foreach ($lbCatMini as $i => $row): ?>
-        <div class="lb-row">#<?= (int)($i+1) ?> <?= htmlspecialchars($row['display_name'] ?: ('User #' . $row['id']), ENT_QUOTES, 'UTF-8'); ?> (<?= (int)$row['count'] ?>)</div>
+        <div class="lb-row">
+          <span>#<?= (int)($i+1) ?></span>
+          <?php if (!empty($row['avatar_filename'])): ?>
+            <img class="lb-avatar" src="<?= htmlspecialchars(app_url('/uploads/avatars/' . $row['avatar_filename']), ENT_QUOTES, 'UTF-8'); ?>" alt="">
+          <?php endif; ?>
+          <?php $lvl = (int)($row['level'] ?? 0); ?>
+          <?php if ($lvl > 0): ?>
+            <img class="lb-badge" src="<?= htmlspecialchars(app_url('/assets/badges/level_' . $lvl . '.png'), ENT_QUOTES, 'UTF-8'); ?>" alt="">
+          <?php endif; ?>
+          <span><?= htmlspecialchars($row['display_name'] ?: ('User #' . $row['id']), ENT_QUOTES, 'UTF-8'); ?></span>
+          <span class="muted">(<?= (int)$row['count'] ?>)</span>
+        </div>
       <?php endforeach; ?>
     <?php endif; ?>
     <div class="lb-foot"><a href="<?php echo htmlspecialchars(app_url('/leaderboard.php?category=' . $cat), ENT_QUOTES, 'UTF-8'); ?>">Teljes toplista</a></div>
+    </div>
   </div>
 </div>
 
@@ -110,5 +125,17 @@ $lbCatMini = get_category_leaderboard('week', $cat, 3);
   window.TERKEP_ROLE = <?php echo json_encode($role, JSON_UNESCAPED_UNICODE); ?>;
 </script>
 <script src="/terkep/assets/app.js?v=26"></script>
+<script>
+  (function initLbToggle(){
+    const btn = document.getElementById('lbToggle');
+    const body = document.getElementById('lbBody');
+    if (!btn || !body) return;
+    btn.addEventListener('click', () => {
+      const isOpen = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+      body.style.display = isOpen ? 'none' : '';
+    });
+  })();
+</script>
 </body>
 </html>

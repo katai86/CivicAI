@@ -138,10 +138,17 @@ body.intro-open #mapWrap{
   width:260px;max-width:85vw;background:#fff;border:1px solid var(--border);
   border-radius:14px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.08)
 }
-.lb-title{font-weight:800;margin-bottom:6px}
+.lb-toggle{
+  width:100%;display:flex;justify-content:space-between;align-items:center;
+  border:1px solid var(--border);background:#fff;border-radius:12px;padding:6px 8px;
+  cursor:pointer;font-weight:800;margin-bottom:6px
+}
+.lb-body{display:block}
 .lb-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
 .lb-tab{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:#fff;color:#111827;text-decoration:none;font-size:11px}
 .lb-tab.active{background:#eef2ff;border-color:#c7d2fe;color:#1e3a8a}
-.lb-row{font-size:12px;margin:4px 0}
+.lb-row{font-size:12px;margin:4px 0;display:flex;align-items:center;gap:6px}
+.lb-avatar{width:18px;height:18px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb}
+.lb-badge{width:18px;height:18px;object-fit:cover}
 .lb-foot{margin-top:6px;font-size:12px}
 .lb-foot a{color:#2563eb;text-decoration:none}
