@@ -437,6 +437,37 @@ function gps_is_precise($val): bool {
     return isset($parts[1]) && strlen($parts[1]) >= 5;
 }
 
+function normalize_name(string $name): string {
+    $name = trim(mb_strtolower($name));
+    if ($name === '') return '';
+    $trans = @iconv('UTF-8', 'ASCII//TRANSLIT', $name);
+    if ($trans !== false) $name = $trans;
+    $name = preg_replace('/[^a-z]/', '', $name);
+    return $name ?: '';
+}
+
+function load_name_days(): array {
+    $path = __DIR__ . '/data/name_days.json';
+    if (!is_file($path)) return [];
+    $raw = @file_get_contents($path);
+    if ($raw === false) return [];
+    $json = json_decode($raw, true);
+    return is_array($json) ? $json : [];
+}
+
+function names_for_today(): array {
+    $md = date('m-d');
+    $map = load_name_days();
+    $names = $map[$md] ?? [];
+    if (!is_array($names)) return [];
+    $out = [];
+    foreach ($names as $n) {
+        $norm = normalize_name((string)$n);
+        if ($norm !== '') $out[] = $norm;
+    }
+    return array_values(array_unique($out));
+}
+
 function check_category_badges(int $userId, string $category): void {
     $map = [
         'road' => ['code' => 'bad_katyuvadasz', 'need' => 10],

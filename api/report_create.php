@@ -15,6 +15,12 @@ $title    = safe_str($body['title'] ?? null, 120);
 $desc     = safe_str($body['description'] ?? null, 5000);
 $descLen  = $desc ? (function_exists('mb_strlen') ? mb_strlen($desc) : strlen($desc)) : 0;
 
+$addrZip = safe_str($body['address_zip'] ?? null, 16);
+$addrCity = safe_str($body['address_city'] ?? null, 80);
+$addrStreet = safe_str($body['address_street'] ?? null, 120);
+$addrHouse = safe_str($body['address_house'] ?? null, 20);
+$addrNote = safe_str($body['address_note'] ?? null, 160);
+
 $latRaw = $body['lat'] ?? null;
 $lngRaw = $body['lng'] ?? null;
 $lat = $latRaw;
@@ -355,12 +361,14 @@ $stmt = db()->prepare("
   INSERT INTO reports
     (category, title, description, lat, lng,
      address_approx, house_number_approx, road, suburb, city, postcode,
+     address_zip_manual, address_city_manual, address_street_manual, address_house_manual, address_note_manual,
      status, ip_hash, user_agent,
      user_id, reporter_email, reporter_name, reporter_is_anonymous,
      notify_token, notify_enabled)
   VALUES
     (:category, :title, :description, :lat, :lng,
      :address_approx, :house_number, :road, :suburb, :city, :postcode,
+     :addr_zip, :addr_city, :addr_street, :addr_house, :addr_note,
      'new', :ip_hash, :user_agent,
      :user_id, :reporter_email, :reporter_name, :reporter_is_anonymous,
      :notify_token, :notify_enabled)
@@ -377,6 +385,11 @@ $stmt->execute([
   ':suburb' => $suburb,
   ':city' => $city,
   ':postcode' => $postcode,
+  ':addr_zip' => $addrZip,
+  ':addr_city' => $addrCity,
+  ':addr_street' => $addrStreet,
+  ':addr_house' => $addrHouse,
+  ':addr_note' => $addrNote,
   ':ip_hash' => $ipHash,
   ':user_agent' => $userAgent,
   ':user_id' => $userId,

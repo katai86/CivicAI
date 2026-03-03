@@ -223,6 +223,28 @@ function openModal(latlng){
         <label>Leírás</label>
         <textarea id="mDesc" rows="4" maxlength="5000" placeholder="Írd le röviden a problémát / javaslatot"></textarea>
 
+        <h3>Cím (opcionális)</h3>
+        <div class="addr-grid">
+          <div>
+            <label>Irányítószám</label>
+            <input id="mZip" maxlength="16" placeholder="5900">
+          </div>
+          <div>
+            <label>Város</label>
+            <input id="mCity" maxlength="80" placeholder="Orosháza">
+          </div>
+          <div>
+            <label>Utca</label>
+            <input id="mStreet" maxlength="120" placeholder="Szabadság utca">
+          </div>
+          <div>
+            <label>Házszám</label>
+            <input id="mHouse" maxlength="20" placeholder="12">
+          </div>
+        </div>
+        <label>Cím megjegyzés (opcionális)</label>
+        <input id="mAddrNote" maxlength="160" placeholder="pl. kapubejáró mellett">
+
         <div class="checks">
           <label class="check">
             <input id="mAnon" type="checkbox" checked>
@@ -338,6 +360,11 @@ function openModal(latlng){
     const category = modal.querySelector('#mCategory').value;
     const title = modal.querySelector('#mTitle').value.trim();
     const description = modal.querySelector('#mDesc').value.trim();
+    const address_zip = modal.querySelector('#mZip')?.value.trim() || '';
+    const address_city = modal.querySelector('#mCity')?.value.trim() || '';
+    const address_street = modal.querySelector('#mStreet')?.value.trim() || '';
+    const address_house = modal.querySelector('#mHouse')?.value.trim() || '';
+    const address_note = modal.querySelector('#mAddrNote')?.value.trim() || '';
 
     const reporter_is_anonymous = modal.querySelector('#mAnon').checked ? 1 : 0;
     const notify_enabled = modal.querySelector('#mNotify').checked ? 1 : 0;
@@ -439,6 +466,12 @@ function openModal(latlng){
           consent_data,
           consent_share_thirdparty,
           consent_marketing,
+
+          address_zip: address_zip || null,
+          address_city: address_city || null,
+          address_street: address_street || null,
+          address_house: address_house || null,
+          address_note: address_note || null,
         })
       });
 

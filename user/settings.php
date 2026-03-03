@@ -16,6 +16,9 @@ $ok  = null;
 // aktuális adatok
 $stmt = db()->prepare("
   SELECT id, email, display_name, avatar_filename, profile_public,
+         first_name, last_name, prefix, birthdate, phone,
+         address_zip, address_city, address_street, address_house,
+         marketing_greetings_optout,
          consent_data, consent_share, consent_marketing,
          consent_version, consent_at
   FROM users
@@ -33,15 +36,43 @@ if (!$u) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $name = safe_str($_POST['name'] ?? null, 80);
+  $firstName = safe_str($_POST['first_name'] ?? null, 80);
+  $lastName = safe_str($_POST['last_name'] ?? null, 80);
+  $prefix = safe_str($_POST['prefix'] ?? null, 20);
+  $birthdate = safe_str($_POST['birthdate'] ?? null, 10);
+  $phone = safe_str($_POST['phone'] ?? null, 32);
+  if ($phone) {
+    $phone = preg_replace('/[^0-9\+]/', '', $phone);
+  }
+  $addrZip = safe_str($_POST['address_zip'] ?? null, 16);
+  $addrCity = safe_str($_POST['address_city'] ?? null, 80);
+  $addrStreet = safe_str($_POST['address_street'] ?? null, 120);
+  $addrHouse = safe_str($_POST['address_house'] ?? null, 20);
 
   // csak az opcionális hozzájárulások állíthatók itt
   $consentShare     = !empty($_POST['consent_share']) ? 1 : 0;
   $consentMarketing = !empty($_POST['consent_marketing']) ? 1 : 0;
   $profilePublic    = !empty($_POST['profile_public']) ? 1 : 0;
+  $marketingGreetings = !empty($_POST['marketing_greetings']) ? 1 : 0;
+  $marketingOptOut = $consentMarketing ? ($marketingGreetings ? 0 : 1) : 1;
+
+  if ($birthdate && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) {
+    $birthdate = null;
+  }
 
   $stmt = db()->prepare("
     UPDATE users
     SET display_name = :n,
+        first_name = :fn,
+        last_name = :ln,
+        prefix = :px,
+        birthdate = :bd,
+        phone = :ph,
+        address_zip = :az,
+        address_city = :ac,
+        address_street = :as,
+        address_house = :ah,
+        marketing_greetings_optout = :mgo,
         consent_share = :cs,
         consent_marketing = :cm,
         profile_public = :pp,
@@ -51,6 +82,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   ");
   $stmt->execute([
     ':n'  => $name,
+    ':fn' => $firstName,
+    ':ln' => $lastName,
+    ':px' => $prefix,
+    ':bd' => $birthdate,
+    ':ph' => $phone,
+    ':az' => $addrZip,
+    ':ac' => $addrCity,
+    ':as' => $addrStreet,
+    ':ah' => $addrHouse,
+    ':mgo' => $marketingOptOut,
     ':cs' => $consentShare,
     ':cm' => $consentMarketing,
     ':id' => $uid,
@@ -61,6 +102,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // frissítsük a képernyőn is
   $u['display_name'] = $name;
+  $u['first_name'] = $firstName;
+  $u['last_name'] = $lastName;
+  $u['prefix'] = $prefix;
+  $u['birthdate'] = $birthdate;
+  $u['phone'] = $phone;
+  $u['address_zip'] = $addrZip;
+  $u['address_city'] = $addrCity;
+  $u['address_street'] = $addrStreet;
+  $u['address_house'] = $addrHouse;
+  $u['marketing_greetings_optout'] = $marketingOptOut;
   $u['consent_share'] = $consentShare;
   $u['consent_marketing'] = $consentMarketing;
   $u['profile_public'] = $profilePublic;
@@ -116,6 +167,23 @@ a{color:#2563eb;text-decoration:none}
 
     <div class="hr"></div>
 
+    <label><b>Megszólítás / prefix</b> (opcionális)</label>
+    <input type="text" name="prefix" value="<?= htmlspecialchars($u['prefix'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Pl. Dr., Prof., Mr, Mrs">
+
+    <label><b>Vezetéknév</b> (opcionális)</label>
+    <input type="text" name="last_name" value="<?= htmlspecialchars($u['last_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Pl. Kovács">
+
+    <label><b>Keresztnév</b> (opcionális, névnaphoz)</label>
+    <input type="text" name="first_name" value="<?= htmlspecialchars($u['first_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Pl. Anna">
+
+    <label><b>Születésnap</b> (opcionális)</label>
+    <input type="text" name="birthdate" value="<?= htmlspecialchars($u['birthdate'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="YYYY-MM-DD">
+
+    <label><b>Telefonszám</b> (opcionális)</label>
+    <input type="text" name="phone" value="<?= htmlspecialchars($u['phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="+36...">
+
+    <div class="hr"></div>
+
     <label class="chk">
       <input type="checkbox" name="consent_share" value="1" <?= checked($u['consent_share'] ?? 0) ?>>
       <span>
@@ -132,6 +200,14 @@ a{color:#2563eb;text-decoration:none}
       </span>
     </label>
 
+    <label class="chk">
+      <input type="checkbox" name="marketing_greetings" value="1" <?= checked((int)($u['consent_marketing'] ?? 0) === 1 && (int)($u['marketing_greetings_optout'] ?? 0) === 0) ?>>
+      <span>
+        Szeretnék születésnapi / névnapi üdvözletet kapni e-mailben.
+        <br><small>A marketing hozzájárulás szükséges hozzá.</small>
+      </span>
+    </label>
+
     <div class="hr"></div>
 
     <label class="chk">
@@ -141,6 +217,14 @@ a{color:#2563eb;text-decoration:none}
         <br><small>Ha kikapcsolod, m&#225;sok nem l&#225;tj&#225;k a profilodat.</small>
       </span>
     </label>
+
+    <div class="hr"></div>
+
+    <label><b>Saját cím</b> (opcionális)</label>
+    <input type="text" name="address_zip" value="<?= htmlspecialchars($u['address_zip'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Irányítószám">
+    <input type="text" name="address_city" value="<?= htmlspecialchars($u['address_city'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Város">
+    <input type="text" name="address_street" value="<?= htmlspecialchars($u['address_street'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Utca">
+    <input type="text" name="address_house" value="<?= htmlspecialchars($u['address_house'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Házszám">
 
     <div class="hr"></div>
 
