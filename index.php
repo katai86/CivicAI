@@ -41,7 +41,10 @@ $lbCatMini = get_category_leaderboard('week', $cat, 5);
         <input id="mapSearchInput" type="search" placeholder="Cím keresése (pl. Orosháza, Szabadság utca 12)" aria-label="Cím keresés">
         <div id="mapSearchResults" class="search-results" role="listbox" aria-label="Cím találatok"></div>
       </div>
-      <button type="submit">Keresés</button>
+      <button type="submit" class="search-btn" aria-label="Keresés">
+        <span class="icon-search" aria-hidden="true"></span>
+        <span class="sr-only">Keresés</span>
+      </button>
     </form>
 
     <div class="topbar-links">
