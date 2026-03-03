@@ -21,6 +21,7 @@ let markerLayers = []; // { marker, data }
 let searchMarker = null;
 let searchMarkerTimeout = null;
 let layerMarkers = [];
+let reloadTimer = null;
 
 // ====== Utils ======
 function esc(s){
@@ -200,10 +201,27 @@ function clearMarkers(){
   markerLayers = [];
 }
 
+function getBoundsParams(){
+  const b = map.getBounds();
+  return {
+    minLat: b.getSouth(),
+    maxLat: b.getNorth(),
+    minLng: b.getWest(),
+    maxLng: b.getEast()
+  };
+}
+
 async function loadApprovedMarkers(){
   clearMarkers();
 
-  const j = await fetchJson(API_LIST);
+  const params = new URLSearchParams();
+  const b = getBoundsParams();
+  params.set('minLat', b.minLat);
+  params.set('maxLat', b.maxLat);
+  params.set('minLng', b.minLng);
+  params.set('maxLng', b.maxLng);
+  params.set('limit', '800');
+  const j = await fetchJson(`${API_LIST}?${params.toString()}`);
   const rows = j.data || [];
 
   for(const r of rows){
@@ -224,6 +242,14 @@ async function loadApprovedMarkers(){
   setLegendCount(rows.length);
 }
 
+function scheduleReload(){
+  if (reloadTimer) clearTimeout(reloadTimer);
+  reloadTimer = setTimeout(() => {
+    loadApprovedMarkers().catch(err => console.error(err));
+    loadLayerMarkers().catch(err => console.error(err));
+  }, 250);
+}
+
 loadApprovedMarkers().catch(err => console.error(err));
 
 function clearLayerMarkers(){
@@ -234,7 +260,14 @@ function clearLayerMarkers(){
 async function loadLayerMarkers(){
   clearLayerMarkers();
   try{
-    const j = await fetchJson(API_LAYERS);
+    const params = new URLSearchParams();
+    const b = getBoundsParams();
+    params.set('minLat', b.minLat);
+    params.set('maxLat', b.maxLat);
+    params.set('minLng', b.minLng);
+    params.set('maxLng', b.maxLng);
+    params.set('limit', '2000');
+    const j = await fetchJson(`${API_LAYERS}?${params.toString()}`);
     const data = j.data || {};
     const layers = data.layers || [];
     const points = data.points || [];
@@ -257,6 +290,8 @@ async function loadLayerMarkers(){
     console.warn('layer load failed', e);
   }
 }
+
+map.on('moveend zoomend', scheduleReload);
 
 loadLayerMarkers().catch(err => console.error(err));
 

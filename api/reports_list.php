@@ -4,6 +4,13 @@ require_once __DIR__ . '/../util.php';
 
 $category = isset($_GET['category']) ? trim((string)$_GET['category']) : '';
 $category = $category === 'all' ? '' : $category;
+$limit = (int)($_GET['limit'] ?? 800);
+if ($limit < 100 || $limit > 2000) $limit = 800;
+
+$minLat = $_GET['minLat'] ?? null;
+$maxLat = $_GET['maxLat'] ?? null;
+$minLng = $_GET['minLng'] ?? null;
+$maxLng = $_GET['maxLng'] ?? null;
 
 // Publikus térképen csak "élő" státuszok jelenjenek meg
 $visibleStatuses = [
@@ -21,7 +28,7 @@ $sql = "
     r.id, r.category, r.title, r.description, r.lat, r.lng,
     r.status,
     r.created_at,
-    COALESCE(l.last_changed_at, r.created_at) AS updated_at,
+    r.created_at AS updated_at,
     r.reporter_is_anonymous,
     CASE
       WHEN r.reporter_is_anonymous = 0 THEN r.reporter_name
@@ -33,11 +40,6 @@ $sql = "
     u.level AS reporter_level
   FROM reports r
   LEFT JOIN users u ON u.id = r.user_id
-  LEFT JOIN (
-    SELECT report_id, MAX(changed_at) AS last_changed_at
-    FROM report_status_log
-    GROUP BY report_id
-  ) l ON l.report_id = r.id
   WHERE r.status IN ($in)
 ";
 
@@ -45,13 +47,23 @@ if ($category !== '') {
   $sql .= " AND r.category = ?";
 }
 
-$sql .= " ORDER BY r.created_at DESC LIMIT 2000";
+if (is_numeric($minLat) && is_numeric($maxLat) && is_numeric($minLng) && is_numeric($maxLng)) {
+  $sql .= " AND r.lat BETWEEN ? AND ? AND r.lng BETWEEN ? AND ?";
+}
+
+$sql .= " ORDER BY r.created_at DESC LIMIT $limit";
 
 $stmt = db()->prepare($sql);
 
 $exec = array_values($visibleStatuses);
 if ($category !== '') {
   $exec[] = $category;
+}
+if (is_numeric($minLat) && is_numeric($maxLat) && is_numeric($minLng) && is_numeric($maxLng)) {
+  $exec[] = (float)$minLat;
+  $exec[] = (float)$maxLat;
+  $exec[] = (float)$minLng;
+  $exec[] = (float)$maxLng;
 }
 
 $stmt->execute($exec);
