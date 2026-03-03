@@ -169,6 +169,7 @@ body.intro-open #mapWrap{
 .brand-logo{
   width:28px;height:28px;border-radius:8px;border:1px dashed var(--border);
   display:inline-block;flex:0 0 auto;
+  background:url('/terkep/assets/logo.png') center/contain no-repeat;
 }
 
 /* ===== Mini leaderboard ===== */
