@@ -94,7 +94,7 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title><?= h($caseNo) ?> – Ügykövetés</title>
+  <title>Köz.Tér – <?= h($caseNo) ?></title>
   <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page">

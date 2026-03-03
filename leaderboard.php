@@ -50,7 +50,7 @@ function avatar_url($filename){
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Toplista</title>
+  <title>Köz.Tér – Toplista</title>
   <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page">
@@ -73,16 +73,14 @@ function avatar_url($filename){
     </div>
   </div>
 </header>
-<header>
-  <div class="wrap">
-    <div class="top">
-      <div style="font-weight:900;font-size:18px">Toplista (Top 10)</div>
-      <div><a href="<?= h(app_url('/')) ?>">← Vissza a térképre</a></div>
-    </div>
-  </div>
-</header>
 
 <div class="wrap">
+  <div class="card">
+    <div class="top">
+      <div style="font-weight:900;font-size:18px">Toplista (Top 10)</div>
+      <div><a class="btn" href="<?= h(app_url('/')) ?>">Térkép</a></div>
+    </div>
+  </div>
   <?php if ($uid): ?>
   <div class="card" style="margin-bottom:12px">
     <div class="title">Saját helyezésem</div>

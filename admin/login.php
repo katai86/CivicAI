@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Admin belépés</title>
+  <title>Köz.Tér – Admin belépés</title>
   <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page auth-page">

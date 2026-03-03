@@ -7,12 +7,13 @@ require_admin();
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Admin – Problématérkép</title>
+  <title>Köz.Tér – Admin</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="/terkep/assets/style.css">
+  <link rel="stylesheet" href="/terkep/assets/admin.css">
 </head>
-<body class="page admin-page">
+<body class="page admin-page" data-app-base="<?= htmlspecialchars(APP_BASE, ENT_QUOTES, 'UTF-8') ?>">
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
@@ -70,9 +71,6 @@ require_admin();
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-  window.APP_BASE = <?= json_encode(APP_BASE, JSON_UNESCAPED_UNICODE) ?>;
-</script>
 <script src="admin.js?v=5"></script>
 </body>
 </html>

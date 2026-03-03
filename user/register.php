@@ -82,7 +82,7 @@ unset($_SESSION['flash']);
 <!doctype html>
 <html lang="hu"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Regisztráció</title>
+<title>Köz.Tér – Regisztráció</title>
 <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page auth-page">

@@ -136,7 +136,7 @@ $catLabel = [
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Saját ügyeim</title>
+  <title>Köz.Tér – Saját ügyeim</title>
   <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page">
@@ -155,7 +155,7 @@ $catLabel = [
   </div>
 </header>
 
-<div class="wrap">
+  <div class="wrap">
   <div class="card">
     <div class="row" style="justify-content:space-between">
       <div>

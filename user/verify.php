@@ -12,7 +12,7 @@ if ($token !== '' && strlen($token) >= 10) {
 ?><!doctype html>
 <html lang="hu"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>E-mail ellenőrzés</title>
+<title>Köz.Tér – E-mail ellenőrzés</title>
 <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page auth-page">

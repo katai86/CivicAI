@@ -23,20 +23,29 @@ $ok = $stmt->rowCount() > 0;
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Leiratkozás</title>
-  <style>
-    body{font:14px system-ui;background:#f6f7f9;margin:0;display:grid;place-items:center;height:100vh}
-    .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:18px;max-width:520px}
-    a{color:#2563eb;text-decoration:none}
-  </style>
+  <title>Köz.Tér – Értesítések</title>
+  <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
-<body>
+<body class="page auth-page">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
+        <span class="brand-logo" aria-hidden="true"></span>
+        <b>Köz.Tér</b>
+      </a>
+      <div class="topbar-links">
+        <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Térkép</a>
+      </div>
+    </div>
+  </header>
+  <div class="auth-wrap">
   <div class="card">
     <h3 style="margin:0 0 10px">Értesítések</h3>
     <p style="margin:0 0 10px">
       <?= $ok ? 'Sikeres leiratkozás. Több e-mail értesítést nem küldünk ehhez a bejelentéshez.' : 'A token nem található, vagy már le lettél iratkozva.' ?>
     </p>
-    <a href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Vissza a térképhez</a>
+    <a class="btn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Vissza a térképhez</a>
+  </div>
   </div>
 </body>
 </html>

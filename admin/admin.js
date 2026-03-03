@@ -1,5 +1,5 @@
 // ====== Állítsd be, ha más mappában van a projekt ======
-const BASE = '/terkep';
+const BASE = document.body?.dataset?.appBase || '/terkep';
 const API_LIST        = `${BASE}/api/admin_reports.php`;
 const API_ACTION      = `${BASE}/api/admin_action.php`; // delete-hez (legacy)
 const API_SET_STATUS  = `${BASE}/api/report_set_status.php`;

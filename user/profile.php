@@ -109,7 +109,7 @@ function avatar_url($filename){
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Profil</title>
+  <title>Köz.Tér – Profil</title>
   <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page">

@@ -123,7 +123,7 @@ function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
 <!doctype html>
 <html lang="hu"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Beállítások</title>
+<title>Köz.Tér – Beállítások</title>
 <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page auth-page">

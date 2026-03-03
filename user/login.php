@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!doctype html>
 <html lang="hu"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Belépés</title>
+<title>Köz.Tér – Belépés</title>
 <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page auth-page">

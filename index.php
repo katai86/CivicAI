@@ -9,12 +9,12 @@ $rankAll = $uid ? get_user_rank('all', $uid) : null;
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Problématérkép</title>
+  <title>Köz.Tér</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
-<body>
+<body data-logged-in="<?php echo ($uid > 0 ? '1' : '0'); ?>" data-role="<?php echo htmlspecialchars($role, ENT_QUOTES, 'UTF-8'); ?>">
 
 <header class="topbar">
   <div class="topbar-inner">
@@ -81,16 +81,7 @@ $rankAll = $uid ? get_user_rank('all', $uid) : null;
 
 </div>
 
-<script>
-  window.TERKEP_LOGGED_IN = <?php echo ($uid > 0 ? 'true' : 'false'); ?>;
-  window.TERKEP_ROLE = <?php echo json_encode($role, JSON_UNESCAPED_UNICODE); ?>;
-</script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-  // JS oldalon ebből tudjuk, hogy belépett-e a felhasználó
-  window.TERKEP_LOGGED_IN = <?php echo ($uid > 0) ? 'true' : 'false'; ?>;
-  window.TERKEP_ROLE = <?php echo json_encode($role, JSON_UNESCAPED_UNICODE); ?>;
-</script>
 <script src="/terkep/assets/app.js?v=26"></script>
 </body>
 </html>
