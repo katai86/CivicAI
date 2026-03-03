@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/util.php';
 
 $lbWeek = get_leaderboard('week', 10);
@@ -53,6 +54,25 @@ function avatar_url($filename){
   <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page">
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
+      <span class="brand-logo" aria-hidden="true"></span>
+      <b>Köz.Tér</b>
+    </a>
+    <div class="topbar-links">
+      <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>
+      <?php if ($uid > 0): ?>
+        <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>">Saját ügyeim</a>
+        <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>">Beállítások</a>
+        <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>">Kilépés</a>
+      <?php else: ?>
+        <a class="topbtn" href="<?= h(app_url('/user/login.php')) ?>">Belépés</a>
+        <a class="topbtn primary" href="<?= h(app_url('/user/register.php')) ?>">Regisztráció</a>
+      <?php endif; ?>
+    </div>
+  </div>
+</header>
 <header>
   <div class="wrap">
     <div class="top">

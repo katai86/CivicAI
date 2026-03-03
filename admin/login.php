@@ -39,6 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page auth-page">
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
+      <span class="brand-logo" aria-hidden="true"></span>
+      <b>Köz.Tér – Admin</b>
+    </a>
+  </div>
+</header>
 <div class="auth-wrap">
   <div class="card">
     <h1>Admin belépés</h1>

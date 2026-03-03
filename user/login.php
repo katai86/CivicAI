@@ -33,6 +33,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page auth-page">
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
+      <span class="brand-logo" aria-hidden="true"></span>
+      <b>Köz.Tér</b>
+    </a>
+    <div class="topbar-links">
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Térkép</a>
+      <a class="topbtn primary" href="<?= htmlspecialchars(app_url('/user/register.php'), ENT_QUOTES, 'UTF-8') ?>">Regisztráció</a>
+    </div>
+  </div>
+</header>
 <div class="auth-wrap">
 <div class="card">
   <h3 style="margin:0 0 10px">Belépés</h3>

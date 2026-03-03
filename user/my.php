@@ -140,9 +140,24 @@ $catLabel = [
   <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page">
-<header>
-  <div class="wrap">
-    <div class="top">
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand brand-link" href="<?php echo h(app_url('/')); ?>">
+      <span class="brand-logo" aria-hidden="true"></span>
+      <b>Köz.Tér</b>
+    </a>
+    <div class="topbar-links">
+      <a class="topbtn" href="<?php echo h(app_url('/')); ?>">Térkép</a>
+      <a class="topbtn" href="<?php echo h(app_url('/user/profile.php?id=' . (int)$userId)); ?>">Profilom</a>
+      <a class="topbtn" href="<?php echo h(app_url('/user/settings.php')); ?>">Beállítások</a>
+      <a class="topbtn" href="<?php echo h(app_url('/user/logout.php')); ?>">Kilépés</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
       <div>
         <div style="font-weight:900;font-size:18px">Saját ügyeim</div>
         <div class="muted"><?php echo h($u['display_name'] ?: $u['email']); ?></div>
@@ -153,16 +168,11 @@ $catLabel = [
         </div>
       </div>
       <div class="row">
-        <a class="btn" href="<?php echo h(app_url('/')); ?>">Térkép</a>
-        <a class="btn" href="<?php echo h(app_url('/user/profile.php?id=' . (int)$userId)); ?>">Profilom</a>
-        <a class="btn" href="<?php echo h(app_url('/user/settings.php')); ?>">Beállítások</a>
-        <a class="btn" href="<?php echo h(app_url('/user/logout.php')); ?>">Kilépés</a>
+        <a class="btn" href="<?php echo h(app_url('/leaderboard.php')); ?>">Toplista</a>
       </div>
     </div>
   </div>
-</header>
 
-<div class="wrap">
   <?php if (!$rows): ?>
     <div class="card">
       <div class="title">Még nincs egyetlen ügyed sem.</div>

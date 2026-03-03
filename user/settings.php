@@ -127,11 +127,26 @@ function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
 <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page auth-page">
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
+      <span class="brand-logo" aria-hidden="true"></span>
+      <b>Köz.Tér</b>
+    </a>
+    <div class="topbar-links">
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Térkép</a>
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/my.php'), ENT_QUOTES, 'UTF-8') ?>">Saját ügyeim</a>
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/profile.php?id=' . (int)$uid), ENT_QUOTES, 'UTF-8') ?>">Profilom</a>
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/logout.php'), ENT_QUOTES, 'UTF-8') ?>">Kilépés</a>
+    </div>
+  </div>
+</header>
+
 <div class="auth-wrap">
 <div class="card">
   <div class="row">
     <h3 style="margin:0">Beállítások</h3>
-    <a href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">← Vissza a térképre</a>
+    <a class="btn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Térkép</a>
   </div>
 
   <?php if($ok): ?><div class="ok"><?= htmlspecialchars($ok,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>

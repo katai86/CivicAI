@@ -113,6 +113,27 @@ function avatar_url($filename){
   <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
 <body class="page">
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
+      <span class="brand-logo" aria-hidden="true"></span>
+      <b>Köz.Tér</b>
+    </a>
+    <div class="topbar-links">
+      <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>
+      <a class="topbtn" href="<?= h(app_url('/leaderboard.php')) ?>">Toplista</a>
+      <?php if (current_user_id()): ?>
+        <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>">Saját ügyeim</a>
+        <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>">Beállítások</a>
+        <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>">Kilépés</a>
+      <?php else: ?>
+        <a class="topbtn" href="<?= h(app_url('/user/login.php')) ?>">Belépés</a>
+        <a class="topbtn primary" href="<?= h(app_url('/user/register.php')) ?>">Regisztráció</a>
+      <?php endif; ?>
+    </div>
+  </div>
+</header>
+
 <div class="wrap">
   <div class="card">
     <div class="row">
