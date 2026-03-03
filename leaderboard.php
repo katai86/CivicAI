@@ -5,10 +5,29 @@ $lbWeek = get_leaderboard('week', 10);
 $lbMonth = get_leaderboard('month', 10);
 $lbAll = get_leaderboard('all', 10);
 
+$categories = [
+  'road' => 'Úthiba / kátyú',
+  'sidewalk' => 'Járda / burkolat hiba',
+  'lighting' => 'Közvilágítás',
+  'trash' => 'Szemét / illegális',
+  'green' => 'Zöldterület / veszélyes fa',
+  'traffic' => 'Közlekedés / tábla',
+  'idea' => 'Ötlet / javaslat',
+  'civil_event' => 'Civil esemény',
+];
+$cat = isset($_GET['category']) ? (string)$_GET['category'] : 'road';
+if (!isset($categories[$cat])) $cat = 'road';
+$lbCatWeek = get_category_leaderboard('week', $cat, 10);
+$lbCatMonth = get_category_leaderboard('month', $cat, 10);
+$lbCatAll = get_category_leaderboard('all', $cat, 10);
+
 $uid = current_user_id() ?: 0;
 $rankWeek = $uid ? get_user_rank('week', $uid) : null;
 $rankMonth = $uid ? get_user_rank('month', $uid) : null;
 $rankAll = $uid ? get_user_rank('all', $uid) : null;
+$rankCatWeek = $uid ? get_user_category_rank('week', $uid, $cat) : null;
+$rankCatMonth = $uid ? get_user_category_rank('month', $uid, $cat) : null;
+$rankCatAll = $uid ? get_user_category_rank('all', $uid, $cat) : null;
 
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function badge_icon_url($code){
@@ -47,6 +66,9 @@ function avatar_url($filename){
     .rank.me{background:#eef2ff;border:1px solid #c7d2fe}
     .rank .name a{color:#2563eb;text-decoration:none}
     .pill{display:inline-block;padding:3px 10px;border-radius:999px;border:1px solid var(--b);background:#f9fafb;font-size:12px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;border:1px solid var(--b);background:#fff;text-decoration:none;color:#111827;font-size:12px}
+    .tab.active{background:#eef2ff;border-color:#c7d2fe;color:#1e3a8a}
   </style>
 </head>
 <body>
@@ -157,6 +179,110 @@ function avatar_url($filename){
           <?php endforeach; ?>
         </div>
       <?php endif; ?>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div class="title">Kategória toplista (Top 10)</div>
+    <div class="tabs" style="margin-top:6px">
+      <?php foreach ($categories as $key => $label): ?>
+        <a class="tab <?= $key === $cat ? 'active' : '' ?>" href="<?= h(app_url('/leaderboard.php?category=' . $key)) ?>"><?= h($label) ?></a>
+      <?php endforeach; ?>
+    </div>
+
+    <?php if ($uid): ?>
+      <div class="row" style="gap:8px;margin:8px 0 0 0;flex-wrap:wrap">
+        <span class="pill">Helyezésem (heti): <?= $rankCatWeek ? ('#' . (int)$rankCatWeek['rank'] . ' • ' . (int)$rankCatWeek['count'] . ' db') : 'nincs adat' ?></span>
+        <span class="pill">Helyezésem (havi): <?= $rankCatMonth ? ('#' . (int)$rankCatMonth['rank'] . ' • ' . (int)$rankCatMonth['count'] . ' db') : 'nincs adat' ?></span>
+        <span class="pill">Helyezésem (összes): <?= $rankCatAll ? ('#' . (int)$rankCatAll['rank'] . ' • ' . (int)$rankCatAll['count'] . ' db') : 'nincs adat' ?></span>
+      </div>
+    <?php endif; ?>
+
+    <div class="row" style="gap:8px;margin-top:8px">
+      <div style="min-width:220px">
+        <div class="small"><b>Heti</b></div>
+        <?php if (!$lbCatWeek): ?>
+          <div class="muted">Nincs adat.</div>
+        <?php else: ?>
+          <div class="list">
+            <?php foreach ($lbCatWeek as $i => $row): ?>
+              <?php $isMe = ($uid && (int)$row['id'] === (int)$uid); ?>
+              <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
+              <div class="rank <?= $isMe ? 'me' : '' ?>">
+                <div class="name" style="display:flex;align-items:center;gap:8px">
+                  <span>#<?= (int)($i+1) ?></span>
+                  <?php if (!empty($row['avatar_filename'])): ?>
+                    <img src="<?= h(avatar_url($row['avatar_filename'])) ?>" alt="" style="width:22px;height:22px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
+                  <?php endif; ?>
+                  <?php if ($lvlBadge): ?>
+                    <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
+                  <?php endif; ?>
+                  <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
+                    <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                  </a>
+                </div>
+                <div class="muted"><?= (int)$row['count'] ?> db</div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+      <div style="min-width:220px">
+        <div class="small"><b>Havi</b></div>
+        <?php if (!$lbCatMonth): ?>
+          <div class="muted">Nincs adat.</div>
+        <?php else: ?>
+          <div class="list">
+            <?php foreach ($lbCatMonth as $i => $row): ?>
+              <?php $isMe = ($uid && (int)$row['id'] === (int)$uid); ?>
+              <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
+              <div class="rank <?= $isMe ? 'me' : '' ?>">
+                <div class="name" style="display:flex;align-items:center;gap:8px">
+                  <span>#<?= (int)($i+1) ?></span>
+                  <?php if (!empty($row['avatar_filename'])): ?>
+                    <img src="<?= h(avatar_url($row['avatar_filename'])) ?>" alt="" style="width:22px;height:22px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
+                  <?php endif; ?>
+                  <?php if ($lvlBadge): ?>
+                    <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
+                  <?php endif; ?>
+                  <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
+                    <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                  </a>
+                </div>
+                <div class="muted"><?= (int)$row['count'] ?> db</div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+      <div style="min-width:220px">
+        <div class="small"><b>Összesített</b></div>
+        <?php if (!$lbCatAll): ?>
+          <div class="muted">Nincs adat.</div>
+        <?php else: ?>
+          <div class="list">
+            <?php foreach ($lbCatAll as $i => $row): ?>
+              <?php $isMe = ($uid && (int)$row['id'] === (int)$uid); ?>
+              <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
+              <div class="rank <?= $isMe ? 'me' : '' ?>">
+                <div class="name" style="display:flex;align-items:center;gap:8px">
+                  <span>#<?= (int)($i+1) ?></span>
+                  <?php if (!empty($row['avatar_filename'])): ?>
+                    <img src="<?= h(avatar_url($row['avatar_filename'])) ?>" alt="" style="width:22px;height:22px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
+                  <?php endif; ?>
+                  <?php if ($lvlBadge): ?>
+                    <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
+                  <?php endif; ?>
+                  <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
+                    <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                  </a>
+                </div>
+                <div class="muted"><?= (int)$row['count'] ?> db</div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
     </div>
   </div>
 </div>
