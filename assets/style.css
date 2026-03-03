@@ -288,8 +288,13 @@ body.intro-open #mapWrap{
   text-decoration:none;font-size:12px
 }
 .page .tab.active{background:rgba(0,196,140,0.2);border-color:rgba(0,196,140,0.5);color:#cffff2}
-.page a{color:#7dd3fc;text-decoration:none}
+.page a{color:var(--text);text-decoration:none}
 .page a:hover{text-decoration:underline}
+.page a.link{color:#7dd3fc}
+.page a.topbtn,
+.page a.btn{color:var(--text)}
+.page a.topbtn.primary,
+.page a.btn.primary{color:#1b0f00}
 
 .page table{width:100%;border-collapse:collapse}
 .page th,.page td{text-align:left;padding:10px;border-bottom:1px solid var(--border);vertical-align:top}
