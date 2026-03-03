@@ -4,6 +4,19 @@ start_secure_session();
 $uid = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
 $role = current_user_role() ?: 'guest';
 $rankAll = $uid ? get_user_rank('all', $uid) : null;
+$categories = [
+  'road' => 'Úthiba',
+  'sidewalk' => 'Járda',
+  'lighting' => 'Közvilágítás',
+  'trash' => 'Szemét',
+  'green' => 'Zöld',
+  'traffic' => 'Közlekedés',
+  'idea' => 'Ötlet',
+  'civil_event' => 'Civil',
+];
+$cat = isset($_GET['cat']) ? (string)$_GET['cat'] : 'road';
+if (!isset($categories[$cat])) $cat = 'road';
+$lbCatMini = get_category_leaderboard('week', $cat, 3);
 ?><!doctype html>
 <html lang="hu">
 <head>
@@ -66,6 +79,23 @@ $rankAll = $uid ? get_user_rank('all', $uid) : null;
         Tipp: a jelölőre kattintva megnyílik a részletek.
       </div>
     </div>
+  </div>
+
+  <div class="leaderboard-mini" id="lbMini" aria-label="Toplista">
+    <div class="lb-title">Toplista (heti) – <?= htmlspecialchars($categories[$cat], ENT_QUOTES, 'UTF-8') ?></div>
+    <div class="lb-tabs">
+      <?php foreach ($categories as $key => $label): ?>
+        <a class="lb-tab <?= $key === $cat ? 'active' : '' ?>" href="<?php echo htmlspecialchars(app_url('/?cat=' . $key), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></a>
+      <?php endforeach; ?>
+    </div>
+    <?php if (!$lbCatMini): ?>
+      <div class="muted">Nincs adat.</div>
+    <?php else: ?>
+      <?php foreach ($lbCatMini as $i => $row): ?>
+        <div class="lb-row">#<?= (int)($i+1) ?> <?= htmlspecialchars($row['display_name'] ?: ('User #' . $row['id']), ENT_QUOTES, 'UTF-8'); ?> (<?= (int)$row['count'] ?>)</div>
+      <?php endforeach; ?>
+    <?php endif; ?>
+    <div class="lb-foot"><a href="<?php echo htmlspecialchars(app_url('/leaderboard.php?category=' . $cat), ENT_QUOTES, 'UTF-8'); ?>">Teljes toplista</a></div>
   </div>
 </div>
 

@@ -57,6 +57,25 @@ $rankWeek = get_user_rank('week', (int)$u['id']);
 $rankMonth = get_user_rank('month', (int)$u['id']);
 $rankAll = get_user_rank('all', (int)$u['id']);
 
+$categories = [
+  'road' => 'Úthiba / kátyú',
+  'sidewalk' => 'Járda / burkolat hiba',
+  'lighting' => 'Közvilágítás',
+  'trash' => 'Szemét / illegális',
+  'green' => 'Zöldterület / veszélyes fa',
+  'traffic' => 'Közlekedés / tábla',
+  'idea' => 'Ötlet / javaslat',
+  'civil_event' => 'Civil esemény',
+];
+$cat = isset($_GET['cat']) ? (string)$_GET['cat'] : 'road';
+if (!isset($categories[$cat])) $cat = 'road';
+$lbCatWeek = get_category_leaderboard('week', $cat, 10);
+$lbCatMonth = get_category_leaderboard('month', $cat, 10);
+$lbCatAll = get_category_leaderboard('all', $cat, 10);
+$rankCatWeek = get_user_category_rank('week', (int)$u['id'], $cat);
+$rankCatMonth = get_user_category_rank('month', (int)$u['id'], $cat);
+$rankCatAll = get_user_category_rank('all', (int)$u['id'], $cat);
+
 $reports = [];
 try {
   $stmt = db()->prepare("
@@ -197,6 +216,93 @@ function avatar_url($filename){
                 <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
               </a>
               <span class="muted">(<?= (int)$row['points'] ?> XP)</span>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div class="title">Kategória toplista (Top 10)</div>
+    <div class="row" style="gap:6px;margin:8px 0 0 0;flex-wrap:wrap">
+      <?php foreach ($categories as $key => $label): ?>
+        <a class="pill" href="<?= h(app_url('/user/profile.php?id=' . (int)$u['id'] . '&cat=' . $key)) ?>" style="<?= $key === $cat ? 'border-color:#c7d2fe;background:#eef2ff;color:#1e3a8a' : '' ?>">
+          <?= h($label) ?>
+        </a>
+      <?php endforeach; ?>
+    </div>
+    <div class="row" style="gap:8px;margin:8px 0 0 0;flex-wrap:wrap">
+      <span class="pill">Helyezésem (heti): <?= $rankCatWeek ? ('#' . (int)$rankCatWeek['rank'] . ' • ' . (int)$rankCatWeek['count'] . ' db') : 'nincs adat' ?></span>
+      <span class="pill">Helyezésem (havi): <?= $rankCatMonth ? ('#' . (int)$rankCatMonth['rank'] . ' • ' . (int)$rankCatMonth['count'] . ' db') : 'nincs adat' ?></span>
+      <span class="pill">Helyezésem (összes): <?= $rankCatAll ? ('#' . (int)$rankCatAll['rank'] . ' • ' . (int)$rankCatAll['count'] . ' db') : 'nincs adat' ?></span>
+    </div>
+    <div class="row" style="gap:8px;margin-top:8px">
+      <div style="min-width:220px">
+        <div class="small"><b>Heti</b></div>
+        <?php if (!$lbCatWeek): ?>
+          <div class="muted">Nincs adat.</div>
+        <?php else: ?>
+          <?php foreach ($lbCatWeek as $i => $row): ?>
+            <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
+            <div class="small" style="display:flex;align-items:center;gap:8px">
+              <span>#<?= (int)($i+1) ?></span>
+              <?php if (!empty($row['avatar_filename'])): ?>
+                <img src="<?= h(avatar_url($row['avatar_filename'])) ?>" alt="" style="width:22px;height:22px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
+              <?php endif; ?>
+              <?php if ($lvlBadge): ?>
+                <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
+              <?php endif; ?>
+              <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
+                <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+              </a>
+              <span class="muted">(<?= (int)$row['count'] ?> db)</span>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+      <div style="min-width:220px">
+        <div class="small"><b>Havi</b></div>
+        <?php if (!$lbCatMonth): ?>
+          <div class="muted">Nincs adat.</div>
+        <?php else: ?>
+          <?php foreach ($lbCatMonth as $i => $row): ?>
+            <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
+            <div class="small" style="display:flex;align-items:center;gap:8px">
+              <span>#<?= (int)($i+1) ?></span>
+              <?php if (!empty($row['avatar_filename'])): ?>
+                <img src="<?= h(avatar_url($row['avatar_filename'])) ?>" alt="" style="width:22px;height:22px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
+              <?php endif; ?>
+              <?php if ($lvlBadge): ?>
+                <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
+              <?php endif; ?>
+              <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
+                <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+              </a>
+              <span class="muted">(<?= (int)$row['count'] ?> db)</span>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+      <div style="min-width:220px">
+        <div class="small"><b>Összesített</b></div>
+        <?php if (!$lbCatAll): ?>
+          <div class="muted">Nincs adat.</div>
+        <?php else: ?>
+          <?php foreach ($lbCatAll as $i => $row): ?>
+            <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
+            <div class="small" style="display:flex;align-items:center;gap:8px">
+              <span>#<?= (int)($i+1) ?></span>
+              <?php if (!empty($row['avatar_filename'])): ?>
+                <img src="<?= h(avatar_url($row['avatar_filename'])) ?>" alt="" style="width:22px;height:22px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
+              <?php endif; ?>
+              <?php if ($lvlBadge): ?>
+                <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
+              <?php endif; ?>
+              <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
+                <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+              </a>
+              <span class="muted">(<?= (int)$row['count'] ?> db)</span>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>

@@ -131,3 +131,17 @@ body.intro-open #mapWrap{
 .topbar-links{display:flex;gap:8px;align-items:center}
 .topbtn{display:inline-flex;align-items:center;justify-content:center;padding:8px 10px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#111827;font-weight:700;text-decoration:none}
 .topbtn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+
+/* ===== Mini leaderboard ===== */
+.leaderboard-mini{
+  position:absolute;left:14px;bottom:14px;z-index:800;
+  width:260px;max-width:85vw;background:#fff;border:1px solid var(--border);
+  border-radius:14px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.08)
+}
+.lb-title{font-weight:800;margin-bottom:6px}
+.lb-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.lb-tab{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:#fff;color:#111827;text-decoration:none;font-size:11px}
+.lb-tab.active{background:#eef2ff;border-color:#c7d2fe;color:#1e3a8a}
+.lb-row{font-size:12px;margin:4px 0}
+.lb-foot{margin-top:6px;font-size:12px}
+.lb-foot a{color:#2563eb;text-decoration:none}
