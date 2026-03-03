@@ -126,7 +126,7 @@ function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
 <title>Köz.Tér – Beállítások</title>
 <link rel="stylesheet" href="/terkep/assets/style.css">
 </head>
-<body class="page auth-page">
+<body class="page">
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
@@ -141,8 +141,7 @@ function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
     </div>
   </div>
 </header>
-
-<div class="auth-wrap">
+<div class="wrap">
 <div class="card">
   <div class="row">
     <h3 style="margin:0">Beállítások</h3>
