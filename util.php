@@ -285,18 +285,50 @@ function get_leaderboard(string $period, int $limit = 10): array {
 
     try {
         $sql = "
-            SELECT u.id, u.display_name, u.level, SUM(x.points) AS points
+            SELECT u.id, u.display_name, u.level, u.avatar_filename, SUM(x.points) AS points
             FROM user_xp_log x
             JOIN users u ON u.id = x.user_id
             WHERE COALESCE(u.profile_public, 1) = 1
             $where
-            GROUP BY u.id, u.display_name, u.level
+            GROUP BY u.id, u.display_name, u.level, u.avatar_filename
             HAVING points > 0
             ORDER BY points DESC
             LIMIT $limit
         ";
         $stmt = db()->prepare($sql);
         $stmt->execute();
+        return $stmt->fetchAll() ?: [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function get_category_leaderboard(string $period, string $category, int $limit = 10): array {
+    $limit = max(1, min(50, $limit));
+    if ($category === '') return [];
+
+    $where = '';
+    if ($period === 'week') {
+        $where = "AND r.created_at >= (NOW() - INTERVAL 7 DAY)";
+    } elseif ($period === 'month') {
+        $where = "AND r.created_at >= (NOW() - INTERVAL 1 MONTH)";
+    }
+
+    try {
+        $sql = "
+            SELECT u.id, u.display_name, u.level, u.avatar_filename, COUNT(*) AS count
+            FROM reports r
+            JOIN users u ON u.id = r.user_id
+            WHERE COALESCE(u.profile_public, 1) = 1
+              AND r.category = :cat
+              $where
+            GROUP BY u.id, u.display_name, u.level, u.avatar_filename
+            HAVING count > 0
+            ORDER BY count DESC
+            LIMIT $limit
+        ";
+        $stmt = db()->prepare($sql);
+        $stmt->execute([':cat' => $category]);
         return $stmt->fetchAll() ?: [];
     } catch (Throwable $e) {
         return [];
@@ -344,6 +376,54 @@ function get_user_rank(string $period, int $userId): ?array {
         if ($rank <= 0) return null;
 
         return ['rank' => $rank, 'points' => $points];
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+function get_user_category_rank(string $period, int $userId, string $category): ?array {
+    if ($userId <= 0 || $category === '') return null;
+    $where = '';
+    if ($period === 'week') {
+        $where = "AND r.created_at >= (NOW() - INTERVAL 7 DAY)";
+    } elseif ($period === 'month') {
+        $where = "AND r.created_at >= (NOW() - INTERVAL 1 MONTH)";
+    }
+
+    try {
+        $sqlCount = "
+            SELECT COUNT(*) AS count
+            FROM reports r
+            JOIN users u ON u.id = r.user_id
+            WHERE r.user_id = :uid
+              AND r.category = :cat
+              AND (COALESCE(u.profile_public, 1) = 1 OR u.id = :uid)
+              $where
+        ";
+        $stmt = db()->prepare($sqlCount);
+        $stmt->execute([':uid' => $userId, ':cat' => $category]);
+        $count = (int)($stmt->fetchColumn() ?: 0);
+        if ($count <= 0) return null;
+
+        $sqlRank = "
+            SELECT COUNT(*) + 1 AS rank
+            FROM (
+              SELECT u.id, COUNT(*) AS count
+              FROM reports r
+              JOIN users u ON u.id = r.user_id
+              WHERE (COALESCE(u.profile_public, 1) = 1 OR u.id = :uid)
+                AND r.category = :cat
+                $where
+              GROUP BY u.id
+              HAVING count > :c
+            ) t
+        ";
+        $stmt = db()->prepare($sqlRank);
+        $stmt->execute([':uid' => $userId, ':cat' => $category, ':c' => $count]);
+        $rank = (int)($stmt->fetchColumn() ?: 0);
+        if ($rank <= 0) return null;
+
+        return ['rank' => $rank, 'count' => $count];
     } catch (Throwable $e) {
         return null;
     }

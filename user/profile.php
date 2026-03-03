@@ -80,6 +80,10 @@ function badge_icon_url($code){
   if (is_file($pathUpper)) return app_url('/assets/badges/' . $code . '.PNG');
   return null;
 }
+function avatar_url($filename){
+  if (!$filename) return null;
+  return app_url('/uploads/avatars/' . $filename);
+}
 ?>
 <!doctype html>
 <html lang="hu">
@@ -134,12 +138,19 @@ function badge_icon_url($code){
           <div class="muted">Nincs adat.</div>
         <?php else: ?>
           <?php foreach ($lbWeek as $i => $row): ?>
-            <div class="small">
-              #<?= (int)($i+1) ?>
+            <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
+            <div class="small" style="display:flex;align-items:center;gap:8px">
+              <span>#<?= (int)($i+1) ?></span>
+              <?php if (!empty($row['avatar_filename'])): ?>
+                <img src="<?= h(avatar_url($row['avatar_filename'])) ?>" alt="" style="width:22px;height:22px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
+              <?php endif; ?>
+              <?php if ($lvlBadge): ?>
+                <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
+              <?php endif; ?>
               <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
                 <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
               </a>
-              (<?= (int)$row['points'] ?> XP)
+              <span class="muted">(<?= (int)$row['points'] ?> XP)</span>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>
@@ -150,12 +161,19 @@ function badge_icon_url($code){
           <div class="muted">Nincs adat.</div>
         <?php else: ?>
           <?php foreach ($lbMonth as $i => $row): ?>
-            <div class="small">
-              #<?= (int)($i+1) ?>
+            <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
+            <div class="small" style="display:flex;align-items:center;gap:8px">
+              <span>#<?= (int)($i+1) ?></span>
+              <?php if (!empty($row['avatar_filename'])): ?>
+                <img src="<?= h(avatar_url($row['avatar_filename'])) ?>" alt="" style="width:22px;height:22px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
+              <?php endif; ?>
+              <?php if ($lvlBadge): ?>
+                <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
+              <?php endif; ?>
               <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
                 <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
               </a>
-              (<?= (int)$row['points'] ?> XP)
+              <span class="muted">(<?= (int)$row['points'] ?> XP)</span>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>
@@ -166,12 +184,19 @@ function badge_icon_url($code){
           <div class="muted">Nincs adat.</div>
         <?php else: ?>
           <?php foreach ($lbAll as $i => $row): ?>
-            <div class="small">
-              #<?= (int)($i+1) ?>
+            <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
+            <div class="small" style="display:flex;align-items:center;gap:8px">
+              <span>#<?= (int)($i+1) ?></span>
+              <?php if (!empty($row['avatar_filename'])): ?>
+                <img src="<?= h(avatar_url($row['avatar_filename'])) ?>" alt="" style="width:22px;height:22px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
+              <?php endif; ?>
+              <?php if ($lvlBadge): ?>
+                <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
+              <?php endif; ?>
               <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
                 <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
               </a>
-              (<?= (int)$row['points'] ?> XP)
+              <span class="muted">(<?= (int)$row['points'] ?> XP)</span>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>

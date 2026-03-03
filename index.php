@@ -3,6 +3,7 @@ require_once __DIR__ . '/util.php';
 start_secure_session();
 $uid = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
 $role = current_user_role() ?: 'guest';
+$rankAll = $uid ? get_user_rank('all', $uid) : null;
 ?><!doctype html>
 <html lang="hu">
 <head>
@@ -23,6 +24,11 @@ $role = current_user_role() ?: 'guest';
     </div>
 
     <div class="topbar-links">
+      <?php if ($uid > 0 && $rankAll): ?>
+        <span class="topbtn">
+          Helyezésem: <b>#<?= (int)$rankAll['rank'] ?></b> (<?= (int)$rankAll['points'] ?> XP)
+        </span>
+      <?php endif; ?>
       <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/leaderboard.php'), ENT_QUOTES, 'UTF-8'); ?>">Toplista</a>
       <?php if ($uid > 0): ?>
         <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/my.php'), ENT_QUOTES, 'UTF-8'); ?>">Saját ügyeim</a>
