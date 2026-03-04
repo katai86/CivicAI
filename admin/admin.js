@@ -427,7 +427,6 @@ async function loadReports(){
   const list = document.getElementById('reportList');
   list.textContent = 'Betöltés...';
   clearMarkers();
-  clearLayerMarkers();
 
   try{
     const qs = new URLSearchParams();
@@ -457,7 +456,6 @@ async function loadReports(){
     if(rows.length){
       map.setView([rows[0].lat, rows[0].lng], 14);
     }
-    loadLayerMarkers();
   }catch(e){
     console.error(e);
     list.innerHTML = '';
@@ -691,7 +689,14 @@ function initTabs(){
         bodies[k].hidden = (k !== key);
       });
       if (key === 'users') loadUsers();
-      if (key === 'layers') loadLayers();
+      if (key === 'layers') {
+        clearMarkers();
+        loadLayers();
+        loadLayerMarkers();
+      }
+      if (key === 'reports') {
+        clearLayerMarkers();
+      }
     });
   });
 }
@@ -759,4 +764,3 @@ document.getElementById('createPoint')?.addEventListener('click', async () => {
 initTabs();
 loadStats();
 loadReports();
-loadLayerMarkers();
