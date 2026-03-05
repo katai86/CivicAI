@@ -172,9 +172,9 @@ function reporterLine(r){
   if (!name) return '';
   const level = r.reporter_level ? ` • ${esc(r.reporter_level)}` : '';
   if (r.reporter_profile_public && r.reporter_user_id) {
-    return `<div class="meta"><b>Beküldő:</b> <a href="${BASE}/user/profile.php?id=${encodeURIComponent(r.reporter_user_id)}" target="_blank">${esc(name)}</a>${level}</div>`;
+    return `<div class="text-secondary"><b>Beküldő:</b> <a href="${BASE}/user/profile.php?id=${encodeURIComponent(r.reporter_user_id)}" target="_blank">${esc(name)}</a>${level}</div>`;
   }
-  return `<div class="meta"><b>Beküldő:</b> ${esc(name)}${level}</div>`;
+  return `<div class="text-secondary"><b>Beküldő:</b> ${esc(name)}${level}</div>`;
 }
 
 async function loadStats(){
@@ -205,11 +205,11 @@ async function loadStats(){
     const countsEl = document.getElementById('counts');
     if (countsEl){
       countsEl.innerHTML = `
-        <div class="pill">Új: <b>${status.new || 0}</b></div>
-        <div class="pill">Publikált: <b>${status.approved || 0}</b></div>
-        <div class="pill">Folyamatban: <b>${status.in_progress || 0}</b></div>
-        <div class="pill">Megoldva: <b>${status.solved || 0}</b></div>
-        <div class="pill">Elutasítva: <b>${status.rejected || 0}</b></div>
+        <span class="badge text-bg-secondary">Új: <b>${status.new || 0}</b></span>
+        <span class="badge text-bg-secondary">Publikált: <b>${status.approved || 0}</b></span>
+        <span class="badge text-bg-secondary">Folyamatban: <b>${status.in_progress || 0}</b></span>
+        <span class="badge text-bg-secondary">Megoldva: <b>${status.solved || 0}</b></span>
+        <span class="badge text-bg-secondary">Elutasítva: <b>${status.rejected || 0}</b></span>
       `;
     }
   }catch(e){
@@ -286,36 +286,43 @@ async function loadAttachmentsInto(el, reportId){
 
 function renderRow(r){
   const wrap = document.createElement('div');
-  wrap.className = 'admin-item';
+  wrap.className = 'card card-outline card-primary admin-item';
 
   const optionsHtml = STATUS_OPTIONS.map(s =>
     `<option value="${s}" ${r.status===s?'selected':''}>${esc(statusLabel(s))}</option>`
   ).join('');
 
   wrap.innerHTML = `
-    <b>#${r.id}</b> <span class="meta">(<span data-role="status-text">${esc(statusLabel(r.status))}</span>)</span><br>
-    ${r.case_no ? `<div class="meta"><b>Ügyszám:</b> <span data-role="case">${esc(r.case_no)}</span></div>` : ''}
-    <b>${esc(catLabel(r.category))}</b><br>
-    ${r.title ? `<div>${esc(r.title)}</div>` : ''}
-    <div>${esc(r.description)}</div>
-    ${r.address_approx ? `<div class="meta">${esc(r.address_approx)}</div>` : ''}
-    ${reporterLine(r)}
-    <div class="meta">${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)} • ${esc(r.created_at || '')}</div>
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <b>#${r.id}</b>
+          <span class="text-secondary ms-2">(<span data-role="status-text">${esc(statusLabel(r.status))}</span>)</span>
+        </div>
+        ${r.case_no ? `<span class="badge text-bg-secondary">Ügyszám: <span data-role="case">${esc(r.case_no)}</span></span>` : ''}
+      </div>
+      <div class="fw-semibold mt-2">${esc(catLabel(r.category))}</div>
+      ${r.title ? `<div class="mt-1">${esc(r.title)}</div>` : ''}
+      <div class="text-secondary mt-1">${esc(r.description)}</div>
+      ${r.address_approx ? `<div class="text-secondary mt-1">${esc(r.address_approx)}</div>` : ''}
+      ${reporterLine(r)}
+      <div class="text-secondary mt-1">${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)} • ${esc(r.created_at || '')}</div>
 
-    <div class="btns" style="align-items:center; gap:8px; flex-wrap:wrap">
-      <select data-role="status" style="min-width:220px">${optionsHtml}</select>
-      <input data-role="note" placeholder="Megjegyzés (opcionális)" style="min-width:240px">
-      <button data-action="save" class="primary">Mentés</button>
-      <button data-action="delete" class="del">Törlés</button>
-    </div>
+      <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+        <select data-role="status" class="form-select form-select-sm" style="min-width:220px">${optionsHtml}</select>
+        <input data-role="note" class="form-control form-control-sm" placeholder="Megjegyzés (opcionális)" style="min-width:240px">
+        <button data-action="save" class="btn btn-primary btn-sm">Mentés</button>
+        <button data-action="delete" class="btn btn-outline-danger btn-sm">Törlés</button>
+      </div>
 
-    <div class="meta" style="margin-top:8px">
-      <button class="soft" data-action="log-toggle">Státusz napló</button>
-      <div data-role="log" style="margin-top:8px; display:none"></div>
-    </div>
-    <div class="meta" style="margin-top:8px">
-      <button class="soft" data-action="att-toggle">Csatolmányok</button>
-      <div data-role="att-list" style="margin-top:8px; display:none"></div>
+      <div class="mt-2">
+        <button class="btn btn-outline-secondary btn-sm" data-action="log-toggle">Státusz napló</button>
+        <div data-role="log" class="text-secondary mt-2" style="display:none"></div>
+      </div>
+      <div class="mt-2">
+        <button class="btn btn-outline-secondary btn-sm" data-action="att-toggle">Csatolmányok</button>
+        <div data-role="att-list" class="text-secondary mt-2" style="display:none"></div>
+      </div>
     </div>
   `;
 
@@ -414,7 +421,7 @@ function renderReports(rows){
   const list = document.getElementById('reportList');
   list.innerHTML = '';
   if (!rows.length){
-    list.innerHTML = `<div class="meta">Nincs találat ehhez a szűréshez.</div>`;
+    list.innerHTML = `<div class="text-secondary">Nincs találat ehhez a szűréshez.</div>`;
     return;
   }
   rows.forEach(r => list.appendChild(renderRow(r)));
@@ -478,13 +485,13 @@ async function loadUsers(){
     const j = await fetchJson(`${API_USERS}?${qs.toString()}`);
     const rows = j.data || [];
     if (!rows.length){
-      list.innerHTML = '<div class="meta">Nincs találat.</div>';
+    list.innerHTML = '<div class="text-secondary">Nincs találat.</div>';
       return;
     }
 
     const roleOpts = ['user','civil','admin','superadmin'].map(r => `<option value="${r}">${r}</option>`).join('');
     list.innerHTML = `
-      <table class="admin-users-table">
+      <table class="table table-sm table-hover align-middle mb-0">
         <thead>
           <tr>
             <th>ID</th><th>Név</th><th>E-mail</th><th>Szint</th><th>Role</th><th>Állapot</th><th>Művelet</th>
@@ -548,7 +555,7 @@ async function loadUsers(){
     });
   }catch(e){
     console.error(e);
-    list.innerHTML = '<div class="meta">Hiba a betöltésnél.</div>';
+    list.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
   }
 }
 
@@ -559,7 +566,7 @@ async function loadLayers(){
     const j = await fetchJson(API_LAYERS);
     const rows = j.data || [];
     if (!rows.length){
-      list.innerHTML = '<div class="meta">Nincs layer.</div>';
+      list.innerHTML = '<div class="text-secondary">Nincs layer.</div>';
     } else {
       list.innerHTML = rows.map(l => `
         <div class="admin-item" data-layer="${l.id}">
@@ -605,7 +612,7 @@ async function loadLayers(){
     });
   }catch(e){
     console.error(e);
-    list.innerHTML = '<div class="meta">Hiba a betöltésnél.</div>';
+    list.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
   }
 }
 
@@ -616,7 +623,7 @@ async function loadPoints(layerId){
     const j = await fetchJson(`${API_LAYERS}?layer_id=${encodeURIComponent(layerId)}`);
     const rows = j.data || [];
     if (!rows.length){
-      list.innerHTML = '<div class="meta">Nincs pont.</div>';
+      list.innerHTML = '<div class="text-secondary">Nincs pont.</div>';
       return;
     }
     list.innerHTML = rows.map(p => `
@@ -644,7 +651,7 @@ async function loadPoints(layerId){
     });
   }catch(e){
     console.error(e);
-    list.innerHTML = '<div class="meta">Hiba a betöltésnél.</div>';
+    list.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
   }
 }
 
@@ -675,14 +682,15 @@ async function loadLayerMarkers(){
 }
 
 function initTabs(){
-  const tabs = document.querySelectorAll('.admin-tabs .tab');
+  const tabs = document.querySelectorAll('.tab[data-tab]');
   const bodies = {
     reports: document.getElementById('tab-reports'),
     users: document.getElementById('tab-users'),
     layers: document.getElementById('tab-layers')
   };
   tabs.forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       const key = btn.getAttribute('data-tab');
       tabs.forEach(t => t.classList.toggle('active', t === btn));
       Object.keys(bodies).forEach(k => {

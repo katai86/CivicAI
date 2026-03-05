@@ -1,46 +1,9 @@
-.admin-dashboard{padding:12px;display:grid;gap:12px}
-.admin-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.kpi{display:grid;gap:6px}
-.kpi-label{color:var(--muted);font-size:12px}
-.kpi-value{font-size:20px;font-weight:800}
-
-.admin-content{display:grid;grid-template-columns:1fr 520px;gap:12px}
-.admin-map{height:calc(100vh - 240px);min-height:520px}
-.admin-panel{display:flex;flex-direction:column;gap:10px}
-
-.admin-tabs{display:flex;gap:8px}
-.admin-tabs .tab{
-  border:1px solid var(--border);background:var(--card-2);color:var(--text);
-  border-radius:999px;padding:6px 12px;font-weight:700;cursor:pointer;
-}
-.admin-tabs .tab.active{background:rgba(0,196,140,0.2);border-color:rgba(0,196,140,0.5)}
-
-.admin-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.admin-toolbar input,
-.admin-toolbar select{min-width:160px}
-
-.admin-list{padding:8px;max-height:52vh;overflow:auto;display:grid;gap:8px}
-.admin-item{border:1px solid var(--border);border-radius:14px;padding:12px;background:var(--card-2)}
-.admin-item:hover{box-shadow:var(--shadow)}
-.admin-item .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
-.badge-emoji{font-size:16px;line-height:1}
-
-.admin-subtitle{font-weight:800;margin-top:6px}
-
+.admin-map{height:calc(100vh - 260px);min-height:420px}
+.admin-list{max-height:52vh;overflow:auto;display:grid;gap:10px}
+.admin-item{overflow:hidden}
 .counts{display:flex;gap:8px;flex-wrap:wrap}
 .counts .pill{font-size:12px}
-
-.btnbar{display:flex;gap:8px}
-button.ok{background:#16a34a;color:#fff}
-button.no{background:#ef4444;color:#fff}
-button.del{background:var(--card-2)}
-
-.admin-users-table{width:100%;border-collapse:collapse}
-.admin-users-table th,.admin-users-table td{padding:8px;border-bottom:1px solid var(--border);text-align:left}
-.admin-users-table th{font-size:12px;color:var(--muted)}
-
-@media (max-width: 1100px){
-  .admin-kpis{grid-template-columns:1fr}
-  .admin-content{grid-template-columns:1fr}
+.badge-emoji{font-size:16px;line-height:1}
+@media (max-width: 992px){
   .admin-map{height:55vh;min-height:360px}
 }
