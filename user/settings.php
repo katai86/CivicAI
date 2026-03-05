@@ -138,6 +138,7 @@ function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
       <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Térkép</a>
       <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/my.php'), ENT_QUOTES, 'UTF-8') ?>">Saját ügyeim</a>
       <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/profile.php?id=' . (int)$uid), ENT_QUOTES, 'UTF-8') ?>">Profilom</a>
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/friends.php'), ENT_QUOTES, 'UTF-8') ?>">Barátok</a>
       <?php if ($role === 'govuser' || $role === 'admin' || $role === 'superadmin'): ?>
         <a class="topbtn" href="<?= htmlspecialchars(app_url('/gov/index.php'), ENT_QUOTES, 'UTF-8') ?>">Közigazgatási</a>
       <?php endif; ?>

@@ -29,6 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $email = safe_str($param('email'), 190);
   $firstName = safe_str($param('first_name'), 80);
   $lastName = safe_str($param('last_name'), 80);
+  $phone = safe_str($param('phone'), 40);
+  $mediaUrl = safe_str($param('media_url'), 255);
 
   if (!$serviceCode || !in_array($serviceCode, $allowedCats, true)) {
     http_response_code(400);
@@ -52,6 +54,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $isAnonymous = $reporterName ? 0 : 1;
   $authorityId = find_authority_for_report(null, $serviceCode);
 
+  $extra = [];
+  if ($phone) $extra[] = 'Tel: ' . $phone;
+  if ($mediaUrl) $extra[] = 'Media: ' . $mediaUrl;
+  $descFull = $desc . ($extra ? ("\n\n" . implode("\n", $extra)) : '');
+
   db()->prepare("
     INSERT INTO reports
       (category, title, description, lat, lng, address_approx, status,
@@ -64,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   ")->execute([
     ':cat' => $serviceCode,
     ':title' => mb_substr($desc, 0, 120),
-    ':desc' => $desc,
+    ':desc' => $descFull,
     ':lat' => $lat,
     ':lng' => $lng,
     ':addr' => $addressStr,
@@ -91,6 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 $serviceCode = safe_str($param('service_code'), 64);
 $status = safe_str($param('status'), 16);
 $requestId = safe_str($param('service_request_id'), 64);
+$startDate = safe_str($param('start_date'), 32);
+$endDate = safe_str($param('end_date'), 32);
+$updatedSince = safe_str($param('updated_since'), 32);
+$bbox = safe_str($param('bbox'), 80);
 
 $where = [];
 $params = [];
@@ -109,10 +120,37 @@ if ($requestId) {
   $where[] = 'r.id = :rid';
   $params[':rid'] = $requestId;
 }
+if ($startDate) {
+  $where[] = 'r.created_at >= :start_date';
+  $params[':start_date'] = $startDate;
+}
+if ($endDate) {
+  $where[] = 'r.created_at <= :end_date';
+  $params[':end_date'] = $endDate;
+}
+if ($updatedSince) {
+  $where[] = 'r.created_at >= :updated_since';
+  $params[':updated_since'] = $updatedSince;
+}
+if ($bbox) {
+  $parts = array_map('trim', explode(',', $bbox));
+  if (count($parts) === 4 && is_numeric($parts[0]) && is_numeric($parts[1]) && is_numeric($parts[2]) && is_numeric($parts[3])) {
+    $minLng = (float)$parts[0];
+    $minLat = (float)$parts[1];
+    $maxLng = (float)$parts[2];
+    $maxLat = (float)$parts[3];
+    $where[] = 'r.lat BETWEEN :minlat AND :maxlat AND r.lng BETWEEN :minlng AND :maxlng';
+    $params[':minlat'] = $minLat;
+    $params[':maxlat'] = $maxLat;
+    $params[':minlng'] = $minLng;
+    $params[':maxlng'] = $maxLng;
+  }
+}
 
 $sql = "
   SELECT r.id, r.category, r.description, r.lat, r.lng, r.status, r.created_at,
-    (SELECT MAX(changed_at) FROM report_status_log l WHERE l.report_id = r.id) AS updated_at
+    (SELECT MAX(changed_at) FROM report_status_log l WHERE l.report_id = r.id) AS updated_at,
+    r.address_approx
   FROM reports r
 ";
 if ($where) $sql .= " WHERE " . implode(' AND ', $where);
@@ -130,7 +168,9 @@ foreach ($rows as $r) {
     'service_request_id' => (string)$r['id'],
     'status' => $isClosed ? 'closed' : 'open',
     'service_code' => (string)$r['category'],
+    'service_name' => (string)$r['category'],
     'description' => (string)$r['description'],
+    'address' => (string)($r['address_approx'] ?? ''),
     'lat' => (float)$r['lat'],
     'long' => (float)$r['lng'],
     'requested_datetime' => (string)$r['created_at'],

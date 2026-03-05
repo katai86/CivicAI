@@ -9,15 +9,16 @@ const API_LAYERS = `${BASE}/api/layers_public.php`;
 const API_FACILITIES = `${BASE}/api/facilities_list.php`;
 const API_CIVIL_EVENTS = `${BASE}/api/civil_events_list.php`;
 const API_CIVIL_EVENT_CREATE = `${BASE}/api/civil_event_create.php`;
+const API_REPORT_LIKE = `${BASE}/api/report_like.php`;
 const GEO_SEARCH = 'https://nominatim.openstreetmap.org/search';
 
 // ====== Map init ======
 const map = L.map('map').setView([47.1625, 19.5033], 7);
 map.attributionControl.setPrefix(false);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '&copy; OpenStreetMap közreműködők'
+L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+  maxZoom: 20,
+  attribution: '&copy; OpenStreetMap közreműködők, Humanitarian style'
 }).addTo(map);
 
 // geolokáció: ha elérhető, ugorjon a felhasználó környékére
@@ -160,6 +161,22 @@ function userLine(r){
   return `<small><b>Beküldő:</b> ${esc(name)}${level}</small><br>`;
 }
 
+function likeLine(r){
+  if (!r) return '';
+  const count = Number(r.like_count || 0);
+  const liked = Number(r.liked_by_me || 0) === 1;
+  const label = liked ? 'Kedveled' : 'Tetszik';
+  return `
+    <div class="like-row" data-report-id="${r.id}">
+      <button type="button" class="like-btn ${liked ? 'liked' : ''}" data-id="${r.id}" aria-label="Like">
+        ❤️
+      </button>
+      <span class="like-count">${count}</span>
+      <span class="like-label">${label}</span>
+    </div>
+  `;
+}
+
 function badgeIcon(cat){
   const info = ICON[cat] || { tw:'2753', color:'#999' };
   const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${info.tw}.svg`;
@@ -280,7 +297,8 @@ async function loadApprovedMarkers(){
         (r.status ? `<small><b>Státusz:</b> ${esc(statusLabel(r.status))}</small><br>` : '') +
         userLine(r) +
         (r.title ? `<b>${esc(r.title)}</b><br>` : '') +
-        `${esc(r.description)}`
+        `${esc(r.description)}` +
+        likeLine(r)
       );
 
     markerLayers.push({ marker: mk, data: r });
@@ -300,6 +318,35 @@ function scheduleReload(){
 }
 
 loadApprovedMarkers().catch(err => console.error(err));
+
+map.on('popupopen', (e) => {
+  const el = e.popup.getElement();
+  if (!el) return;
+  const btn = el.querySelector('.like-btn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    if (!IS_LOGGED_IN) {
+      alert('Bejelentkezés szükséges.');
+      return;
+    }
+    const id = Number(btn.getAttribute('data-id'));
+    try{
+      const j = await fetchJson(API_REPORT_LIKE, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (!j || !j.ok) return;
+      const countEl = el.querySelector('.like-count');
+      const labelEl = el.querySelector('.like-label');
+      if (countEl) countEl.textContent = String(j.count ?? 0);
+      if (labelEl) labelEl.textContent = j.liked ? 'Kedveled' : 'Tetszik';
+      btn.classList.toggle('liked', !!j.liked);
+    }catch(err){
+      console.error(err);
+    }
+  }, { once: true });
+});
 
 function clearLayerMarkers(){
   layerMarkers.forEach(m => map.removeLayer(m));

@@ -2,6 +2,9 @@
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 
+$uid = current_user_id();
+$uid = $uid ? (int)$uid : 0;
+
 $category = isset($_GET['category']) ? trim((string)$_GET['category']) : '';
 $category = $category === 'all' ? '' : $category;
 $limit = (int)($_GET['limit'] ?? 800);
@@ -37,7 +40,9 @@ $sql = "
     u.id AS reporter_user_id,
     u.display_name AS reporter_display_name,
     u.profile_public AS reporter_profile_public,
-    u.level AS reporter_level
+    u.level AS reporter_level,
+    (SELECT COUNT(*) FROM report_likes rl WHERE rl.report_id = r.id) AS like_count,
+    (SELECT 1 FROM report_likes rl WHERE rl.report_id = r.id AND rl.user_id = ?) AS liked_by_me
   FROM reports r
   LEFT JOIN users u ON u.id = r.user_id
   WHERE r.status IN ($in)
@@ -55,7 +60,8 @@ $sql .= " ORDER BY r.created_at DESC LIMIT $limit";
 
 $stmt = db()->prepare($sql);
 
-$exec = array_values($visibleStatuses);
+$exec = [$uid];
+$exec = array_merge($exec, array_values($visibleStatuses));
 if ($category !== '') {
   $exec[] = $category;
 }

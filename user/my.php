@@ -150,6 +150,7 @@ $catLabel = [
     <div class="topbar-links">
       <a class="topbtn" href="<?php echo h(app_url('/')); ?>">Térkép</a>
       <a class="topbtn" href="<?php echo h(app_url('/user/profile.php?id=' . (int)$userId)); ?>">Profilom</a>
+      <a class="topbtn" href="<?php echo h(app_url('/user/friends.php')); ?>">Barátok</a>
       <a class="topbtn" href="<?php echo h(app_url('/user/settings.php')); ?>">Beállítások</a>
       <?php if ($role === 'govuser' || $role === 'admin' || $role === 'superadmin'): ?>
         <a class="topbtn" href="<?php echo h(app_url('/gov/index.php')); ?>">Közigazgatási</a>

@@ -9,6 +9,7 @@ echo json_encode([
   [
     'changeset' => app_url('/open311/v2/requests.php'),
     'service_discovery' => app_url('/open311/v2/services.php'),
+    'service_definition' => app_url('/open311/v2/service_definition.php'),
     'service_requests' => app_url('/open311/v2/requests.php'),
     'service_request' => app_url('/open311/v2/requests.php')
   ]

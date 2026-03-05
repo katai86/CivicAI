@@ -12,7 +12,7 @@ try {
       'service_code' => (string)$r['service_code'],
       'service_name' => (string)$r['name'],
       'description' => (string)($r['description'] ?? ''),
-      'metadata' => false,
+      'metadata' => true,
       'type' => 'realtime'
     ];
   }
@@ -35,7 +35,7 @@ if (!$services) {
       'service_code' => $f[0],
       'service_name' => $f[1],
       'description' => '',
-      'metadata' => false,
+      'metadata' => true,
       'type' => 'realtime'
     ];
   }

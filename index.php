@@ -43,6 +43,7 @@ $rankAll = $uid ? get_user_rank('all', $uid) : null;
       <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/leaderboard.php'), ENT_QUOTES, 'UTF-8'); ?>">Toplista</a>
       <?php if ($uid > 0): ?>
         <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/my.php'), ENT_QUOTES, 'UTF-8'); ?>">Saját ügyeim</a>
+        <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/friends.php'), ENT_QUOTES, 'UTF-8'); ?>">Barátok</a>
         <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/settings.php'), ENT_QUOTES, 'UTF-8'); ?>">Beállítások</a>
         <?php if ($role === 'govuser' || $role === 'admin' || $role === 'superadmin'): ?>
           <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/gov/index.php'), ENT_QUOTES, 'UTF-8'); ?>">Közigazgatási</a>

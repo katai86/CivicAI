@@ -341,6 +341,10 @@ body.intro-open #mapWrap{
 .page .btn.soft{background:rgba(255,255,255,0.06)}
 .page .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 
+.page .list{display:grid;gap:10px}
+.page .admin-item{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--card-2)}
+.page .admin-item .meta{font-size:12px;color:var(--muted)}
+
 .page .kv{display:grid;grid-template-columns:160px 1fr;gap:8px 12px;margin-top:10px}
 .page .k{color:var(--muted)}
 .page .v{font-weight:600}
@@ -384,4 +388,11 @@ body.intro-open #mapWrap{
 .gov-title{font-weight:700;margin:6px 0}
 .gov-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
 .gov-actions .select,.gov-actions .input{min-width:160px}
+
+/* Likes */
+.like-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.like-btn{border:1px solid var(--border);background:var(--card-2);border-radius:999px;padding:4px 8px;cursor:pointer}
+.like-btn.liked{border-color:rgba(255,59,59,0.65);box-shadow:0 0 18px rgba(255,59,59,0.25)}
+.like-count{font-weight:700}
+.like-label{color:var(--muted);font-size:12px}
 

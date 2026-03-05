@@ -2,6 +2,8 @@
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 
+start_secure_session();
+
 $uid = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($uid <= 0) {
   http_response_code(400);
@@ -56,6 +58,33 @@ $lbAll = get_leaderboard('all', 10);
 $rankWeek = get_user_rank('week', (int)$u['id']);
 $rankMonth = get_user_rank('month', (int)$u['id']);
 $rankAll = get_user_rank('all', (int)$u['id']);
+
+$viewerId = current_user_id();
+$friendState = 'none';
+$friendReqId = 0;
+if ($viewerId && $viewerId !== (int)$u['id']) {
+  $stmt = db()->prepare("SELECT 1 FROM friends WHERE user_id=:uid AND friend_user_id=:fid LIMIT 1");
+  $stmt->execute([':uid' => $viewerId, ':fid' => (int)$u['id']]);
+  if ($stmt->fetchColumn()) {
+    $friendState = 'friends';
+  } else {
+    $stmt = db()->prepare("SELECT id FROM friend_requests WHERE from_user_id=:uid AND to_user_id=:fid AND status='pending' LIMIT 1");
+    $stmt->execute([':uid' => $viewerId, ':fid' => (int)$u['id']]);
+    $req = (int)$stmt->fetchColumn();
+    if ($req > 0) {
+      $friendState = 'outgoing';
+      $friendReqId = $req;
+    } else {
+      $stmt = db()->prepare("SELECT id FROM friend_requests WHERE from_user_id=:fid AND to_user_id=:uid AND status='pending' LIMIT 1");
+      $stmt->execute([':uid' => $viewerId, ':fid' => (int)$u['id']]);
+      $req = (int)$stmt->fetchColumn();
+      if ($req > 0) {
+        $friendState = 'incoming';
+        $friendReqId = $req;
+      }
+    }
+  }
+}
 
 $categories = [
   'road' => 'Úthiba / kátyú',
@@ -124,6 +153,7 @@ function avatar_url($filename){
       <a class="topbtn" href="<?= h(app_url('/leaderboard.php')) ?>">Toplista</a>
       <?php if (current_user_id()): ?>
         <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>">Saját ügyeim</a>
+        <a class="topbtn" href="<?= h(app_url('/user/friends.php')) ?>">Barátok</a>
         <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>">Beállítások</a>
         <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>">Kilépés</a>
       <?php else: ?>
@@ -149,6 +179,42 @@ function avatar_url($filename){
           <span class="pill">XP: <b><?= (int)$xp ?></b></span>
           <span class="pill">Streak: <b><?= (int)$streak ?></b> nap</span>
         </div>
+        <?php if ($viewerId && $viewerId !== (int)$u['id']): ?>
+          <div class="actions" style="margin-top:10px">
+            <?php if ($friendState === 'none'): ?>
+              <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
+                <input type="hidden" name="action" value="send">
+                <input type="hidden" name="target_id" value="<?= (int)$u['id'] ?>">
+                <button class="btn primary" type="submit">Barát kérése</button>
+              </form>
+            <?php elseif ($friendState === 'outgoing'): ?>
+              <span class="pill">Kérés elküldve</span>
+              <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
+                <input type="hidden" name="action" value="cancel">
+                <input type="hidden" name="target_id" value="<?= (int)$u['id'] ?>">
+                <button class="btn soft" type="submit">Visszavonás</button>
+              </form>
+            <?php elseif ($friendState === 'incoming'): ?>
+              <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
+                <input type="hidden" name="action" value="accept">
+                <input type="hidden" name="request_id" value="<?= (int)$friendReqId ?>">
+                <button class="btn primary" type="submit">Elfogadás</button>
+              </form>
+              <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
+                <input type="hidden" name="action" value="decline">
+                <input type="hidden" name="request_id" value="<?= (int)$friendReqId ?>">
+                <button class="btn soft" type="submit">Elutasítás</button>
+              </form>
+            <?php else: ?>
+              <span class="pill">Barátok vagytok</span>
+              <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
+                <input type="hidden" name="action" value="remove">
+                <input type="hidden" name="target_id" value="<?= (int)$u['id'] ?>">
+                <button class="btn soft" type="submit">Eltávolítás</button>
+              </form>
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>

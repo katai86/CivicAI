@@ -224,12 +224,49 @@ function fms_open311_get(string $path, array $query = []): array {
 function find_authority_for_report(?string $city, ?string $serviceCode = null): ?int {
     try {
         $pdo = db();
-        if ($city) {
-            $stmt = $pdo->prepare("SELECT id FROM authorities WHERE is_active=1 AND city = :city LIMIT 1");
-            $stmt->execute([':city' => $city]);
+        $city = $city ? trim($city) : null;
+
+        // Prefer authority that explicitly supports the service_code
+        if ($serviceCode) {
+            if ($city) {
+                $stmt = $pdo->prepare("
+                    SELECT a.id
+                    FROM authorities a
+                    JOIN authority_contacts c ON c.authority_id = a.id
+                    WHERE a.is_active=1 AND c.is_active=1
+                      AND c.service_code = :code
+                      AND a.city LIKE :city
+                    LIMIT 1
+                ");
+                $stmt->execute([
+                    ':code' => $serviceCode,
+                    ':city' => '%' . $city . '%'
+                ]);
+                $id = (int)$stmt->fetchColumn();
+                if ($id > 0) return $id;
+            }
+
+            $stmt = $pdo->prepare("
+                SELECT a.id
+                FROM authorities a
+                JOIN authority_contacts c ON c.authority_id = a.id
+                WHERE a.is_active=1 AND c.is_active=1
+                  AND c.service_code = :code
+                ORDER BY a.id ASC
+                LIMIT 1
+            ");
+            $stmt->execute([':code' => $serviceCode]);
             $id = (int)$stmt->fetchColumn();
             if ($id > 0) return $id;
         }
+
+        if ($city) {
+            $stmt = $pdo->prepare("SELECT id FROM authorities WHERE is_active=1 AND city LIKE :city LIMIT 1");
+            $stmt->execute([':city' => '%' . $city . '%']);
+            $id = (int)$stmt->fetchColumn();
+            if ($id > 0) return $id;
+        }
+
         // fallback: first active authority
         $stmt = $pdo->query("SELECT id FROM authorities WHERE is_active=1 ORDER BY id ASC LIMIT 1");
         $id = (int)$stmt->fetchColumn();

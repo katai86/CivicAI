@@ -16,9 +16,9 @@ const LOGOUT_URL      = `${BASE}/admin/logout.php`;
 const map = L.map('map').setView([46.565, 20.667], 13);
 map.attributionControl.setPrefix(false);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '&copy; OpenStreetMap közreműködők'
+L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+  maxZoom: 20,
+  attribution: '&copy; OpenStreetMap közreműködők, Humanitarian style'
 }).addTo(map);
 
 let markers = [];
