@@ -49,6 +49,17 @@ body{
   border-radius:14px;padding:10px 12px;box-shadow:var(--shadow);backdrop-filter:blur(10px)
 }
 .legend.open .legend-body{display:block}
+.legend-filters{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px 0}
+.legend-filter{
+  border:1px solid var(--border);
+  background:var(--card-2);
+  color:var(--text);
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  cursor:pointer
+}
+.legend-filter.active{border-color:var(--accent);box-shadow:0 0 14px rgba(255,122,0,0.25)}
 .legend-item{display:flex;gap:10px;align-items:center;padding:6px 0}
 .legend-badge{width:30px;height:30px;border-radius:999px;display:grid;place-items:center;border:2px solid rgba(255,255,255,0.2);font-size:16px}
 .b-road{border-color:#e74c3c}
@@ -395,4 +406,5 @@ body.intro-open #mapWrap{
 .like-btn.liked{border-color:rgba(255,59,59,0.65);box-shadow:0 0 18px rgba(255,59,59,0.25)}
 .like-count{font-weight:700}
 .like-label{color:var(--muted);font-size:12px}
+
 

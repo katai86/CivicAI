@@ -43,6 +43,7 @@ let layerMarkers = [];
 let facilityMarkers = [];
 let civilEventMarkers = [];
 let reloadTimer = null;
+let activeCategory = 'all';
 
 // ====== Utils ======
 function esc(s){
@@ -177,6 +178,7 @@ function likeLine(r){
   `;
 }
 
+
 function badgeIcon(cat){
   const info = ICON[cat] || { tw:'2753', color:'#999' };
   const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${info.tw}.svg`;
@@ -285,6 +287,9 @@ async function loadApprovedMarkers(){
   params.set('minLng', b.minLng);
   params.set('maxLng', b.maxLng);
   params.set('limit', '800');
+  if (activeCategory && activeCategory !== 'all') {
+    params.set('category', activeCategory);
+  }
   const j = await fetchJson(`${API_LIST}?${params.toString()}`);
   const rows = j.data || [];
 
@@ -319,6 +324,21 @@ function scheduleReload(){
 
 loadApprovedMarkers().catch(err => console.error(err));
 
+function initLegendFilters(){
+  const filters = document.querySelectorAll('.legend-filter[data-cat]');
+  if (!filters.length) return;
+  filters.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat = btn.getAttribute('data-cat') || 'all';
+      activeCategory = cat;
+      filters.forEach(b => b.classList.toggle('active', b === btn));
+      loadApprovedMarkers().catch(err => console.error(err));
+    });
+  });
+}
+
+initLegendFilters();
+
 map.on('popupopen', (e) => {
   const el = e.popup.getElement();
   if (!el) return;
@@ -346,6 +366,7 @@ map.on('popupopen', (e) => {
       console.error(err);
     }
   }, { once: true });
+
 });
 
 function clearLayerMarkers(){

@@ -29,6 +29,10 @@ CREATE TABLE authorities (
   contact_phone VARCHAR(40) NULL,
   website VARCHAR(190) NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
+  min_lat DECIMAL(10,7) NULL,
+  max_lat DECIMAL(10,7) NULL,
+  min_lng DECIMAL(10,7) NULL,
+  max_lng DECIMAL(10,7) NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

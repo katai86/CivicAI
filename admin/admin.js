@@ -890,6 +890,10 @@ document.getElementById('createAuthority')?.addEventListener('click', async () =
     city: document.getElementById('authorityCity').value.trim(),
     contact_email: document.getElementById('authorityEmail').value.trim(),
     contact_phone: document.getElementById('authorityPhone').value.trim(),
+    min_lat: document.getElementById('authorityMinLat').value.trim(),
+    max_lat: document.getElementById('authorityMaxLat').value.trim(),
+    min_lng: document.getElementById('authorityMinLng').value.trim(),
+    max_lng: document.getElementById('authorityMaxLng').value.trim(),
     is_active: 1
   };
   try{
@@ -898,6 +902,10 @@ document.getElementById('createAuthority')?.addEventListener('click', async () =
     document.getElementById('authorityCity').value = '';
     document.getElementById('authorityEmail').value = '';
     document.getElementById('authorityPhone').value = '';
+    document.getElementById('authorityMinLat').value = '';
+    document.getElementById('authorityMaxLat').value = '';
+    document.getElementById('authorityMinLng').value = '';
+    document.getElementById('authorityMaxLng').value = '';
     await loadAuthorities();
   }catch(e){
     alert('Hatóság mentés hiba: ' + e.message);

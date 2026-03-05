@@ -260,6 +260,24 @@ function find_authority_for_report(?string $city, ?string $serviceCode = null): 
             if ($id > 0) return $id;
         }
 
+        // BBox routing (if report coords stored temporarily in globals)
+        if (!empty($GLOBALS['__REPORT_LAT']) && !empty($GLOBALS['__REPORT_LNG'])) {
+            $lat = (float)$GLOBALS['__REPORT_LAT'];
+            $lng = (float)$GLOBALS['__REPORT_LNG'];
+            $stmt = $pdo->prepare("
+                SELECT id FROM authorities
+                WHERE is_active=1
+                  AND min_lat IS NOT NULL AND max_lat IS NOT NULL
+                  AND min_lng IS NOT NULL AND max_lng IS NOT NULL
+                  AND :lat BETWEEN min_lat AND max_lat
+                  AND :lng BETWEEN min_lng AND max_lng
+                LIMIT 1
+            ");
+            $stmt->execute([':lat' => $lat, ':lng' => $lng]);
+            $id = (int)$stmt->fetchColumn();
+            if ($id > 0) return $id;
+        }
+
         if ($city) {
             $stmt = $pdo->prepare("SELECT id FROM authorities WHERE is_active=1 AND city LIKE :city LIMIT 1");
             $stmt->execute([':city' => '%' . $city . '%']);

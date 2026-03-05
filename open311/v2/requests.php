@@ -8,6 +8,23 @@ $allowedCats = ['road','sidewalk','lighting','trash','green','traffic','idea'];
 $statusOpen = ['new','approved','in_progress','needs_info','forwarded','waiting_reply'];
 $statusClosed = ['solved','closed','rejected'];
 
+function open311_status_map(string $st): array {
+  $closed = in_array($st, ['solved','closed','rejected'], true);
+  $extended = $st;
+  if ($st === 'approved') $extended = 'acknowledged';
+  if ($st === 'needs_info') $extended = 'action_scheduled';
+  if ($st === 'forwarded') $extended = 'in_progress';
+  if ($st === 'waiting_reply') $extended = 'action_scheduled';
+  if ($st === 'in_progress') $extended = 'in_progress';
+  if ($st === 'new') $extended = 'open';
+  if ($st === 'rejected') $extended = 'closed';
+  if ($st === 'solved') $extended = 'closed';
+  return [
+    'status' => $closed ? 'closed' : 'open',
+    'extended_status' => $extended
+  ];
+}
+
 $body = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $body = read_json_body();
@@ -150,8 +167,9 @@ if ($bbox) {
 $sql = "
   SELECT r.id, r.category, r.description, r.lat, r.lng, r.status, r.created_at,
     (SELECT MAX(changed_at) FROM report_status_log l WHERE l.report_id = r.id) AS updated_at,
-    r.address_approx
+    r.address_approx, a.name AS authority_name
   FROM reports r
+  LEFT JOIN authorities a ON a.id = r.authority_id
 ";
 if ($where) $sql .= " WHERE " . implode(' AND ', $where);
 $sql .= " ORDER BY r.id DESC LIMIT 200";
@@ -162,15 +180,17 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $out = [];
 foreach ($rows as $r) {
-  $st = $r['status'];
-  $isClosed = in_array($st, $statusClosed, true);
+  $st = (string)$r['status'];
+  $map = open311_status_map($st);
   $out[] = [
     'service_request_id' => (string)$r['id'],
-    'status' => $isClosed ? 'closed' : 'open',
+    'status' => $map['status'],
+    'extended_status' => $map['extended_status'],
     'service_code' => (string)$r['category'],
     'service_name' => (string)$r['category'],
     'description' => (string)$r['description'],
     'address' => (string)($r['address_approx'] ?? ''),
+    'agency_responsible' => (string)($r['authority_name'] ?? ''),
     'lat' => (float)$r['lat'],
     'long' => (float)$r['lng'],
     'requested_datetime' => (string)$r['created_at'],

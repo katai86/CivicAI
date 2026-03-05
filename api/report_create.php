@@ -83,6 +83,9 @@ if (!is_numeric($lat) || !is_numeric($lng)) {
 $lat = (float)$lat;
 $lng = (float)$lng;
 
+$GLOBALS['__REPORT_LAT'] = $lat;
+$GLOBALS['__REPORT_LNG'] = $lng;
+
 // Nincs területi korlát (országos/európai mód)
 
 // Ha nem anonim -> legyen név (vendégnél kötelező; belépett usernél később a profilból töltjük)

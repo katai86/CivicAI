@@ -33,13 +33,17 @@ if ($action === 'create_authority') {
   $email = safe_str($body['contact_email'] ?? null, 190);
   $phone = safe_str($body['contact_phone'] ?? null, 40);
   $website = safe_str($body['website'] ?? null, 190);
+  $minLat = is_numeric($body['min_lat'] ?? null) ? (float)$body['min_lat'] : null;
+  $maxLat = is_numeric($body['max_lat'] ?? null) ? (float)$body['max_lat'] : null;
+  $minLng = is_numeric($body['min_lng'] ?? null) ? (float)$body['min_lng'] : null;
+  $maxLng = is_numeric($body['max_lng'] ?? null) ? (float)$body['max_lng'] : null;
   $isActive = !empty($body['is_active']) ? 1 : 0;
 
   if (!$name) json_response(['ok' => false, 'error' => 'Name required'], 400);
 
   db()->prepare("
-    INSERT INTO authorities (name, country, region, city, contact_email, contact_phone, website, is_active)
-    VALUES (:name, :country, :region, :city, :email, :phone, :website, :active)
+    INSERT INTO authorities (name, country, region, city, contact_email, contact_phone, website, is_active, min_lat, max_lat, min_lng, max_lng)
+    VALUES (:name, :country, :region, :city, :email, :phone, :website, :active, :minlat, :maxlat, :minlng, :maxlng)
   ")->execute([
     ':name' => $name,
     ':country' => $country,
@@ -49,6 +53,10 @@ if ($action === 'create_authority') {
     ':phone' => $phone,
     ':website' => $website,
     ':active' => $isActive,
+    ':minlat' => $minLat,
+    ':maxlat' => $maxLat,
+    ':minlng' => $minLng,
+    ':maxlng' => $maxLng,
   ]);
 
   json_response(['ok' => true, 'id' => (int)db()->lastInsertId()]);

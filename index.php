@@ -68,6 +68,16 @@ $rankAll = $uid ? get_user_rank('all', $uid) : null;
     </button>
 
     <div class="legend-body" id="legendBody">
+      <div class="legend-filters" id="legendFilters">
+        <button class="legend-filter active" data-cat="all" type="button">Összes</button>
+        <button class="legend-filter" data-cat="road" type="button">Úthiba</button>
+        <button class="legend-filter" data-cat="sidewalk" type="button">Járda</button>
+        <button class="legend-filter" data-cat="lighting" type="button">Közvilágítás</button>
+        <button class="legend-filter" data-cat="trash" type="button">Szemét</button>
+        <button class="legend-filter" data-cat="green" type="button">Zöld</button>
+        <button class="legend-filter" data-cat="traffic" type="button">Közlekedés</button>
+        <button class="legend-filter" data-cat="idea" type="button">Ötlet</button>
+      </div>
       <div class="legend-item"><span class="legend-badge b-road">🚧</span><span>Úthiba / kátyú</span></div>
       <div class="legend-item"><span class="legend-badge b-sidewalk">🚶</span><span>Járda / burkolat hiba</span></div>
       <div class="legend-item"><span class="legend-badge b-lighting">💡</span><span>Közvilágítás</span></div>

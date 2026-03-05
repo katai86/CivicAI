@@ -214,6 +214,10 @@ require_admin();
                     <input id="authorityCity" class="form-control form-control-sm" placeholder="Város">
                     <input id="authorityEmail" class="form-control form-control-sm" placeholder="Email">
                     <input id="authorityPhone" class="form-control form-control-sm" placeholder="Telefon">
+                    <input id="authorityMinLat" class="form-control form-control-sm" placeholder="Min lat">
+                    <input id="authorityMaxLat" class="form-control form-control-sm" placeholder="Max lat">
+                    <input id="authorityMinLng" class="form-control form-control-sm" placeholder="Min lng">
+                    <input id="authorityMaxLng" class="form-control form-control-sm" placeholder="Max lng">
                     <button id="createAuthority" class="btn btn-primary btn-sm ms-auto" type="button">Mentés</button>
                   </div>
                   <div class="admin-list" id="authorityList">Nincs adat.</div>
