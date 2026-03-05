@@ -6,8 +6,8 @@ define('ERROR_LOG_FILE', __DIR__ . '/error.log');
 
 // --- DB ---
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_NAME', getenv('DB_NAME') ?: 'terkep');
-define('DB_USER', getenv('DB_USER') ?: 'terkep');
+define('DB_NAME', getenv('DB_NAME') ?: 'kataia_civicai');
+define('DB_USER', getenv('DB_USER') ?: 'kataia_civicai');
 define('DB_PASS', getenv('DB_PASS') ?: '');
 
 // --- Admin login (MVP) ---
