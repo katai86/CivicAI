@@ -35,6 +35,11 @@ define('ADMIN_TOKEN', getenv('ADMIN_TOKEN') ?: '');
 define('MAIL_FROM', getenv('MAIL_FROM') ?: 'no-reply@example.com');
 define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: 'Problematérkép');
 
+// FixMyStreet Open311 bridge (optional)
+define('FMS_OPEN311_BASE', getenv('FMS_OPEN311_BASE') ?: '');
+define('FMS_OPEN311_JURISDICTION', getenv('FMS_OPEN311_JURISDICTION') ?: '');
+define('FMS_OPEN311_API_KEY', getenv('FMS_OPEN311_API_KEY') ?: '');
+
 // Upload
 define('UPLOAD_DIR', __DIR__ . '/uploads'); // fájlrendszerben
 define('UPLOAD_PUBLIC', APP_BASE_URL . '/uploads'); // böngészőben

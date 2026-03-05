@@ -153,6 +153,92 @@ function has_role(array $roles): bool {
     return in_array($role, $roles, true);
 }
 
+// --------------------
+// FixMyStreet Open311 bridge helpers
+// --------------------
+function fms_enabled(): bool {
+    return defined('FMS_OPEN311_BASE') && (string)FMS_OPEN311_BASE !== '';
+}
+
+function fms_open311_request(array $payload): array {
+    $base = rtrim((string)FMS_OPEN311_BASE, '/');
+    if ($base === '') {
+        return ['ok' => false, 'error' => 'FMS not configured'];
+    }
+    $url = $base . '/open311/v2/requests.json';
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($payload),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 20,
+    ]);
+    $res = curl_exec($ch);
+    $err = curl_error($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($res === false) {
+        return ['ok' => false, 'error' => $err ?: 'Open311 request failed'];
+    }
+
+    $json = json_decode($res, true);
+    if ($code >= 400) {
+        return ['ok' => false, 'error' => is_array($json) ? json_encode($json) : $res];
+    }
+    return ['ok' => true, 'data' => $json];
+}
+
+function fms_open311_get(string $path, array $query = []): array {
+    $base = rtrim((string)FMS_OPEN311_BASE, '/');
+    if ($base === '') {
+        return ['ok' => false, 'error' => 'FMS not configured'];
+    }
+    $url = $base . $path;
+    if ($query) {
+        $url .= '?' . http_build_query($query);
+    }
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 20,
+    ]);
+    $res = curl_exec($ch);
+    $err = curl_error($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($res === false) {
+        return ['ok' => false, 'error' => $err ?: 'Open311 request failed'];
+    }
+    $json = json_decode($res, true);
+    if ($code >= 400) {
+        return ['ok' => false, 'error' => is_array($json) ? json_encode($json) : $res];
+    }
+    return ['ok' => true, 'data' => $json];
+}
+
+// --------------------
+// Authority routing (local)
+// --------------------
+function find_authority_for_report(?string $city, ?string $serviceCode = null): ?int {
+    try {
+        $pdo = db();
+        if ($city) {
+            $stmt = $pdo->prepare("SELECT id FROM authorities WHERE is_active=1 AND city = :city LIMIT 1");
+            $stmt->execute([':city' => $city]);
+            $id = (int)$stmt->fetchColumn();
+            if ($id > 0) return $id;
+        }
+        // fallback: first active authority
+        $stmt = $pdo->query("SELECT id FROM authorities WHERE is_active=1 ORDER BY id ASC LIMIT 1");
+        $id = (int)$stmt->fetchColumn();
+        return $id > 0 ? $id : null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
 function level_from_xp(int $xp): array {
     $levels = [
         1 => ['name' => 'Katyuvadasz Tanonc',      'min' => 0],

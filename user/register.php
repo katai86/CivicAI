@@ -10,6 +10,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $email = trim($_POST['email'] ?? '');
   $pass  = (string)($_POST['pass'] ?? '');
   $name  = safe_str($_POST['name'] ?? null, 80);
+  $role  = safe_str($_POST['role'] ?? null, 32) ?: 'user';
+  $allowedRoles = ['user','govuser','communityuser','civiluser'];
+  if (!in_array($role, $allowedRoles, true)) $role = 'user';
 
   // GDPR / hozzájárulások
   $consentData      = !empty($_POST['consent_data']);      // kötelező
@@ -46,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ':e'  => $email_lc,
         ':h'  => $hash,
         ':n'  => $name,
-        ':role' => 'user',
+        ':role' => $role,
         ':t'  => $token,
         ':cd' => $consentData ? 1 : 0,
         ':cs' => $consentShare ? 1 : 0,
@@ -108,6 +111,12 @@ unset($_SESSION['flash']);
     <input name="email" placeholder="E-mail" required>
     <input name="name" placeholder="Név (opcionális)">
     <input name="pass" type="password" placeholder="Jelszó (min. 8)" required>
+    <select name="role" required>
+      <option value="user">Felhasználó (általános)</option>
+      <option value="govuser">Közigazgatási (önkormányzat)</option>
+      <option value="communityuser">Közület (rendelő, gyógyszertár)</option>
+      <option value="civiluser">Civil (egyesület, alapítvány)</option>
+    </select>
 
     <div class="hr"></div>
 

@@ -83,10 +83,7 @@ if (!is_numeric($lat) || !is_numeric($lng)) {
 $lat = (float)$lat;
 $lng = (float)$lng;
 
-// Orosháza környéke sanity check
-if ($lat < 46.3 || $lat > 46.8 || $lng < 20.3 || $lng > 21.1) {
-  json_response(['ok' => false, 'error' => 'Out of allowed area'], 400);
-}
+// Nincs területi korlát (országos/európai mód)
 
 // Ha nem anonim -> legyen név (vendégnél kötelező; belépett usernél később a profilból töltjük)
 if (!$sessionUserId && $reporterIsAnonymous === 0 && !$reporterName) {
@@ -193,14 +190,21 @@ if ($userId) {
   }
 }
 
-// Civil kategória: csak civil/admin/superadmin használhatja
+// Role-alapú jogosultságok
 if ($category === 'civil_event') {
   if (!$userId) {
     json_response(['ok' => false, 'error' => 'Civil kategóriához bejelentkezés szükséges.'], 401);
   }
   $role = $userRole ?: (current_user_role() ?: '');
-  if (!in_array($role, ['civil','admin','superadmin'], true)) {
+  if (!in_array($role, ['civiluser','admin','superadmin'], true)) {
     json_response(['ok' => false, 'error' => 'Nincs jogosultság a civil kategóriához.'], 403);
+  }
+} else {
+  if ($userId) {
+    $role = $userRole ?: (current_user_role() ?: '');
+    if (in_array($role, ['civiluser','communityuser'], true)) {
+      json_response(['ok' => false, 'error' => 'Nincs jogosultság bejelentéshez ezzel a fiókkal.'], 403);
+    }
   }
 }
 
@@ -357,6 +361,9 @@ if ($geo) {
 // email csak akkor kerüljön eltárolásra, ha értesítést kér (különben NULL)
 $storeEmail = ($wantsNotify === 1) ? $reporterEmail : null;
 
+$authorityId = find_authority_for_report($city ?: $addrCity, $category);
+$serviceCode = $category;
+
 $stmt = db()->prepare("
   INSERT INTO reports
     (category, title, description, lat, lng,
@@ -364,14 +371,16 @@ $stmt = db()->prepare("
      address_zip_manual, address_city_manual, address_street_manual, address_house_manual, address_note_manual,
      status, ip_hash, user_agent,
      user_id, reporter_email, reporter_name, reporter_is_anonymous,
-     notify_token, notify_enabled)
+     notify_token, notify_enabled,
+     authority_id, service_code)
   VALUES
     (:category, :title, :description, :lat, :lng,
      :address_approx, :house_number, :road, :suburb, :city, :postcode,
      :addr_zip, :addr_city, :addr_street, :addr_house, :addr_note,
      'new', :ip_hash, :user_agent,
      :user_id, :reporter_email, :reporter_name, :reporter_is_anonymous,
-     :notify_token, :notify_enabled)
+     :notify_token, :notify_enabled,
+     :authority_id, :service_code)
 ");
 $stmt->execute([
   ':category' => $category,
@@ -398,9 +407,12 @@ $stmt->execute([
   ':reporter_is_anonymous' => $reporterIsAnonymous,
   ':notify_token' => $notifyToken,
   ':notify_enabled' => $notifyEnabled,
+  ':authority_id' => $authorityId,
+  ':service_code' => $serviceCode,
 ]);
 
 $id = (int)db()->lastInsertId();
+// ===== /FixMyStreet =====
 
 // ===== XP + badge rendszer (best-effort) =====
 if ($userId) {

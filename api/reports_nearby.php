@@ -26,10 +26,7 @@ if ($radius > 300) $radius = 300;
 $lat = (float)$lat;
 $lng = (float)$lng;
 
-// Orosháza környéke sanity check (ugyanaz a logika, mint create-nél)
-if ($lat < 46.3 || $lat > 46.8 || $lng < 20.3 || $lng > 21.1) {
-  json_response(['ok' => false, 'error' => 'Out of allowed area'], 400);
-}
+// nincs területi korlát (országos/európai mód)
 
 // Gyors bounding box (fölösleges rekordok kiszűrésére)
 $degLat = $radius / 111320.0;

@@ -74,9 +74,9 @@ if ($userId <= 0) json_response(['ok'=>false,'error'=>'Invalid user_id'], 400);
 
 $currentUserId = current_user_id() ?: 0;
 
-if ($action === 'update_role') {
+  if ($action === 'update_role') {
   $role = (string)($body['role'] ?? '');
-  $allowed = ['user','civil','admin','superadmin'];
+    $allowed = ['user','civiluser','communityuser','govuser','admin','superadmin'];
   if (!in_array($role, $allowed, true)) json_response(['ok'=>false,'error'=>'Invalid role'], 400);
   db()->prepare("UPDATE users SET role = :r WHERE id = :id")->execute([':r'=>$role, ':id'=>$userId]);
   json_response(['ok'=>true]);

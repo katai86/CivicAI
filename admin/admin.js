@@ -9,6 +9,7 @@ const API_ATTACH_DEL  = `${BASE}/api/report_attachment_delete.php`;
 const API_STATS       = `${BASE}/api/admin_stats.php`;
 const API_USERS       = `${BASE}/api/admin_users.php`;
 const API_LAYERS      = `${BASE}/api/admin_layers.php`;
+const API_AUTHORITIES = `${BASE}/api/admin_authorities.php`;
 const LOGOUT_URL      = `${BASE}/admin/logout.php`;
 // ========================================================
 
@@ -489,7 +490,7 @@ async function loadUsers(){
       return;
     }
 
-    const roleOpts = ['user','civil','admin','superadmin'].map(r => `<option value="${r}">${r}</option>`).join('');
+    const roleOpts = ['user','civiluser','communityuser','govuser','admin','superadmin'].map(r => `<option value="${r}">${r}</option>`).join('');
     list.innerHTML = `
       <table class="table table-sm table-hover align-middle mb-0">
         <thead>
@@ -681,12 +682,121 @@ async function loadLayerMarkers(){
   }
 }
 
+async function loadAuthorities(){
+  const list = document.getElementById('authorityList');
+  const contactList = document.getElementById('contactList');
+  const select = document.getElementById('contactAuthoritySelect');
+  const assignSelect = document.getElementById('assignAuthoritySelect');
+  const assignList = document.getElementById('assignList');
+  if (!list || !contactList || !select) return;
+  if (!assignSelect || !assignList) return;
+  list.textContent = 'Betöltés...';
+  contactList.textContent = 'Betöltés...';
+  assignList.textContent = 'Betöltés...';
+  try{
+    const j = await fetchJson(API_AUTHORITIES);
+    const authorities = j.authorities || [];
+    const contacts = j.contacts || [];
+    const assignments = j.assignments || [];
+
+    select.innerHTML = authorities.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+    assignSelect.innerHTML = authorities.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+
+    if (!authorities.length){
+      list.innerHTML = '<div class="text-secondary">Nincs adat.</div>';
+    } else {
+      list.innerHTML = authorities.map(a => `
+        <div class="admin-item">
+          <div class="meta">
+            <b>${esc(a.name)}</b> • ${esc(a.city || '')}
+          </div>
+          <div class="text-secondary">${esc(a.contact_email || '')} ${esc(a.contact_phone || '')}</div>
+          <div class="actions">
+            <button class="btn btn-outline-danger btn-sm auth-del" data-id="${a.id}">Törlés</button>
+          </div>
+        </div>
+      `).join('');
+      list.querySelectorAll('.auth-del').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Biztos törlöd a hatóságot?')) return;
+          await fetchJson(API_AUTHORITIES, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ action:'delete_authority', id: Number(btn.dataset.id) })
+          });
+          await loadAuthorities();
+        });
+      });
+    }
+
+    if (!contacts.length){
+      contactList.innerHTML = '<div class="text-secondary">Nincs adat.</div>';
+    } else {
+      contactList.innerHTML = contacts.map(c => `
+        <div class="admin-item">
+          <div class="meta">
+            <b>${esc(c.name)}</b> • <span class="text-secondary">${esc(c.service_code)}</span>
+          </div>
+          <div class="text-secondary">${esc(c.description || '')}</div>
+          <div class="actions">
+            <button class="btn btn-outline-danger btn-sm contact-del" data-id="${c.id}">Törlés</button>
+          </div>
+        </div>
+      `).join('');
+      contactList.querySelectorAll('.contact-del').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Biztos törlöd a szolgáltatást?')) return;
+          await fetchJson(API_AUTHORITIES, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ action:'delete_contact', id: Number(btn.dataset.id) })
+          });
+          await loadAuthorities();
+        });
+      });
+    }
+
+    if (!assignments.length){
+      assignList.innerHTML = '<div class="text-secondary">Nincs adat.</div>';
+    } else {
+      assignList.innerHTML = assignments.map(a => `
+        <div class="admin-item">
+          <div class="meta">
+            <b>${esc(a.display_name || a.email)}</b> • <span class="text-secondary">${esc(a.email)}</span>
+          </div>
+          <div class="text-secondary">Hatóság: ${esc(a.authority_name || a.authority_id)}</div>
+          <div class="actions">
+            <button class="btn btn-outline-danger btn-sm assign-del" data-id="${a.id}">Törlés</button>
+          </div>
+        </div>
+      `).join('');
+      assignList.querySelectorAll('.assign-del').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Biztos törlöd a hozzárendelést?')) return;
+          await fetchJson(API_AUTHORITIES, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ action:'remove_user', id: Number(btn.dataset.id) })
+          });
+          await loadAuthorities();
+        });
+      });
+    }
+  }catch(e){
+    console.error(e);
+    list.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
+    contactList.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
+    assignList.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
+  }
+}
+
 function initTabs(){
   const tabs = document.querySelectorAll('.tab[data-tab]');
   const bodies = {
     reports: document.getElementById('tab-reports'),
     users: document.getElementById('tab-users'),
-    layers: document.getElementById('tab-layers')
+    layers: document.getElementById('tab-layers'),
+    authorities: document.getElementById('tab-authorities')
   };
   tabs.forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -704,6 +814,10 @@ function initTabs(){
       }
       if (key === 'reports') {
         clearLayerMarkers();
+      }
+      if (key === 'authorities') {
+        clearLayerMarkers();
+        loadAuthorities();
       }
     });
   });
@@ -766,6 +880,62 @@ document.getElementById('createPoint')?.addEventListener('click', async () => {
     await loadLayerMarkers();
   }catch(e){
     alert('Pont mentés hiba: ' + e.message);
+  }
+});
+
+document.getElementById('createAuthority')?.addEventListener('click', async () => {
+  const body = {
+    action:'create_authority',
+    name: document.getElementById('authorityName').value.trim(),
+    city: document.getElementById('authorityCity').value.trim(),
+    contact_email: document.getElementById('authorityEmail').value.trim(),
+    contact_phone: document.getElementById('authorityPhone').value.trim(),
+    is_active: 1
+  };
+  try{
+    await fetchJson(API_AUTHORITIES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    document.getElementById('authorityName').value = '';
+    document.getElementById('authorityCity').value = '';
+    document.getElementById('authorityEmail').value = '';
+    document.getElementById('authorityPhone').value = '';
+    await loadAuthorities();
+  }catch(e){
+    alert('Hatóság mentés hiba: ' + e.message);
+  }
+});
+
+document.getElementById('createContact')?.addEventListener('click', async () => {
+  const body = {
+    action:'create_contact',
+    authority_id: Number(document.getElementById('contactAuthoritySelect').value || 0),
+    service_code: document.getElementById('contactCode').value.trim(),
+    name: document.getElementById('contactName').value.trim(),
+    description: document.getElementById('contactDesc').value.trim(),
+    is_active: 1
+  };
+  try{
+    await fetchJson(API_AUTHORITIES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    document.getElementById('contactCode').value = '';
+    document.getElementById('contactName').value = '';
+    document.getElementById('contactDesc').value = '';
+    await loadAuthorities();
+  }catch(e){
+    alert('Szolgáltatás mentés hiba: ' + e.message);
+  }
+});
+
+document.getElementById('assignUser')?.addEventListener('click', async () => {
+  const body = {
+    action:'assign_user',
+    authority_id: Number(document.getElementById('assignAuthoritySelect').value || 0),
+    email: document.getElementById('assignEmail').value.trim()
+  };
+  try{
+    await fetchJson(API_AUTHORITIES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    document.getElementById('assignEmail').value = '';
+    await loadAuthorities();
+  }catch(e){
+    alert('Hozzárendelés hiba: ' + e.message);
   }
 });
 

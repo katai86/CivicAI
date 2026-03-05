@@ -44,6 +44,9 @@ $rankAll = $uid ? get_user_rank('all', $uid) : null;
       <?php if ($uid > 0): ?>
         <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/my.php'), ENT_QUOTES, 'UTF-8'); ?>">Saját ügyeim</a>
         <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/settings.php'), ENT_QUOTES, 'UTF-8'); ?>">Beállítások</a>
+        <?php if ($role === 'govuser' || $role === 'admin' || $role === 'superadmin'): ?>
+          <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/gov/index.php'), ENT_QUOTES, 'UTF-8'); ?>">Közigazgatási</a>
+        <?php endif; ?>
         <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/logout.php'), ENT_QUOTES, 'UTF-8'); ?>">Kilépés</a>
       <?php else: ?>
         <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/login.php'), ENT_QUOTES, 'UTF-8'); ?>">Belépés</a>

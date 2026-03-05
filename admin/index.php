@@ -66,6 +66,12 @@ require_admin();
               <p>Layerek</p>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="authorities">
+              <i class="nav-icon bi bi-shield-check"></i>
+              <p>Hatóságok</p>
+            </a>
+          </li>
         </ul>
       </nav>
     </div>
@@ -147,7 +153,9 @@ require_admin();
                     <select id="userRoleFilter" class="form-select form-select-sm">
                       <option value="">Minden szerep</option>
                       <option value="user">User</option>
-                      <option value="civil">Civil</option>
+                      <option value="civiluser">Civil</option>
+                      <option value="communityuser">Közület</option>
+                      <option value="govuser">Közigazgatási</option>
                       <option value="admin">Admin</option>
                       <option value="superadmin">SuperAdmin</option>
                     </select>
@@ -197,6 +205,36 @@ require_admin();
                     <button id="createPoint" class="btn btn-outline-secondary btn-sm ms-auto" type="button">Pont mentése</button>
                   </div>
                   <div class="admin-list mt-2" id="pointList">Válassz layert.</div>
+                </div>
+
+                <div class="admin-tab-body" id="tab-authorities" hidden>
+                  <div class="fw-semibold mb-2">Hatóság létrehozása</div>
+                  <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                    <input id="authorityName" class="form-control form-control-sm" placeholder="Név">
+                    <input id="authorityCity" class="form-control form-control-sm" placeholder="Város">
+                    <input id="authorityEmail" class="form-control form-control-sm" placeholder="Email">
+                    <input id="authorityPhone" class="form-control form-control-sm" placeholder="Telefon">
+                    <button id="createAuthority" class="btn btn-primary btn-sm ms-auto" type="button">Mentés</button>
+                  </div>
+                  <div class="admin-list" id="authorityList">Nincs adat.</div>
+
+                  <div class="fw-semibold mt-4">Szolgáltatás (Open311)</div>
+                  <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                    <select id="contactAuthoritySelect" class="form-select form-select-sm"></select>
+                    <input id="contactCode" class="form-control form-control-sm" placeholder="service_code (pl. road)">
+                    <input id="contactName" class="form-control form-control-sm" placeholder="Megnevezés">
+                    <input id="contactDesc" class="form-control form-control-sm" placeholder="Leírás">
+                    <button id="createContact" class="btn btn-outline-secondary btn-sm ms-auto" type="button">Mentés</button>
+                  </div>
+                  <div class="admin-list mt-2" id="contactList">Nincs adat.</div>
+
+                  <div class="fw-semibold mt-4">Hatósági felhasználó</div>
+                  <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                    <select id="assignAuthoritySelect" class="form-select form-select-sm"></select>
+                    <input id="assignEmail" class="form-control form-control-sm" placeholder="Felhasználó e-mail">
+                    <button id="assignUser" class="btn btn-outline-secondary btn-sm ms-auto" type="button">Hozzárendelés</button>
+                  </div>
+                  <div class="admin-list mt-2" id="assignList">Nincs adat.</div>
                 </div>
               </div>
             </div>

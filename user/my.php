@@ -9,6 +9,7 @@ if ($userId <= 0) {
   header('Location: ' . app_url('/user/login.php'));
   exit;
 }
+$role = current_user_role() ?: '';
 
 $stmt = db()->prepare("SELECT email, display_name, total_xp, level, streak_days FROM users WHERE id=:id LIMIT 1");
 $stmt->execute([':id' => $userId]);
@@ -150,6 +151,9 @@ $catLabel = [
       <a class="topbtn" href="<?php echo h(app_url('/')); ?>">Térkép</a>
       <a class="topbtn" href="<?php echo h(app_url('/user/profile.php?id=' . (int)$userId)); ?>">Profilom</a>
       <a class="topbtn" href="<?php echo h(app_url('/user/settings.php')); ?>">Beállítások</a>
+      <?php if ($role === 'govuser' || $role === 'admin' || $role === 'superadmin'): ?>
+        <a class="topbtn" href="<?php echo h(app_url('/gov/index.php')); ?>">Közigazgatási</a>
+      <?php endif; ?>
       <a class="topbtn" href="<?php echo h(app_url('/user/logout.php')); ?>">Kilépés</a>
     </div>
   </div>

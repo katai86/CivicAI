@@ -6,10 +6,13 @@ const API_LIST   = `${BASE}/api/reports_list.php`;
 const API_CREATE = `${BASE}/api/report_create.php`;
 const API_NEARBY = `${BASE}/api/reports_nearby.php`;
 const API_LAYERS = `${BASE}/api/layers_public.php`;
+const API_FACILITIES = `${BASE}/api/facilities_list.php`;
+const API_CIVIL_EVENTS = `${BASE}/api/civil_events_list.php`;
+const API_CIVIL_EVENT_CREATE = `${BASE}/api/civil_event_create.php`;
 const GEO_SEARCH = 'https://nominatim.openstreetmap.org/search';
 
 // ====== Map init ======
-const map = L.map('map').setView([46.565, 20.667], 13);
+const map = L.map('map').setView([47.1625, 19.5033], 7);
 map.attributionControl.setPrefix(false);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -17,10 +20,27 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap közreműködők'
 }).addTo(map);
 
+// geolokáció: ha elérhető, ugorjon a felhasználó környékére
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      if (isFinite(lat) && isFinite(lng)) {
+        map.setView([lat, lng], 12, { animate: true });
+      }
+    },
+    () => {},
+    { enableHighAccuracy: false, timeout: 5000, maximumAge: 600000 }
+  );
+}
+
 let markerLayers = []; // { marker, data }
 let searchMarker = null;
 let searchMarkerTimeout = null;
 let layerMarkers = [];
+let facilityMarkers = [];
+let civilEventMarkers = [];
 let reloadTimer = null;
 
 // ====== Utils ======
@@ -87,19 +107,26 @@ const ICON = {
 function catLabel(cat){ return CAT_LABEL[cat] || cat; }
 
 function canUseCivil(){
-  return ['civil','admin','superadmin'].includes(USER_ROLE);
+  return ['civiluser','admin','superadmin'].includes(USER_ROLE);
+}
+
+function canCreateIssue(){
+  return ['user','govuser','admin','superadmin'].includes(USER_ROLE);
 }
 
 function buildCategoryOptions(){
-  const opts = [
-    { id:'road', label:'Úthiba / kátyú' },
-    { id:'sidewalk', label:'Járda / burkolat hiba' },
-    { id:'lighting', label:'Közvilágítás' },
-    { id:'trash', label:'Szemét / illegális' },
-    { id:'green', label:'Zöldterület / veszélyes fa' },
-    { id:'traffic', label:'Közlekedés / tábla' },
-    { id:'idea', label:'Ötlet / javaslat' }
-  ];
+  const opts = [];
+  if (canCreateIssue()) {
+    opts.push(
+      { id:'road', label:'Úthiba / kátyú' },
+      { id:'sidewalk', label:'Járda / burkolat hiba' },
+      { id:'lighting', label:'Közvilágítás' },
+      { id:'trash', label:'Szemét / illegális' },
+      { id:'green', label:'Zöldterület / veszélyes fa' },
+      { id:'traffic', label:'Közlekedés / tábla' },
+      { id:'idea', label:'Ötlet / javaslat' }
+    );
+  }
   if (canUseCivil()) {
     opts.push({ id:'civil_event', label:'Civil esemény' });
   }
@@ -164,6 +191,26 @@ function layerIcon(cat){
   const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${info.tw}.svg`;
   const html = `
     <div class="badge-marker" style="--ring:${info.color}">
+      <img src="${url}" alt="" />
+    </div>
+  `;
+  return L.divIcon({ className:'', html, iconSize:[34,34], iconAnchor:[17,17], popupAnchor:[0,-14] });
+}
+
+function facilityIcon(){
+  const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f3e5.svg`;
+  const html = `
+    <div class="badge-marker" style="--ring:#00c48c">
+      <img src="${url}" alt="" />
+    </div>
+  `;
+  return L.divIcon({ className:'', html, iconSize:[34,34], iconAnchor:[17,17], popupAnchor:[0,-14] });
+}
+
+function civilEventIcon(){
+  const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f4c5.svg`;
+  const html = `
+    <div class="badge-marker" style="--ring:#8e44ff">
       <img src="${url}" alt="" />
     </div>
   `;
@@ -247,6 +294,8 @@ function scheduleReload(){
   reloadTimer = setTimeout(() => {
     loadApprovedMarkers().catch(err => console.error(err));
     loadLayerMarkers().catch(err => console.error(err));
+    loadFacilities().catch(err => console.error(err));
+    loadCivilEvents().catch(err => console.error(err));
   }, 250);
 }
 
@@ -255,6 +304,16 @@ loadApprovedMarkers().catch(err => console.error(err));
 function clearLayerMarkers(){
   layerMarkers.forEach(m => map.removeLayer(m));
   layerMarkers = [];
+}
+
+function clearFacilityMarkers(){
+  facilityMarkers.forEach(m => map.removeLayer(m));
+  facilityMarkers = [];
+}
+
+function clearCivilEventMarkers(){
+  civilEventMarkers.forEach(m => map.removeLayer(m));
+  civilEventMarkers = [];
 }
 
 async function loadLayerMarkers(){
@@ -291,9 +350,65 @@ async function loadLayerMarkers(){
   }
 }
 
+async function loadFacilities(){
+  clearFacilityMarkers();
+  try{
+    const params = new URLSearchParams();
+    const b = getBoundsParams();
+    params.set('minLat', b.minLat);
+    params.set('maxLat', b.maxLat);
+    params.set('minLng', b.minLng);
+    params.set('maxLng', b.maxLng);
+    params.set('limit', '2000');
+    const j = await fetchJson(`${API_FACILITIES}?${params.toString()}`);
+    const rows = j.data || [];
+    for (const f of rows){
+      const mk = L.marker([f.lat, f.lng], { icon: facilityIcon() })
+        .addTo(map)
+        .bindPopup(
+          `<b>${esc(f.name || 'Közület')}</b><br>` +
+          `${f.service_type ? `<small>${esc(f.service_type)}</small><br>` : ''}` +
+          `${f.address ? `<small>${esc(f.address)}</small><br>` : ''}`
+        );
+      facilityMarkers.push(mk);
+    }
+  }catch(e){
+    console.warn('facilities load failed', e);
+  }
+}
+
+async function loadCivilEvents(){
+  clearCivilEventMarkers();
+  try{
+    const params = new URLSearchParams();
+    const b = getBoundsParams();
+    params.set('minLat', b.minLat);
+    params.set('maxLat', b.maxLat);
+    params.set('minLng', b.minLng);
+    params.set('maxLng', b.maxLng);
+    params.set('limit', '2000');
+    const j = await fetchJson(`${API_CIVIL_EVENTS}?${params.toString()}`);
+    const rows = j.data || [];
+    for (const ev of rows){
+      const mk = L.marker([ev.lat, ev.lng], { icon: civilEventIcon() })
+        .addTo(map)
+        .bindPopup(
+          `<b>${esc(ev.title || 'Civil esemény')}</b><br>` +
+          `${ev.address ? `<small>${esc(ev.address)}</small><br>` : ''}` +
+          `${ev.description ? `<small>${esc(ev.description)}</small><br>` : ''}`
+        );
+      civilEventMarkers.push(mk);
+    }
+  }catch(e){
+    console.warn('civil events load failed', e);
+  }
+}
+
 map.on('moveend zoomend', scheduleReload);
 
 loadLayerMarkers().catch(err => console.error(err));
+loadFacilities().catch(err => console.error(err));
+loadCivilEvents().catch(err => console.error(err));
 
 // ====== Address search ======
 (function initSearch(){
@@ -407,6 +522,14 @@ function openModal(latlng){
         <label>Leírás</label>
         <textarea id="mDesc" rows="4" maxlength="5000" placeholder="Írd le röviden a problémát / javaslatot"></textarea>
 
+        <div id="mEventFields" style="display:none">
+          <h3>Esemény időpont</h3>
+          <label>Kezdete</label>
+          <input id="mEventStart" type="date">
+          <label>Vége</label>
+          <input id="mEventEnd" type="date">
+        </div>
+
         <h3>Cím (opcionális)</h3>
         <div class="addr-grid">
           <div>
@@ -504,6 +627,8 @@ function openModal(latlng){
   const elLoggedBox = modal.querySelector('#mLoggedBox');
   const elCreate = modal.querySelector('#mCreateAccount');
   const elPassWrap = modal.querySelector('#mPassWrap');
+  const elCategory = modal.querySelector('#mCategory');
+  const elEventFields = modal.querySelector('#mEventFields');
 
   const syncPass = () => {
     elPassWrap.style.display = elCreate.checked ? '' : 'none';
@@ -536,9 +661,17 @@ function openModal(latlng){
     }
   };
 
+  const syncCategory = () => {
+    const isCivil = elCategory && elCategory.value === 'civil_event';
+    if (elEventFields) elEventFields.style.display = isCivil ? '' : 'none';
+  };
+
   elNotify.addEventListener('change', syncContact);
   elAnon.addEventListener('change', syncContact);
   elCreate.addEventListener('change', () => { syncContact(); syncPass(); });
+  if (elCategory) elCategory.addEventListener('change', syncCategory);
+
+  syncCategory();
 
   modal.querySelector('#mSubmit').addEventListener('click', async () => {
     const category = modal.querySelector('#mCategory').value;
@@ -549,6 +682,8 @@ function openModal(latlng){
     const address_street = modal.querySelector('#mStreet')?.value.trim() || '';
     const address_house = modal.querySelector('#mHouse')?.value.trim() || '';
     const address_note = modal.querySelector('#mAddrNote')?.value.trim() || '';
+    const event_start = modal.querySelector('#mEventStart')?.value || '';
+    const event_end = modal.querySelector('#mEventEnd')?.value || '';
 
     const reporter_is_anonymous = modal.querySelector('#mAnon').checked ? 1 : 0;
     const notify_enabled = modal.querySelector('#mNotify').checked ? 1 : 0;
@@ -605,23 +740,25 @@ function openModal(latlng){
       return;
     }
 
-    // Duplikáció ellenőrzés (50m)
+    // Duplikáció ellenőrzés (50m) – civil eseménynél nem fut
     let force = false;
-    try{
-      const near = await fetchJson(
-        `${API_NEARBY}?lat=${encodeURIComponent(latlng.lat)}&lng=${encodeURIComponent(latlng.lng)}&category=${encodeURIComponent(category)}&radius=50`
-      );
+    if (category !== 'civil_event') {
+      try{
+        const near = await fetchJson(
+          `${API_NEARBY}?lat=${encodeURIComponent(latlng.lat)}&lng=${encodeURIComponent(latlng.lng)}&category=${encodeURIComponent(category)}&radius=50`
+        );
 
-      if (near.ok && near.data && near.data.length){
-        const d = near.data[0];
-        const msg =
-          `⚠️ Van már hasonló (${catLabel(category)}) jelölés kb. ${Math.round(d.distance_m)} méteren belül ` +
-          `(státusz: ${statusLabel(d.status)}).\n\nBiztos beküldöd így is?`;
-        if(!confirm(msg)) return;
-        force = true;
+        if (near.ok && near.data && near.data.length){
+          const d = near.data[0];
+          const msg =
+            `⚠️ Van már hasonló (${catLabel(category)}) jelölés kb. ${Math.round(d.distance_m)} méteren belül ` +
+            `(státusz: ${statusLabel(d.status)}).\n\nBiztos beküldöd így is?`;
+          if(!confirm(msg)) return;
+          force = true;
+        }
+      }catch(err){
+        console.warn('nearby check failed:', err);
       }
-    }catch(err){
-      console.warn('nearby check failed:', err);
     }
 
     const btn = modal.querySelector('#mSubmit');
@@ -629,35 +766,57 @@ function openModal(latlng){
     btn.textContent = 'Beküldés...';
 
     try{
-      await fetchJson(API_CREATE, {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({
-          category,
-          title,
-          description,
-          lat: latlng.lat,
-          lng: latlng.lng,
-          force_duplicate: force ? 1 : 0,
+      if (category === 'civil_event') {
+        if (!event_start || !event_end) {
+          alert('Az esemény kezdetét és végét add meg.');
+          btn.disabled = false;
+          btn.textContent = 'Beküldés';
+          return;
+        }
+        await fetchJson(API_CIVIL_EVENT_CREATE, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({
+            title: title || 'Civil esemény',
+            description,
+            start_date: event_start,
+            end_date: event_end,
+            lat: latlng.lat,
+            lng: latlng.lng,
+            address: [address_street, address_house, address_city, address_zip].filter(Boolean).join(' ')
+          })
+        });
+      } else {
+        await fetchJson(API_CREATE, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({
+            category,
+            title,
+            description,
+            lat: latlng.lat,
+            lng: latlng.lng,
+            force_duplicate: force ? 1 : 0,
 
-          reporter_is_anonymous,
-          notify_enabled,
-          reporter_email: reporter_email || null,
-          reporter_name: reporter_name || null,
-          create_account,
-          password: create_account ? password : null,
+            reporter_is_anonymous,
+            notify_enabled,
+            reporter_email: reporter_email || null,
+            reporter_name: reporter_name || null,
+            create_account,
+            password: create_account ? password : null,
 
-          consent_data,
-          consent_share_thirdparty,
-          consent_marketing,
+            consent_data,
+            consent_share_thirdparty,
+            consent_marketing,
 
-          address_zip: address_zip || null,
-          address_city: address_city || null,
-          address_street: address_street || null,
-          address_house: address_house || null,
-          address_note: address_note || null,
-        })
-      });
+            address_zip: address_zip || null,
+            address_city: address_city || null,
+            address_street: address_street || null,
+            address_house: address_house || null,
+            address_note: address_note || null,
+          })
+        });
+      }
 
       alert('Köszönjük! A bejelentés ellenőrzés után fog megjelenni a térképen.');
       closeModal();
