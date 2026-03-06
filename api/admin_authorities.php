@@ -11,6 +11,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   $assign = [];
   try {
     $auth = db()->query("SELECT * FROM authorities ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($auth as &$a) {
+      if (!array_key_exists('contact_email', $a) && array_key_exists('email', $a)) $a['contact_email'] = $a['email'];
+      if (!array_key_exists('is_active', $a) && array_key_exists('active', $a)) $a['is_active'] = $a['active'];
+    }
+    unset($a);
   } catch (Throwable $e) { log_error('admin_authorities auth: ' . $e->getMessage()); }
   try {
     $contacts = db()->query("SELECT * FROM authority_contacts ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
@@ -64,6 +69,7 @@ if ($action === 'create_authority') {
   if (!$name) json_response(['ok' => false, 'error' => 'Name required'], 400);
 
   $pdo = db();
+  $inserted = false;
   try {
     $pdo->prepare("
       INSERT INTO authorities (name, country, region, city, contact_email, contact_phone, website, is_active, min_lat, max_lat, min_lng, max_lng)
@@ -82,28 +88,63 @@ if ($action === 'create_authority') {
       ':minlng' => $minLng,
       ':maxlng' => $maxLng,
     ]);
+    $inserted = true;
   } catch (Throwable $e) {
-    $pdo->prepare("
-      INSERT INTO authorities (name, country, region, city, contact_email, contact_phone, website, is_active)
-      VALUES (:name, :country, :region, :city, :email, :phone, :website, :active)
-    ")->execute([
-      ':name' => $name,
-      ':country' => $country,
-      ':region' => $region,
-      ':city' => $city,
-      ':email' => $email,
-      ':phone' => $phone,
-      ':website' => $website,
-      ':active' => $isActive,
-    ]);
+    log_error('admin_authorities create (with bbox): ' . $e->getMessage());
+    try {
+      $pdo->prepare("
+        INSERT INTO authorities (name, country, region, city, contact_email, contact_phone, website, is_active)
+        VALUES (:name, :country, :region, :city, :email, :phone, :website, :active)
+      ")->execute([
+        ':name' => $name,
+        ':country' => $country,
+        ':region' => $region,
+        ':city' => $city,
+        ':email' => $email,
+        ':phone' => $phone,
+        ':website' => $website,
+        ':active' => $isActive,
+      ]);
+      $inserted = true;
+    } catch (Throwable $e2) {
+      log_error('admin_authorities create (no bbox): ' . $e2->getMessage());
+      try {
+        // Régi schema: name, email (NOT NULL), category, city, active, min_lat, max_lat, min_lng, max_lng
+        $pdo->prepare("
+          INSERT INTO authorities (name, email, category, city, active, min_lat, max_lat, min_lng, max_lng)
+          VALUES (:name, :email, :category, :city, :active, :minlat, :maxlat, :minlng, :maxlng)
+        ")->execute([
+          ':name' => $name,
+          ':email' => $email ?: ' ',
+          ':category' => '',
+          ':city' => $city,
+          ':active' => $isActive,
+          ':minlat' => $minLat,
+          ':maxlat' => $maxLat,
+          ':minlng' => $minLng,
+          ':maxlng' => $maxLng,
+        ]);
+        $inserted = true;
+      } catch (Throwable $e3) {
+        log_error('admin_authorities create (legacy): ' . $e3->getMessage());
+        json_response(['ok' => false, 'error' => 'Hatóság mentés sikertelen. Ellenőrizd az authorities tábla szerkezetét (email, active, category oszlopok).'], 500);
+      }
+    }
   }
-  json_response(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
+  if ($inserted) {
+    json_response(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
+  }
 }
 
 if ($action === 'delete_authority') {
   $id = (int)($body['id'] ?? 0);
   if ($id <= 0) json_response(['ok' => false, 'error' => 'Invalid id'], 400);
-  db()->prepare("DELETE FROM authority_contacts WHERE authority_id=:id")->execute([':id' => $id]);
+  try {
+    db()->prepare("DELETE FROM authority_contacts WHERE authority_id=:id")->execute([':id' => $id]);
+  } catch (Throwable $e) { /* tábla hiányozhat */ }
+  try {
+    db()->prepare("DELETE FROM authority_users WHERE authority_id=:id")->execute([':id' => $id]);
+  } catch (Throwable $e) { /* tábla hiányozhat */ }
   db()->prepare("DELETE FROM authorities WHERE id=:id")->execute([':id' => $id]);
   json_response(['ok' => true]);
 }
