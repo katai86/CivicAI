@@ -14,7 +14,14 @@ const API_REPORT_LIKE = `${BASE}/api/report_like.php`;
 const GEO_SEARCH = 'https://nominatim.openstreetmap.org/search';
 
 // ====== Map init ======
-const map = L.map('map').setView([47.1625, 19.5033], 7);
+const mapCenter = (() => {
+  const body = document.body;
+  const lat = parseFloat(body.dataset.mapLat);
+  const lng = parseFloat(body.dataset.mapLng);
+  const zoom = parseInt(body.dataset.mapZoom, 10);
+  return { lat: isFinite(lat) ? lat : 47.1625, lng: isFinite(lng) ? lng : 19.5033, zoom: isFinite(zoom) ? zoom : 7 };
+})();
+const map = L.map('map').setView([mapCenter.lat, mapCenter.lng], mapCenter.zoom);
 map.attributionControl.setPrefix(false);
 
 L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {

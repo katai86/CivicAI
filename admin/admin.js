@@ -19,7 +19,14 @@ let markerById = new Map();
 let layerMarkers = [];
 
 if (document.getElementById('map')) {
-  map = L.map('map').setView([46.565, 20.667], 13);
+  const b = document.body;
+  const mlat = parseFloat(b.dataset.mapLat);
+  const mlng = parseFloat(b.dataset.mapLng);
+  const mzoom = parseInt(b.dataset.mapZoom, 10);
+  const lat = isFinite(mlat) ? mlat : 46.565;
+  const lng = isFinite(mlng) ? mlng : 20.667;
+  const zoom = isFinite(mzoom) ? mzoom : 13;
+  map = L.map('map').setView([lat, lng], zoom);
   map.attributionControl.setPrefix(false);
   L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
     maxZoom: 20,

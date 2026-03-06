@@ -25,6 +25,12 @@ define('NOMINATIM_USER_AGENT', 'Problematerkep/1.0 (contact: hello@kataiattila.h
 // FONTOS: állítsd be a tényleges alap URL-t (https + teljes domain + /terkep)
 define('APP_BASE_URL', getenv('APP_BASE_URL') ?: 'https://example.com/terkep');
 
+// Térkép kezdeti nézet (Phase 5 – multi-city: városonként más érték lehet)
+// Pl. Orosháza: MAP_CENTER_LAT=46.565 MAP_CENTER_LNG=20.667 MAP_ZOOM=13
+define('MAP_CENTER_LAT', is_numeric(getenv('MAP_CENTER_LAT')) ? (float)getenv('MAP_CENTER_LAT') : 47.1625);
+define('MAP_CENTER_LNG', is_numeric(getenv('MAP_CENTER_LNG')) ? (float)getenv('MAP_CENTER_LNG') : 19.5033);
+define('MAP_ZOOM', (int)(getenv('MAP_ZOOM') ?: 7));
+
 // Session cookie beállítások
 define('SESSION_NAME', 'terkep_sess');
 
