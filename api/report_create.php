@@ -367,11 +367,10 @@ $storeEmail = ($wantsNotify === 1) ? $reporterEmail : null;
 $authorityId = find_authority_for_report($city ?: $addrCity, $category);
 $serviceCode = $category;
 
-$stmt = db()->prepare("
+$baseInsert = "
   INSERT INTO reports
     (category, title, description, lat, lng,
      address_approx, house_number_approx, road, suburb, city, postcode,
-     address_zip_manual, address_city_manual, address_street_manual, address_house_manual, address_note_manual,
      status, ip_hash, user_agent,
      user_id, reporter_email, reporter_name, reporter_is_anonymous,
      notify_token, notify_enabled,
@@ -379,13 +378,13 @@ $stmt = db()->prepare("
   VALUES
     (:category, :title, :description, :lat, :lng,
      :address_approx, :house_number, :road, :suburb, :city, :postcode,
-     :addr_zip, :addr_city, :addr_street, :addr_house, :addr_note,
      'new', :ip_hash, :user_agent,
      :user_id, :reporter_email, :reporter_name, :reporter_is_anonymous,
      :notify_token, :notify_enabled,
      :authority_id, :service_code)
-");
-$stmt->execute([
+";
+
+$baseParams = [
   ':category' => $category,
   ':title' => $title,
   ':description' => $desc,
@@ -397,11 +396,6 @@ $stmt->execute([
   ':suburb' => $suburb,
   ':city' => $city,
   ':postcode' => $postcode,
-  ':addr_zip' => $addrZip,
-  ':addr_city' => $addrCity,
-  ':addr_street' => $addrStreet,
-  ':addr_house' => $addrHouse,
-  ':addr_note' => $addrNote,
   ':ip_hash' => $ipHash,
   ':user_agent' => $userAgent,
   ':user_id' => $userId,
@@ -412,7 +406,39 @@ $stmt->execute([
   ':notify_enabled' => $notifyEnabled,
   ':authority_id' => $authorityId,
   ':service_code' => $serviceCode,
-]);
+];
+
+try {
+  $stmt = db()->prepare("
+    INSERT INTO reports
+      (category, title, description, lat, lng,
+       address_approx, house_number_approx, road, suburb, city, postcode,
+       address_zip_manual, address_city_manual, address_street_manual, address_house_manual, address_note_manual,
+       status, ip_hash, user_agent,
+       user_id, reporter_email, reporter_name, reporter_is_anonymous,
+       notify_token, notify_enabled,
+       authority_id, service_code)
+    VALUES
+      (:category, :title, :description, :lat, :lng,
+       :address_approx, :house_number, :road, :suburb, :city, :postcode,
+       :addr_zip, :addr_city, :addr_street, :addr_house, :addr_note,
+       'new', :ip_hash, :user_agent,
+       :user_id, :reporter_email, :reporter_name, :reporter_is_anonymous,
+       :notify_token, :notify_enabled,
+       :authority_id, :service_code)
+  ");
+  $stmt->execute(array_merge($baseParams, [
+    ':addr_zip' => $addrZip,
+    ':addr_city' => $addrCity,
+    ':addr_street' => $addrStreet,
+    ':addr_house' => $addrHouse,
+    ':addr_note' => $addrNote,
+  ]));
+} catch (Throwable $e) {
+  log_error('report_create INSERT (manual cols): ' . $e->getMessage());
+  $stmt = db()->prepare($baseInsert);
+  $stmt->execute($baseParams);
+}
 
 $id = (int)db()->lastInsertId();
 // ===== /FixMyStreet =====

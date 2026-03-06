@@ -59,6 +59,7 @@ $rankAll = $uid ? get_user_rank('all', $uid) : null;
 
 <div id="mapWrap">
   <div id="map"></div>
+  <button type="button" id="btnNewReport" class="fab-report" aria-label="Új bejelentés" title="Új bejelentés">+ Bejelentés</button>
 
   <!-- Jelmagyarázat (mobilbarát: alapból összecsukva) -->
   <div class="legend" id="legend" aria-label="Jelmagyarázat">

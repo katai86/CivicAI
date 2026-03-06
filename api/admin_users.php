@@ -74,12 +74,17 @@ if ($userId <= 0) json_response(['ok'=>false,'error'=>'Invalid user_id'], 400);
 
 $currentUserId = current_user_id() ?: 0;
 
-  if ($action === 'update_role') {
+if ($action === 'update_role') {
   $role = (string)($body['role'] ?? '');
-    $allowed = ['user','civiluser','communityuser','govuser','admin','superadmin'];
+  $allowed = ['user','civiluser','communityuser','govuser','admin','superadmin'];
   if (!in_array($role, $allowed, true)) json_response(['ok'=>false,'error'=>'Invalid role'], 400);
-  db()->prepare("UPDATE users SET role = :r WHERE id = :id")->execute([':r'=>$role, ':id'=>$userId]);
-  json_response(['ok'=>true]);
+  try {
+    db()->prepare("UPDATE users SET role = :r WHERE id = :id")->execute([':r'=>$role, ':id'=>$userId]);
+    json_response(['ok'=>true]);
+  } catch (Throwable $e) {
+    log_error('admin_users update_role: ' . $e->getMessage());
+    json_response(['ok'=>false,'error'=>'Role frissítés sikertelen'], 500);
+  }
 }
 
 if ($action === 'toggle_active') {

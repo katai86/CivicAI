@@ -140,6 +140,34 @@ function avatar_url($filename){
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Köz.Tér – Profil</title>
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const BASE = '<?= addslashes(app_url('')) ?>';
+    document.querySelectorAll('form[action*="friend_request"]').forEach(function(frm){
+      frm.addEventListener('submit', function(e){
+        e.preventDefault();
+        const btn = frm.querySelector('button[type="submit"]');
+        const origText = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.textContent = '...'; }
+        const fd = new FormData(frm);
+        const body = {};
+        fd.forEach(function(v,k){ body[k]=v; });
+        fetch(BASE + '/api/friend_request.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          if (j && j.ok) location.reload();
+          else alert(j && j.error ? j.error : 'Hiba történt.');
+        })
+        .catch(function(err){ alert('Hiba: ' + (err.message || 'Ismeretlen hiba')); })
+        .finally(function(){ if (btn) { btn.disabled = false; btn.textContent = origText; } });
+      });
+    });
+  });
+  </script>
 </head>
 <body class="page">
 <header class="topbar">

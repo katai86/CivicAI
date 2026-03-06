@@ -126,7 +126,22 @@ if ($action === 'create_point') {
   $lng = $body['lng'] ?? null;
   $address = safe_str($body['address'] ?? null, 255);
   $meta = $body['meta_json'] ?? null;
-  if ($layerId <= 0 || !is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>'Missing fields'], 400);
+
+  if ($layerId <= 0) json_response(['ok'=>false,'error'=>'Missing fields'], 400);
+
+  if (!is_numeric($lat) || !is_numeric($lng)) {
+    if ($address) {
+      $point = nominatim_geocode_to_point($address);
+      if ($point) {
+        $lat = $point[0];
+        $lng = $point[1];
+      }
+    }
+  }
+  if (!is_numeric($lat) || !is_numeric($lng)) {
+    json_response(['ok'=>false,'error'=>'Add meg a lat/lng koordinátákat vagy egy címet (pl. Orosháza, Balassa Pál utca 25)'], 400);
+  }
+
   try {
     db()->prepare("
       INSERT INTO map_layer_points (layer_id, name, lat, lng, address, meta_json)

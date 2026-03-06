@@ -37,6 +37,13 @@ body{
 
 #mapWrap{position:relative;height:calc(100vh - 52px)}
 #map{height:100%;width:100%;filter:saturate(0.8) brightness(0.9) contrast(1.05)}
+.fab-report{
+  position:absolute;left:14px;bottom:14px;z-index:800;
+  padding:12px 18px;border-radius:999px;border:1px solid var(--border);
+  background:var(--card);color:var(--text);font:700 14px "Montserrat",system-ui,sans-serif;
+  cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(10px)
+}
+.fab-report:hover{background:var(--primary);color:#0f1721;border-color:var(--primary)}
 
 /* ===== Legend ===== */
 .legend{position:absolute;right:14px;top:14px;z-index:800;width:260px;max-width:85vw}

@@ -615,6 +615,8 @@ function openModal(latlng){
         </div>
         <label>Cím megjegyzés (opcionális)</label>
         <input id="mAddrNote" maxlength="160" placeholder="pl. kapubejáró mellett">
+        <p class="muted" style="margin-top:8px;font-size:12px">Ha nem tudod a térképen kattintani, add meg a címet és kattints: <strong>Cím alapján hely megadása</strong></p>
+        <button type="button" id="mGeocodeBtn" class="btn-soft" style="margin-top:6px">Cím alapján hely megadása</button>
 
         <div class="checks">
           <label class="check">
@@ -693,6 +695,33 @@ function openModal(latlng){
   const elPassWrap = modal.querySelector('#mPassWrap');
   const elCategory = modal.querySelector('#mCategory');
   const elEventFields = modal.querySelector('#mEventFields');
+
+  modal.querySelector('#mGeocodeBtn')?.addEventListener('click', async () => {
+    const zip = modal.querySelector('#mZip')?.value.trim() || '';
+    const city = modal.querySelector('#mCity')?.value.trim() || '';
+    const street = modal.querySelector('#mStreet')?.value.trim() || '';
+    const house = modal.querySelector('#mHouse')?.value.trim() || '';
+    const addr = [street, house, city, zip].filter(Boolean).join(', ');
+    if (!addr) { alert('Add meg legalább a várost vagy az utcát!'); return; }
+    try {
+      const hits = await geocodeAddress(addr, 1);
+      if (!hits || !hits.length) { alert('Nem található a cím. Próbáld pontosítani (pl. Orosháza, Balassa Pál utca 25).'); return; }
+      const h = hits[0];
+      const lat = parseFloat(h.lat);
+      const lon = parseFloat(h.lon);
+      if (isFinite(lat) && isFinite(lon)) {
+        if (tempMarker) map.removeLayer(tempMarker);
+        tempMarker = L.marker([lat, lon]).addTo(map);
+        map.setView([lat, lon], 17, { animate: true });
+        latlng.lat = lat;
+        latlng.lng = lon;
+        alert('Hely beállítva. Most küldd el a bejelentést.');
+      } else { alert('Nem sikerült a koordináta.'); }
+    } catch (e) {
+      console.error(e);
+      alert('Hiba a cím keresésnél. Próbáld újra.');
+    }
+  });
 
   const syncPass = () => {
     elPassWrap.style.display = elCreate.checked ? '' : 'none';
@@ -896,6 +925,11 @@ function openModal(latlng){
 
 // Kattintás a térképen → bejelentés
 map.on('click', (e) => openModal(e.latlng));
+
+document.getElementById('btnNewReport')?.addEventListener('click', () => {
+  const c = map.getCenter();
+  openModal({ lat: c.lat, lng: c.lng });
+});
 
 // ====== FIRST POPUP (Belépés / Reg / Anonim) ======
 (function introGate(){
