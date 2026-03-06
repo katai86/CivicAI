@@ -4,6 +4,12 @@
 .counts{display:flex;gap:8px;flex-wrap:wrap}
 .counts .pill{font-size:12px}
 .badge-emoji{font-size:16px;line-height:1}
+.admin-chart{min-height:140px}
+.admin-chart-bar{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13px}
+.admin-chart-bar .label{min-width:100px}
+.admin-chart-bar .bar-wrap{flex:1;height:22px;background:var(--bs-secondary-bg);border-radius:4px;overflow:hidden}
+.admin-chart-bar .bar{height:100%;border-radius:4px;transition:width .3s}
+.admin-chart-bar .val{min-width:28px;text-align:right;font-weight:600}
 @media (max-width: 992px){
   .admin-map{height:55vh;min-height:360px}
 }

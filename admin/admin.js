@@ -13,25 +13,29 @@ const API_AUTHORITIES = `${BASE}/api/admin_authorities.php`;
 const LOGOUT_URL      = `${BASE}/admin/logout.php`;
 // ========================================================
 
-const map = L.map('map').setView([46.565, 20.667], 13);
-map.attributionControl.setPrefix(false);
-
-L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-  maxZoom: 20,
-  attribution: '&copy; OpenStreetMap közreműködők, Humanitarian style'
-}).addTo(map);
-
+let map = null;
 let markers = [];
 let markerById = new Map();
 let layerMarkers = [];
 
+if (document.getElementById('map')) {
+  map = L.map('map').setView([46.565, 20.667], 13);
+  map.attributionControl.setPrefix(false);
+  L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+    maxZoom: 20,
+    attribution: '&copy; OpenStreetMap közreműködők, Humanitarian style'
+  }).addTo(map);
+}
+
 function clearMarkers(){
+  if (!map) return;
   markers.forEach(m => map.removeLayer(m));
   markers = [];
   markerById.clear();
 }
 
 function clearLayerMarkers(){
+  if (!map) return;
   layerMarkers.forEach(m => map.removeLayer(m));
   layerMarkers = [];
 }
@@ -178,17 +182,27 @@ function reporterLine(r){
   return `<div class="text-secondary"><b>Beküldő:</b> ${esc(name)}${level}</div>`;
 }
 
+const CAT_LABEL = {
+  road:'Úthiba', sidewalk:'Járda', lighting:'Közvilágítás', trash:'Szemét',
+  green:'Zöld', traffic:'Közlekedés', idea:'Ötlet', civil_event:'Civil'
+};
+
 async function loadStats(){
   try{
     const j = await fetchJson(API_STATS);
     const data = j.data || {};
+    const reports1 = data.reports_1d ?? 0;
     const reports7 = data.reports_7d ?? 0;
     const users7 = data.users_7d ?? 0;
     const status = data.status || {};
+    const category = data.category || {};
 
+    const el1 = document.getElementById('kpiReports1');
     const elReports = document.getElementById('kpiReports7');
     const elUsers = document.getElementById('kpiUsers7');
     const elStatus = document.getElementById('kpiStatus');
+    const elCat = document.getElementById('kpiCategory');
+    if (el1) el1.textContent = String(reports1);
     if (elReports) elReports.textContent = String(reports7);
     if (elUsers) elUsers.textContent = String(users7);
 
@@ -201,6 +215,40 @@ async function loadStats(){
         `Elutasítva: ${status.rejected || 0}`
       ];
       elStatus.textContent = parts.join(' • ');
+    }
+
+    if (elCat){
+      const parts = Object.entries(category).map(([k,v]) => (CAT_LABEL[k]||k)+': '+v);
+      elCat.textContent = parts.length ? parts.join(' • ') : '—';
+    }
+
+    const statusOrder = ['new','approved','in_progress','solved','rejected','needs_info','forwarded','waiting_reply','closed','pending'];
+    const statusColors = { new:'#0d6efd', approved:'#198754', in_progress:'#ffc107', solved:'#20c997', rejected:'#dc3545', needs_info:'#6f42c1', forwarded:'#fd7e14', waiting_reply:'#0dcaf0', closed:'#6c757d', pending:'#adb5bd' };
+    const chartStatus = document.getElementById('chartStatus');
+    if (chartStatus){
+      const maxS = Math.max(1, ...Object.values(status));
+      const items = statusOrder.filter(s => (status[s]||0) > 0).map(s => ({ k:s, v:status[s]||0, label:STATUS_LABEL[s]||s, color:statusColors[s]||'#6c757d' }));
+      chartStatus.innerHTML = items.length ? items.map(x => `
+        <div class="admin-chart-bar">
+          <span class="label">${esc(x.label)}</span>
+          <div class="bar-wrap"><div class="bar" style="width:${100*x.v/maxS}%;background:${x.color}"></div></div>
+          <span class="val">${x.v}</span>
+        </div>
+      `).join('') : '<div class="text-secondary small">Nincs adat.</div>';
+    }
+
+    const chartCategory = document.getElementById('chartCategory');
+    if (chartCategory){
+      const maxC = Math.max(1, ...Object.values(category));
+      const items = Object.entries(category).sort((a,b)=>b[1]-a[1]).map(([k,v]) => ({ k, v, label:CAT_LABEL[k]||k }));
+      const catColors = ['#e74c3c','#3498db','#f1c40f','#34495e','#27ae60','#9b59b6','#ff7a00','#0ea5e9'];
+      chartCategory.innerHTML = items.length ? items.map((x,i) => `
+        <div class="admin-chart-bar">
+          <span class="label">${esc(x.label)}</span>
+          <div class="bar-wrap"><div class="bar" style="width:${100*x.v/maxC}%;background:${catColors[i%catColors.length]}"></div></div>
+          <span class="val">${x.v}</span>
+        </div>
+      `).join('') : '<div class="text-secondary small">Nincs adat.</div>';
     }
 
     const countsEl = document.getElementById('counts');
@@ -329,7 +377,7 @@ function renderRow(r){
 
   // hover → map jump
   wrap.addEventListener('mouseenter', () => {
-    map.setView([r.lat, r.lng], Math.max(map.getZoom(), 17));
+    if (map) map.setView([r.lat, r.lng], Math.max(map.getZoom(), 17));
     const mk = markerById.get(r.id);
     if (mk) mk.openPopup();
   });
@@ -367,7 +415,7 @@ function renderRow(r){
           });
 
           const mk = markerById.get(r.id);
-          if (mk){
+          if (mk && map){
             map.removeLayer(mk);
             markerById.delete(r.id);
           }
@@ -445,24 +493,23 @@ async function loadReports(){
     const rows = j.data || [];
     renderReports(rows);
 
-    for(const r of rows){
-      const mk = L.marker([r.lat, r.lng], { icon: getIcon(r.category) })
-        .addTo(map)
-        .bindPopup(
-          `<b>#${r.id}</b> <small>(${esc(statusLabel(r.status))})</small><br>` +
-          (r.case_no ? `<small><b>Ügyszám:</b> ${esc(r.case_no)}</small><br>` : '') +
-          `<b>${esc(catLabel(r.category))}</b><br>` +
-          `${r.title ? `<b>${esc(r.title)}</b><br>` : ''}` +
-          `${esc(r.description)}<br>` +
-          `${r.address_approx ? `<small>${esc(r.address_approx)}</small>` : ''}`
-        );
+    if (map) {
+      for(const r of rows){
+        const mk = L.marker([r.lat, r.lng], { icon: getIcon(r.category) })
+          .addTo(map)
+          .bindPopup(
+            `<b>#${r.id}</b> <small>(${esc(statusLabel(r.status))})</small><br>` +
+            (r.case_no ? `<small><b>Ügyszám:</b> ${esc(r.case_no)}</small><br>` : '') +
+            `<b>${esc(catLabel(r.category))}</b><br>` +
+            `${r.title ? `<b>${esc(r.title)}</b><br>` : ''}` +
+            `${esc(r.description)}<br>` +
+            `${r.address_approx ? `<small>${esc(r.address_approx)}</small>` : ''}`
+          );
 
-      markers.push(mk);
-      markerById.set(r.id, mk);
-    }
-
-    if(rows.length){
-      map.setView([rows[0].lat, rows[0].lng], 14);
+        markers.push(mk);
+        markerById.set(r.id, mk);
+      }
+      if(rows.length) map.setView([rows[0].lat, rows[0].lng], 14);
     }
   }catch(e){
     console.error(e);
@@ -657,6 +704,7 @@ async function loadPoints(layerId){
 }
 
 async function loadLayerMarkers(){
+  if (!map) return;
   clearLayerMarkers();
   try{
     const j = await fetchJson(`${API_LAYERS}?with_points=1`);
@@ -814,6 +862,7 @@ function initTabs(){
       }
       if (key === 'reports') {
         clearLayerMarkers();
+        loadStats();
       }
       if (key === 'authorities') {
         clearLayerMarkers();
@@ -888,24 +937,18 @@ document.getElementById('createAuthority')?.addEventListener('click', async () =
     action:'create_authority',
     name: document.getElementById('authorityName').value.trim(),
     city: document.getElementById('authorityCity').value.trim(),
+    address: document.getElementById('authorityAddress')?.value?.trim() || '',
     contact_email: document.getElementById('authorityEmail').value.trim(),
     contact_phone: document.getElementById('authorityPhone').value.trim(),
-    min_lat: document.getElementById('authorityMinLat').value.trim(),
-    max_lat: document.getElementById('authorityMaxLat').value.trim(),
-    min_lng: document.getElementById('authorityMinLng').value.trim(),
-    max_lng: document.getElementById('authorityMaxLng').value.trim(),
     is_active: 1
   };
   try{
     await fetchJson(API_AUTHORITIES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     document.getElementById('authorityName').value = '';
     document.getElementById('authorityCity').value = '';
+    document.getElementById('authorityAddress').value = '';
     document.getElementById('authorityEmail').value = '';
     document.getElementById('authorityPhone').value = '';
-    document.getElementById('authorityMinLat').value = '';
-    document.getElementById('authorityMaxLat').value = '';
-    document.getElementById('authorityMinLng').value = '';
-    document.getElementById('authorityMaxLng').value = '';
     await loadAuthorities();
   }catch(e){
     alert('Hatóság mentés hiba: ' + e.message);
@@ -946,6 +989,8 @@ document.getElementById('assignUser')?.addEventListener('click', async () => {
     alert('Hozzárendelés hiba: ' + e.message);
   }
 });
+
+document.getElementById('refreshStats')?.addEventListener('click', loadStats);
 
 initTabs();
 loadStats();

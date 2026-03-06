@@ -160,7 +160,7 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 <html lang="hu"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Köz.Tér – Közigazgatási</title>
-<link rel="stylesheet" href="/terkep/assets/style.css">
+<link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="page">
 <header class="topbar">

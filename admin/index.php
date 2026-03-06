@@ -9,10 +9,9 @@ require_admin();
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Köz.Tér – Admin</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
-  <link rel="stylesheet" href="/terkep/dashboard/dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="/terkep/assets/admin.css">
+  <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/dashboard/dist/css/adminlte.min.css'), ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/admin.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary" data-app-base="<?= htmlspecialchars(APP_BASE, ENT_QUOTES, 'UTF-8') ?>">
 <div class="app-wrapper">
@@ -81,41 +80,37 @@ require_admin();
     <div class="app-content">
       <div class="container-fluid">
         <div class="row g-3 mb-3">
-          <div class="col-md-4">
+          <div class="col-12">
             <div class="card">
               <div class="card-body">
-                <div class="text-secondary">Új bejelentések (7 nap)</div>
-                <div class="fs-4 fw-bold" id="kpiReports7">—</div>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card">
-              <div class="card-body">
-                <div class="text-secondary">Státusz megoszlás</div>
-                <div class="fw-semibold" id="kpiStatus">—</div>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="card">
-              <div class="card-body">
-                <div class="text-secondary">Új felhasználók (7 nap)</div>
-                <div class="fs-4 fw-bold" id="kpiUsers7">—</div>
+                <h6 class="card-title d-flex align-items-center gap-2">
+                  Statisztika
+                  <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshStats" title="Frissítés">↻</button>
+                </h6>
+                <div class="row g-2">
+                  <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small">Bejelentések (ma)</span><span class="fw-bold fs-5" id="kpiReports1">—</span></div></div>
+                  <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small">Bejelentések (7 nap)</span><span class="fw-bold fs-5" id="kpiReports7">—</span></div></div>
+                  <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small">Felhasználók (7 nap)</span><span class="fw-bold fs-5" id="kpiUsers7">—</span></div></div>
+                  <div class="col-md-3"><div class="d-flex flex-column"><span class="text-secondary small">Státusz</span><span class="small" id="kpiStatus">—</span></div></div>
+                  <div class="col-md-3"><div class="d-flex flex-column"><span class="text-secondary small">Kategória</span><span class="small" id="kpiCategory">—</span></div></div>
+                </div>
+                <div class="row g-3 mt-2">
+                  <div class="col-md-6">
+                    <h6 class="text-secondary small mb-2">Státusz megoszlás</h6>
+                    <div id="chartStatus" class="admin-chart"></div>
+                  </div>
+                  <div class="col-md-6">
+                    <h6 class="text-secondary small mb-2">Kategória megoszlás</h6>
+                    <div id="chartCategory" class="admin-chart"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <div class="row g-3">
-          <div class="col-lg-7">
-            <div class="card">
-              <div class="card-body p-0">
-                <div id="map" class="admin-map"></div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-5">
+          <div class="col-12">
             <div class="card">
               <div class="card-body">
                 <div class="admin-tab-body" id="tab-reports">
@@ -212,12 +207,9 @@ require_admin();
                   <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
                     <input id="authorityName" class="form-control form-control-sm" placeholder="Név">
                     <input id="authorityCity" class="form-control form-control-sm" placeholder="Város">
+                    <input id="authorityAddress" class="form-control form-control-sm" placeholder="Cím (pl. Orosháza, Szabadság u. 1)" style="min-width:220px">
                     <input id="authorityEmail" class="form-control form-control-sm" placeholder="Email">
                     <input id="authorityPhone" class="form-control form-control-sm" placeholder="Telefon">
-                    <input id="authorityMinLat" class="form-control form-control-sm" placeholder="Min lat">
-                    <input id="authorityMaxLat" class="form-control form-control-sm" placeholder="Max lat">
-                    <input id="authorityMinLng" class="form-control form-control-sm" placeholder="Min lng">
-                    <input id="authorityMaxLng" class="form-control form-control-sm" placeholder="Max lng">
                     <button id="createAuthority" class="btn btn-primary btn-sm ms-auto" type="button">Mentés</button>
                   </div>
                   <div class="admin-list" id="authorityList">Nincs adat.</div>
@@ -251,8 +243,8 @@ require_admin();
 
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
-<script src="/terkep/dashboard/dist/js/adminlte.min.js"></script>
+<script src="<?= htmlspecialchars(app_url('/dashboard/dist/js/adminlte.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="admin.js?v=6"></script>
+<script src="admin.js?v=7"></script>
 </body>
 </html>

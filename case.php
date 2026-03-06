@@ -95,7 +95,7 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Köz.Tér – <?= h($caseNo) ?></title>
-  <link rel="stylesheet" href="/terkep/assets/style.css">
+  <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="page">
 <header class="topbar">

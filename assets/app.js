@@ -1,5 +1,5 @@
 // Public map (bejelentés + jóváhagyott jelölők)
-const BASE = '/terkep';
+const BASE = document.body?.dataset?.appBase || '/terkep';
 const IS_LOGGED_IN = document.body?.dataset?.loggedIn === '1' || !!window.TERKEP_LOGGED_IN;
 const USER_ROLE = document.body?.dataset?.role || window.TERKEP_ROLE || 'guest';
 const API_LIST   = `${BASE}/api/reports_list.php`;
@@ -167,15 +167,11 @@ function likeLine(r){
   const count = Number(r.like_count || 0);
   const liked = Number(r.liked_by_me || 0) === 1;
   const label = liked ? 'Kedveled' : 'Tetszik';
-  return `
-    <div class="like-row" data-report-id="${r.id}">
-      <button type="button" class="like-btn ${liked ? 'liked' : ''}" data-id="${r.id}" aria-label="Like">
-        ❤️
-      </button>
-      <span class="like-count">${count}</span>
-      <span class="like-label">${label}</span>
-    </div>
-  `;
+  return `<div class="like-row" data-report-id="${r.id}">
+    <button type="button" class="like-btn ${liked ? 'liked' : ''}" data-id="${r.id}" aria-label="Tetszik">❤️</button>
+    <span class="like-count">${count}</span>
+    <span class="like-label">${label}</span>
+  </div>`;
 }
 
 
@@ -302,8 +298,8 @@ async function loadApprovedMarkers(){
         (r.status ? `<small><b>Státusz:</b> ${esc(statusLabel(r.status))}</small><br>` : '') +
         userLine(r) +
         (r.title ? `<b>${esc(r.title)}</b><br>` : '') +
-        `${esc(r.description)}` +
-        likeLine(r)
+        (r.description ? `${esc(r.description)}<br>` : '') +
+        `<div class="popup-like-wrap">${likeLine(r)}</div>`
       );
 
     markerLayers.push({ marker: mk, data: r });

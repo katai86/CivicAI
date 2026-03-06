@@ -9,10 +9,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 $out = [
+  'reports_1d' => 0,
   'reports_7d' => 0,
   'users_7d' => 0,
   'status' => [],
+  'category' => [],
 ];
+
+try {
+  $stmt = db()->query("SELECT COUNT(*) FROM reports WHERE created_at >= (CURDATE())");
+  $out['reports_1d'] = (int)$stmt->fetchColumn();
+} catch (Throwable $e) { /* ignore */ }
 
 try {
   $stmt = db()->query("SELECT COUNT(*) FROM reports WHERE created_at >= (NOW() - INTERVAL 7 DAY)");
@@ -23,6 +30,13 @@ try {
   $rows = db()->query("SELECT status, COUNT(*) AS cnt FROM reports GROUP BY status")->fetchAll() ?: [];
   foreach ($rows as $r) {
     $out['status'][(string)$r['status']] = (int)$r['cnt'];
+  }
+} catch (Throwable $e) { /* ignore */ }
+
+try {
+  $rows = db()->query("SELECT category, COUNT(*) AS cnt FROM reports GROUP BY category")->fetchAll() ?: [];
+  foreach ($rows as $r) {
+    $out['category'][(string)$r['category']] = (int)$r['cnt'];
   }
 } catch (Throwable $e) { /* ignore */ }
 

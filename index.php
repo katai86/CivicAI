@@ -12,16 +12,16 @@ $rankAll = $uid ? get_user_rank('all', $uid) : null;
   <title>Köz.Tér</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="/terkep/assets/style.css">
+  <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
-<body data-logged-in="<?php echo ($uid > 0 ? '1' : '0'); ?>" data-role="<?php echo htmlspecialchars($role, ENT_QUOTES, 'UTF-8'); ?>">
+<body data-logged-in="<?php echo ($uid > 0 ? '1' : '0'); ?>" data-role="<?php echo htmlspecialchars($role, ENT_QUOTES, 'UTF-8'); ?>" data-app-base="<?php echo htmlspecialchars(defined('APP_BASE') ? APP_BASE : '/terkep', ENT_QUOTES, 'UTF-8'); ?>">
 
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand">
+    <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
       <span class="brand-logo" aria-hidden="true"></span>
       <b>Köz.Tér</b>
-    </div>
+    </a>
 
     <form class="topbar-search" id="mapSearchForm">
       <div class="search-wrap">
@@ -77,6 +77,7 @@ $rankAll = $uid ? get_user_rank('all', $uid) : null;
         <button class="legend-filter" data-cat="green" type="button">Zöld</button>
         <button class="legend-filter" data-cat="traffic" type="button">Közlekedés</button>
         <button class="legend-filter" data-cat="idea" type="button">Ötlet</button>
+        <button class="legend-filter" data-cat="civil_event" type="button">Civil</button>
       </div>
       <div class="legend-item"><span class="legend-badge b-road">🚧</span><span>Úthiba / kátyú</span></div>
       <div class="legend-item"><span class="legend-badge b-sidewalk">🚶</span><span>Járda / burkolat hiba</span></div>
@@ -96,6 +97,6 @@ $rankAll = $uid ? get_user_rank('all', $uid) : null;
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/terkep/assets/app.js?v=26"></script>
+<script src="<?php echo htmlspecialchars(app_url('/assets/app.js'), ENT_QUOTES, 'UTF-8'); ?>?v=27"></script>
 </body>
 </html>

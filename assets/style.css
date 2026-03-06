@@ -209,7 +209,7 @@ body.intro-open #mapWrap{
 .brand-logo{
   width:100px;height:100px;border-radius:8px;border:1px dashed var(--border);
   display:inline-block;flex:0 0 auto;
-  background:url('/terkep/assets/logo.png') center/contain no-repeat;
+  background:url('logo.png') center/contain no-repeat;
 }
 .brand-link{color:inherit;text-decoration:none}
 
@@ -242,7 +242,7 @@ body.intro-open #mapWrap{
 }
 .icon-search{
   width:18px;height:18px;display:inline-block;
-  background:url('/terkep/assets/icons/search.svg') center/contain no-repeat;
+  background:url('icons/search.svg') center/contain no-repeat;
   filter:invert(1) brightness(1.2);
 }
 .sr-only{
@@ -401,10 +401,12 @@ body.intro-open #mapWrap{
 .gov-actions .select,.gov-actions .input{min-width:160px}
 
 /* Likes */
-.like-row{display:flex;align-items:center;gap:8px;margin-top:8px}
-.like-btn{border:1px solid var(--border);background:var(--card-2);border-radius:999px;padding:4px 8px;cursor:pointer}
+.popup-like-wrap{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.like-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.like-btn{border:1px solid var(--border);background:var(--card-2);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:16px;transition:transform .15s}
+.like-btn:hover{transform:scale(1.1)}
 .like-btn.liked{border-color:rgba(255,59,59,0.65);box-shadow:0 0 18px rgba(255,59,59,0.25)}
-.like-count{font-weight:700}
+.like-count{font-weight:700;min-width:1.5em}
 .like-label{color:var(--muted);font-size:12px}
 
 

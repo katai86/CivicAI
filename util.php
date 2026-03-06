@@ -776,6 +776,41 @@ function case_number(int $id, ?string $createdAt = null): string {
 }
 
 /**
+ * Geocode address via Nominatim (best effort). Returns [min_lat, max_lat, min_lng, max_lng] or null.
+ */
+function nominatim_geocode_address(string $address): ?array {
+    $address = trim($address);
+    if ($address === '') return null;
+    if (!defined('NOMINATIM_BASE')) return null;
+
+    $base = rtrim((string)NOMINATIM_BASE, '/');
+    $url = $base . '/search?format=jsonv2&q=' . rawurlencode($address) . '&limit=1';
+    $ua = defined('NOMINATIM_USER_AGENT') ? (string)NOMINATIM_USER_AGENT : 'Problematerkep/1.0';
+
+    $opts = ['http' => ['method' => 'GET', 'header' => "User-Agent: {$ua}\r\nAccept: application/json\r\n", 'timeout' => 6]];
+    try {
+        $raw = @file_get_contents($url, false, stream_context_create($opts));
+        if ($raw === false) return null;
+        $arr = json_decode($raw, true);
+        if (!is_array($arr) || empty($arr)) return null;
+        $r = $arr[0];
+        $box = $r['boundingbox'] ?? null;
+        if (is_array($box) && count($box) >= 4) {
+            return [(float)$box[0], (float)$box[1], (float)$box[2], (float)$box[3]];
+        }
+        $lat = isset($r['lat']) ? (float)$r['lat'] : null;
+        $lng = isset($r['lon']) ? (float)$r['lon'] : null;
+        if ($lat !== null && $lng !== null) {
+            $d = 0.01;
+            return [$lat - $d, $lat + $d, $lng - $d, $lng + $d];
+        }
+        return null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+/**
  * Reverse geocode via Nominatim (best effort).
  */
 function nominatim_reverse(float $lat, float $lng): ?array {
