@@ -13,6 +13,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $role  = safe_str($_POST['role'] ?? null, 32) ?: 'user';
   $allowedRoles = ['user','govuser','communityuser','civiluser'];
   if (!in_array($role, $allowedRoles, true)) $role = 'user';
+  // Önkormányzati regisztráció csak akkor engedélyezett, ha a superadmin bekapcsolta (config).
+  if ($role === 'govuser' && !(defined('GOV_REGISTRATION_ENABLED') && GOV_REGISTRATION_ENABLED)) {
+    $err = 'Az önkormányzati fiók regisztrációja jelenleg nincs engedélyezve. Kérjük, fordulj az adminisztrátorhoz.';
+    $role = 'user'; // ne legyen govuser
+  }
 
   // GDPR / hozzájárulások
   $consentData      = !empty($_POST['consent_data']);      // kötelező
@@ -113,8 +118,10 @@ unset($_SESSION['flash']);
     <input name="pass" type="password" placeholder="Jelszó (min. 8)" required>
     <select name="role" required>
       <option value="user">Felhasználó (általános)</option>
+      <?php if (defined('GOV_REGISTRATION_ENABLED') && GOV_REGISTRATION_ENABLED): ?>
       <option value="govuser">Közigazgatási (önkormányzat)</option>
-      <option value="communityuser">Közület (rendelő, gyógyszertár)</option>
+      <?php endif; ?>
+      <option value="communityuser">Közület (háziorvos, fogorvos, gyógyszertár stb.)</option>
       <option value="civiluser">Civil (egyesület, alapítvány)</option>
     </select>
 

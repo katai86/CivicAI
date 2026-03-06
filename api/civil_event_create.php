@@ -10,7 +10,8 @@ require_user();
 start_secure_session();
 
 $role = current_user_role() ?: '';
-if (!in_array($role, ['civiluser','admin','superadmin'], true)) {
+// civil = régi ENUM érték, civiluser = új (mindkettő civil szerepkör)
+if (!in_array($role, ['civil','civiluser','admin','superadmin'], true)) {
   json_response(['ok'=>false,'error'=>'Nincs jogosultság.'], 403);
 }
 

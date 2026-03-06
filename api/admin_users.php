@@ -78,21 +78,17 @@ if ($action === 'update_role') {
   $role = (string)($body['role'] ?? '');
   $allowed = ['user','civiluser','communityuser','govuser','admin','superadmin'];
   if (!in_array($role, $allowed, true)) json_response(['ok'=>false,'error'=>'Invalid role'], 400);
-  // Régi DB: role ENUM('superadmin','admin','user','civil') – civiluser→civil, govuser/communityuser→user
-  $roleForDb = $role;
-  if ($role === 'civiluser') $roleForDb = 'civil';
-  if (in_array($role, ['govuser','communityuser'], true)) $roleForDb = 'user';
   try {
-    db()->prepare("UPDATE users SET role = :r WHERE id = :id")->execute([':r'=>$roleForDb, ':id'=>$userId]);
+    db()->prepare("UPDATE users SET role = :r WHERE id = :id")->execute([':r'=>$role, ':id'=>$userId]);
     json_response(['ok'=>true]);
   } catch (Throwable $e) {
     $msg = $e->getMessage();
     log_error('admin_users update_role: ' . $msg);
     if (stripos($msg, 'Unknown column') !== false && stripos($msg, 'role') !== false) {
-      json_response(['ok'=>false,'error'=>'A users táblában nincs role oszlop. Futtasd: ALTER TABLE users ADD COLUMN role VARCHAR(32) NULL;'], 400);
+      json_response(['ok'=>false,'error'=>'A users táblában nincs role oszlop. Futtasd: sql/2026-08-users-role.sql'], 400);
     }
     if (stripos($msg, 'Data truncated') !== false || stripos($msg, 'enum') !== false) {
-      json_response(['ok'=>false,'error'=>'A role érték nem megengedett. Futtasd: sql/2026-09-users-role-enum.sql'], 400);
+      json_response(['ok'=>false,'error'=>'A role érték nem megengedett. A különböző felhasználótípusokhoz futtasd: sql/2026-09-users-role-enum.sql'], 400);
     }
     json_response(['ok'=>false,'error'=>'Role frissítés sikertelen'], 500);
   }

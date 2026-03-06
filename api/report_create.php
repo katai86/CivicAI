@@ -199,13 +199,14 @@ if ($category === 'civil_event') {
     json_response(['ok' => false, 'error' => 'Civil kategóriához bejelentkezés szükséges.'], 401);
   }
   $role = $userRole ?: (current_user_role() ?: '');
-  if (!in_array($role, ['civiluser','admin','superadmin'], true)) {
+  if (!in_array($role, ['civil','civiluser','admin','superadmin'], true)) {
     json_response(['ok' => false, 'error' => 'Nincs jogosultság a civil kategóriához.'], 403);
   }
 } else {
+  // Normál bejelentés (út, szemét stb.): civil és community user nem jogosult – csak profil / civil esemény / közület buborék.
   if ($userId) {
     $role = $userRole ?: (current_user_role() ?: '');
-    if (in_array($role, ['civiluser','communityuser'], true)) {
+    if (in_array($role, ['civil','civiluser','communityuser'], true)) {
       json_response(['ok' => false, 'error' => 'Nincs jogosultság bejelentéshez ezzel a fiókkal.'], 403);
     }
   }

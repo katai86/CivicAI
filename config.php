@@ -31,6 +31,10 @@ define('SESSION_NAME', 'terkep_sess');
 // Admin token (ha még használod a régi tokenes védelmet is)
 define('ADMIN_TOKEN', getenv('ADMIN_TOKEN') ?: '');
 
+// Önkormányzati (govuser) regisztráció: csak akkor engedélyezett, ha a superadmin bekapcsolja.
+// Ha false: a regisztrációs űrlapon a govuser opció nem választható / elutasítjuk.
+define('GOV_REGISTRATION_ENABLED', filter_var(getenv('GOV_REGISTRATION_ENABLED'), FILTER_VALIDATE_BOOLEAN) ?: false);
+
 // E-mail küldés
 define('MAIL_FROM', getenv('MAIL_FROM') ?: 'no-reply@example.com');
 define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: 'Problematérkép');
