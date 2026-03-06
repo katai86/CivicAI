@@ -26,11 +26,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } elseif (isset($u['is_active']) && (int)$u['is_active'] === 0) {
     $err = 'A fiók le van tiltva.';
   } else {
-    // MVP: is_verified-t egyelőre nem kényszerítjük (később E/D)
     session_regenerate_id(true);
     $_SESSION['user_id'] = (int)$u['id'];
     $_SESSION['user_role'] = $u['role'] ? (string)$u['role'] : 'user';
-    header('Location: ' . app_url('/'));
+    // Admin/superadmin egy belépéssel mindkét felületet használhatja (production: egy fiók, egy rendszer)
+    if (in_array($_SESSION['user_role'], ['admin', 'superadmin'], true)) {
+      $_SESSION['admin_logged_in'] = true;
+    }
+    $redirect = trim((string)($_GET['redirect'] ?? ''));
+    if ($redirect !== '' && strpos($redirect, 'admin') !== false && in_array($_SESSION['user_role'], ['admin', 'superadmin'], true)) {
+      header('Location: ' . app_url('/admin/index.php'));
+    } else {
+      header('Location: ' . app_url('/'));
+    }
     exit;
   }
 }

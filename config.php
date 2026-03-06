@@ -55,3 +55,12 @@ define('UPLOAD_ALLOWED_MIME', [
   'image/png'  => 'png',
   'image/webp' => 'webp',
 ]);
+
+// Production bootstrap: kritikus beállítások ellenőrzése (nem blokkol, csak jelzés)
+if (!defined('DB_HOST') || !defined('DB_NAME') || !defined('APP_BASE_URL')) {
+  throw new RuntimeException('Kritikus config hiányzik: DB_HOST, DB_NAME vagy APP_BASE_URL.');
+}
+$baseUrl = (string)(defined('APP_BASE_URL') ? APP_BASE_URL : '');
+if ($baseUrl === '' || strpos($baseUrl, 'example.com') !== false) {
+  define('CONFIG_NEEDS_REVIEW', true); // Health check / üzemeltetés figyelje
+}
