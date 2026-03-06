@@ -18,7 +18,7 @@
 | Reporting | `api/report_create.php`, `api/reports_list.php`, `api/reports_nearby.php`, `api/report_set_status.php`, `api/report_upload.php`, `api/report_attachments.php`, `api/report_status_log.php`, `api/report_like.php` |
 | User | `user/login.php`, `user/register.php`, `user/logout.php`, `user/settings.php`, `user/my.php`, `user/profile.php`, `user/friends.php`, `user/report.php`, `user/verify.php` |
 | Admin | `admin/index.php`, `admin/login.php`, `admin/logout.php`, `admin/admin.js`, `api/admin_*.php` (reports, users, authorities, layers, stats, action) |
-| Gov | `gov/index.php` (hatósági dashboard, státuszváltás) |
+| Gov | `gov/index.php` (közigazgatási dashboard: statisztika a városhoz tartozó bejelentésekről, státusz/kategória megoszlás, lista státusz szűréssel, státuszváltás) |
 | Community | `api/civil_event_create.php`, `api/civil_events_list.php`, `api/facility_save.php`, `api/facilities_list.php` |
 | Social | `api/friend_request.php`, `api/friends_list.php`, `api/leaderboard.php`, `api/report_like.php` |
 | Open311 | `open311/v2/discovery.php`, `open311/v2/services.php`, `open311/v2/service_definition.php`, `open311/v2/requests.php` (saját Open311 API – bejövő kérések → reports) |

@@ -46,6 +46,12 @@ if ($isAdmin) {
 
 $authorityIds = array_map(fn($a) => (int)$a['id'], $authorities);
 
+$statusFilter = isset($_GET['status_filter']) ? trim((string)$_GET['status_filter']) : '';
+$allowedStatuses = ['pending','approved','rejected','new','needs_info','forwarded','waiting_reply','in_progress','solved','closed'];
+if ($statusFilter !== '' && !in_array($statusFilter, $allowedStatuses, true)) {
+  $statusFilter = '';
+}
+
 // Status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'set_status') {
   $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
@@ -135,6 +141,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
           }
 
           $ok = 'Státusz frissítve.';
+          $redirectFilter = isset($_POST['status_filter']) ? trim((string)$_POST['status_filter']) : '';
+          if ($redirectFilter !== '' && in_array($redirectFilter, $allowedStatuses, true)) {
+            header('Location: ' . app_url('/gov/index.php?status_filter=' . rawurlencode($redirectFilter)));
+            exit;
+          }
         }
       }
     } catch (Throwable $e) {
@@ -145,22 +156,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 $reports = [];
+$stats = [
+  'reports_1d' => 0,
+  'reports_7d' => 0,
+  'reports_total' => 0,
+  'by_status' => [],
+  'by_category' => [],
+];
+$where = $isAdmin ? '1=1' : ('r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')');
+$params = $isAdmin ? [] : array_values($authorityIds);
+if ($statusFilter !== '') {
+  $where .= ' AND r.status = ?';
+  $params[] = $statusFilter;
+}
+
 if ($isAdmin || $authorityIds) {
-  $where = $isAdmin ? '1=1' : ('r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')');
-  $params = $isAdmin ? [] : $authorityIds;
-  $stmt = db()->prepare("
+  $pdo = db();
+  $listWhere = $where;
+  $listParams = $params;
+  $stmt = $pdo->prepare("
     SELECT r.id, r.category, r.title, r.description, r.status, r.created_at,
            r.address_approx, r.city, r.authority_id,
            u.display_name AS reporter_display_name, u.level AS reporter_level, u.profile_public AS reporter_profile_public
     FROM reports r
     LEFT JOIN users u ON u.id = r.user_id
-    WHERE $where
+    WHERE $listWhere
     ORDER BY r.created_at DESC
     LIMIT 200
   ");
-  $stmt->execute($params);
+  $stmt->execute($listParams);
   $reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+  // Statisztika: csak a városhoz / hatósághoz tartozó bejelentések (szűrés nélkül)
+  $baseWhere = $isAdmin ? '1=1' : ('r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')');
+  $baseParams = $isAdmin ? [] : array_values($authorityIds);
+  try {
+    $q0 = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $baseWhere");
+    $q0->execute($baseParams);
+    $stats['reports_total'] = (int)$q0->fetchColumn();
+  } catch (Throwable $e) { /* ignore */ }
+  try {
+    $q1 = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $baseWhere AND r.created_at >= (CURDATE())");
+    $q1->execute($baseParams);
+    $stats['reports_1d'] = (int)$q1->fetchColumn();
+  } catch (Throwable $e) { /* ignore */ }
+  try {
+    $q7 = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $baseWhere AND r.created_at >= (NOW() - INTERVAL 7 DAY)");
+    $q7->execute($baseParams);
+    $stats['reports_7d'] = (int)$q7->fetchColumn();
+  } catch (Throwable $e) { /* ignore */ }
+  try {
+    $qs = $pdo->prepare("SELECT r.status, COUNT(*) AS cnt FROM reports r WHERE $baseWhere GROUP BY r.status");
+    $qs->execute($baseParams);
+    foreach ($qs->fetchAll(PDO::FETCH_ASSOC) as $row) {
+      $stats['by_status'][(string)$row['status']] = (int)$row['cnt'];
+    }
+  } catch (Throwable $e) { /* ignore */ }
+  try {
+    $qc = $pdo->prepare("SELECT r.category, COUNT(*) AS cnt FROM reports r WHERE $baseWhere GROUP BY r.category");
+    $qc->execute($baseParams);
+    foreach ($qc->fetchAll(PDO::FETCH_ASSOC) as $row) {
+      $stats['by_category'][(string)$row['category']] = (int)$row['cnt'];
+    }
+  } catch (Throwable $e) { /* ignore */ }
 }
+
+$statusLabels = [
+  'new' => 'Új', 'pending' => 'Ellenőrzés alatt', 'approved' => 'Publikálva', 'rejected' => 'Elutasítva',
+  'needs_info' => 'Kiegészítésre vár', 'forwarded' => 'Továbbítva', 'waiting_reply' => 'Válaszra vár',
+  'in_progress' => 'Folyamatban', 'solved' => 'Megoldva', 'closed' => 'Lezárva',
+];
+$categoryLabels = [
+  'road' => 'Úthiba', 'sidewalk' => 'Járda', 'lighting' => 'Közvilágítás', 'trash' => 'Szemét',
+  'green' => 'Zöld', 'traffic' => 'Közlekedés', 'idea' => 'Ötlet', 'civil_event' => 'Civil esemény',
+];
 
 function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 ?>
@@ -201,6 +270,59 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
     <?php if(!$isAdmin && !$authorityIds): ?>
       <div class="muted">Nincs hatóság hozzárendelve ehhez a fiókhoz.</div>
     <?php else: ?>
+      <section class="gov-stats" aria-label="Statisztika">
+        <h3 style="margin:0 0 12px 0; font-size:1rem">Statisztika – a városhoz tartozó bejelentések</h3>
+        <div class="gov-stats-row">
+          <div class="gov-stat-box">
+            <span class="gov-stat-value"><?= (int)$stats['reports_1d'] ?></span>
+            <span class="gov-stat-label">Ma</span>
+          </div>
+          <div class="gov-stat-box">
+            <span class="gov-stat-value"><?= (int)$stats['reports_7d'] ?></span>
+            <span class="gov-stat-label">Elmúlt 7 nap</span>
+          </div>
+          <div class="gov-stat-box">
+            <span class="gov-stat-value"><?= (int)$stats['reports_total'] ?></span>
+            <span class="gov-stat-label">Összesen</span>
+          </div>
+        </div>
+        <div class="gov-stats-grid">
+          <div>
+            <h4 class="gov-stats-sub">Státusz megoszlás</h4>
+            <ul class="gov-stats-list">
+              <?php foreach ($stats['by_status'] as $st => $cnt): ?>
+                <li><?= h($statusLabels[$st] ?? $st) ?>: <strong><?= (int)$cnt ?></strong></li>
+              <?php endforeach; ?>
+              <?php if (empty($stats['by_status'])): ?>
+                <li class="muted">Nincs adat</li>
+              <?php endif; ?>
+            </ul>
+          </div>
+          <div>
+            <h4 class="gov-stats-sub">Kategória megoszlás</h4>
+            <ul class="gov-stats-list">
+              <?php foreach ($stats['by_category'] as $cat => $cnt): ?>
+                <li><?= h($categoryLabels[$cat] ?? $cat) ?>: <strong><?= (int)$cnt ?></strong></li>
+              <?php endforeach; ?>
+              <?php if (empty($stats['by_category'])): ?>
+                <li class="muted">Nincs adat</li>
+              <?php endif; ?>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <h3 style="margin:24px 0 12px 0; font-size:1rem">Bejelentések lista</h3>
+      <form method="get" class="gov-filter-row" style="margin-bottom:12px">
+        <label for="govStatusFilter" class="muted" style="margin-right:8px">Szűrés státusz szerint:</label>
+        <select id="govStatusFilter" name="status_filter" onchange="this.form.submit()" class="select">
+          <option value=""<?= $statusFilter === '' ? ' selected' : '' ?>>Összes</option>
+          <?php foreach ($allowedStatuses as $st): ?>
+            <option value="<?= h($st) ?>"<?= $statusFilter === $st ? ' selected' : '' ?>><?= h($statusLabels[$st] ?? $st) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </form>
+      <p class="muted small" style="margin:0 0 8px 0">A listában legfeljebb 200 bejelentés.</p>
       <div class="gov-list">
         <?php foreach($reports as $r): ?>
           <div class="gov-item">
@@ -212,6 +334,7 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
             <form method="post" class="gov-actions">
               <input type="hidden" name="action" value="set_status">
               <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+              <input type="hidden" name="status_filter" value="<?= h($statusFilter) ?>">
               <select name="status" class="select">
                 <?php foreach(['new','approved','needs_info','forwarded','waiting_reply','in_progress','solved','closed','rejected','pending'] as $st): ?>
                   <option value="<?= h($st) ?>" <?= $st === $r['status'] ? 'selected' : '' ?>><?= h($st) ?></option>

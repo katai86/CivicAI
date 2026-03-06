@@ -10,6 +10,7 @@
 6. **2026-08-users-role.sql** – users.role oszlop (ha hiányzik).
 7. **2026-09-users-role-enum.sql** – role ENUM bővítés (civiluser, communityuser, govuser).
 8. **2026-10-authorities-new-columns.sql** – opcionális; contact_email, is_active stb. (ha régi schema van: email, active).
+9. **2026-11-authority-users-only.sql** – Ha a „Hatósági felhasználó hozzárendelés” 503-at dob (authority_users tábla hiányzik), futtasd ezt: `CREATE TABLE IF NOT EXISTS authority_users`.
 
 ## Megjegyzések
 
