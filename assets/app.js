@@ -5,6 +5,7 @@ const USER_ROLE = document.body?.dataset?.role || window.TERKEP_ROLE || 'guest';
 const API_LIST   = `${BASE}/api/reports_list.php`;
 const API_CREATE = `${BASE}/api/report_create.php`;
 const API_NEARBY = `${BASE}/api/reports_nearby.php`;
+const API_SUGGEST_CATEGORY = `${BASE}/api/suggest_category.php`;
 const API_LAYERS = `${BASE}/api/layers_public.php`;
 const API_FACILITIES = `${BASE}/api/facilities_list.php`;
 const API_CIVIL_EVENTS = `${BASE}/api/civil_events_list.php`;
@@ -579,6 +580,7 @@ function openModal(latlng){
         <select id="mCategory">
           ${buildCategoryOptions()}
         </select>
+        <p id="mCategorySuggestion" class="muted small" style="display:none; margin-top:4px"></p>
 
         <label>Rövid cím (opcionális)</label>
         <input id="mTitle" maxlength="120" placeholder="pl. Kátyú a kereszteződésnél">
@@ -673,6 +675,7 @@ function openModal(latlng){
         <div class="modal-note">
           A bejelentés ellenőrzés után jelenik meg. A címet a rendszer automatikusan csatolja.
         </div>
+        <div id="mNearby200" class="modal-note" style="display:none"></div>
 
         <div class="modal-actions">
           <button id="mSubmit" class="btn-primary" type="button">Beküldés</button>
@@ -766,6 +769,34 @@ function openModal(latlng){
 
   syncCategory();
 
+  // Kategória javaslat a leírás alapján (Phase 4 – szabályalapú javaslat)
+  let suggestTmo = null;
+  const elDesc = modal.querySelector('#mDesc');
+  const elSuggestion = modal.querySelector('#mCategorySuggestion');
+  if (elDesc && elSuggestion) {
+    elDesc.addEventListener('input', () => {
+      clearTimeout(suggestTmo);
+      elSuggestion.style.display = 'none';
+      elSuggestion.innerHTML = '';
+      const desc = elDesc.value.trim();
+      if (desc.length < 10) return;
+      suggestTmo = setTimeout(async () => {
+        try {
+          const res = await fetchJson(`${API_SUGGEST_CATEGORY}?description=${encodeURIComponent(desc)}`);
+          if (res.ok && res.suggested_category && elCategory.querySelector(`option[value="${res.suggested_category}"]`)) {
+            elSuggestion.innerHTML = `Javasolt kategória: <strong>${esc(res.label || res.suggested_category)}</strong> <button type="button" class="btn-soft btn-sm" id="mApplySuggestion">Kiválasztom</button>`;
+            elSuggestion.style.display = 'block';
+            modal.querySelector('#mApplySuggestion')?.addEventListener('click', () => {
+              elCategory.value = res.suggested_category;
+              syncCategory();
+              elSuggestion.style.display = 'none';
+            });
+          }
+        } catch (e) { console.warn('suggest_category failed', e); }
+      }, 400);
+    });
+  }
+
   modal.querySelector('#mSubmit').addEventListener('click', async () => {
     const category = modal.querySelector('#mCategory').value;
     const title = modal.querySelector('#mTitle').value.trim();
@@ -831,6 +862,24 @@ function openModal(latlng){
     if (create_account && password.length < 8) {
       alert('A regisztrációhoz legalább 8 karakteres jelszó kell.');
       return;
+    }
+
+    // Hasonló bejelentések 200 m-en belül – tájékoztató (nem blokkol)
+    const elNearby200 = modal.querySelector('#mNearby200');
+    if (elNearby200) {
+      elNearby200.style.display = 'none';
+      elNearby200.textContent = '';
+    }
+    if (category !== 'civil_event') {
+      try {
+        const near200 = await fetchJson(
+          `${API_NEARBY}?lat=${encodeURIComponent(latlng.lat)}&lng=${encodeURIComponent(latlng.lng)}&category=${encodeURIComponent(category)}&radius=200`
+        );
+        if (near200.ok && near200.data && near200.data.length > 0 && elNearby200) {
+          elNearby200.textContent = `ℹ️ ${near200.data.length} hasonló bejelentés 200 m-en belül (ugyanebben a kategóriában).`;
+          elNearby200.style.display = 'block';
+        }
+      } catch (e) { console.warn('nearby 200m check failed', e); }
     }
 
     // Duplikáció ellenőrzés (50m) – civil eseménynél nem fut

@@ -23,6 +23,8 @@ A **sql/** mappában a **00_README_MIGRATIONS.md** a futtatási sorrendet és me
 ## Üzemeltetés
 
 - **Health check:** `GET /api/health.php` – JSON válasz: `ok`, `db` (ok/error), `config_review` (true ha APP_BASE_URL üres vagy example.com). DB hiba esetén HTTP 503. Auth nincs; monitoring/load balancer számára.
+- **Részletes üzemeltetés:** FMS bridge sync (cron), API docs link: **OPERATIONS.md**.
+- **Nyilvános API docs (partnereknek):** `/api-docs.php` – Open311 discovery, services, requests rövid leírása.
 
 ## Megjegyzés
 
