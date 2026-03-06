@@ -82,7 +82,11 @@ if ($action === 'update_role') {
     db()->prepare("UPDATE users SET role = :r WHERE id = :id")->execute([':r'=>$role, ':id'=>$userId]);
     json_response(['ok'=>true]);
   } catch (Throwable $e) {
-    log_error('admin_users update_role: ' . $e->getMessage());
+    $msg = $e->getMessage();
+    log_error('admin_users update_role: ' . $msg);
+    if (stripos($msg, 'Unknown column') !== false && stripos($msg, 'role') !== false) {
+      json_response(['ok'=>false,'error'=>'A users táblában nincs role oszlop. Futtasd: ALTER TABLE users ADD COLUMN role VARCHAR(32) NULL;'], 400);
+    }
     json_response(['ok'=>false,'error'=>'Role frissítés sikertelen'], 500);
   }
 }

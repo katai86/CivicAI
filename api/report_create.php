@@ -436,8 +436,24 @@ try {
   ]));
 } catch (Throwable $e) {
   log_error('report_create INSERT (manual cols): ' . $e->getMessage());
-  $stmt = db()->prepare($baseInsert);
-  $stmt->execute($baseParams);
+  try {
+    $stmt = db()->prepare($baseInsert);
+    $stmt->execute($baseParams);
+  } catch (Throwable $e2) {
+    log_error('report_create INSERT (base): ' . $e2->getMessage());
+    try {
+      $minSql = "INSERT INTO reports (category, title, description, lat, lng, status, user_id, reporter_email, reporter_name, reporter_is_anonymous, notify_token, notify_enabled)
+                 VALUES (:category, :title, :description, :lat, :lng, 'new', :user_id, :reporter_email, :reporter_name, :reporter_is_anonymous, :notify_token, :notify_enabled)";
+      db()->prepare($minSql)->execute([
+        ':category' => $category, ':title' => $title, ':description' => $desc, ':lat' => $lat, ':lng' => $lng,
+        ':user_id' => $userId, ':reporter_email' => $storeEmail, ':reporter_name' => $reporterName,
+        ':reporter_is_anonymous' => $reporterIsAnonymous, ':notify_token' => $notifyToken, ':notify_enabled' => $notifyEnabled,
+      ]);
+    } catch (Throwable $e3) {
+      log_error('report_create INSERT (minimal): ' . $e3->getMessage());
+      json_response(['ok' => false, 'error' => 'Szerver hiba a mentéskor. Ellenőrizd a reports tábla szerkezetét és az error.log-ot.'], 500);
+    }
+  }
 }
 
 $id = (int)db()->lastInsertId();
