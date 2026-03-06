@@ -124,6 +124,9 @@ require_admin();
                       <option value="pending">Pending (régi)</option>
                       <option value="all">Összes</option>
                     </select>
+                    <select id="authorityFilter" class="form-select form-select-sm" title="Hatóság szűrés (multi-city)">
+                      <option value="">Összes hatóság</option>
+                    </select>
                     <input id="reportSearch" class="form-control form-control-sm" type="search" placeholder="Keresés cím/ID/szöveg">
                     <select id="reportLimit" class="form-select form-select-sm">
                       <option value="200">200</option>

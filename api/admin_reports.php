@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 $status = $_GET['status'] ?? 'pending';
 $q = trim((string)($_GET['q'] ?? ''));
+$authorityId = isset($_GET['authority_id']) ? (int)$_GET['authority_id'] : 0;
 $limit = (int)($_GET['limit'] ?? 300);
 $offset = (int)($_GET['offset'] ?? 0);
 if ($limit < 50 || $limit > 2000) $limit = 300;
@@ -32,6 +33,12 @@ if ($status !== 'all') {
   $params[':st'] = $status;
 }
 
+$useAuthority = ($authorityId > 0);
+if ($useAuthority) {
+  $whereParts[] = "r.authority_id = :aid";
+  $params[':aid'] = $authorityId;
+}
+
 $where = "";
 if ($q !== '') {
   $whereParts[] = "(r.title LIKE :q OR r.description LIKE :q OR r.reporter_name LIKE :q OR u.display_name LIKE :q)";
@@ -45,23 +52,55 @@ if ($whereParts) {
 $sql = "
   SELECT r.id, r.category, r.title, r.description, r.lat, r.lng,
          r.address_approx, r.house_number_approx, r.road, r.suburb, r.city, r.postcode,
-         r.status, r.created_at,
+         r.status, r.created_at, r.authority_id,
          r.reporter_name, r.reporter_is_anonymous,
          u.id AS reporter_user_id,
          u.display_name AS reporter_display_name,
          u.profile_public AS reporter_profile_public,
-         u.level AS reporter_level
+         u.level AS reporter_level,
+         a.name AS authority_name
   FROM reports r
   LEFT JOIN users u ON u.id = r.user_id
+  LEFT JOIN authorities a ON a.id = r.authority_id
   $where
   ORDER BY r.created_at DESC
   LIMIT $limit OFFSET $offset
 ";
 
-$stmt = db()->prepare($sql);
-$stmt->execute($params);
-
-$rows = $stmt->fetchAll();
+try {
+  $stmt = db()->prepare($sql);
+  $stmt->execute($params);
+  $rows = $stmt->fetchAll();
+} catch (Throwable $e) {
+  // Régi schema: nincs authorities vagy reports.authority_id – fallback JOIN nélkül, authority_id szűrés nélkül
+  $wherePartsFallback = array_filter($whereParts, fn($w) => strpos($w, 'authority_id') === false);
+  $paramsFallback = $params;
+  unset($paramsFallback[':aid']);
+  $whereFallback = $wherePartsFallback ? "WHERE " . implode(" AND ", $wherePartsFallback) : "";
+  $sqlFallback = "
+    SELECT r.id, r.category, r.title, r.description, r.lat, r.lng,
+           r.address_approx, r.house_number_approx, r.road, r.suburb, r.city, r.postcode,
+           r.status, r.created_at,
+           r.reporter_name, r.reporter_is_anonymous,
+           u.id AS reporter_user_id,
+           u.display_name AS reporter_display_name,
+           u.profile_public AS reporter_profile_public,
+           u.level AS reporter_level
+    FROM reports r
+    LEFT JOIN users u ON u.id = r.user_id
+    $whereFallback
+    ORDER BY r.created_at DESC
+    LIMIT $limit OFFSET $offset
+  ";
+  $stmt = db()->prepare($sqlFallback);
+  $stmt->execute($paramsFallback);
+  $rows = $stmt->fetchAll();
+  foreach ($rows as &$row) {
+    $row['authority_id'] = null;
+    $row['authority_name'] = null;
+  }
+  unset($row);
+}
 
 // Ügyszám hozzáadása (DB változtatás nélkül)
 foreach ($rows as &$r) {

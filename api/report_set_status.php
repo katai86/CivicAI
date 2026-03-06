@@ -44,7 +44,8 @@ function build_status_email(
   $oldL = $labels[$old] ?? $old;
   $newL = $labels[$new] ?? $new;
 
-  $subject = "[{$case}] Problématérkép – {$newL}";
+  $brand = defined('APP_DEPLOYMENT_NAME') && APP_DEPLOYMENT_NAME ? (string)APP_DEPLOYMENT_NAME : 'Köz.Tér';
+  $subject = "[{$case}] {$brand} – {$newL}";
 
   $lines = [];
   $lines[] = "Szia!";
@@ -83,7 +84,10 @@ function build_status_email(
   } elseif ($new === 'rejected') {
     $lines[] = "A bejelentést elutasítottuk. Ha szerinted tévedés, válaszolj erre az e-mailre és pontosíts.";
   } else {
-    $lines[] = "Köszönjük, hogy segítesz jobbá tenni Orosházát!";
+    $city = defined('APP_CITY_PUBLIC_NAME') && APP_CITY_PUBLIC_NAME ? (string)APP_CITY_PUBLIC_NAME : null;
+    $lines[] = $city
+      ? ("Köszönjük, hogy segítesz jobbá tenni " . $city . " városát!")
+      : "Köszönjük, hogy segítesz jobbá tenni a várost!";
   }
 
   $lines[] = "";
@@ -95,7 +99,8 @@ function build_status_email(
   $lines[] = $unsubscribeUrl;
 
   $lines[] = "";
-  $lines[] = "— Problématérkép (Orosháza)";
+  $brand = defined('APP_DEPLOYMENT_NAME') && APP_DEPLOYMENT_NAME ? (string)APP_DEPLOYMENT_NAME : 'Köz.Tér';
+  $lines[] = "— " . $brand;
 
   return [$subject, implode("\n", $lines)];
 }

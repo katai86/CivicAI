@@ -361,6 +361,7 @@ function renderRow(r){
       ${r.title ? `<div class="mt-1">${esc(r.title)}</div>` : ''}
       <div class="text-secondary mt-1">${esc(r.description)}</div>
       ${r.address_approx ? `<div class="text-secondary mt-1">${esc(r.address_approx)}</div>` : ''}
+      ${r.authority_name ? `<div class="text-secondary small">Hatóság: ${esc(r.authority_name)}</div>` : ''}
       ${reporterLine(r)}
       <div class="text-secondary mt-1">${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)} • ${esc(r.created_at || '')}</div>
 
@@ -483,18 +484,40 @@ function renderReports(rows){
   rows.forEach(r => list.appendChild(renderRow(r)));
 }
 
+let _authorityOptionsLoaded = false;
+async function ensureAuthorityFilterOptions(){
+  const sel = document.getElementById('authorityFilter');
+  if (!sel || _authorityOptionsLoaded) return;
+  try {
+    const j = await fetchJson(API_AUTHORITIES);
+    const auths = j.authorities || [];
+    auths.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = String(a.id);
+      opt.textContent = esc(a.name || a.city || 'Hatóság #' + a.id);
+      sel.appendChild(opt);
+    });
+    _authorityOptionsLoaded = true;
+  } catch (e) {
+    console.warn('Authority filter options:', e);
+  }
+}
+
 async function loadReports(){
   const status = document.getElementById('statusFilter').value;
   const q = (document.getElementById('reportSearch').value || '').trim();
+  const authorityId = (document.getElementById('authorityFilter') && document.getElementById('authorityFilter').value) ? Number(document.getElementById('authorityFilter').value) : 0;
   const limit = Number(document.getElementById('reportLimit').value || 300);
   const list = document.getElementById('reportList');
   list.textContent = 'Betöltés...';
   clearMarkers();
 
   try{
+    await ensureAuthorityFilterOptions();
     const qs = new URLSearchParams();
     qs.set('status', status);
     if (q) qs.set('q', q);
+    if (authorityId > 0) qs.set('authority_id', String(authorityId));
     if (limit) qs.set('limit', String(limit));
     const j = await fetchJson(`${API_LIST}?${qs.toString()}`);
     const rows = j.data || [];
