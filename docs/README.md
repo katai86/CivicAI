@@ -20,6 +20,10 @@ Ez a mappa a **teljes audit és fejlesztési terv** eredményeit tartalmazza (pr
 
 A **sql/** mappában a **00_README_MIGRATIONS.md** a futtatási sorrendet és megjegyzéseket írja le (2026-03 … 2026-10).
 
+## Üzemeltetés
+
+- **Health check:** `GET /api/health.php` – JSON válasz: `ok`, `db` (ok/error), `config_review` (true ha APP_BASE_URL üres vagy example.com). DB hiba esetén HTTP 503. Auth nincs; monitoring/load balancer számára.
+
 ## Megjegyzés
 
 A dokumentumok **nem cserélték fel a működő kódot**. Csak audit, terv és prioritizáció történt; a korábban beépített robusztussági javítások (hiányzó táblák kezelése, régi schema fallback, migráció README) megmaradtak.

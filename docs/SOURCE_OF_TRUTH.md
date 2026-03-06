@@ -5,8 +5,8 @@
 - **Alkalmazás belépési pont:** `index.php` (térkép) + `config.php` + `util.php` (közös bootstrap, session, auth helperek).
 - **Adatbázis:** MySQL/MariaDB; a tényleges schema a `kataia_civicai` export + széttagolt SQL migrációk (`sql/2026-*.sql`). Nincs egyetlen canonical baseline schema fájl – a 2026-04, 2026-05, 2026-03 stb. összességében adja a célállapotot.
 - **Auth:**
-  - **Admin:** `admin/login.php` → config `ADMIN_USER` / `ADMIN_PASS` (nem users tábla), session `admin_logged_in` + `user_role = superadmin`.
-  - **User:** `user/login.php` → `users` tábla (email + pass_hash), session `user_id` + `user_role` (user, civiluser, communityuser, govuser, admin, superadmin).
+  - **Admin:** `admin/login.php` → először users tábla (email + jelszó; role admin/superadmin), session `admin_logged_in`; ha nincs ilyen user, config `ADMIN_USER`/`ADMIN_PASS` (üzemeltetési fallback).
+  - **User:** `user/login.php` → `users` tábla (email + pass_hash), session `user_id` + `user_role`; ha role admin/superadmin, egy belépéssel elérhető az admin felület is.
 - **API belépés:** Minden `/api/*.php` a `util.php`-n keresztül (közös error/exception handler, `json_response`). Jogosultság: `require_admin()`, `require_user()`, vagy nyilvános.
 - **Frontend:** Egy fő térkép shell: `index.php` + `assets/app.js` (Leaflet, markerek, bejelentés modál, layerek). Admin UI: `admin/index.php` + `admin/admin.js` (AdminLTE alapú). User oldalak: `user/*.php`, `leaderboard.php`, `case.php`.
 
@@ -24,12 +24,13 @@
 | Open311 | `open311/v2/discovery.php`, `open311/v2/services.php`, `open311/v2/service_definition.php`, `open311/v2/requests.php` (saját Open311 API – bejövő kérések → reports) |
 | FMS bridge | `api/fms_bridge/report_create.php` (külső FMS felé küldés), `api/fms_bridge/sync.php` (külső FMS státusz visszahúzás) |
 | Layers | `api/layers_public.php`, `api/admin_layers.php` |
+| Üzemeltetés | `api/health.php` (GET, nincs auth; DB + config_review) |
 | Assets | `assets/style.css`, `assets/app.js`, `assets/admin.css` |
 
 ## 3. Mely részek tűnnek régi, párhuzamos, vendorizált vagy tisztítandó örökségnek?
 
 - **dashboard/ mappa:** Teljes AdminLTE (npm, src, dist). Az admin UI jelenleg **nem** a dashboard buildjét használja közvetlenül, hanem az `admin/index.php` saját HTML + `admin/admin.js` + `assets/admin.css`. A dashboard/ inkább vendor/ referencia vagy jövőbeli átállás – **duplikált vagy félbehagyott**.
-- **Kétféle admin belépés:** Config-alapú (admin/login) vs users tábla role. A `require_admin()` a session `admin_logged_in` VAGY `user_role` admin/superadmin ellenőrzi – tehát a users táblás admin is beléphet az admin felületre, de az admin/login külön jelszót használ a configból. **Örökség / tisztítandó.**
+- **Admin belépés:** Egységesítve: admin/login először users táblából (email + jelszó, admin/superadmin); config belépés csak fallback. **Megvalósítva.**
 - **Migrációk széttagoltsága:** 2026-03, 2026-04, 2026-05, 2026-07, 2026-08, 2026-09, 2026-10, plusz `SQL_attachments.sql` – nincs egyetlen „canonical schema” fájl, és a kataia_civicai export régebbi schema-t használ (pl. authorities: email, active; users.role ENUM korlátozott). **Tisztítandó / konszolidálandó.**
 - **FMS bridge vs lokális report:** A fő bejelentés flow (`api/report_create.php`) csak lokálisan ment – nem hívja az fms_bridge-ot. Az fms_bridge/report_create egy **külön** endpoint (külső FMS felé küldés). A sync visszahúzza a külső státuszt. **Nem duplikált, de a narratíva („egy kattintás és megy a hatósághoz”) csak akkor teljes, ha a lokális report utólag szinkronizálódik vagy küldésre kerül – jelenleg ez opcionális.**
 - **design/ mappa:** Statikus HTML/CSS/MD (design-system, gamification, mobile, homepage). **Referencia / terv** – nem futó kód, de a UI prioritásokhoz és Podim narratívához hasznos.
