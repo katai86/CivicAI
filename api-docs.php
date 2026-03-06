@@ -46,6 +46,9 @@ header('Content-Type: text/html; charset=utf-8');
     <li><strong>Szolgáltatás definíció (opcionális mezők):</strong> <code><?= htmlspecialchars($serviceDef, ENT_QUOTES, 'UTF-8') ?></code></li>
   </ul>
 
+  <h2>Jurisdiction (multi-city)</h2>
+  <p>Ha be van állítva az <code>APP_JURISDICTION_ID</code> (vagy <code>FMS_OPEN311_JURISDICTION</code>), a discovery válasz tartalmazza a <code>jurisdiction_id</code> mezőt. Több város esetén külön példány / konfig lehet városonként.</p>
+
   <h2>POST új bejelentés (Open311)</h2>
   <p>Küldendő mezők (pl. JSON vagy form): <code>service_code</code>, <code>description</code>, <code>lat</code>, <code>long</code>; opcionális: <code>address_string</code>, <code>email</code>, <code>first_name</code>, <code>last_name</code>. A válaszban a <code>service_request_id</code> a Köz.Tér belső azonosítója.</p>
 

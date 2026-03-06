@@ -50,6 +50,9 @@ define('FMS_OPEN311_BASE', getenv('FMS_OPEN311_BASE') ?: '');
 define('FMS_OPEN311_JURISDICTION', getenv('FMS_OPEN311_JURISDICTION') ?: '');
 define('FMS_OPEN311_API_KEY', getenv('FMS_OPEN311_API_KEY') ?: '');
 
+// Saját Open311 API jurisdiction_id (multi-city; opcionális – ha üres, discovery nem adja vissza)
+define('APP_JURISDICTION_ID', trim((string)(getenv('APP_JURISDICTION_ID') ?: (defined('FMS_OPEN311_JURISDICTION') ? FMS_OPEN311_JURISDICTION : ''))));
+
 // Upload
 define('UPLOAD_DIR', __DIR__ . '/uploads'); // fájlrendszerben
 define('UPLOAD_PUBLIC', APP_BASE_URL . '/uploads'); // böngészőben

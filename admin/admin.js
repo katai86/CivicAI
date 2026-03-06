@@ -54,6 +54,13 @@ function esc(s){
     .replaceAll('>','&gt;');
 }
 
+function descriptionSummary(text, maxLen){
+  const s = String(text ?? '').trim();
+  if (!s) return '';
+  const len = maxLen ?? 120;
+  return s.length <= len ? s : s.slice(0, len) + '…';
+}
+
 async function fetchJson(url, opts){
   const res = await fetch(url, {
     credentials: 'same-origin', // session cookie
@@ -359,7 +366,7 @@ function renderRow(r){
       </div>
       <div class="fw-semibold mt-2">${esc(catLabel(r.category))}</div>
       ${r.title ? `<div class="mt-1">${esc(r.title)}</div>` : ''}
-      <div class="text-secondary mt-1">${esc(r.description)}</div>
+      <div class="text-secondary mt-1" title="${esc(r.description)}">${esc(descriptionSummary(r.description))}</div>
       ${r.address_approx ? `<div class="text-secondary mt-1">${esc(r.address_approx)}</div>` : ''}
       ${r.authority_name ? `<div class="text-secondary small">Hatóság: ${esc(r.authority_name)}</div>` : ''}
       ${reporterLine(r)}
@@ -370,6 +377,7 @@ function renderRow(r){
         <input data-role="note" class="form-control form-control-sm" placeholder="Megjegyzés (opcionális)" style="min-width:240px">
         <button data-action="save" class="btn btn-primary btn-sm">Mentés</button>
         <button data-action="delete" class="btn btn-outline-danger btn-sm">Törlés</button>
+        <button data-action="export-fms" class="btn btn-outline-secondary btn-sm" title="Küldés a FixMyStreet rendszerbe">Export FMS</button>
       </div>
 
       <div class="mt-2">
@@ -441,6 +449,25 @@ function renderRow(r){
         if (!isOpen && !logLoaded){
           logLoaded = true;
           await loadLogInto(logEl, r.id);
+        }
+        return;
+      }
+
+      // Export FMS
+      if (action === 'export-fms'){
+        try {
+          await fetchJson(`${BASE}/api/fms_bridge/export_report.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ report_id: r.id })
+          });
+          alert('Elküldve a FixMyStreet rendszerbe.');
+        } catch (e) {
+          if (e.message && e.message.includes('400')) {
+            alert('A FixMyStreet nincs beállítva (FMS_OPEN311_*).');
+          } else {
+            alert('Hiba: ' + e.message);
+          }
         }
         return;
       }

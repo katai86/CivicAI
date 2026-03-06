@@ -19,6 +19,10 @@ Ha a külső FixMyStreet/Open311 szolgáltatás be van állítva (FMS_OPEN311_BA
   vagy belsőben: `php api/fms_bridge/sync.php` nem használható közvetlenül (a script a külső HTTP API-t hívja), ezért a **cronnak a GET URL-t kell hívnia** (pl. wget/curl).
 - A sync csak azokat a lokális bejelentéseket frissíti, amelyeknek van `fms_reports` rekordja (open311_service_request_id). Új bejelentés küldése a külső rendszerbe: `api/fms_bridge/report_create.php` (külön flow; a fő „Küldés” gomb csak lokálisan ment).
 
+## Open311 jurisdiction (multi-city)
+
+Opcionális: **APP_JURISDICTION_ID** (env). Ha üres, a rendszer a **FMS_OPEN311_JURISDICTION** értékét használja (ha az meg van adva). A discovery válasz ezt adja vissza `jurisdiction_id`-ként. Több városnál városonként külön példány vagy konfig.
+
 ## Térkép / multi-city (Phase 5)
 
 A kezdeti térkép középpontja és zoomja konfigból (env) állítható, így városonként más érték használható:

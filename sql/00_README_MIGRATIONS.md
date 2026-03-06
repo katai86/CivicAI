@@ -13,6 +13,8 @@
 8. **2026-10-authorities-new-columns.sql** – opcionális; contact_email, is_active stb. (ha régi schema van: email, active).
 9. **2026-11-authority-users-only.sql** – Ha a „Hatósági felhasználó hozzárendelés” 503-at dob (authority_users tábla hiányzik), futtasd ezt: `CREATE TABLE IF NOT EXISTS authority_users`.
 
+**Demo adatok (opcionális):** **demo_seed.sql** – 2 bejelentés, 1 civil esemény, 1 facility. Csak demo/teszt DB-n futtasd; a users táblában legyen legalább id=1.
+
 ## Megjegyzések
 
 - A **kataia_civicai** exporttal már rendelkező környezetben a 2026-09 (role ENUM) és opcionálisan a 2026-10 fontosak a teljes szerepkör-használathoz.

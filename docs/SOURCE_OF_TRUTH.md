@@ -3,7 +3,7 @@
 ## 1. Mi a jelenlegi SOURCE OF TRUTH?
 
 - **Alkalmazás belépési pont:** `index.php` (térkép) + `config.php` + `util.php` (közös bootstrap, session, auth helperek).
-- **Adatbázis:** MySQL/MariaDB; a tényleges schema a `kataia_civicai` export + széttagolt SQL migrációk (`sql/2026-*.sql`). Nincs egyetlen canonical baseline schema fájl – a 2026-04, 2026-05, 2026-03 stb. összességében adja a célállapotot.
+- **Adatbázis:** MySQL/MariaDB; a tényleges schema a `kataia_civicai` export + széttagolt SQL migrációk (`sql/2026-*.sql`). Táblák referencia: **sql/00_baseline_schema.md**; a 2026-03 … 2026-11 migrációk összességében adja a célállapotot.
 - **Auth:**
   - **Admin:** `admin/login.php` → először users tábla (email + jelszó; role admin/superadmin), session `admin_logged_in`; ha nincs ilyen user, config `ADMIN_USER`/`ADMIN_PASS` (üzemeltetési fallback).
   - **User:** `user/login.php` → `users` tábla (email + pass_hash), session `user_id` + `user_role`; ha role admin/superadmin, egy belépéssel elérhető az admin felület is.

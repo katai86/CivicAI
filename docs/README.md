@@ -15,10 +15,11 @@ Ez a mappa a **teljes audit és fejlesztési terv** eredményeit tartalmazza (pr
 9. **MILESTONE_8_AI_LAYER_ROADMAP.md** – AI funkciók (kategória javaslat, duplikátum, összefoglaló, statisztika), mi gyorsan megvalósítható, mi mutatható be hitelesen, mit ne ígérjünk túl.
 10. **MILESTONE_9_FEATURE_PRIORITIZATION.md** – KEEP MOST / LATER / CUT or simplify; friend, like, civil, facilities, Open311, FMS, gov, admin, stb.
 11. **MILESTONE_10_DEVELOPMENT_PLAN.md** – Phase 1–5: demo stabilizálás, product clean-up, interoperability, AI-assisted layer, multi-city; célok, feladatok, kockázatok, quick wins, befektetői/értékesítési szöveg.
+12. **MILESTONE_STATUS.md** – Phase 1–5 állapotellenőrzés: mi kész, mi opcionális (demo script, admin összefoglaló, jurisdiction).
 
 ## SQL migrációk
 
-A **sql/** mappában a **00_README_MIGRATIONS.md** a futtatási sorrendet és megjegyzéseket írja le (2026-03 … 2026-10).
+A **sql/** mappában a **00_README_MIGRATIONS.md** a futtatási sorrendet és megjegyzéseket írja le (2026-03 … 2026-11). A **00_baseline_schema.md** a táblák referenciája (nem futtandó SQL).
 
 ## Üzemeltetés
 
