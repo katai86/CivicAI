@@ -31,28 +31,35 @@ if (!is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>
 
 $userId = current_user_id();
 
-// upsert by user_id
-$stmt = db()->prepare("SELECT id FROM facilities WHERE user_id = :uid LIMIT 1");
-$stmt->execute([':uid'=>$userId]);
-$existing = (int)($stmt->fetchColumn() ?: 0);
+try {
+  $stmt = db()->prepare("SELECT id FROM facilities WHERE user_id = :uid LIMIT 1");
+  $stmt->execute([':uid'=>$userId]);
+  $existing = (int)($stmt->fetchColumn() ?: 0);
 
-if ($existing > 0) {
-  db()->prepare("UPDATE facilities
-    SET name=:n, service_type=:st, lat=:lat, lng=:lng, address=:addr, phone=:ph, email=:em,
-        hours_json=:hj, replacement_json=:rj, updated_at=NOW(), is_active=1
-    WHERE id=:id")
-    ->execute([
-      ':n'=>$name,':st'=>$serviceType,':lat'=>(float)$lat,':lng'=>(float)$lng,':addr'=>$address,
-      ':ph'=>$phone,':em'=>$email,':hj'=>$hoursJson,':rj'=>$replacementJson,':id'=>$existing
-    ]);
-} else {
-  db()->prepare("INSERT INTO facilities
-    (user_id, name, service_type, lat, lng, address, phone, email, hours_json, replacement_json, updated_at)
-    VALUES (:uid,:n,:st,:lat,:lng,:addr,:ph,:em,:hj,:rj,NOW())")
-    ->execute([
-      ':uid'=>$userId,':n'=>$name,':st'=>$serviceType,':lat'=>(float)$lat,':lng'=>(float)$lng,':addr'=>$address,
-      ':ph'=>$phone,':em'=>$email,':hj'=>$hoursJson,':rj'=>$replacementJson
-    ]);
+  if ($existing > 0) {
+    db()->prepare("UPDATE facilities
+      SET name=:n, service_type=:st, lat=:lat, lng=:lng, address=:addr, phone=:ph, email=:em,
+          hours_json=:hj, replacement_json=:rj, updated_at=NOW(), is_active=1
+      WHERE id=:id")
+      ->execute([
+        ':n'=>$name,':st'=>$serviceType,':lat'=>(float)$lat,':lng'=>(float)$lng,':addr'=>$address,
+        ':ph'=>$phone,':em'=>$email,':hj'=>$hoursJson,':rj'=>$replacementJson,':id'=>$existing
+      ]);
+  } else {
+    db()->prepare("INSERT INTO facilities
+      (user_id, name, service_type, lat, lng, address, phone, email, hours_json, replacement_json, updated_at)
+      VALUES (:uid,:n,:st,:lat,:lng,:addr,:ph,:em,:hj,:rj,NOW())")
+      ->execute([
+        ':uid'=>$userId,':n'=>$name,':st'=>$serviceType,':lat'=>(float)$lat,':lng'=>(float)$lng,':addr'=>$address,
+        ':ph'=>$phone,':em'=>$email,':hj'=>$hoursJson,':rj'=>$replacementJson
+      ]);
+  }
+  json_response(['ok'=>true]);
+} catch (Throwable $e) {
+  $msg = $e->getMessage();
+  if (strpos($msg, 'facilities') !== false || strpos($msg, 'doesn\'t exist') !== false) {
+    json_response(['ok'=>false,'error'=>'A közületi létesítmények (facilities) tábla hiányzik. Futtasd a megfelelő SQL migrációt.'], 503);
+    return;
+  }
+  throw $e;
 }
-
-json_response(['ok'=>true]);

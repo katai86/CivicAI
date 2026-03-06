@@ -290,7 +290,14 @@ function find_authority_for_report(?string $city, ?string $serviceCode = null): 
         $id = (int)$stmt->fetchColumn();
         return $id > 0 ? $id : null;
     } catch (Throwable $e) {
-        return null;
+        // Régi schema: nincs authority_contacts vagy authorities.is_active, hanem authorities.active
+        try {
+            $stmt = $pdo->query("SELECT id FROM authorities WHERE active=1 ORDER BY id ASC LIMIT 1");
+            $id = (int)$stmt->fetchColumn();
+            return $id > 0 ? $id : null;
+        } catch (Throwable $e2) {
+            return null;
+        }
     }
 }
 

@@ -23,17 +23,25 @@ $err = '';
 // Load authorities for user (or all for admin)
 $authorities = [];
 if ($isAdmin) {
-  $authorities = db()->query("SELECT * FROM authorities ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+  try {
+    $authorities = db()->query("SELECT * FROM authorities ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+  } catch (Throwable $e) {
+    $authorities = [];
+  }
 } else {
-  $stmt = db()->prepare("
-    SELECT a.*
-    FROM authority_users au
-    JOIN authorities a ON a.id = au.authority_id
-    WHERE au.user_id = :uid
-    ORDER BY a.name ASC
-  ");
-  $stmt->execute([':uid' => $uid]);
-  $authorities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  try {
+    $stmt = db()->prepare("
+      SELECT a.*
+      FROM authority_users au
+      JOIN authorities a ON a.id = au.authority_id
+      WHERE au.user_id = :uid
+      ORDER BY a.name ASC
+    ");
+    $stmt->execute([':uid' => $uid]);
+    $authorities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  } catch (Throwable $e) {
+    $authorities = [];
+  }
 }
 
 $authorityIds = array_map(fn($a) => (int)$a['id'], $authorities);

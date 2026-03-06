@@ -158,24 +158,33 @@ if ($action === 'create_contact') {
   if ($authorityId <= 0 || !$serviceCode || !$name) {
     json_response(['ok' => false, 'error' => 'Invalid data'], 400);
   }
-  db()->prepare("
-    INSERT INTO authority_contacts (authority_id, service_code, name, description, is_active)
-    VALUES (:aid, :code, :name, :desc, :active)
-  ")->execute([
-    ':aid' => $authorityId,
-    ':code' => $serviceCode,
-    ':name' => $name,
-    ':desc' => $description,
-    ':active' => $isActive,
-  ]);
-  json_response(['ok' => true, 'id' => (int)db()->lastInsertId()]);
+  try {
+    db()->prepare("
+      INSERT INTO authority_contacts (authority_id, service_code, name, description, is_active)
+      VALUES (:aid, :code, :name, :desc, :active)
+    ")->execute([
+      ':aid' => $authorityId,
+      ':code' => $serviceCode,
+      ':name' => $name,
+      ':desc' => $description,
+      ':active' => $isActive,
+    ]);
+    json_response(['ok' => true, 'id' => (int)db()->lastInsertId()]);
+  } catch (Throwable $e) {
+    log_error('admin_authorities create_contact: ' . $e->getMessage());
+    json_response(['ok' => false, 'error' => 'Az authority_contacts tábla hiányozhat. Futtasd a megfelelő SQL migrációt.'], 503);
+  }
 }
 
 if ($action === 'delete_contact') {
   $id = (int)($body['id'] ?? 0);
   if ($id <= 0) json_response(['ok' => false, 'error' => 'Invalid id'], 400);
-  db()->prepare("DELETE FROM authority_contacts WHERE id=:id")->execute([':id' => $id]);
-  json_response(['ok' => true]);
+  try {
+    db()->prepare("DELETE FROM authority_contacts WHERE id=:id")->execute([':id' => $id]);
+    json_response(['ok' => true]);
+  } catch (Throwable $e) {
+    json_response(['ok' => false, 'error' => 'Az authority_contacts tábla hiányozhat.'], 503);
+  }
 }
 
 if ($action === 'assign_user') {
@@ -189,22 +198,31 @@ if ($action === 'assign_user') {
   $uid = (int)$stmt->fetchColumn();
   if ($uid <= 0) json_response(['ok' => false, 'error' => 'User not found'], 404);
 
-  db()->prepare("
-    INSERT INTO authority_users (authority_id, user_id, role)
-    VALUES (:aid, :uid, 'member')
-    ON DUPLICATE KEY UPDATE role=VALUES(role)
-  ")->execute([
-    ':aid' => $authorityId,
-    ':uid' => $uid
-  ]);
-  json_response(['ok' => true]);
+  try {
+    db()->prepare("
+      INSERT INTO authority_users (authority_id, user_id, role)
+      VALUES (:aid, :uid, 'member')
+      ON DUPLICATE KEY UPDATE role=VALUES(role)
+    ")->execute([
+      ':aid' => $authorityId,
+      ':uid' => $uid
+    ]);
+    json_response(['ok' => true]);
+  } catch (Throwable $e) {
+    log_error('admin_authorities assign_user: ' . $e->getMessage());
+    json_response(['ok' => false, 'error' => 'Az authority_users tábla hiányozhat. Futtasd a megfelelő SQL migrációt.'], 503);
+  }
 }
 
 if ($action === 'remove_user') {
   $id = (int)($body['id'] ?? 0);
   if ($id <= 0) json_response(['ok' => false, 'error' => 'Invalid id'], 400);
-  db()->prepare("DELETE FROM authority_users WHERE id=:id")->execute([':id' => $id]);
-  json_response(['ok' => true]);
+  try {
+    db()->prepare("DELETE FROM authority_users WHERE id=:id")->execute([':id' => $id]);
+    json_response(['ok' => true]);
+  } catch (Throwable $e) {
+    json_response(['ok' => false, 'error' => 'Az authority_users tábla hiányozhat.'], 503);
+  }
 }
 
 json_response(['ok' => false, 'error' => 'Unknown action'], 400);

@@ -29,17 +29,24 @@ if (!is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>
 
 $userId = current_user_id();
 
-db()->prepare("INSERT INTO civil_events (user_id, title, description, start_date, end_date, lat, lng, address)
-               VALUES (:uid,:t,:d,:sd,:ed,:lat,:lng,:addr)")
-  ->execute([
-    ':uid'=>$userId,
-    ':t'=>$title,
-    ':d'=>$desc,
-    ':sd'=>$start,
-    ':ed'=>$end,
-    ':lat'=>(float)$lat,
-    ':lng'=>(float)$lng,
-    ':addr'=>$address
-  ]);
-
-json_response(['ok'=>true,'id'=>(int)db()->lastInsertId()]);
+try {
+  db()->prepare("INSERT INTO civil_events (user_id, title, description, start_date, end_date, lat, lng, address)
+                VALUES (:uid,:t,:d,:sd,:ed,:lat,:lng,:addr)")
+    ->execute([
+      ':uid'=>$userId,
+      ':t'=>$title,
+      ':d'=>$desc,
+      ':sd'=>$start,
+      ':ed'=>$end,
+      ':lat'=>(float)$lat,
+      ':lng'=>(float)$lng,
+      ':addr'=>$address
+    ]);
+  json_response(['ok'=>true,'id'=>(int)db()->lastInsertId()]);
+} catch (Throwable $e) {
+  $msg = $e->getMessage();
+  if (strpos($msg, 'civil_events') !== false || strpos($msg, 'doesn\'t exist') !== false) {
+    json_response(['ok'=>false,'error'=>'A civil események tábla hiányzik. Futtasd a megfelelő SQL migrációt.'], 503);
+  }
+  throw $e;
+}

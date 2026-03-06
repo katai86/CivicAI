@@ -443,16 +443,36 @@ try {
   } catch (Throwable $e2) {
     log_error('report_create INSERT (base): ' . $e2->getMessage());
     try {
-      $minSql = "INSERT INTO reports (category, title, description, lat, lng, status, user_id, reporter_email, reporter_name, reporter_is_anonymous, notify_token, notify_enabled)
-                 VALUES (:category, :title, :description, :lat, :lng, 'new', :user_id, :reporter_email, :reporter_name, :reporter_is_anonymous, :notify_token, :notify_enabled)";
-      db()->prepare($minSql)->execute([
-        ':category' => $category, ':title' => $title, ':description' => $desc, ':lat' => $lat, ':lng' => $lng,
-        ':user_id' => $userId, ':reporter_email' => $storeEmail, ':reporter_name' => $reporterName,
-        ':reporter_is_anonymous' => $reporterIsAnonymous, ':notify_token' => $notifyToken, ':notify_enabled' => $notifyEnabled,
-      ]);
+      // Régi schema: nincs service_code oszlop, csak authority_id
+      $stmt = db()->prepare("
+        INSERT INTO reports
+          (category, title, description, lat, lng,
+           address_approx, house_number_approx, road, suburb, city, postcode,
+           status, ip_hash, user_agent,
+           user_id, reporter_email, reporter_name, reporter_is_anonymous,
+           notify_token, notify_enabled, authority_id)
+        VALUES
+          (:category, :title, :description, :lat, :lng,
+           :address_approx, :house_number, :road, :suburb, :city, :postcode,
+           'new', :ip_hash, :user_agent,
+           :user_id, :reporter_email, :reporter_name, :reporter_is_anonymous,
+           :notify_token, :notify_enabled, :authority_id)
+      ");
+      $stmt->execute($baseParams);
     } catch (Throwable $e3) {
-      log_error('report_create INSERT (minimal): ' . $e3->getMessage());
-      json_response(['ok' => false, 'error' => 'Szerver hiba a mentéskor. Ellenőrizd a reports tábla szerkezetét és az error.log-ot.'], 500);
+      log_error('report_create INSERT (with authority_id): ' . $e3->getMessage());
+      try {
+        $minSql = "INSERT INTO reports (category, title, description, lat, lng, status, user_id, reporter_email, reporter_name, reporter_is_anonymous, notify_token, notify_enabled)
+                   VALUES (:category, :title, :description, :lat, :lng, 'new', :user_id, :reporter_email, :reporter_name, :reporter_is_anonymous, :notify_token, :notify_enabled)";
+        db()->prepare($minSql)->execute([
+          ':category' => $category, ':title' => $title, ':description' => $desc, ':lat' => $lat, ':lng' => $lng,
+          ':user_id' => $userId, ':reporter_email' => $storeEmail, ':reporter_name' => $reporterName,
+          ':reporter_is_anonymous' => $reporterIsAnonymous, ':notify_token' => $notifyToken, ':notify_enabled' => $notifyEnabled,
+        ]);
+      } catch (Throwable $e4) {
+        log_error('report_create INSERT (minimal): ' . $e4->getMessage());
+        json_response(['ok' => false, 'error' => 'Szerver hiba a mentéskor. Ellenőrizd a reports tábla szerkezetét és az error.log-ot.'], 500);
+      }
     }
   }
 }
