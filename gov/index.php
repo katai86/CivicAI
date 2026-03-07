@@ -55,7 +55,10 @@ if ($statusFilter !== '' && !in_array($statusFilter, $allowedStatuses, true)) {
   $statusFilter = '';
 }
 
-// Status update
+// Gov user: nem láthatja a bejelentések listáját, nem változtathat státuszt – csak statisztika
+$showReportList = $isAdmin;
+
+// Status update (csak adminnak van UI hozzá, de a backend ellenőrzi jogosultságot)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'set_status') {
   $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
   $new = isset($_POST['status']) ? trim((string)$_POST['status']) : '';
@@ -193,22 +196,25 @@ if ($statusFilter !== '') {
 
 if ($isAdmin || $authorityIds) {
   $pdo = db();
-  $listWhere = $where;
-  $listParams = $params;
-  $stmt = $pdo->prepare("
-    SELECT r.id, r.category, r.title, r.description, r.status, r.created_at,
-           r.address_approx, r.city, r.authority_id,
-           u.display_name AS reporter_display_name, u.level AS reporter_level, u.profile_public AS reporter_profile_public
-    FROM reports r
-    LEFT JOIN users u ON u.id = r.user_id
-    WHERE $listWhere
-    ORDER BY r.created_at DESC
-    LIMIT 200
-  ");
-  $stmt->execute($listParams);
-  $reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  // Lista csak adminnak (gov user csak statisztikát lát)
+  if ($showReportList) {
+    $listWhere = $where;
+    $listParams = $params;
+    $stmt = $pdo->prepare("
+      SELECT r.id, r.category, r.title, r.description, r.status, r.created_at,
+             r.address_approx, r.city, r.authority_id,
+             u.display_name AS reporter_display_name, u.level AS reporter_level, u.profile_public AS reporter_profile_public
+      FROM reports r
+      LEFT JOIN users u ON u.id = r.user_id
+      WHERE $listWhere
+      ORDER BY r.created_at DESC
+      LIMIT 200
+    ");
+    $stmt->execute($listParams);
+    $reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  }
 
-  // Statisztika: ugyanaz a szűrő (városhoz tartozó)
+  // Statisztika: ugyanaz a szűrő (városhoz tartozó), mind adminnak mind gov usernek
   try {
     $q0 = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $baseWhere");
     $q0->execute($baseParams);
@@ -253,8 +259,16 @@ $categoryLabels = [
 $statusOrder = ['new','approved','in_progress','solved','rejected','needs_info','forwarded','waiting_reply','closed','pending'];
 $statusColors = [ 'new'=>'#0d6efd', 'approved'=>'#198754', 'in_progress'=>'#ffc107', 'solved'=>'#20c997', 'rejected'=>'#dc3545', 'needs_info'=>'#6f42c1', 'forwarded'=>'#fd7e14', 'waiting_reply'=>'#0dcaf0', 'closed'=>'#6c757d', 'pending'=>'#adb5bd' ];
 $catColors = ['#e74c3c','#3498db','#f1c40f','#34495e','#27ae60','#9b59b6','#ff7a00','#0ea5e9'];
-$maxStatus = $stats['by_status'] ? max(1, ...array_values($stats['by_status'])) : 1;
-$maxCategory = $stats['by_category'] ? max(1, ...array_values($stats['by_category'])) : 1;
+$maxStatus = 1;
+if (!empty($stats['by_status'])) {
+    $v = array_values($stats['by_status']);
+    $maxStatus = $v ? max(1, max($v)) : 1;
+}
+$maxCategory = 1;
+if (!empty($stats['by_category'])) {
+    $v = array_values($stats['by_category']);
+    $maxCategory = $v ? max(1, max($v)) : 1;
+}
 
 function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 ?>
@@ -359,6 +373,7 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
         </div>
       </section>
 
+      <?php if ($showReportList): ?>
       <h3 style="margin:24px 0 12px 0; font-size:1rem">Bejelentések lista</h3>
       <form method="get" class="gov-filter-row" style="margin-bottom:12px">
         <label for="govStatusFilter" class="muted" style="margin-right:8px">Szűrés státusz szerint:</label>
@@ -393,6 +408,18 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
           </div>
         <?php endforeach; ?>
       </div>
+      <?php else: ?>
+      <section class="gov-next" style="margin-top:24px;padding:20px;background:var(--card-2);border:1px dashed var(--border);border-radius:12px;">
+        <h3 style="margin:0 0 8px 0; font-size:1rem">Következő lépések – közigazgatási dashboard</h3>
+        <p class="muted" style="margin:0 0 12px 0">Itt később megjelenik:</p>
+        <ul class="muted" style="margin:0; padding-left:1.2em;">
+          <li><strong>Utca szintű összesítés</strong> – melyik utcán hány bejelentés, „health” státusz az adott utcára</li>
+          <li><strong>AI integráció</strong> – elemzés, javaslatok</li>
+          <li><strong>ESG</strong> – fenntarthatósági mutatók</li>
+        </ul>
+        <p class="muted small" style="margin:12px 0 0 0">A közigazgatási felületet – az admin dashboardhoz hasonlóan – teljes dashboardként (oldalsáv, kártyák, grafikonok) is ki lehet majd alakítani.</p>
+      </section>
+      <?php endif; ?>
     <?php endif; ?>
   </div>
 </div>

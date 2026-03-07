@@ -1,9 +1,20 @@
 <?php
 require_once __DIR__ . '/util.php';
-start_secure_session();
-$uid = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
-$role = current_user_role() ?: 'guest';
-$rankAll = $uid ? get_user_rank('all', $uid) : null;
+$uid = 0;
+$role = 'guest';
+$rankAll = null;
+try {
+    start_secure_session();
+    $uid = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+    $role = current_user_role() ?: 'guest';
+    if ($uid > 0 && function_exists('get_user_rank')) {
+        $rankAll = get_user_rank('all', $uid);
+    }
+} catch (Throwable $e) {
+    if (function_exists('log_error')) {
+        log_error('Index bootstrap: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    }
+}
 ?><!doctype html>
 <html lang="hu">
 <head>
