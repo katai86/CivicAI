@@ -1,4 +1,5 @@
 // ====== Állítsd be, ha más mappában van a projekt ======
+function t(key) { return (window.LANG && window.LANG[key]) || key; }
 const BASE = document.body?.dataset?.appBase || '/terkep';
 const API_LIST        = `${BASE}/api/admin_reports.php`;
 const API_ACTION      = `${BASE}/api/admin_action.php`; // delete-hez (legacy)
@@ -248,7 +249,7 @@ async function loadStats(){
           <div class="bar-wrap"><div class="bar" style="width:${100*x.v/maxS}%;background:${x.color}"></div></div>
           <span class="val">${x.v}</span>
         </div>
-      `).join('') : '<div class="text-secondary small">Nincs adat.</div>';
+      `).join('') : '<div class="text-secondary small">' + t('admin.no_data') + '</div>';
     }
 
     const chartCategory = document.getElementById('chartCategory');
@@ -262,7 +263,7 @@ async function loadStats(){
           <div class="bar-wrap"><div class="bar" style="width:${100*x.v/maxC}%;background:${catColors[i%catColors.length]}"></div></div>
           <span class="val">${x.v}</span>
         </div>
-      `).join('') : '<div class="text-secondary small">Nincs adat.</div>';
+      `).join('') : '<div class="text-secondary small">' + t('admin.no_data') + '</div>';
     }
 
     const countsEl = document.getElementById('counts');
@@ -298,7 +299,7 @@ async function loadLogInto(el, reportId){
 }
 
 async function loadAttachmentsInto(el, reportId){
-  el.textContent = 'Betöltés...';
+  el.textContent = t('admin.load') + '...';
   try{
     const j = await fetchJson(`${API_ATTACH_LIST}?id=${encodeURIComponent(reportId)}`);
     const rows = j.data || [];
@@ -505,7 +506,7 @@ function renderReports(rows){
   const list = document.getElementById('reportList');
   list.innerHTML = '';
   if (!rows.length){
-    list.innerHTML = `<div class="text-secondary">Nincs találat ehhez a szűréshez.</div>`;
+    list.innerHTML = '<div class="text-secondary">' + t('admin.no_filter_results') + '</div>';
     return;
   }
   rows.forEach(r => list.appendChild(renderRow(r)));
@@ -536,7 +537,7 @@ async function loadReports(){
   const authorityId = (document.getElementById('authorityFilter') && document.getElementById('authorityFilter').value) ? Number(document.getElementById('authorityFilter').value) : 0;
   const limit = Number(document.getElementById('reportLimit').value || 300);
   const list = document.getElementById('reportList');
-  list.textContent = 'Betöltés...';
+  list.textContent = t('admin.load') + '...';
   clearMarkers();
 
   try{
@@ -580,7 +581,7 @@ async function loadUsers(){
   const role = document.getElementById('userRoleFilter').value || '';
   const active = document.getElementById('userActiveFilter').value || '';
   const list = document.getElementById('userList');
-  list.textContent = 'Betöltés...';
+  list.textContent = t('admin.load') + '...';
 
   try{
     const qs = new URLSearchParams();
@@ -590,7 +591,7 @@ async function loadUsers(){
     const j = await fetchJson(`${API_USERS}?${qs.toString()}`);
     const rows = j.data || [];
     if (!rows.length){
-    list.innerHTML = '<div class="text-secondary">Nincs találat.</div>';
+    list.innerHTML = '<div class="text-secondary">' + t('admin.no_filter_results') + '</div>';
       return;
     }
 
@@ -666,7 +667,7 @@ async function loadUsers(){
 
 async function loadLayers(){
   const list = document.getElementById('layerList');
-  list.textContent = 'Betöltés...';
+  list.textContent = t('admin.load') + '...';
   try{
     const j = await fetchJson(API_LAYERS);
     const rows = j.data || [];
@@ -723,7 +724,7 @@ async function loadLayers(){
 
 async function loadPoints(layerId){
   const list = document.getElementById('pointList');
-  list.textContent = 'Betöltés...';
+  list.textContent = t('admin.load') + '...';
   try{
     const j = await fetchJson(`${API_LAYERS}?layer_id=${encodeURIComponent(layerId)}`);
     const rows = j.data || [];
@@ -795,9 +796,9 @@ async function loadAuthorities(){
   const assignList = document.getElementById('assignList');
   if (!list || !contactList || !select) return;
   if (!assignSelect || !assignList) return;
-  list.textContent = 'Betöltés...';
-  contactList.textContent = 'Betöltés...';
-  assignList.textContent = 'Betöltés...';
+  list.textContent = t('admin.load') + '...';
+  contactList.textContent = t('admin.load') + '...';
+  assignList.textContent = t('admin.load') + '...';
   try{
     const j = await fetchJson(API_AUTHORITIES);
     const authorities = j.authorities || [];
@@ -808,7 +809,7 @@ async function loadAuthorities(){
     assignSelect.innerHTML = authorities.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
 
     if (!authorities.length){
-      list.innerHTML = '<div class="text-secondary">Nincs adat.</div>';
+      list.innerHTML = '<div class="text-secondary">' + t('admin.no_data') + '</div>';
     } else {
       list.innerHTML = authorities.map(a => `
         <div class="admin-item">
@@ -835,7 +836,7 @@ async function loadAuthorities(){
     }
 
     if (!contacts.length){
-      contactList.innerHTML = '<div class="text-secondary">Nincs adat.</div>';
+      contactList.innerHTML = '<div class="text-secondary">' + t('admin.no_data') + '</div>';
     } else {
       contactList.innerHTML = contacts.map(c => `
         <div class="admin-item">
@@ -862,7 +863,7 @@ async function loadAuthorities(){
     }
 
     if (!assignments.length){
-      assignList.innerHTML = '<div class="text-secondary">Nincs adat.</div>';
+      assignList.innerHTML = '<div class="text-secondary">' + t('admin.no_data') + '</div>';
     } else {
       assignList.innerHTML = assignments.map(a => `
         <div class="admin-item">

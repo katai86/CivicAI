@@ -31,8 +31,8 @@ try {
     $to = (string)$u['email'];
     if (!filter_var($to, FILTER_VALIDATE_EMAIL)) continue;
     $name = trim((string)($u['first_name'] ?? '')) ?: 'Kedves';
-    $subject = "Boldog születésnapot kíván a Köz.Tér csapata!";
-    $body = "Szia {$name}!\n\nBoldog születésnapot kíván a Köz.Tér csapata!\n\n— Köz.Tér";
+    $subject = "Boldog születésnapot kíván a CivicAI csapata!";
+    $body = "Szia {$name}!\n\nBoldog születésnapot kíván a CivicAI csapata!\n\n— CivicAI";
     if (send_mail($to, $subject, $body)) {
       $sent['birthday']++;
       $up = db()->prepare("UPDATE users SET last_birthday_sent = :today WHERE id = :id");
@@ -72,8 +72,8 @@ try {
         }
       }
       if (!$matched) continue;
-      $subject = "Boldog névnapot kíván a Köz.Tér csapata!";
-      $body = "Szia {$first}!\n\nBoldog névnapot kíván a Köz.Tér csapata!\n\n— Köz.Tér";
+      $subject = "Boldog névnapot kíván a CivicAI csapata!";
+      $body = "Szia {$first}!\n\nBoldog névnapot kíván a CivicAI csapata!\n\n— CivicAI";
       if (send_mail($to, $subject, $body)) {
         $sent['nameday']++;
         $up = db()->prepare("UPDATE users SET last_nameday_sent = :today WHERE id = :id");

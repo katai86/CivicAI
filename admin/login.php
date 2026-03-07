@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Köz.Tér – Admin belépés</title>
+  <title>CivicAI – Admin belépés</title>
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="page auth-page">
@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
       <span class="brand-logo" aria-hidden="true"></span>
-      <b>Köz.Tér – Admin</b>
+      <b>CivicAI – Admin</b>
     </a>
   </div>
 </header>

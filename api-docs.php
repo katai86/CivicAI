@@ -1,6 +1,6 @@
 <?php
 /**
- * Nyilvános API dokumentáció – Open311 és Köz.Tér végpontok.
+ * Nyilvános API dokumentáció – Open311 és CivicAI végpontok.
  * Auth nincs; statikus tartalom + dinamikus base URL.
  */
 require_once __DIR__ . '/config.php';
@@ -19,7 +19,7 @@ header('Content-Type: text/html; charset=utf-8');
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Köz.Tér – API dokumentáció</title>
+  <title>CivicAI – API dokumentáció</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; line-height: 1.5; }
     h1 { font-size: 1.5rem; }
@@ -31,7 +31,7 @@ header('Content-Type: text/html; charset=utf-8');
   </style>
 </head>
 <body>
-  <h1>Köz.Tér – API dokumentáció</h1>
+  <h1>CivicAI – API dokumentáció</h1>
   <p>Ez a platform <strong>Open311</strong> kompatibilis API-t biztosít bejelentések fogadására és listázására. Külső alkalmazások (mobil app, partner portál) ezen végpontokon keresztül küldhetnek bejelentést vagy lekérhetik az adatokat.</p>
 
   <h2>Discovery (szolgáltatás felderítés)</h2>
@@ -50,7 +50,7 @@ header('Content-Type: text/html; charset=utf-8');
   <p>Ha be van állítva az <code>APP_JURISDICTION_ID</code> (vagy <code>FMS_OPEN311_JURISDICTION</code>), a discovery válasz tartalmazza a <code>jurisdiction_id</code> mezőt. Több város esetén külön példány / konfig lehet városonként.</p>
 
   <h2>POST új bejelentés (Open311)</h2>
-  <p>Küldendő mezők (pl. JSON vagy form): <code>service_code</code>, <code>description</code>, <code>lat</code>, <code>long</code>; opcionális: <code>address_string</code>, <code>email</code>, <code>first_name</code>, <code>last_name</code>. A válaszban a <code>service_request_id</code> a Köz.Tér belső azonosítója.</p>
+  <p>Küldendő mezők (pl. JSON vagy form): <code>service_code</code>, <code>description</code>, <code>lat</code>, <code>long</code>; opcionális: <code>address_string</code>, <code>email</code>, <code>first_name</code>, <code>last_name</code>. A válaszban a <code>service_request_id</code> a CivicAI belső azonosítója.</p>
 
   <h2>Részletes leírás</h2>
   <p>A FixMyStreet / Open311 integráció, saját API vs. külső bridge: <a href="<?= htmlspecialchars(app_url('docs/MILESTONE_7_FIXMYSTREET_OPEN311_EXPLAINED.md'), ENT_QUOTES, 'UTF-8') ?>">MILESTONE_7_FIXMYSTREET_OPEN311_EXPLAINED.md</a> (projekt docs mappában).</p>

@@ -138,7 +138,7 @@ function avatar_url($filename){
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Köz.Tér – Profil</title>
+  <title>CivicAI – Profil</title>
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
   <script>
   document.addEventListener('DOMContentLoaded', function(){
@@ -174,7 +174,7 @@ function avatar_url($filename){
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
       <span class="brand-logo" aria-hidden="true"></span>
-      <b>Köz.Tér</b>
+      <b>CivicAI</b>
     </a>
     <div class="topbar-links">
       <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>

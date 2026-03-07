@@ -44,7 +44,7 @@ function build_status_email(
   $oldL = $labels[$old] ?? $old;
   $newL = $labels[$new] ?? $new;
 
-  $brand = defined('APP_DEPLOYMENT_NAME') && APP_DEPLOYMENT_NAME ? (string)APP_DEPLOYMENT_NAME : 'Köz.Tér';
+  $brand = defined('APP_DEPLOYMENT_NAME') && APP_DEPLOYMENT_NAME ? (string)APP_DEPLOYMENT_NAME : 'CivicAI';
   $subject = "[{$case}] {$brand} – {$newL}";
 
   $lines = [];
@@ -99,7 +99,7 @@ function build_status_email(
   $lines[] = $unsubscribeUrl;
 
   $lines[] = "";
-  $brand = defined('APP_DEPLOYMENT_NAME') && APP_DEPLOYMENT_NAME ? (string)APP_DEPLOYMENT_NAME : 'Köz.Tér';
+  $brand = defined('APP_DEPLOYMENT_NAME') && APP_DEPLOYMENT_NAME ? (string)APP_DEPLOYMENT_NAME : 'CivicAI';
   $lines[] = "— " . $brand;
 
   return [$subject, implode("\n", $lines)];

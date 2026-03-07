@@ -85,7 +85,7 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Köz.Tér – <?= h($caseNo) ?></title>
+  <title><?= h(t('site.name')) ?> – <?= h($caseNo) ?></title>
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
 <body class="page"
@@ -98,7 +98,7 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
       <span class="brand-logo" aria-hidden="true"></span>
-      <b>Köz.Tér</b>
+      <b><?= h(t('site.name')) ?></b>
     </a>
     <div class="topbar-links">
       <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>

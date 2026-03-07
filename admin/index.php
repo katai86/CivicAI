@@ -8,6 +8,7 @@ if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
   exit;
 }
 $currentLang = current_lang();
+$LANG_JS = lang_array_for_js();
 ?>
 <!doctype html>
 <html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>">
@@ -62,7 +63,7 @@ $currentLang = current_lang();
   <aside class="app-sidebar bg-body-secondary shadow">
     <div class="sidebar-brand">
       <a href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>" class="brand-link">
-        <span class="brand-text fw-light">Köz.Tér</span>
+        <span class="brand-text fw-light">CivicAI</span>
       </a>
     </div>
     <div class="sidebar-wrapper">
@@ -71,25 +72,25 @@ $currentLang = current_lang();
           <li class="nav-item">
             <a href="#" class="nav-link tab active" data-tab="reports">
               <i class="nav-icon bi bi-flag-fill"></i>
-              <p>Bejelentések</p>
+              <p><?= htmlspecialchars(t('admin.reports'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
           </li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="users">
               <i class="nav-icon bi bi-people-fill"></i>
-              <p>Felhasználók</p>
+              <p><?= htmlspecialchars(t('admin.users'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
           </li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="layers">
               <i class="nav-icon bi bi-layers-fill"></i>
-              <p>Layerek</p>
+              <p><?= htmlspecialchars(t('admin.layers'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
           </li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="authorities">
               <i class="nav-icon bi bi-shield-check"></i>
-              <p>Hatóságok</p>
+              <p><?= htmlspecialchars(t('admin.authorities'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
           </li>
         </ul>
@@ -105,23 +106,23 @@ $currentLang = current_lang();
             <div class="card">
               <div class="card-body">
                 <h6 class="card-title d-flex align-items-center gap-2">
-                  Statisztika
-                  <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshStats" title="Frissítés">↻</button>
+                  <?= htmlspecialchars(t('admin.statistics'), ENT_QUOTES, 'UTF-8') ?>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshStats" title="<?= htmlspecialchars(t('admin.refresh'), ENT_QUOTES, 'UTF-8') ?>">↻</button>
                 </h6>
                 <div class="row g-2">
-                  <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small">Bejelentések (ma)</span><span class="fw-bold fs-5" id="kpiReports1">—</span></div></div>
-                  <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small">Bejelentések (7 nap)</span><span class="fw-bold fs-5" id="kpiReports7">—</span></div></div>
-                  <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small">Felhasználók (7 nap)</span><span class="fw-bold fs-5" id="kpiUsers7">—</span></div></div>
-                  <div class="col-md-3"><div class="d-flex flex-column"><span class="text-secondary small">Státusz</span><span class="small" id="kpiStatus">—</span></div></div>
-                  <div class="col-md-3"><div class="d-flex flex-column"><span class="text-secondary small">Kategória</span><span class="small" id="kpiCategory">—</span></div></div>
+                  <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.reports_today'), ENT_QUOTES, 'UTF-8') ?></span><span class="fw-bold fs-5" id="kpiReports1">—</span></div></div>
+                  <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.reports_7d'), ENT_QUOTES, 'UTF-8') ?></span><span class="fw-bold fs-5" id="kpiReports7">—</span></div></div>
+                  <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.users_7d'), ENT_QUOTES, 'UTF-8') ?></span><span class="fw-bold fs-5" id="kpiUsers7">—</span></div></div>
+                  <div class="col-md-3"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.status'), ENT_QUOTES, 'UTF-8') ?></span><span class="small" id="kpiStatus">—</span></div></div>
+                  <div class="col-md-3"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.category'), ENT_QUOTES, 'UTF-8') ?></span><span class="small" id="kpiCategory">—</span></div></div>
                 </div>
                 <div class="row g-3 mt-2">
                   <div class="col-md-6">
-                    <h6 class="text-secondary small mb-2">Státusz megoszlás</h6>
+                    <h6 class="text-secondary small mb-2"><?= htmlspecialchars(t('admin.status_dist'), ENT_QUOTES, 'UTF-8') ?></h6>
                     <div id="chartStatus" class="admin-chart"></div>
                   </div>
                   <div class="col-md-6">
-                    <h6 class="text-secondary small mb-2">Kategória megoszlás</h6>
+                    <h6 class="text-secondary small mb-2"><?= htmlspecialchars(t('admin.category_dist'), ENT_QUOTES, 'UTF-8') ?></h6>
                     <div id="chartCategory" class="admin-chart"></div>
                   </div>
                 </div>
@@ -137,18 +138,18 @@ $currentLang = current_lang();
                 <div class="admin-tab-body" id="tab-reports">
                   <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
                     <select id="statusFilter" class="form-select form-select-sm">
-                      <option value="new">Új</option>
-                      <option value="approved">Publikálva</option>
-                      <option value="in_progress">Megoldás alatt</option>
-                      <option value="solved">Megoldva</option>
-                      <option value="rejected">Elutasítva</option>
+                      <option value="new"><?= htmlspecialchars(t('admin.new'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="approved"><?= htmlspecialchars(t('admin.published'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="in_progress"><?= htmlspecialchars(t('admin.in_progress'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="solved"><?= htmlspecialchars(t('admin.solved'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="rejected"><?= htmlspecialchars(t('admin.rejected'), ENT_QUOTES, 'UTF-8') ?></option>
                       <option value="pending">Pending (régi)</option>
-                      <option value="all">Összes</option>
+                      <option value="all"><?= htmlspecialchars(t('legend.all'), ENT_QUOTES, 'UTF-8') ?></option>
                     </select>
                     <select id="authorityFilter" class="form-select form-select-sm" title="Hatóság szűrés (multi-city)">
-                      <option value="">Összes hatóság</option>
+                      <option value=""><?= htmlspecialchars(t('admin.all_authorities'), ENT_QUOTES, 'UTF-8') ?></option>
                     </select>
-                    <input id="reportSearch" class="form-control form-control-sm" type="search" placeholder="Keresés cím/ID/szöveg">
+                    <input id="reportSearch" class="form-control form-control-sm" type="search" placeholder="<?= htmlspecialchars(t('admin.search_placeholder'), ENT_QUOTES, 'UTF-8') ?>">
                     <select id="reportLimit" class="form-select form-select-sm">
                       <option value="200">200</option>
                       <option value="300" selected>300</option>
@@ -157,13 +158,13 @@ $currentLang = current_lang();
                       <option value="2000">2000</option>
                     </select>
                     <div class="d-flex gap-2 ms-auto">
-                      <button id="loadReports" class="btn btn-primary btn-sm" type="button">Betöltés</button>
-                      <button id="refreshReports" class="btn btn-outline-secondary btn-sm" type="button">Frissítés</button>
+                      <button id="loadReports" class="btn btn-primary btn-sm" type="button"><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?></button>
+                      <button id="refreshReports" class="btn btn-outline-secondary btn-sm" type="button"><?= htmlspecialchars(t('admin.refresh'), ENT_QUOTES, 'UTF-8') ?></button>
                     </div>
                   </div>
 
                   <div class="counts mb-2" id="counts"></div>
-                  <div class="admin-list" id="reportList">Kattints: <b>Betöltés</b>.</div>
+                  <div class="admin-list" id="reportList"><?= htmlspecialchars(t('admin.initial_hint'), ENT_QUOTES, 'UTF-8') ?>: <b><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?></b>.</div>
                 </div>
 
                 <div class="admin-tab-body" id="tab-users" hidden>
@@ -268,8 +269,9 @@ $currentLang = current_lang();
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
 <script src="<?= htmlspecialchars(app_url('/dashboard/dist/js/adminlte.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script>window.LANG = <?= json_encode($LANG_JS, JSON_UNESCAPED_UNICODE); ?>;</script>
 <script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="admin.js?v=7"></script>
+<script src="admin.js?v=8"></script>
 </body>
 </html>

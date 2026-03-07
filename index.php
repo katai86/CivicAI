@@ -116,30 +116,25 @@ $LANG_JS = lang_array_for_js();
 
   <div class="legend" id="legend" aria-label="<?= htmlspecialchars(t('legend.title'), ENT_QUOTES, 'UTF-8') ?>">
     <button type="button" class="legend-toggle" id="legendToggle" aria-expanded="false">
-      <?= htmlspecialchars(t('legend.title'), ENT_QUOTES, 'UTF-8') ?>
+      <span class="legend-toggle-text"><?= htmlspecialchars(t('legend.title'), ENT_QUOTES, 'UTF-8') ?></span>
+      <span class="legend-chevron" aria-hidden="true">▼</span>
       <span class="legend-count" id="legendCount">0</span>
     </button>
 
     <div class="legend-body" id="legendBody">
-      <div class="legend-filters" id="legendFilters">
+      <div class="legend-filters-single">
         <button class="legend-filter active" data-cat="all" type="button"><?= htmlspecialchars(t('legend.all'), ENT_QUOTES, 'UTF-8') ?></button>
-        <button class="legend-filter" data-cat="road" type="button"><?= htmlspecialchars(t('cat.road'), ENT_QUOTES, 'UTF-8') ?></button>
-        <button class="legend-filter" data-cat="sidewalk" type="button"><?= htmlspecialchars(t('cat.sidewalk'), ENT_QUOTES, 'UTF-8') ?></button>
-        <button class="legend-filter" data-cat="lighting" type="button"><?= htmlspecialchars(t('cat.lighting'), ENT_QUOTES, 'UTF-8') ?></button>
-        <button class="legend-filter" data-cat="trash" type="button"><?= htmlspecialchars(t('cat.trash'), ENT_QUOTES, 'UTF-8') ?></button>
-        <button class="legend-filter" data-cat="green" type="button"><?= htmlspecialchars(t('cat.green'), ENT_QUOTES, 'UTF-8') ?></button>
-        <button class="legend-filter" data-cat="traffic" type="button"><?= htmlspecialchars(t('cat.traffic'), ENT_QUOTES, 'UTF-8') ?></button>
-        <button class="legend-filter" data-cat="idea" type="button"><?= htmlspecialchars(t('cat.idea'), ENT_QUOTES, 'UTF-8') ?></button>
-        <button class="legend-filter" data-cat="civil_event" type="button"><?= htmlspecialchars(t('cat.civil_event'), ENT_QUOTES, 'UTF-8') ?></button>
       </div>
-      <div class="legend-item"><span class="legend-badge b-road">🚧</span><span><?= htmlspecialchars(t('cat.road_desc'), ENT_QUOTES, 'UTF-8') ?></span></div>
-      <div class="legend-item"><span class="legend-badge b-sidewalk">🚶</span><span><?= htmlspecialchars(t('cat.sidewalk_desc'), ENT_QUOTES, 'UTF-8') ?></span></div>
-      <div class="legend-item"><span class="legend-badge b-lighting">💡</span><span><?= htmlspecialchars(t('cat.lighting_desc'), ENT_QUOTES, 'UTF-8') ?></span></div>
-      <div class="legend-item"><span class="legend-badge b-trash">🗑️</span><span><?= htmlspecialchars(t('cat.trash_desc'), ENT_QUOTES, 'UTF-8') ?></span></div>
-      <div class="legend-item"><span class="legend-badge b-green">🌳</span><span><?= htmlspecialchars(t('cat.green_desc'), ENT_QUOTES, 'UTF-8') ?></span></div>
-      <div class="legend-item"><span class="legend-badge b-traffic">🚦</span><span><?= htmlspecialchars(t('cat.traffic_desc'), ENT_QUOTES, 'UTF-8') ?></span></div>
-      <div class="legend-item"><span class="legend-badge b-idea">❗</span><span><?= htmlspecialchars(t('cat.idea_desc'), ENT_QUOTES, 'UTF-8') ?></span></div>
-      <div class="legend-item"><span class="legend-badge b-civil">🤝</span><span><?= htmlspecialchars(t('cat.civil_event_desc'), ENT_QUOTES, 'UTF-8') ?></span></div>
+      <div class="legend-list">
+        <button type="button" class="legend-item legend-item-btn" data-cat="road"><span class="legend-badge b-road">🚧</span><span><?= htmlspecialchars(t('cat.road_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
+        <button type="button" class="legend-item legend-item-btn" data-cat="sidewalk"><span class="legend-badge b-sidewalk">🚶</span><span><?= htmlspecialchars(t('cat.sidewalk_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
+        <button type="button" class="legend-item legend-item-btn" data-cat="lighting"><span class="legend-badge b-lighting">💡</span><span><?= htmlspecialchars(t('cat.lighting_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
+        <button type="button" class="legend-item legend-item-btn" data-cat="trash"><span class="legend-badge b-trash">🗑️</span><span><?= htmlspecialchars(t('cat.trash_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
+        <button type="button" class="legend-item legend-item-btn" data-cat="green"><span class="legend-badge b-green">🌳</span><span><?= htmlspecialchars(t('cat.green_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
+        <button type="button" class="legend-item legend-item-btn" data-cat="traffic"><span class="legend-badge b-traffic">🚦</span><span><?= htmlspecialchars(t('cat.traffic_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
+        <button type="button" class="legend-item legend-item-btn" data-cat="idea"><span class="legend-badge b-idea">❗</span><span><?= htmlspecialchars(t('cat.idea_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
+        <button type="button" class="legend-item legend-item-btn" data-cat="civil_event"><span class="legend-badge b-civil">🤝</span><span><?= htmlspecialchars(t('cat.civil_event_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
+      </div>
 
       <div class="legend-foot muted">
         <?= htmlspecialchars(t('legend.foot'), ENT_QUOTES, 'UTF-8') ?>

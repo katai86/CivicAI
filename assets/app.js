@@ -54,6 +54,7 @@ let reloadTimer = null;
 let activeCategory = 'all';
 
 // ====== Utils ======
+function t(key){ return (window.LANG && window.LANG[key]) || key; }
 function esc(s){
   return String(s ?? '')
     .replaceAll('&','&amp;')
@@ -116,6 +117,16 @@ const ICON = {
 
 function catLabel(cat){ return CAT_LABEL[cat] || cat; }
 
+function shortDescription(text) {
+  if (!text || !String(text).trim()) return '';
+  const s = String(text).trim();
+  const maxLen = 180;
+  if (s.length <= maxLen) return s;
+  const dot = s.indexOf('.', 80);
+  if (dot !== -1 && dot < maxLen) return s.slice(0, dot + 1).trim();
+  return s.slice(0, maxLen).trim() + '…';
+}
+
 function canUseCivil(){
   return ['civiluser','admin','superadmin'].includes(USER_ROLE);
 }
@@ -165,18 +176,18 @@ function userLine(r){
   const level = r.reporter_level ? ` • ${esc(r.reporter_level)}` : '';
   if (!name) return '';
   if (r.reporter_profile_public && r.reporter_user_id) {
-    return `<small><b>Beküldő:</b> <a href="${BASE}/user/profile.php?id=${encodeURIComponent(r.reporter_user_id)}" target="_blank">${esc(name)}</a>${level}</small><br>`;
+    return `<small><b>${esc(t('popup.sender'))}:</b> <a href="${BASE}/user/profile.php?id=${encodeURIComponent(r.reporter_user_id)}" target="_blank">${esc(name)}</a>${level}</small><br>`;
   }
-  return `<small><b>Beküldő:</b> ${esc(name)}${level}</small><br>`;
+  return `<small><b>${esc(t('popup.sender'))}:</b> ${esc(name)}${level}</small><br>`;
 }
 
 function likeLine(r){
   if (!r) return '';
   const count = Number(r.like_count || 0);
   const liked = Number(r.liked_by_me || 0) === 1;
-  const label = liked ? 'Kedveled' : 'Tetszik';
+  const label = liked ? t('popup.liked') : t('modal.like');
   return `<div class="like-row" data-report-id="${r.id}">
-    <button type="button" class="like-btn ${liked ? 'liked' : ''}" data-id="${r.id}" aria-label="Tetszik">❤️</button>
+    <button type="button" class="like-btn ${liked ? 'liked' : ''}" data-id="${r.id}" aria-label="${esc(t('modal.like'))}">❤️</button>
     <span class="like-count">${count}</span>
     <span class="like-label">${label}</span>
   </div>`;
@@ -240,7 +251,7 @@ function civilEventIcon(){
   return L.divIcon({ className:'', html, iconSize:[34,34], iconAnchor:[17,17], popupAnchor:[0,-14] });
 }
 
-// ====== Legend toggle ======
+// ====== Legend toggle (default closed, chevron indicates expandable) ======
 (function initLegend(){
   const legend = document.getElementById('legend');
   const btn = document.getElementById('legendToggle');
@@ -252,8 +263,7 @@ function civilEventIcon(){
     btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
   };
 
-  const isMobile = window.matchMedia && window.matchMedia('(max-width: 560px)').matches;
-  setExpanded(!isMobile);
+  setExpanded(false);
 
   btn.addEventListener('click', () => setExpanded(!legend.classList.contains('open')));
 })();
@@ -306,7 +316,7 @@ async function loadApprovedMarkers(){
         (r.status ? `<small><b>Státusz:</b> ${esc(statusLabel(r.status))}</small><br>` : '') +
         userLine(r) +
         (r.title ? `<b>${esc(r.title)}</b><br>` : '') +
-        (r.description ? `${esc(r.description)}<br>` : '') +
+        (r.description ? `${esc(shortDescription(r.description))}<br>` : '') +
         `<div class="popup-like-wrap">${likeLine(r)}</div>`
       );
 
@@ -329,15 +339,17 @@ function scheduleReload(){
 loadApprovedMarkers().catch(err => console.error(err));
 
 function initLegendFilters(){
-  const filters = document.querySelectorAll('.legend-filter[data-cat]');
-  if (!filters.length) return;
-  filters.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const cat = btn.getAttribute('data-cat') || 'all';
-      activeCategory = cat;
-      filters.forEach(b => b.classList.toggle('active', b === btn));
-      loadApprovedMarkers().catch(err => console.error(err));
-    });
+  const allBtn = document.querySelector('.legend-filter[data-cat="all"]');
+  const itemBtns = document.querySelectorAll('.legend-item-btn[data-cat]');
+  const setActive = (cat) => {
+    activeCategory = cat;
+    if (allBtn) allBtn.classList.toggle('active', cat === 'all');
+    itemBtns.forEach(b => b.classList.toggle('active', (b.getAttribute('data-cat') || '') === cat));
+    loadApprovedMarkers().catch(err => console.error(err));
+  };
+  if (allBtn) allBtn.addEventListener('click', () => setActive('all'));
+  itemBtns.forEach(btn => {
+    btn.addEventListener('click', () => setActive(btn.getAttribute('data-cat') || 'all'));
   });
 }
 
@@ -536,7 +548,7 @@ loadCivilEvents().catch(err => console.error(err));
     try{
       const hits = await geocodeAddress(q, 5);
       if (!hits.length) {
-        alert('Nem található a cím. Kérlek pontosíts!');
+        alert(t('search.no_results'));
         return;
       }
       if (hits.length === 1) {
@@ -552,7 +564,7 @@ loadCivilEvents().catch(err => console.error(err));
       }
     }catch(err){
       console.error(err);
-      alert('Hiba a keresésnél. Próbáld újra később.');
+      alert(t('search.error'));
     }
   });
 })();
@@ -580,20 +592,23 @@ function openModal(latlng){
   modal.className = 'modal-overlay';
   modal.innerHTML = `
     <div class="modal">
-      <button class="modal-x" type="button" aria-label="Bezárás">×</button>
+      <button class="modal-x" type="button" aria-label="${esc(t('modal.close'))}">×</button>
 
       <div class="modal-scroll">
-        <h3>Kategória</h3>
+        <h3>${esc(t('modal.category'))}</h3>
         <select id="mCategory">
           ${buildCategoryOptions()}
         </select>
         <p id="mCategorySuggestion" class="muted small" style="display:none; margin-top:4px"></p>
 
-        <label>Rövid cím (opcionális)</label>
-        <input id="mTitle" maxlength="120" placeholder="pl. Kátyú a kereszteződésnél">
+        <label>${esc(t('modal.category'))} – rövid cím</label>
+        <input id="mTitle" maxlength="120" placeholder="${esc(t('modal.title_placeholder'))}">
 
         <label>Leírás</label>
-        <textarea id="mDesc" rows="4" maxlength="5000" placeholder="Írd le röviden a problémát / javaslatot"></textarea>
+        <textarea id="mDesc" rows="4" maxlength="5000" placeholder="${esc(t('modal.desc_placeholder'))}"></textarea>
+
+        <label>${esc(t('modal.image_optional'))}</label>
+        <input id="mImage" type="file" accept="image/*" class="modal-file">
 
         <div id="mEventFields" style="display:none">
           <h3>Esemény időpont</h3>
@@ -606,87 +621,84 @@ function openModal(latlng){
         <h3>Cím (opcionális)</h3>
         <div class="addr-grid">
           <div>
-            <label>Irányítószám</label>
+            <label>${esc(t('modal.zip'))}</label>
             <input id="mZip" maxlength="16" placeholder="5900">
           </div>
           <div>
-            <label>Város</label>
-            <input id="mCity" maxlength="80" placeholder="Orosháza">
+            <label>${esc(t('modal.city'))}</label>
+            <input id="mCity" maxlength="80" placeholder="${esc(t('modal.city_placeholder') || 'Orosháza')}">
           </div>
           <div>
-            <label>Utca</label>
-            <input id="mStreet" maxlength="120" placeholder="Szabadság utca">
+            <label>${esc(t('modal.street'))}</label>
+            <input id="mStreet" maxlength="120" placeholder="${esc(t('modal.street_placeholder') || 'Utca')}">
           </div>
           <div>
-            <label>Házszám</label>
+            <label>${esc(t('modal.house'))}</label>
             <input id="mHouse" maxlength="20" placeholder="12">
           </div>
         </div>
-        <label>Cím megjegyzés (opcionális)</label>
-        <input id="mAddrNote" maxlength="160" placeholder="pl. kapubejáró mellett">
-        <p class="muted" style="margin-top:8px;font-size:12px">Ha nem tudod a térképen kattintani, add meg a címet és kattints: <strong>Cím alapján hely megadása</strong></p>
-        <button type="button" id="mGeocodeBtn" class="btn-soft" style="margin-top:6px">Cím alapján hely megadása</button>
+        <label>Cím megjegyzés</label>
+        <input id="mAddrNote" maxlength="160" placeholder="${esc(t('modal.addr_note'))}">
+        <p class="muted" style="margin-top:8px;font-size:12px">${esc(t('modal.geocode_hint'))} <strong>${esc(t('modal.geocode_btn'))}</strong></p>
+        <button type="button" id="mGeocodeBtn" class="btn-soft" style="margin-top:6px">${esc(t('modal.geocode_btn'))}</button>
 
         <div class="checks">
           <label class="check">
             <input id="mAnon" type="checkbox" checked>
-            <span>Anonim publikálás (a neved nem jelenik meg)</span>
+            <span>${esc(t('modal.anon'))}</span>
           </label>
 
           <label class="check">
             <input id="mNotify" type="checkbox">
-            <span>Kérek e-mail értesítést a státuszváltozásokról</span>
+            <span>${esc(t('modal.notify'))}</span>
           </label>
         </div>
 
         <div id="mLoggedBox" class="box" style="display:none">
-          <div class="gdpr-note">Bejelentkezve vagy. Ha kéred az értesítést, a fiókod e-mail címére küldjük (nem kell újra megadnod).</div>
+          <div class="gdpr-note">${esc(t('modal.logged_note'))}</div>
         </div>
 
         <div id="mContact" class="box" style="display:none">
-          <label>E-mail (értesítéshez / regisztrációhoz)</label>
-          <input id="mEmail" maxlength="190" placeholder="nev@email.hu" inputmode="email">
+          <label>E-mail</label>
+          <input id="mEmail" maxlength="190" placeholder="${esc(t('modal.email_placeholder'))}" inputmode="email">
 
-          <label>Név (ha nem anonim, kötelező)</label>
-          <input id="mName" maxlength="80" placeholder="Pl. Kovács Anna">
+          <label>Név</label>
+          <input id="mName" maxlength="80" placeholder="${esc(t('modal.name_placeholder'))}">
 
           <label class="check" style="margin-top:10px">
             <input id="mCreateAccount" type="checkbox">
-            <span>Szeretnék regisztrálni (később vissza tudok térni az ügyeimhez)</span>
+            <span>${esc(t('modal.create_account'))}</span>
           </label>
 
           <div id="mPassWrap" style="display:none">
-            <label>Jelszó (min. 8 karakter)</label>
+            <label>${esc(t('modal.password'))}</label>
             <input id="mPass" type="password" minlength="8" maxlength="80" placeholder="********">
           </div>
 
           <div class="gdpr">
             <label class="check">
               <input id="mConsentData" type="checkbox">
-              <span>Elfogadom az adatkezelési tájékoztatót, és hozzájárulok az adataim kezeléséhez.</span>
+              <span>${esc(t('modal.gdpr_data'))}</span>
             </label>
             <label class="check">
               <input id="mConsentShare" type="checkbox" checked>
-              <span>Hozzájárulok, hogy az ügy intézése érdekében az adataimat az illetékeseknek továbbítsák.</span>
+              <span>${esc(t('modal.gdpr_share'))}</span>
             </label>
             <label class="check">
               <input id="mConsentMarketing" type="checkbox">
-              <span>Hozzájárulok marketing célú megkeresésekhez.</span>
+              <span>${esc(t('modal.gdpr_marketing'))}</span>
             </label>
-            <div class="gdpr-note">
-              A személyes adatok megadása önkéntes. Anonim bejelentésnél csak a jelölés adatai kerülnek tárolásra.
-            </div>
           </div>
         </div>
 
         <div class="modal-note">
-          A bejelentés ellenőrzés után jelenik meg. A címet a rendszer automatikusan csatolja.
+          A bejelentés ellenőrzés után jelenik meg.
         </div>
         <div id="mNearby200" class="modal-note" style="display:none"></div>
 
         <div class="modal-actions">
-          <button id="mSubmit" class="btn-primary" type="button">Beküldés</button>
-          <button id="mCancel" class="btn-ghost" type="button">Mégse</button>
+          <button id="mSubmit" class="btn-primary" type="button">${esc(t('modal.submit'))}</button>
+          <button id="mCancel" class="btn-ghost" type="button">${esc(t('modal.cancel') || 'Mégse')}</button>
         </div>
       </div>
     </div>
@@ -936,7 +948,7 @@ function openModal(latlng){
           })
         });
       } else {
-        await fetchJson(API_CREATE, {
+        const j = await fetchJson(API_CREATE, {
           method: 'POST',
           headers: { 'Content-Type':'application/json' },
           body: JSON.stringify({
@@ -965,9 +977,20 @@ function openModal(latlng){
             address_note: address_note || null,
           })
         });
+        if (IS_LOGGED_IN && j && j.id) {
+          const fileInput = modal.querySelector('#mImage');
+          if (fileInput && fileInput.files && fileInput.files[0]) {
+            try {
+              const fd = new FormData();
+              fd.append('report_id', String(j.id));
+              fd.append('file', fileInput.files[0]);
+              await fetchJson(BASE + '/api/report_upload.php', { method: 'POST', body: fd });
+            } catch (e) { console.warn('Image upload failed', e); }
+          }
+        }
       }
 
-      alert('Köszönjük! A bejelentés ellenőrzés után fog megjelenni a térképen.');
+      alert(t('modal.thanks') || 'Köszönjük! A bejelentés ellenőrzés után fog megjelenni a térképen.');
       closeModal();
 
     }catch(err){
