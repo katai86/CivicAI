@@ -41,6 +41,8 @@ return [
     'theme.light' => 'Svetla tema',
     'theme.dark' => 'Temna tema',
     'theme.aria' => 'Preklop teme',
+    'user.preferred_lang' => 'Privzeti jezik',
+    'user.preferred_theme' => 'Privzeti videz',
     'modal.close' => 'Zapri',
     'modal.report_title' => 'Nova prijava',
     'modal.category' => 'Kategorija',

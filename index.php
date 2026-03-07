@@ -1,14 +1,26 @@
 <?php
 require_once __DIR__ . '/util.php';
+require_once __DIR__ . '/db.php';
 $uid = 0;
 $role = 'guest';
 $rankAll = null;
+$userPreferredTheme = null;
 try {
     start_secure_session();
     $uid = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
     $role = current_user_role() ?: 'guest';
     if ($uid > 0 && function_exists('get_user_rank')) {
         $rankAll = get_user_rank('all', $uid);
+    }
+    if ($uid > 0) {
+        try {
+            $st = db()->prepare("SELECT preferred_theme FROM users WHERE id = :id LIMIT 1");
+            $st->execute([':id' => $uid]);
+            $row = $st->fetch();
+            if ($row && ($row['preferred_theme'] === 'light' || $row['preferred_theme'] === 'dark')) {
+                $userPreferredTheme = $row['preferred_theme'];
+            }
+        } catch (Throwable $e) { /* oszlop lehet még nincs */ }
     }
 } catch (Throwable $e) {
     if (function_exists('log_error')) {
@@ -28,7 +40,7 @@ $LANG_JS = lang_array_for_js();
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title><?php echo htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8'); ?></title>
-  <script>try{var t=localStorage.getItem('civicai_theme');document.documentElement.setAttribute('data-theme',(t==='light'||t==='dark')?t:'dark');}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
+  <script>try{var t=localStorage.getItem('civicai_theme');<?php if ($userPreferredTheme): ?>if(!t)localStorage.setItem('civicai_theme',<?= json_encode($userPreferredTheme, JSON_UNESCAPED_UNICODE) ?>);t=localStorage.getItem('civicai_theme');<?php endif; ?>document.documentElement.setAttribute('data-theme',(t==='light'||t==='dark')?t:'dark');}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
@@ -54,17 +66,17 @@ $LANG_JS = lang_array_for_js();
 
     <div class="topbar-right">
       <div class="topbar-tools">
-        <button type="button" id="themeToggle" class="topbtn topbtn-icon" aria-label="<?= htmlspecialchars(t('theme.aria'), ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(t('theme.dark'), ENT_QUOTES, 'UTF-8') ?>">
+        <button type="button" id="themeToggle" class="topbtn topbtn-icon" aria-label="<?= htmlspecialchars(t('theme.aria'), ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(t('theme.dark'), ENT_QUOTES, 'UTF-8') ?>" data-title-light="<?= htmlspecialchars(t('theme.light'), ENT_QUOTES, 'UTF-8') ?>" data-title-dark="<?= htmlspecialchars(t('theme.dark'), ENT_QUOTES, 'UTF-8') ?>">
           <span class="theme-icon theme-sun" aria-hidden="true">☀️</span>
           <span class="theme-icon theme-moon" aria-hidden="true">🌙</span>
         </button>
         <div class="lang-dropdown">
           <button type="button" class="topbtn lang-btn" id="langToggle" aria-haspopup="listbox" aria-expanded="false" aria-label="<?= htmlspecialchars(t('lang.choose'), ENT_QUOTES, 'UTF-8') ?>">
-            <span class="lang-label"><?= htmlspecialchars(strtoupper($currentLang), ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="lang-label"><?= htmlspecialchars(strtoupper($currentLang), ENT_QUOTES, 'UTF-8') ?></span><span class="lang-chevron" aria-hidden="true">▼</span>
           </button>
           <div class="lang-menu" id="langMenu" role="listbox" aria-hidden="true">
             <?php foreach (LANG_ALLOWED as $code): ?>
-              <a class="lang-option<?= $code === $currentLang ? ' active' : '' ?>" href="<?= htmlspecialchars(app_url('/?lang=' . $code), ENT_QUOTES, 'UTF-8') ?>" data-lang="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($code === 'hu' ? 'Magyar' : ($code === 'en' ? 'English' : ($code === 'de' ? 'Deutsch' : ($code === 'fr' ? 'Français' : ($code === 'it' ? 'Italiano' : ($code === 'es' ? 'Español' : 'Slovenščina'))))), ENT_QUOTES, 'UTF-8') ?></a>
+              <a class="lang-option<?= $code === $currentLang ? ' active' : '' ?>" href="<?= htmlspecialchars(app_url('/?lang=' . $code), ENT_QUOTES, 'UTF-8') ?>" data-lang="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(strtoupper($code), ENT_QUOTES, 'UTF-8') ?></a>
             <?php endforeach; ?>
           </div>
         </div>

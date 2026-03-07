@@ -14,7 +14,14 @@
   function setTheme(theme) {
     var root = document.documentElement;
     root.setAttribute('data-theme', theme);
+    try { root.setAttribute('data-bs-theme', theme); } catch (_) {}
     try { localStorage.setItem(THEME_KEY, theme); } catch (_) {}
+    var btn = document.getElementById('themeToggle');
+    if (btn) {
+      var title = theme === 'light' ? (btn.dataset.titleDark || 'Dark') : (btn.dataset.titleLight || 'Light');
+      btn.setAttribute('title', title);
+      btn.setAttribute('aria-label', title);
+    }
   }
 
   function initTheme() {
@@ -27,9 +34,12 @@
   }
 
   function initThemeToggle() {
-    var btn = document.getElementById('themeToggle');
-    if (!btn) return;
-    btn.addEventListener('click', toggleTheme);
+    document.body.addEventListener('click', function(e) {
+      if (!e.target.closest('#themeToggle')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      toggleTheme();
+    });
   }
 
   function initLangDropdown() {
@@ -56,7 +66,14 @@
     menu.addEventListener('click', function(e) { e.stopPropagation(); });
   }
 
-  initTheme();
-  initThemeToggle();
-  initLangDropdown();
+  function run() {
+    initTheme();
+    initThemeToggle();
+    initLangDropdown();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
 })();

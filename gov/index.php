@@ -282,6 +282,7 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 <html lang="<?= h($currentLang) ?>"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= h(t('site.name')) ?> – <?= h(t('gov.title')) ?></title>
+<script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
 <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="page">
@@ -291,6 +292,23 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
       <span class="brand-logo" aria-hidden="true"></span>
       <b><?= h(t('site.name')) ?></b>
     </a>
+    <div class="topbar-right">
+      <div class="topbar-tools">
+        <button type="button" id="themeToggle" class="topbtn topbtn-icon" aria-label="<?= h(t('theme.aria')) ?>" title="<?= h(t('theme.dark')) ?>" data-title-light="<?= h(t('theme.light')) ?>" data-title-dark="<?= h(t('theme.dark')) ?>">
+          <span class="theme-icon theme-sun" aria-hidden="true">☀️</span>
+          <span class="theme-icon theme-moon" aria-hidden="true">🌙</span>
+        </button>
+        <div class="lang-dropdown">
+          <button type="button" class="topbtn lang-btn" id="langToggle" aria-haspopup="listbox" aria-expanded="false" aria-label="<?= h(t('lang.choose')) ?>">
+            <span class="lang-label"><?= h(strtoupper($currentLang)) ?></span><span class="lang-chevron" aria-hidden="true">▼</span>
+          </button>
+          <div class="lang-menu" id="langMenu" role="listbox" aria-hidden="true">
+            <?php foreach (LANG_ALLOWED as $code): ?>
+              <a class="lang-option<?= $code === $currentLang ? ' active' : '' ?>" href="<?= h(app_url('/gov/index.php?lang=' . $code)) ?>" data-lang="<?= h($code) ?>"><?= h(strtoupper($code)) ?></a>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      </div>
     <div class="topbar-links">
       <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
       <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>"><?= h(t('nav.settings')) ?></a>
@@ -429,4 +447,5 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
     <?php endif; ?>
   </div>
 </div>
+<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body></html>

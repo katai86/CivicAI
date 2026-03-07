@@ -41,6 +41,8 @@ return [
     'theme.light' => 'Claro',
     'theme.dark' => 'Oscuro',
     'theme.aria' => 'Cambiar tema',
+    'user.preferred_lang' => 'Idioma predeterminado',
+    'user.preferred_theme' => 'Apariencia predeterminada',
     'modal.close' => 'Cerrar',
     'modal.report_title' => 'Nuevo reporte',
     'modal.category' => 'Categoría',

@@ -41,6 +41,8 @@ return [
     'theme.light' => 'Light theme',
     'theme.dark' => 'Dark theme',
     'theme.aria' => 'Toggle theme',
+    'user.preferred_lang' => 'Default language',
+    'user.preferred_theme' => 'Default appearance',
     'modal.close' => 'Close',
     'modal.report_title' => 'New report',
     'modal.category' => 'Category',

@@ -15,19 +15,37 @@ $err = null;
 $ok  = null;
 
 // aktuális adatok
-$stmt = db()->prepare("
-  SELECT id, email, display_name, avatar_filename, profile_public,
-         first_name, last_name, prefix, birthdate, phone,
-         address_zip, address_city, address_street, address_house,
-         marketing_greetings_optout,
-         consent_data, consent_share, consent_marketing,
-         consent_version, consent_at
-  FROM users
-  WHERE id = :id
-  LIMIT 1
-");
-$stmt->execute([':id' => $uid]);
-$u = $stmt->fetch();
+try {
+  $stmt = db()->prepare("
+    SELECT id, email, display_name, avatar_filename, profile_public,
+           first_name, last_name, prefix, birthdate, phone,
+           address_zip, address_city, address_street, address_house,
+           marketing_greetings_optout,
+           consent_data, consent_share, consent_marketing,
+           consent_version, consent_at,
+           preferred_lang, preferred_theme
+    FROM users
+    WHERE id = :id
+    LIMIT 1
+  ");
+  $stmt->execute([':id' => $uid]);
+  $u = $stmt->fetch();
+} catch (Throwable $e) {
+  $stmt = db()->prepare("
+    SELECT id, email, display_name, avatar_filename, profile_public,
+           first_name, last_name, prefix, birthdate, phone,
+           address_zip, address_city, address_street, address_house,
+           marketing_greetings_optout,
+           consent_data, consent_share, consent_marketing,
+           consent_version, consent_at
+    FROM users
+    WHERE id = :id
+    LIMIT 1
+  ");
+  $stmt->execute([':id' => $uid]);
+  $u = $stmt->fetch();
+  if ($u) { $u['preferred_lang'] = null; $u['preferred_theme'] = null; }
+}
 if (!$u) {
   // ha valamiért eltűnt a user
   session_destroy();
@@ -57,47 +75,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $marketingGreetings = !empty($_POST['marketing_greetings']) ? 1 : 0;
   $marketingOptOut = $consentMarketing ? ($marketingGreetings ? 0 : 1) : 1;
 
+  $preferredLang = isset($_POST['preferred_lang']) && in_array($_POST['preferred_lang'], LANG_ALLOWED, true) ? $_POST['preferred_lang'] : null;
+  $preferredTheme = isset($_POST['preferred_theme']) && in_array($_POST['preferred_theme'], ['light', 'dark'], true) ? $_POST['preferred_theme'] : null;
+
   if ($birthdate && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) {
     $birthdate = null;
   }
 
-  $stmt = db()->prepare("
-    UPDATE users
-    SET display_name = :n,
-        first_name = :fn,
-        last_name = :ln,
-        prefix = :px,
-        birthdate = :bd,
-        phone = :ph,
-        address_zip = :az,
-        address_city = :ac,
-        address_street = :as,
-        address_house = :ah,
-        marketing_greetings_optout = :mgo,
-        consent_share = :cs,
-        consent_marketing = :cm,
-        profile_public = :pp,
-        consent_updated_at = NOW()
-    WHERE id = :id
-    LIMIT 1
-  ");
-  $stmt->execute([
-    ':n'  => $name,
-    ':fn' => $firstName,
-    ':ln' => $lastName,
-    ':px' => $prefix,
-    ':bd' => $birthdate,
-    ':ph' => $phone,
-    ':az' => $addrZip,
-    ':ac' => $addrCity,
-    ':as' => $addrStreet,
-    ':ah' => $addrHouse,
-    ':mgo' => $marketingOptOut,
-    ':cs' => $consentShare,
-    ':cm' => $consentMarketing,
-    ':id' => $uid,
-    ':pp' => $profilePublic
-  ]);
+  try {
+    $stmt = db()->prepare("
+      UPDATE users
+      SET display_name = :n,
+          first_name = :fn,
+          last_name = :ln,
+          prefix = :px,
+          birthdate = :bd,
+          phone = :ph,
+          address_zip = :az,
+          address_city = :ac,
+          address_street = :as,
+          address_house = :ah,
+          marketing_greetings_optout = :mgo,
+          consent_share = :cs,
+          consent_marketing = :cm,
+          profile_public = :pp,
+          preferred_lang = :pl,
+          preferred_theme = :pt,
+          consent_updated_at = NOW()
+      WHERE id = :id
+      LIMIT 1
+    ");
+    $stmt->execute([
+      ':n'  => $name,
+      ':fn' => $firstName,
+      ':ln' => $lastName,
+      ':px' => $prefix,
+      ':bd' => $birthdate,
+      ':ph' => $phone,
+      ':az' => $addrZip,
+      ':ac' => $addrCity,
+      ':as' => $addrStreet,
+      ':ah' => $addrHouse,
+      ':mgo' => $marketingOptOut,
+      ':cs' => $consentShare,
+      ':cm' => $consentMarketing,
+      ':id' => $uid,
+      ':pp' => $profilePublic,
+      ':pl' => $preferredLang,
+      ':pt' => $preferredTheme
+    ]);
+  } catch (Throwable $e) {
+    $stmt = db()->prepare("
+      UPDATE users
+      SET display_name = :n, first_name = :fn, last_name = :ln, prefix = :px,
+          birthdate = :bd, phone = :ph, address_zip = :az, address_city = :ac,
+          address_street = :as, address_house = :ah, marketing_greetings_optout = :mgo,
+          consent_share = :cs, consent_marketing = :cm, profile_public = :pp,
+          consent_updated_at = NOW()
+      WHERE id = :id LIMIT 1
+    ");
+    $stmt->execute([
+      ':n' => $name, ':fn' => $firstName, ':ln' => $lastName, ':px' => $prefix,
+      ':bd' => $birthdate, ':ph' => $phone, ':az' => $addrZip, ':ac' => $addrCity,
+      ':as' => $addrStreet, ':ah' => $addrHouse, ':mgo' => $marketingOptOut,
+      ':cs' => $consentShare, ':cm' => $consentMarketing, ':id' => $uid, ':pp' => $profilePublic
+    ]);
+  }
+  if ($preferredLang !== null) {
+    set_lang($preferredLang);
+  }
 
   $ok = 'user.saved';
 
@@ -116,6 +162,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $u['consent_share'] = $consentShare;
   $u['consent_marketing'] = $consentMarketing;
   $u['profile_public'] = $profilePublic;
+  $u['preferred_lang'] = $preferredLang;
+  $u['preferred_theme'] = $preferredTheme;
 }
 
 function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
@@ -125,6 +173,7 @@ $currentLang = current_lang();
 <html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?> – <?= htmlspecialchars(t('user.settings'), ENT_QUOTES, 'UTF-8') ?></title>
+<script>try{var t=localStorage.getItem('civicai_theme');var u=<?= json_encode(($u['preferred_theme'] ?? null) === 'light' || ($u['preferred_theme'] ?? null) === 'dark' ? $u['preferred_theme'] : null, JSON_UNESCAPED_UNICODE) ?>;if(u&&!t)localStorage.setItem('civicai_theme',u);t=localStorage.getItem('civicai_theme');document.documentElement.setAttribute('data-theme',(t==='light'||t==='dark')?t:'dark');document.documentElement.setAttribute('data-bs-theme',(t==='light'||t==='dark')?t:'dark');}catch(_){}</script>
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
 <body class="page">
@@ -169,6 +218,20 @@ $currentLang = current_lang();
   </div>
 
   <form method="post">
+    <label><b><?= htmlspecialchars(t('user.preferred_lang'), ENT_QUOTES, 'UTF-8') ?></b></label>
+    <select name="preferred_lang">
+      <option value="">—</option>
+      <?php foreach (LANG_ALLOWED as $code): ?>
+        <option value="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>"<?= ($u['preferred_lang'] ?? '') === $code ? ' selected' : '' ?>><?= htmlspecialchars(strtoupper($code), ENT_QUOTES, 'UTF-8') ?></option>
+      <?php endforeach; ?>
+    </select>
+    <label><b><?= htmlspecialchars(t('user.preferred_theme'), ENT_QUOTES, 'UTF-8') ?></b></label>
+    <select name="preferred_theme">
+      <option value="">—</option>
+      <option value="light"<?= ($u['preferred_theme'] ?? '') === 'light' ? ' selected' : '' ?>><?= htmlspecialchars(t('theme.light'), ENT_QUOTES, 'UTF-8') ?></option>
+      <option value="dark"<?= ($u['preferred_theme'] ?? '') === 'dark' ? ' selected' : '' ?>><?= htmlspecialchars(t('theme.dark'), ENT_QUOTES, 'UTF-8') ?></option>
+    </select>
+    <div class="hr"></div>
     <label><b><?= htmlspecialchars(t('user.display_name'), ENT_QUOTES, 'UTF-8') ?></b></label>
     <input type="text" name="name" value="<?= htmlspecialchars($u['display_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(t('modal.name_placeholder'), ENT_QUOTES, 'UTF-8') ?>">
 

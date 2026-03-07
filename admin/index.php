@@ -1,14 +1,21 @@
 <?php
 require_once __DIR__ . '/../util.php';
 require_admin();
+start_secure_session();
+if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
+  set_lang($_GET['lang']);
+  header('Location: ' . (isset($_SERVER['REQUEST_URI']) ? strtok($_SERVER['REQUEST_URI'], '?') : app_url('/admin/index.php')));
+  exit;
+}
+$currentLang = current_lang();
 ?>
 <!doctype html>
-<html lang="hu">
+<html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Köz.Tér – Admin</title>
-
+  <title><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?> – Admin</title>
+  <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');document.documentElement.setAttribute('data-bs-theme','dark');}</script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/dashboard/dist/css/adminlte.min.css'), ENT_QUOTES, 'UTF-8') ?>">
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/admin.css'), ENT_QUOTES, 'UTF-8') ?>">
@@ -24,21 +31,35 @@ require_admin();
           </a>
         </li>
         <li class="nav-item d-none d-md-block">
-          <span class="nav-link fw-semibold">Köz.Tér Admin</span>
+          <span class="nav-link fw-semibold"><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?> Admin</span>
         </li>
       </ul>
-      <ul class="navbar-nav ms-auto">
+      <ul class="navbar-nav ms-auto align-items-center">
         <li class="nav-item">
-          <a class="nav-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Térkép</a>
+          <button type="button" id="themeToggle" class="btn btn-link nav-link py-2" aria-label="<?= htmlspecialchars(t('theme.aria'), ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(t('theme.dark'), ENT_QUOTES, 'UTF-8') ?>" data-title-light="<?= htmlspecialchars(t('theme.light'), ENT_QUOTES, 'UTF-8') ?>" data-title-dark="<?= htmlspecialchars(t('theme.dark'), ENT_QUOTES, 'UTF-8') ?>">
+            <span class="theme-icon theme-sun" aria-hidden="true"><i class="bi bi-sun-fill"></i></span>
+            <span class="theme-icon theme-moon" aria-hidden="true"><i class="bi bi-moon-fill"></i></span>
+          </button>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="adminLangDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><?= htmlspecialchars(strtoupper($currentLang), ENT_QUOTES, 'UTF-8') ?></a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminLangDropdown">
+            <?php foreach (LANG_ALLOWED as $code): ?>
+              <li><a class="dropdown-item<?= $code === $currentLang ? ' active' : '' ?>" href="<?= htmlspecialchars(app_url('/admin/index.php?lang=' . $code), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(strtoupper($code), ENT_QUOTES, 'UTF-8') ?></a></li>
+            <?php endforeach; ?>
+          </ul>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="<?= htmlspecialchars(app_url('/admin/logout.php'), ENT_QUOTES, 'UTF-8') ?>">Kilépés</a>
+          <a class="nav-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="<?= htmlspecialchars(app_url('/admin/logout.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.logout'), ENT_QUOTES, 'UTF-8') ?></a>
         </li>
       </ul>
     </div>
   </nav>
 
-  <aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
+  <aside class="app-sidebar bg-body-secondary shadow">
     <div class="sidebar-brand">
       <a href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>" class="brand-link">
         <span class="brand-text fw-light">Köz.Tér</span>
@@ -247,6 +268,7 @@ require_admin();
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
 <script src="<?= htmlspecialchars(app_url('/dashboard/dist/js/adminlte.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="admin.js?v=7"></script>
 </body>

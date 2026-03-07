@@ -41,6 +41,8 @@ return [
     'theme.light' => 'Világos téma',
     'theme.dark' => 'Sötét téma',
     'theme.aria' => 'Téma váltása',
+    'user.preferred_lang' => 'Alapértelmezett nyelv',
+    'user.preferred_theme' => 'Alapértelmezett megjelenés',
     // Modal / report form (JS)
     'modal.close' => 'Bezárás',
     'modal.report_title' => 'Új bejelentés',

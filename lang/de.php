@@ -41,6 +41,8 @@ return [
     'theme.light' => 'Hell',
     'theme.dark' => 'Dunkel',
     'theme.aria' => 'Design umschalten',
+    'user.preferred_lang' => 'Standardsprache',
+    'user.preferred_theme' => 'Standarddarstellung',
     'modal.close' => 'Schließen',
     'modal.report_title' => 'Neue Meldung',
     'modal.category' => 'Kategorie',

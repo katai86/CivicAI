@@ -41,6 +41,8 @@ return [
     'theme.light' => 'Clair',
     'theme.dark' => 'Sombre',
     'theme.aria' => 'Changer le thème',
+    'user.preferred_lang' => 'Langue par défaut',
+    'user.preferred_theme' => 'Apparence par défaut',
     'modal.close' => 'Fermer',
     'modal.report_title' => 'Nouveau signalement',
     'modal.category' => 'Catégorie',

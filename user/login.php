@@ -11,14 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $pass  = (string)($_POST['pass'] ?? '');
 
   try {
-    $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role, is_active FROM users WHERE email=:e LIMIT 1");
+    $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role, is_active, preferred_lang FROM users WHERE email=:e LIMIT 1");
     $stmt->execute([':e'=>$email]);
     $u = $stmt->fetch();
   } catch (Throwable $e) {
     $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role FROM users WHERE email=:e LIMIT 1");
     $stmt->execute([':e'=>$email]);
     $u = $stmt->fetch();
-    if ($u) $u['is_active'] = 1;
+    if ($u) { $u['is_active'] = 1; $u['preferred_lang'] = null; }
   }
 
   if (!$u || !password_verify($pass, $u['pass_hash'])) {
@@ -29,6 +29,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     session_regenerate_id(true);
     $_SESSION['user_id'] = (int)$u['id'];
     $_SESSION['user_role'] = $u['role'] ? (string)$u['role'] : 'user';
+    if (!empty($u['preferred_lang']) && in_array($u['preferred_lang'], LANG_ALLOWED, true)) {
+      set_lang($u['preferred_lang']);
+    }
     // Admin/superadmin egy belépéssel mindkét felületet használhatja (production: egy fiók, egy rendszer)
     if (in_array($_SESSION['user_role'], ['admin', 'superadmin'], true)) {
       $_SESSION['admin_logged_in'] = true;
