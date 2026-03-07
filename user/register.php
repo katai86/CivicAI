@@ -15,8 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if (!in_array($role, $allowedRoles, true)) $role = 'user';
   // Önkormányzati regisztráció csak akkor engedélyezett, ha a superadmin bekapcsolta (config).
   if ($role === 'govuser' && !(defined('GOV_REGISTRATION_ENABLED') && GOV_REGISTRATION_ENABLED)) {
-    $err = 'Az önkormányzati fiók regisztrációja jelenleg nincs engedélyezve. Kérjük, fordulj az adminisztrátorhoz.';
-    $role = 'user'; // ne legyen govuser
+    $err = 'auth.gov_disabled';
+    $role = 'user';
   }
 
   // GDPR / hozzájárulások
@@ -24,9 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $consentShare     = !empty($_POST['consent_share']);     // opcionális
   $consentMarketing = !empty($_POST['consent_marketing']); // opcionális
 
-  if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $err = 'Hibás e-mail cím.';
-  elseif (strlen($pass) < 8) $err = 'A jelszó legyen legalább 8 karakter.';
-  elseif (!$consentData) $err = 'A regisztrációhoz el kell fogadnod az adatkezelési tájékoztatót és hozzá kell járulnod az adatok kezeléséhez.';
+  if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $err = 'auth.email_invalid';
+  elseif (strlen($pass) < 8) $err = 'auth.password_short';
+  elseif (!$consentData) $err = 'auth.consent_required';
   else {
     $email_lc = mb_strtolower($email);
     $hash = password_hash($pass, PASSWORD_DEFAULT);
@@ -78,19 +78,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       header('Location: ' . app_url('/user/login.php'));
       exit;
 
-    } catch (Throwable $e) {
-      $err = 'Ez az e-mail már foglalt (vagy hiányzik a GDPR mezők bővítése az adatbázisból).';
-    }
+} catch (Throwable $e) {
+    $err = 'auth.email_taken';
   }
+}
 }
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
+$currentLang = current_lang();
 ?>
 <!doctype html>
-<html lang="hu"><head>
+<html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Köz.Tér – Regisztráció</title>
+<title><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?> – <?= htmlspecialchars(t('auth.register_title'), ENT_QUOTES, 'UTF-8') ?></title>
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
 <body class="page auth-page">
@@ -98,31 +99,31 @@ unset($_SESSION['flash']);
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
       <span class="brand-logo" aria-hidden="true"></span>
-      <b>Köz.Tér</b>
+      <b><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?></b>
     </a>
     <div class="topbar-links">
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Térkép</a>
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/login.php'), ENT_QUOTES, 'UTF-8') ?>">Belépés</a>
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/login.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.login'), ENT_QUOTES, 'UTF-8') ?></a>
     </div>
   </div>
 </header>
 <div class="auth-wrap">
 <div class="card">
-  <h3 style="margin:0 0 10px">Regisztráció</h3>
+  <h3 style="margin:0 0 10px"><?= htmlspecialchars(t('auth.register_title'), ENT_QUOTES, 'UTF-8') ?></h3>
   <?php if($flash): ?><div class="ok"><?= htmlspecialchars($flash,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
-  <?php if($err): ?><div class="err"><?= htmlspecialchars($err,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
+  <?php if($err): ?><div class="err"><?= htmlspecialchars(t($err),ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
 
   <form method="post">
-    <input name="email" placeholder="E-mail" required>
-    <input name="name" placeholder="Név (opcionális)">
-    <input name="pass" type="password" placeholder="Jelszó (min. 8)" required>
+    <input name="email" placeholder="<?= htmlspecialchars(t('auth.email'), ENT_QUOTES, 'UTF-8') ?>" required>
+    <input name="name" placeholder="<?= htmlspecialchars(t('auth.name_optional'), ENT_QUOTES, 'UTF-8') ?>">
+    <input name="pass" type="password" placeholder="<?= htmlspecialchars(t('auth.password_min'), ENT_QUOTES, 'UTF-8') ?>" required>
     <select name="role" required>
-      <option value="user">Felhasználó (általános)</option>
+      <option value="user"><?= htmlspecialchars(t('auth.role_user'), ENT_QUOTES, 'UTF-8') ?></option>
       <?php if (defined('GOV_REGISTRATION_ENABLED') && GOV_REGISTRATION_ENABLED): ?>
-      <option value="govuser">Közigazgatási (önkormányzat)</option>
+      <option value="govuser"><?= htmlspecialchars(t('auth.role_gov'), ENT_QUOTES, 'UTF-8') ?></option>
       <?php endif; ?>
-      <option value="communityuser">Közület (háziorvos, fogorvos, gyógyszertár stb.)</option>
-      <option value="civiluser">Civil (egyesület, alapítvány)</option>
+      <option value="communityuser"><?= htmlspecialchars(t('auth.role_community'), ENT_QUOTES, 'UTF-8') ?></option>
+      <option value="civiluser"><?= htmlspecialchars(t('auth.role_civil'), ENT_QUOTES, 'UTF-8') ?></option>
     </select>
 
     <div class="hr"></div>
@@ -130,31 +131,31 @@ unset($_SESSION['flash']);
     <label class="chk">
       <input type="checkbox" name="consent_data" value="1" required>
       <span>
-        <b>Elfogadom az adatkezelési tájékoztatót</b>, és hozzájárulok az adataim kezeléséhez. (kötelező)
-        <div class="small">A hozzájárulás bármikor visszavonható – a fiók törlésével vagy írásban.</div>
+        <b><?= htmlspecialchars(t('auth.consent_data'), ENT_QUOTES, 'UTF-8') ?></b>
+        <div class="small"><?= htmlspecialchars(t('auth.consent_data_hint'), ENT_QUOTES, 'UTF-8') ?></div>
       </span>
     </label>
 
     <label class="chk">
       <input type="checkbox" name="consent_share" value="1" checked>
       <span>
-        Hozzájárulok, hogy az ügy intézése érdekében az adataimat az illetékeseknek továbbítsák. (opcionális)
-        <div class="small">Például: önkormányzat, szolgáltató, közmű.</div>
+        <?= htmlspecialchars(t('auth.consent_share'), ENT_QUOTES, 'UTF-8') ?>
+        <div class="small"><?= htmlspecialchars(t('auth.consent_share_hint'), ENT_QUOTES, 'UTF-8') ?></div>
       </span>
     </label>
 
     <label class="chk">
       <input type="checkbox" name="consent_marketing" value="1">
       <span>
-        Hozzájárulok marketing célú megkeresésekhez. (opcionális)
-        <div class="small">Hírek, fejlesztések, helyi ügyekkel kapcsolatos értesítések.</div>
+        <?= htmlspecialchars(t('auth.consent_marketing'), ENT_QUOTES, 'UTF-8') ?>
+        <div class="small"><?= htmlspecialchars(t('auth.consent_marketing_hint'), ENT_QUOTES, 'UTF-8') ?></div>
       </span>
     </label>
 
-    <button type="submit" class="primary">Regisztráció</button>
+    <button type="submit" class="primary"><?= htmlspecialchars(t('auth.register_title'), ENT_QUOTES, 'UTF-8') ?></button>
   </form>
 
-  <div style="margin-top:10px"><a href="<?= htmlspecialchars(app_url('/user/login.php')) ?>">Van fiókod? Belépés</a></div>
+  <div style="margin-top:10px"><a href="<?= htmlspecialchars(app_url('/user/login.php')) ?>"><?= htmlspecialchars(t('auth.register_link'), ENT_QUOTES, 'UTF-8') ?></a></div>
 </div>
 </div>
 </body></html>

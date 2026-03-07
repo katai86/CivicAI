@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ':pp' => $profilePublic
   ]);
 
-  $ok = 'Mentve.';
+  $ok = 'user.saved';
 
   // frissítsük a képernyőn is
   $u['display_name'] = $name;
@@ -119,12 +119,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
-
+$currentLang = current_lang();
 ?>
 <!doctype html>
-<html lang="hu"><head>
+<html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Köz.Tér – Beállítások</title>
+<title><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?> – <?= htmlspecialchars(t('user.settings'), ENT_QUOTES, 'UTF-8') ?></title>
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
 <body class="page">
@@ -132,116 +132,104 @@ function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
       <span class="brand-logo" aria-hidden="true"></span>
-      <b>Köz.Tér</b>
+      <b><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?></b>
     </a>
     <div class="topbar-links">
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Térkép</a>
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/my.php'), ENT_QUOTES, 'UTF-8') ?>">Saját ügyeim</a>
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/profile.php?id=' . (int)$uid), ENT_QUOTES, 'UTF-8') ?>">Profilom</a>
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/friends.php'), ENT_QUOTES, 'UTF-8') ?>">Barátok</a>
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/my.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.my_reports'), ENT_QUOTES, 'UTF-8') ?></a>
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/profile.php?id=' . (int)$uid), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('user.profile'), ENT_QUOTES, 'UTF-8') ?></a>
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/friends.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.friends'), ENT_QUOTES, 'UTF-8') ?></a>
       <?php if ($role === 'govuser' || $role === 'admin' || $role === 'superadmin'): ?>
-        <a class="topbtn" href="<?= htmlspecialchars(app_url('/gov/index.php'), ENT_QUOTES, 'UTF-8') ?>">Közigazgatási</a>
+        <a class="topbtn" href="<?= htmlspecialchars(app_url('/gov/index.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.gov'), ENT_QUOTES, 'UTF-8') ?></a>
       <?php endif; ?>
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/logout.php'), ENT_QUOTES, 'UTF-8') ?>">Kilépés</a>
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/logout.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.logout'), ENT_QUOTES, 'UTF-8') ?></a>
     </div>
   </div>
 </header>
 <div class="wrap">
 <div class="card">
   <div class="row">
-    <h3 style="margin:0">Beállítások</h3>
-    <a class="btn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Térkép</a>
+    <h3 style="margin:0"><?= htmlspecialchars(t('user.settings'), ENT_QUOTES, 'UTF-8') ?></h3>
+    <a class="btn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
   </div>
 
-  <?php if($ok): ?><div class="ok"><?= htmlspecialchars($ok,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
+  <?php if($ok): ?><div class="ok"><?= htmlspecialchars(t($ok),ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
   <?php if($err): ?><div class="err"><?= htmlspecialchars($err,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
 
   <div style="margin:8px 0">
-    <div><b>E-mail</b>: <?= htmlspecialchars($u['email'],ENT_QUOTES,'UTF-8') ?></div>
-    <div><span class="badge">Adatkezelés: elfogadva</span>
+    <div><b><?= htmlspecialchars(t('user.email'), ENT_QUOTES, 'UTF-8') ?></b>: <?= htmlspecialchars($u['email'],ENT_QUOTES,'UTF-8') ?></div>
+    <div><span class="badge"><?= htmlspecialchars(t('user.data_consent_ok'), ENT_QUOTES, 'UTF-8') ?></span>
       <?php if(!empty($u['consent_at'])): ?>
         <small>(<?= htmlspecialchars($u['consent_at'],ENT_QUOTES,'UTF-8') ?>, <?= htmlspecialchars($u['consent_version'] ?? 'v1',ENT_QUOTES,'UTF-8') ?>)</small>
       <?php endif; ?>
     </div>
     <div style="margin-top:6px">
-      <a href="<?= htmlspecialchars(app_url('/user/profile.php?id=' . (int)$uid), ENT_QUOTES, 'UTF-8') ?>" target="_blank">Profilom megnyitása</a>
+      <a href="<?= htmlspecialchars(app_url('/user/profile.php?id=' . (int)$uid), ENT_QUOTES, 'UTF-8') ?>" target="_blank"><?= htmlspecialchars(t('user.open_profile'), ENT_QUOTES, 'UTF-8') ?></a>
     </div>
   </div>
 
   <form method="post">
-    <label><b>Megjelenő név</b> (opcionális)</label>
-    <input type="text" name="name" value="<?= htmlspecialchars($u['display_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Pl. Kovács Anna">
+    <label><b><?= htmlspecialchars(t('user.display_name'), ENT_QUOTES, 'UTF-8') ?></b></label>
+    <input type="text" name="name" value="<?= htmlspecialchars($u['display_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(t('modal.name_placeholder'), ENT_QUOTES, 'UTF-8') ?>">
 
     <div class="hr"></div>
 
-    <label><b>Megszólítás / prefix</b> (opcionális)</label>
+    <label><b><?= htmlspecialchars(t('user.prefix'), ENT_QUOTES, 'UTF-8') ?></b></label>
     <input type="text" name="prefix" value="<?= htmlspecialchars($u['prefix'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Pl. Dr., Prof., Mr, Mrs">
 
-    <label><b>Vezetéknév</b> (opcionális)</label>
+    <label><b><?= htmlspecialchars(t('user.last_name'), ENT_QUOTES, 'UTF-8') ?></b></label>
     <input type="text" name="last_name" value="<?= htmlspecialchars($u['last_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Pl. Kovács">
 
-    <label><b>Keresztnév</b> (opcionális, névnaphoz)</label>
+    <label><b><?= htmlspecialchars(t('user.first_name'), ENT_QUOTES, 'UTF-8') ?></b></label>
     <input type="text" name="first_name" value="<?= htmlspecialchars($u['first_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Pl. Anna">
 
-    <label><b>Születésnap</b> (opcionális)</label>
+    <label><b><?= htmlspecialchars(t('user.birthdate'), ENT_QUOTES, 'UTF-8') ?></b></label>
     <input type="text" name="birthdate" value="<?= htmlspecialchars($u['birthdate'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="YYYY-MM-DD">
 
-    <label><b>Telefonszám</b> (opcionális)</label>
+    <label><b><?= htmlspecialchars(t('user.phone'), ENT_QUOTES, 'UTF-8') ?></b></label>
     <input type="text" name="phone" value="<?= htmlspecialchars($u['phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="+36...">
 
     <div class="hr"></div>
 
     <label class="chk">
       <input type="checkbox" name="consent_share" value="1" <?= checked($u['consent_share'] ?? 0) ?>>
-      <span>
-        Hozzájárulok, hogy az ügy intézése érdekében az adataimat az illetékeseknek továbbítsák.
-        <br><small>Például: önkormányzat, szolgáltató, közmű.</small>
-      </span>
+      <span><?= htmlspecialchars(t('user.consent_share'), ENT_QUOTES, 'UTF-8') ?></span>
     </label>
 
     <label class="chk">
       <input type="checkbox" name="consent_marketing" value="1" <?= checked($u['consent_marketing'] ?? 0) ?>>
-      <span>
-        Hozzájárulok marketing célú megkeresésekhez.
-        <br><small>Hírek, fejlesztések, helyi ügyekkel kapcsolatos értesítések.</small>
-      </span>
+      <span><?= htmlspecialchars(t('user.consent_marketing'), ENT_QUOTES, 'UTF-8') ?></span>
     </label>
 
     <label class="chk">
       <input type="checkbox" name="marketing_greetings" value="1" <?= checked((int)($u['consent_marketing'] ?? 0) === 1 && (int)($u['marketing_greetings_optout'] ?? 0) === 0) ?>>
-      <span>
-        Szeretnék születésnapi / névnapi üdvözletet kapni e-mailben.
-        <br><small>A marketing hozzájárulás szükséges hozzá.</small>
-      </span>
+      <span><?= htmlspecialchars(t('user.greetings_optin'), ENT_QUOTES, 'UTF-8') ?></span>
     </label>
 
     <div class="hr"></div>
 
     <label class="chk">
       <input type="checkbox" name="profile_public" value="1" <?= checked($u['profile_public'] ?? 1) ?>>
-      <span>
-        Profilom nyilv&#225;nos (a nevem &#233;s rangom megjelenhet a bejelent&#233;sekn&#233;l).
-        <br><small>Ha kikapcsolod, m&#225;sok nem l&#225;tj&#225;k a profilodat.</small>
-      </span>
+      <span><?= htmlspecialchars(t('user.profile_public'), ENT_QUOTES, 'UTF-8') ?><br><small><?= htmlspecialchars(t('user.profile_public_hint'), ENT_QUOTES, 'UTF-8') ?></small></span>
     </label>
 
     <div class="hr"></div>
 
-    <label><b>Saját cím</b> (opcionális)</label>
-    <input type="text" name="address_zip" value="<?= htmlspecialchars($u['address_zip'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Irányítószám">
-    <input type="text" name="address_city" value="<?= htmlspecialchars($u['address_city'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Város">
-    <input type="text" name="address_street" value="<?= htmlspecialchars($u['address_street'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Utca">
-    <input type="text" name="address_house" value="<?= htmlspecialchars($u['address_house'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Házszám">
+    <label><b><?= htmlspecialchars(t('user.address'), ENT_QUOTES, 'UTF-8') ?></b></label>
+    <input type="text" name="address_zip" value="<?= htmlspecialchars($u['address_zip'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(t('modal.zip'), ENT_QUOTES, 'UTF-8') ?>">
+    <input type="text" name="address_city" value="<?= htmlspecialchars($u['address_city'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(t('modal.city'), ENT_QUOTES, 'UTF-8') ?>">
+    <input type="text" name="address_street" value="<?= htmlspecialchars($u['address_street'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(t('modal.street'), ENT_QUOTES, 'UTF-8') ?>">
+    <input type="text" name="address_house" value="<?= htmlspecialchars($u['address_house'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(t('modal.house'), ENT_QUOTES, 'UTF-8') ?>">
 
     <div class="hr"></div>
 
-    <button type="submit">Mentés</button>
+    <button type="submit"><?= htmlspecialchars(t('gov.save'), ENT_QUOTES, 'UTF-8') ?></button>
   </form>
 
   <div class="hr"></div>
 
   <div>
-    <b>Profilk&#233;p</b>
+    <b><?= htmlspecialchars(t('user.avatar'), ENT_QUOTES, 'UTF-8') ?></b>
     <div class="row" style="margin-top:8px;align-items:center">
       <?php if (!empty($u['avatar_filename'])): ?>
         <img src="<?= htmlspecialchars(app_url('/uploads/avatars/' . $u['avatar_filename']), ENT_QUOTES, 'UTF-8') ?>" alt="avatar" style="width:64px;height:64px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
@@ -250,14 +238,14 @@ function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
       <?php endif; ?>
       <form method="post" action="<?= htmlspecialchars(app_url('/api/avatar_upload.php'), ENT_QUOTES, 'UTF-8') ?>" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center">
         <input type="file" name="file" accept="image/*" required>
-        <button type="submit">Felt&#246;lt&#233;s</button>
+        <button type="submit"><?= htmlspecialchars(t('user.avatar_upload'), ENT_QUOTES, 'UTF-8') ?></button>
       </form>
     </div>
-    <small>JPG/PNG/WebP, max. 2 MB. A r&#233;gi profilk&#233;p fel&#252;l&#237;r&#243;dik.</small>
+    <small><?= htmlspecialchars(t('user.avatar_hint'), ENT_QUOTES, 'UTF-8') ?></small>
   </div>
 
   <div style="margin-top:12px">
-    <small>Adatkezelési hozzájárulás visszavonása: fiók törlése (későbbi fejlesztés), vagy írásban az üzemeltetőnek.</small>
+    <small><?= htmlspecialchars(t('user.consent_withdraw'), ENT_QUOTES, 'UTF-8') ?></small>
   </div>
 </div>
 </div>

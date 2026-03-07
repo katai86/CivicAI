@@ -154,6 +154,50 @@ function has_role(array $roles): bool {
 }
 
 // --------------------
+// Nyelv (i18n)
+// --------------------
+const LANG_DEFAULT = 'hu';
+const LANG_ALLOWED = ['hu', 'en', 'de', 'fr', 'it', 'es', 'sl'];
+
+function current_lang(): string {
+    start_secure_session();
+    if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
+        return (string)$_GET['lang'];
+    }
+    $lang = $_SESSION['lang'] ?? $_COOKIE['lang'] ?? null;
+    if ($lang !== null && in_array($lang, LANG_ALLOWED, true)) {
+        return (string)$lang;
+    }
+    return LANG_DEFAULT;
+}
+
+function set_lang(string $code): void {
+    if (!in_array($code, LANG_ALLOWED, true)) return;
+    start_secure_session();
+    $_SESSION['lang'] = $code;
+    $path = defined('APP_BASE') ? (APP_BASE . '/') : '/';
+    $secure = is_https_request();
+    setcookie('lang', $code, ['expires' => time() + 86400 * 365, 'path' => $path, 'secure' => $secure, 'samesite' => 'Lax']);
+}
+
+function t(string $key): string {
+    static $lang = null;
+    if ($lang === null) {
+        $code = current_lang();
+        $file = __DIR__ . '/lang/' . $code . '.php';
+        $lang = is_file($file) ? (require $file) : [];
+    }
+    return $lang[$key] ?? $key;
+}
+
+/** Nyelvi tömb JS számára (pl. window.LANG) */
+function lang_array_for_js(): array {
+    $code = current_lang();
+    $file = __DIR__ . '/lang/' . $code . '.php';
+    return is_file($file) ? (require $file) : [];
+}
+
+// --------------------
 // XP, badge, leaderboard (service réteg)
 // --------------------
 require_once __DIR__ . '/services/XpBadge.php';

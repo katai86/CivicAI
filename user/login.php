@@ -22,9 +22,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 
   if (!$u || !password_verify($pass, $u['pass_hash'])) {
-    $err = 'Hibás belépési adatok.';
+    $err = 'auth.login_error';
   } elseif (isset($u['is_active']) && (int)$u['is_active'] === 0) {
-    $err = 'A fiók le van tiltva.';
+    $err = 'auth.account_disabled';
   } else {
     session_regenerate_id(true);
     $_SESSION['user_id'] = (int)$u['id'];
@@ -42,11 +42,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
   }
 }
+$currentLang = current_lang();
 ?>
 <!doctype html>
-<html lang="hu"><head>
+<html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Köz.Tér – Belépés</title>
+<title><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?> – <?= htmlspecialchars(t('auth.login_title'), ENT_QUOTES, 'UTF-8') ?></title>
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
 <body class="page auth-page">
@@ -54,24 +55,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
       <span class="brand-logo" aria-hidden="true"></span>
-      <b>Köz.Tér</b>
+      <b><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?></b>
     </a>
     <div class="topbar-links">
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Térkép</a>
-      <a class="topbtn primary" href="<?= htmlspecialchars(app_url('/user/register.php'), ENT_QUOTES, 'UTF-8') ?>">Regisztráció</a>
+      <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
+      <a class="topbtn primary" href="<?= htmlspecialchars(app_url('/user/register.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.register'), ENT_QUOTES, 'UTF-8') ?></a>
     </div>
   </div>
 </header>
 <div class="auth-wrap">
 <div class="card">
-  <h3 style="margin:0 0 10px">Belépés</h3>
-  <?php if($err): ?><div class="err"><?= htmlspecialchars($err,ENT_QUOTES,'UTF-8') ?></div><?php endif; ?>
+  <h3 style="margin:0 0 10px"><?= htmlspecialchars(t('auth.login_title'), ENT_QUOTES, 'UTF-8') ?></h3>
+  <?php if($err): ?><div class="err"><?= htmlspecialchars(t($err), ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
   <form method="post">
-    <input name="email" placeholder="E-mail" required>
-    <input name="pass" type="password" placeholder="Jelszó" required>
-    <button type="submit" class="primary">Belépés</button>
+    <input name="email" placeholder="<?= htmlspecialchars(t('auth.email'), ENT_QUOTES, 'UTF-8') ?>" required>
+    <input name="pass" type="password" placeholder="<?= htmlspecialchars(t('auth.password'), ENT_QUOTES, 'UTF-8') ?>" required>
+    <button type="submit" class="primary"><?= htmlspecialchars(t('auth.login_title'), ENT_QUOTES, 'UTF-8') ?></button>
   </form>
-  <div style="margin-top:10px"><a href="<?= htmlspecialchars(app_url('/user/register.php')) ?>">Regisztráció</a></div>
+  <div style="margin-top:10px"><a href="<?= htmlspecialchars(app_url('/user/register.php')) ?>"><?= htmlspecialchars(t('nav.register'), ENT_QUOTES, 'UTF-8') ?></a></div>
 </div>
 </div>
 </body></html>

@@ -1,20 +1,22 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/util.php';
+start_secure_session();
+$currentLang = current_lang();
 
 $lbWeek = get_leaderboard('week', 10);
 $lbMonth = get_leaderboard('month', 10);
 $lbAll = get_leaderboard('all', 10);
 
 $categories = [
-  'road' => 'Úthiba / kátyú',
-  'sidewalk' => 'Járda / burkolat hiba',
-  'lighting' => 'Közvilágítás',
-  'trash' => 'Szemét / illegális',
-  'green' => 'Zöldterület / veszélyes fa',
-  'traffic' => 'Közlekedés / tábla',
-  'idea' => 'Ötlet / javaslat',
-  'civil_event' => 'Civil esemény',
+  'road' => t('cat.road_desc'),
+  'sidewalk' => t('cat.sidewalk_desc'),
+  'lighting' => t('cat.lighting_desc'),
+  'trash' => t('cat.trash_desc'),
+  'green' => t('cat.green_desc'),
+  'traffic' => t('cat.traffic_desc'),
+  'idea' => t('cat.idea_desc'),
+  'civil_event' => t('cat.civil_event_desc'),
 ];
 $cat = isset($_GET['category']) ? (string)$_GET['category'] : 'road';
 if (!isset($categories[$cat])) $cat = 'road';
@@ -46,11 +48,11 @@ function avatar_url($filename){
 }
 ?>
 <!doctype html>
-<html lang="hu">
+<html lang="<?= h($currentLang) ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Köz.Tér – Toplista</title>
+  <title><?= h(t('site.name')) ?> – <?= h(t('lb.title')) ?></title>
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="page">
@@ -58,17 +60,17 @@ function avatar_url($filename){
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
       <span class="brand-logo" aria-hidden="true"></span>
-      <b>Köz.Tér</b>
+      <b><?= h(t('site.name')) ?></b>
     </a>
     <div class="topbar-links">
-      <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>
+      <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
       <?php if ($uid > 0): ?>
-        <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>">Saját ügyeim</a>
-        <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>">Beállítások</a>
-        <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>">Kilépés</a>
+        <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>"><?= h(t('nav.my_reports')) ?></a>
+        <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>"><?= h(t('nav.settings')) ?></a>
+        <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>"><?= h(t('nav.logout')) ?></a>
       <?php else: ?>
-        <a class="topbtn" href="<?= h(app_url('/user/login.php')) ?>">Belépés</a>
-        <a class="topbtn primary" href="<?= h(app_url('/user/register.php')) ?>">Regisztráció</a>
+        <a class="topbtn" href="<?= h(app_url('/user/login.php')) ?>"><?= h(t('nav.login')) ?></a>
+        <a class="topbtn primary" href="<?= h(app_url('/user/register.php')) ?>"><?= h(t('nav.register')) ?></a>
       <?php endif; ?>
     </div>
   </div>
@@ -77,26 +79,26 @@ function avatar_url($filename){
 <div class="wrap">
   <div class="card">
     <div class="top">
-      <div style="font-weight:900;font-size:18px">Toplista (Top 10)</div>
-      <div><a class="btn" href="<?= h(app_url('/')) ?>">Térkép</a></div>
+      <div style="font-weight:900;font-size:18px"><?= h(t('lb.title')) ?></div>
+      <div><a class="btn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a></div>
     </div>
   </div>
   <?php if ($uid): ?>
   <div class="card" style="margin-bottom:12px">
-    <div class="title">Saját helyezésem</div>
+    <div class="title"><?= h(t('lb.my_rank')) ?></div>
     <div class="row" style="gap:8px;flex-wrap:wrap">
-      <span class="pill">Heti: <?= $rankWeek ? ('#' . (int)$rankWeek['rank'] . ' • ' . (int)$rankWeek['points'] . ' XP') : 'nincs adat' ?></span>
-      <span class="pill">Havi: <?= $rankMonth ? ('#' . (int)$rankMonth['rank'] . ' • ' . (int)$rankMonth['points'] . ' XP') : 'nincs adat' ?></span>
-      <span class="pill">Összesített: <?= $rankAll ? ('#' . (int)$rankAll['rank'] . ' • ' . (int)$rankAll['points'] . ' XP') : 'nincs adat' ?></span>
+      <span class="pill"><?= h(t('lb.week')) ?>: <?= $rankWeek ? ('#' . (int)$rankWeek['rank'] . ' • ' . (int)$rankWeek['points'] . ' XP') : t('user.no_rank') ?></span>
+      <span class="pill"><?= h(t('lb.month')) ?>: <?= $rankMonth ? ('#' . (int)$rankMonth['rank'] . ' • ' . (int)$rankMonth['points'] . ' XP') : t('user.no_rank') ?></span>
+      <span class="pill"><?= h(t('lb.all')) ?>: <?= $rankAll ? ('#' . (int)$rankAll['rank'] . ' • ' . (int)$rankAll['points'] . ' XP') : t('user.no_rank') ?></span>
     </div>
   </div>
   <?php endif; ?>
 
   <div class="grid cols-3">
     <div class="card">
-      <div class="title">Heti</div>
+      <div class="title"><?= h(t('lb.week')) ?></div>
       <?php if (!$lbWeek): ?>
-        <div class="muted">Nincs adat.</div>
+        <div class="muted"><?= h(t('gov.no_data')) ?></div>
       <?php else: ?>
         <div class="list">
           <?php foreach ($lbWeek as $i => $row): ?>
@@ -123,9 +125,9 @@ function avatar_url($filename){
     </div>
 
     <div class="card">
-      <div class="title">Havi</div>
+      <div class="title"><?= h(t('lb.month')) ?></div>
       <?php if (!$lbMonth): ?>
-        <div class="muted">Nincs adat.</div>
+        <div class="muted"><?= h(t('gov.no_data')) ?></div>
       <?php else: ?>
         <div class="list">
           <?php foreach ($lbMonth as $i => $row): ?>
@@ -152,9 +154,9 @@ function avatar_url($filename){
     </div>
 
     <div class="card">
-      <div class="title">Összesített</div>
+      <div class="title"><?= h(t('lb.all')) ?></div>
       <?php if (!$lbAll): ?>
-        <div class="muted">Nincs adat.</div>
+        <div class="muted"><?= h(t('gov.no_data')) ?></div>
       <?php else: ?>
         <div class="list">
           <?php foreach ($lbAll as $i => $row): ?>
@@ -182,7 +184,7 @@ function avatar_url($filename){
   </div>
 
   <div class="card" style="margin-top:12px">
-    <div class="title">Kategória toplista (Top 10)</div>
+    <div class="title"><?= h(t('lb.category_top')) ?></div>
     <div class="tabs" style="margin-top:6px">
       <?php foreach ($categories as $key => $label): ?>
         <a class="tab <?= $key === $cat ? 'active' : '' ?>" href="<?= h(app_url('/leaderboard.php?category=' . $key)) ?>"><?= h($label) ?></a>
@@ -191,17 +193,17 @@ function avatar_url($filename){
 
     <?php if ($uid): ?>
       <div class="row" style="gap:8px;margin:8px 0 0 0;flex-wrap:wrap">
-        <span class="pill">Helyezésem (heti): <?= $rankCatWeek ? ('#' . (int)$rankCatWeek['rank'] . ' • ' . (int)$rankCatWeek['count'] . ' db') : 'nincs adat' ?></span>
-        <span class="pill">Helyezésem (havi): <?= $rankCatMonth ? ('#' . (int)$rankCatMonth['rank'] . ' • ' . (int)$rankCatMonth['count'] . ' db') : 'nincs adat' ?></span>
-        <span class="pill">Helyezésem (összes): <?= $rankCatAll ? ('#' . (int)$rankCatAll['rank'] . ' • ' . (int)$rankCatAll['count'] . ' db') : 'nincs adat' ?></span>
+        <span class="pill"><?= h(t('user.rank_week')) ?>: <?= $rankCatWeek ? ('#' . (int)$rankCatWeek['rank'] . ' • ' . (int)$rankCatWeek['count'] . ' db') : t('user.no_rank') ?></span>
+        <span class="pill"><?= h(t('user.rank_month')) ?>: <?= $rankCatMonth ? ('#' . (int)$rankCatMonth['rank'] . ' • ' . (int)$rankCatMonth['count'] . ' db') : t('user.no_rank') ?></span>
+        <span class="pill"><?= h(t('user.rank_all')) ?>: <?= $rankCatAll ? ('#' . (int)$rankCatAll['rank'] . ' • ' . (int)$rankCatAll['count'] . ' db') : t('user.no_rank') ?></span>
       </div>
     <?php endif; ?>
 
     <div class="row" style="gap:8px;margin-top:8px">
       <div style="min-width:220px">
-        <div class="small"><b>Heti</b></div>
+        <div class="small"><b><?= h(t('lb.week')) ?></b></div>
         <?php if (!$lbCatWeek): ?>
-          <div class="muted">Nincs adat.</div>
+          <div class="muted"><?= h(t('gov.no_data')) ?></div>
         <?php else: ?>
           <div class="list">
             <?php foreach ($lbCatWeek as $i => $row): ?>
@@ -227,9 +229,9 @@ function avatar_url($filename){
         <?php endif; ?>
       </div>
       <div style="min-width:220px">
-        <div class="small"><b>Havi</b></div>
+        <div class="small"><b><?= h(t('lb.month')) ?></b></div>
         <?php if (!$lbCatMonth): ?>
-          <div class="muted">Nincs adat.</div>
+          <div class="muted"><?= h(t('gov.no_data')) ?></div>
         <?php else: ?>
           <div class="list">
             <?php foreach ($lbCatMonth as $i => $row): ?>
@@ -255,9 +257,9 @@ function avatar_url($filename){
         <?php endif; ?>
       </div>
       <div style="min-width:220px">
-        <div class="small"><b>Összesített</b></div>
+        <div class="small"><b><?= h(t('lb.all')) ?></b></div>
         <?php if (!$lbCatAll): ?>
-          <div class="muted">Nincs adat.</div>
+          <div class="muted"><?= h(t('gov.no_data')) ?></div>
         <?php else: ?>
           <div class="list">
             <?php foreach ($lbCatAll as $i => $row): ?>

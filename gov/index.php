@@ -246,14 +246,20 @@ if ($isAdmin || $authorityIds) {
   } catch (Throwable $e) { /* ignore */ }
 }
 
+if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
+  set_lang($_GET['lang']);
+  header('Location: ' . app_url('/gov/index.php'));
+  exit;
+}
+$currentLang = current_lang();
 $statusLabels = [
-  'new' => 'Új', 'pending' => 'Ellenőrzés alatt', 'approved' => 'Publikálva', 'rejected' => 'Elutasítva',
-  'needs_info' => 'Kiegészítésre vár', 'forwarded' => 'Továbbítva', 'waiting_reply' => 'Válaszra vár',
-  'in_progress' => 'Folyamatban', 'solved' => 'Megoldva', 'closed' => 'Lezárva',
+  'new' => t('status.new'), 'pending' => t('status.pending'), 'approved' => t('status.approved'), 'rejected' => t('status.rejected'),
+  'needs_info' => t('status.needs_info'), 'forwarded' => t('status.forwarded'), 'waiting_reply' => t('status.waiting_reply'),
+  'in_progress' => t('status.in_progress'), 'solved' => t('status.solved'), 'closed' => t('status.closed'),
 ];
 $categoryLabels = [
-  'road' => 'Úthiba', 'sidewalk' => 'Járda', 'lighting' => 'Közvilágítás', 'trash' => 'Szemét',
-  'green' => 'Zöld', 'traffic' => 'Közlekedés', 'idea' => 'Ötlet', 'civil_event' => 'Civil esemény',
+  'road' => t('cat.road_desc'), 'sidewalk' => t('cat.sidewalk_desc'), 'lighting' => t('cat.lighting_desc'), 'trash' => t('cat.trash_desc'),
+  'green' => t('cat.green_desc'), 'traffic' => t('cat.traffic_desc'), 'idea' => t('cat.idea_desc'), 'civil_event' => t('cat.civil_event_desc'),
 ];
 
 $statusOrder = ['new','approved','in_progress','solved','rejected','needs_info','forwarded','waiting_reply','closed','pending'];
@@ -273,9 +279,9 @@ if (!empty($stats['by_category'])) {
 function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 ?>
 <!doctype html>
-<html lang="hu"><head>
+<html lang="<?= h($currentLang) ?>"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Köz.Tér – Közigazgatási</title>
+<title><?= h(t('site.name')) ?> – <?= h(t('gov.title')) ?></title>
 <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="page">
@@ -283,13 +289,13 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
       <span class="brand-logo" aria-hidden="true"></span>
-      <b>Köz.Tér</b>
+      <b><?= h(t('site.name')) ?></b>
     </a>
     <div class="topbar-links">
-      <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>
-      <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>">Beállítások</a>
-      <a class="topbtn primary" href="<?= h(app_url('/gov/index.php')) ?>">Közigazgatási</a>
-      <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>">Kilépés</a>
+      <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
+      <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>"><?= h(t('nav.settings')) ?></a>
+      <a class="topbtn primary" href="<?= h(app_url('/gov/index.php')) ?>"><?= h(t('nav.gov')) ?></a>
+      <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>"><?= h(t('nav.logout')) ?></a>
     </div>
   </div>
 </header>
@@ -298,37 +304,37 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
   <div class="card">
     <div class="row" style="justify-content:space-between">
       <div>
-        <div style="font-weight:900;font-size:18px">Közigazgatási dashboard</div>
-        <div class="muted">Hatóságok: <?= h(implode(', ', array_map(fn($a)=>$a['name'], $authorities))) ?></div>
+        <div style="font-weight:900;font-size:18px"><?= h(t('gov.title')) ?></div>
+        <div class="muted"><?= h(t('gov.authorities')) ?>: <?= h(implode(', ', array_map(fn($a)=>$a['name'], $authorities))) ?></div>
       </div>
-      <a class="btn" href="<?= h(app_url('/')) ?>">Térkép</a>
+      <a class="btn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
     </div>
 
     <?php if($ok): ?><div class="ok"><?= h($ok) ?></div><?php endif; ?>
     <?php if($err): ?><div class="err"><?= h($err) ?></div><?php endif; ?>
 
     <?php if(!$isAdmin && !$authorityIds): ?>
-      <div class="muted">Nincs hatóság hozzárendelve ehhez a fiókhoz.</div>
+      <div class="muted"><?= h(t('gov.no_authority')) ?></div>
     <?php else: ?>
-      <section class="gov-stats" aria-label="Statisztika">
-        <h3 style="margin:0 0 12px 0; font-size:1rem">Statisztika – a városhoz tartozó bejelentések</h3>
+      <section class="gov-stats" aria-label="<?= h(t('gov.stats_title')) ?>">
+        <h3 style="margin:0 0 12px 0; font-size:1rem"><?= h(t('gov.stats_title')) ?></h3>
         <div class="gov-stats-row">
           <div class="gov-stat-box">
             <span class="gov-stat-value"><?= (int)$stats['reports_1d'] ?></span>
-            <span class="gov-stat-label">Ma</span>
+            <span class="gov-stat-label"><?= h(t('gov.stat_today')) ?></span>
           </div>
           <div class="gov-stat-box">
             <span class="gov-stat-value"><?= (int)$stats['reports_7d'] ?></span>
-            <span class="gov-stat-label">Elmúlt 7 nap</span>
+            <span class="gov-stat-label"><?= h(t('gov.stat_7d')) ?></span>
           </div>
           <div class="gov-stat-box">
             <span class="gov-stat-value"><?= (int)$stats['reports_total'] ?></span>
-            <span class="gov-stat-label">Összesen</span>
+            <span class="gov-stat-label"><?= h(t('gov.stat_total')) ?></span>
           </div>
         </div>
         <div class="gov-stats-grid">
           <div>
-            <h4 class="gov-stats-sub">Státusz megoszlás</h4>
+            <h4 class="gov-stats-sub"><?= h(t('gov.by_status')) ?></h4>
             <div class="gov-chart">
               <?php
               $statusItems = [];
@@ -346,12 +352,12 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
                 </div>
                 <?php endforeach; ?>
               <?php else: ?>
-                <p class="muted small">Nincs adat.</p>
+                <p class="muted small"><?= h(t('gov.no_data')) ?></p>
               <?php endif; ?>
             </div>
           </div>
           <div>
-            <h4 class="gov-stats-sub">Kategória megoszlás</h4>
+            <h4 class="gov-stats-sub"><?= h(t('gov.by_category')) ?></h4>
             <div class="gov-chart">
               <?php
               $catItems = $stats['by_category'];
@@ -366,7 +372,7 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
                 </div>
                 <?php endforeach; ?>
               <?php else: ?>
-                <p class="muted small">Nincs adat.</p>
+                <p class="muted small"><?= h(t('gov.no_data')) ?></p>
               <?php endif; ?>
             </div>
           </div>
@@ -374,24 +380,24 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
       </section>
 
       <?php if ($showReportList): ?>
-      <h3 style="margin:24px 0 12px 0; font-size:1rem">Bejelentések lista</h3>
+      <h3 style="margin:24px 0 12px 0; font-size:1rem"><?= h(t('gov.reports_list')) ?></h3>
       <form method="get" class="gov-filter-row" style="margin-bottom:12px">
-        <label for="govStatusFilter" class="muted" style="margin-right:8px">Szűrés státusz szerint:</label>
+        <label for="govStatusFilter" class="muted" style="margin-right:8px"><?= h(t('gov.filter_status')) ?></label>
         <select id="govStatusFilter" name="status_filter" onchange="this.form.submit()" class="select">
-          <option value=""<?= $statusFilter === '' ? ' selected' : '' ?>>Összes</option>
+          <option value=""<?= $statusFilter === '' ? ' selected' : '' ?>><?= h(t('legend.all')) ?></option>
           <?php foreach ($allowedStatuses as $st): ?>
             <option value="<?= h($st) ?>"<?= $statusFilter === $st ? ' selected' : '' ?>><?= h($statusLabels[$st] ?? $st) ?></option>
           <?php endforeach; ?>
         </select>
       </form>
-      <p class="muted small" style="margin:0 0 8px 0">A listában legfeljebb 200 bejelentés.</p>
+      <p class="muted small" style="margin:0 0 8px 0"><?= h(t('gov.list_max')) ?></p>
       <div class="gov-list">
         <?php foreach($reports as $r): ?>
           <div class="gov-item">
             <div class="gov-meta">
               <b>#<?= (int)$r['id'] ?></b> • <?= h($r['category']) ?> • <?= h($r['status']) ?>
             </div>
-            <div class="gov-title"><?= h($r['title'] ?: 'Névtelen bejelentés') ?></div>
+            <div class="gov-title"><?= h($r['title'] ?: t('gov.report_anonymous')) ?></div>
             <div class="muted"><?= h($r['address_approx'] ?: $r['city'] ?: '') ?></div>
             <form method="post" class="gov-actions">
               <input type="hidden" name="action" value="set_status">
@@ -399,25 +405,25 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
               <input type="hidden" name="status_filter" value="<?= h($statusFilter) ?>">
               <select name="status" class="select">
                 <?php foreach(['new','approved','needs_info','forwarded','waiting_reply','in_progress','solved','closed','rejected','pending'] as $st): ?>
-                  <option value="<?= h($st) ?>" <?= $st === $r['status'] ? 'selected' : '' ?>><?= h($st) ?></option>
+                  <option value="<?= h($st) ?>" <?= $st === $r['status'] ? 'selected' : '' ?>><?= h($statusLabels[$st] ?? $st) ?></option>
                 <?php endforeach; ?>
               </select>
-              <input type="text" name="note" class="input" placeholder="Megjegyzés (opcionális)">
-              <button class="btn" type="submit">Mentés</button>
+              <input type="text" name="note" class="input" placeholder="<?= h(t('gov.note_placeholder')) ?>">
+              <button class="btn" type="submit"><?= h(t('gov.save')) ?></button>
             </form>
           </div>
         <?php endforeach; ?>
       </div>
       <?php else: ?>
       <section class="gov-next" style="margin-top:24px;padding:20px;background:var(--card-2);border:1px dashed var(--border);border-radius:12px;">
-        <h3 style="margin:0 0 8px 0; font-size:1rem">Következő lépések – közigazgatási dashboard</h3>
-        <p class="muted" style="margin:0 0 12px 0">Itt később megjelenik:</p>
+        <h3 style="margin:0 0 8px 0; font-size:1rem"><?= h(t('gov.next_steps')) ?></h3>
+        <p class="muted" style="margin:0 0 12px 0"><?= h(t('gov.next_intro')) ?></p>
         <ul class="muted" style="margin:0; padding-left:1.2em;">
-          <li><strong>Utca szintű összesítés</strong> – melyik utcán hány bejelentés, „health” státusz az adott utcára</li>
-          <li><strong>AI integráció</strong> – elemzés, javaslatok</li>
-          <li><strong>ESG</strong> – fenntarthatósági mutatók</li>
+          <li><strong><?= h(t('gov.next_street')) ?></strong></li>
+          <li><strong><?= h(t('gov.next_ai')) ?></strong></li>
+          <li><strong><?= h(t('gov.next_esg')) ?></strong></li>
         </ul>
-        <p class="muted small" style="margin:12px 0 0 0">A közigazgatási felületet – az admin dashboardhoz hasonlóan – teljes dashboardként (oldalsáv, kártyák, grafikonok) is ki lehet majd alakítani.</p>
+        <p class="muted small" style="margin:12px 0 0 0"><?= h(t('gov.next_dashboard')) ?></p>
       </section>
       <?php endif; ?>
     <?php endif; ?>

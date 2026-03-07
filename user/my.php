@@ -109,35 +109,23 @@ function avatar_url($filename){
   return app_url('/uploads/avatars/' . $filename);
 }
 
+$currentLang = current_lang();
 $statusLabel = [
-  'pending' => 'Ellenőrzés alatt',
-  'approved' => 'Publikálva',
-  'rejected' => 'Elutasítva',
-  'new' => 'Új',
-  'needs_info' => 'Kiegészítésre vár',
-  'forwarded' => 'Továbbítva',
-  'waiting_reply' => 'Válaszra vár',
-  'in_progress' => 'Folyamatban',
-  'solved' => 'Megoldva',
-  'closed' => 'Lezárva',
+  'pending' => t('status.pending'), 'approved' => t('status.approved'), 'rejected' => t('status.rejected'),
+  'new' => t('status.new'), 'needs_info' => t('status.needs_info'), 'forwarded' => t('status.forwarded'),
+  'waiting_reply' => t('status.waiting_reply'), 'in_progress' => t('status.in_progress'), 'solved' => t('status.solved'), 'closed' => t('status.closed'),
 ];
 $catLabel = [
-  'road'=>'Úthiba / kátyú',
-  'sidewalk'=>'Járda / burkolat hiba',
-  'lighting'=>'Közvilágítás',
-  'trash'=>'Szemét / illegális',
-  'green'=>'Zöldterület / veszélyes fa',
-  'traffic'=>'Közlekedés / tábla',
-  'idea'=>'Ötlet / javaslat',
-  'civil_event'=>'Civil esemény',
+  'road'=>t('cat.road_desc'), 'sidewalk'=>t('cat.sidewalk_desc'), 'lighting'=>t('cat.lighting_desc'), 'trash'=>t('cat.trash_desc'),
+  'green'=>t('cat.green_desc'), 'traffic'=>t('cat.traffic_desc'), 'idea'=>t('cat.idea_desc'), 'civil_event'=>t('cat.civil_event_desc'),
 ];
 ?>
 <!doctype html>
-<html lang="hu">
+<html lang="<?= h($currentLang) ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Köz.Tér – Saját ügyeim</title>
+  <title><?= h(t('site.name')) ?> – <?= h(t('user.my_reports')) ?></title>
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
 <body class="page">
@@ -145,17 +133,17 @@ $catLabel = [
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?php echo h(app_url('/')); ?>">
       <span class="brand-logo" aria-hidden="true"></span>
-      <b>Köz.Tér</b>
+      <b><?= h(t('site.name')) ?></b>
     </a>
     <div class="topbar-links">
-      <a class="topbtn" href="<?php echo h(app_url('/')); ?>">Térkép</a>
-      <a class="topbtn" href="<?php echo h(app_url('/user/profile.php?id=' . (int)$userId)); ?>">Profilom</a>
-      <a class="topbtn" href="<?php echo h(app_url('/user/friends.php')); ?>">Barátok</a>
-      <a class="topbtn" href="<?php echo h(app_url('/user/settings.php')); ?>">Beállítások</a>
+      <a class="topbtn" href="<?php echo h(app_url('/')); ?>"><?= h(t('nav.map')) ?></a>
+      <a class="topbtn" href="<?php echo h(app_url('/user/profile.php?id=' . (int)$userId)); ?>"><?= h(t('user.profile')) ?></a>
+      <a class="topbtn" href="<?php echo h(app_url('/user/friends.php')); ?>"><?= h(t('nav.friends')) ?></a>
+      <a class="topbtn" href="<?php echo h(app_url('/user/settings.php')); ?>"><?= h(t('nav.settings')) ?></a>
       <?php if ($role === 'govuser' || $role === 'admin' || $role === 'superadmin'): ?>
-        <a class="topbtn" href="<?php echo h(app_url('/gov/index.php')); ?>">Közigazgatási</a>
+        <a class="topbtn" href="<?php echo h(app_url('/gov/index.php')); ?>"><?= h(t('nav.gov')) ?></a>
       <?php endif; ?>
-      <a class="topbtn" href="<?php echo h(app_url('/user/logout.php')); ?>">Kilépés</a>
+      <a class="topbtn" href="<?php echo h(app_url('/user/logout.php')); ?>"><?= h(t('nav.logout')) ?></a>
     </div>
   </div>
 </header>
@@ -164,30 +152,30 @@ $catLabel = [
   <div class="card">
     <div class="row" style="justify-content:space-between">
       <div>
-        <div style="font-weight:900;font-size:18px">Saját ügyeim</div>
+        <div style="font-weight:900;font-size:18px"><?= h(t('user.my_reports')) ?></div>
         <div class="muted"><?php echo h($u['display_name'] ?: $u['email']); ?></div>
         <div class="row" style="margin-top:6px">
-          <span class="pill">Szint: <b><?php echo h($lvlName); ?></b> (#<?php echo (int)$lvlNum; ?>)</span>
+          <span class="pill"><?= h(t('user.level')) ?>: <b><?php echo h($lvlName); ?></b> (#<?php echo (int)$lvlNum; ?>)</span>
           <span class="pill">XP: <b><?php echo (int)$xp; ?></b></span>
-          <span class="pill">Streak: <b><?php echo (int)$streak; ?></b> nap</span>
+          <span class="pill">Streak: <b><?php echo (int)$streak; ?></b> <?= h(t('user.streak_days')) ?></span>
         </div>
       </div>
       <div class="row">
-        <a class="btn" href="<?php echo h(app_url('/leaderboard.php')); ?>">Toplista</a>
+        <a class="btn" href="<?php echo h(app_url('/leaderboard.php')); ?>"><?= h(t('nav.leaderboard')) ?></a>
       </div>
     </div>
   </div>
 
   <?php if (!$rows): ?>
     <div class="card">
-      <div class="title">Még nincs egyetlen ügyed sem.</div>
-      <div class="muted">Menj vissza a térképre, kattints egy pontra és küldj bejelentést úgy, hogy belépve vagy.</div>
+      <div class="title"><?= h(t('user.no_reports')) ?></div>
+      <div class="muted"><?= h(t('user.no_reports_hint')) ?></div>
     </div>
   <?php else: ?>
     <div class="card" style="margin-bottom:12px">
-      <div class="title">Jelvenyek</div>
+      <div class="title"><?= h(t('user.badges')) ?></div>
       <?php if (!$badges): ?>
-        <div class="muted">Meg nincs jelvenyed.</div>
+        <div class="muted"><?= h(t('user.no_badges')) ?></div>
       <?php else: ?>
         <div class="row" style="margin-top:8px">
           <?php foreach ($badges as $b): ?>
@@ -213,17 +201,17 @@ $catLabel = [
     </div>
 
     <div class="card" style="margin-bottom:12px">
-      <div class="title">Toplista (Top 10)</div>
+      <div class="title"><?= h(t('user.leaderboard_top')) ?></div>
       <div class="row" style="gap:8px;margin:8px 0 0 0;flex-wrap:wrap">
-        <span class="pill">Helyezésem (heti): <?= $rankWeek ? ('#' . (int)$rankWeek['rank'] . ' • ' . (int)$rankWeek['points'] . ' XP') : 'nincs adat' ?></span>
-        <span class="pill">Helyezésem (havi): <?= $rankMonth ? ('#' . (int)$rankMonth['rank'] . ' • ' . (int)$rankMonth['points'] . ' XP') : 'nincs adat' ?></span>
-        <span class="pill">Helyezésem (összes): <?= $rankAll ? ('#' . (int)$rankAll['rank'] . ' • ' . (int)$rankAll['points'] . ' XP') : 'nincs adat' ?></span>
+        <span class="pill"><?= h(t('user.rank_week')) ?>: <?= $rankWeek ? ('#' . (int)$rankWeek['rank'] . ' • ' . (int)$rankWeek['points'] . ' XP') : t('user.no_rank') ?></span>
+        <span class="pill"><?= h(t('user.rank_month')) ?>: <?= $rankMonth ? ('#' . (int)$rankMonth['rank'] . ' • ' . (int)$rankMonth['points'] . ' XP') : t('user.no_rank') ?></span>
+        <span class="pill"><?= h(t('user.rank_all')) ?>: <?= $rankAll ? ('#' . (int)$rankAll['rank'] . ' • ' . (int)$rankAll['points'] . ' XP') : t('user.no_rank') ?></span>
       </div>
       <div class="row" style="gap:8px;margin-top:8px">
         <div style="min-width:220px">
-          <div class="small"><b>Heti</b></div>
+          <div class="small"><b><?= h(t('user.period_week')) ?></b></div>
           <?php if (!$lbWeek): ?>
-            <div class="muted">Nincs adat.</div>
+            <div class="muted"><?= h(t('gov.no_data')) ?></div>
           <?php else: ?>
             <?php foreach ($lbWeek as $i => $row): ?>
               <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
@@ -244,9 +232,9 @@ $catLabel = [
           <?php endif; ?>
         </div>
         <div style="min-width:220px">
-          <div class="small"><b>Havi</b></div>
+          <div class="small"><b><?= h(t('user.period_month')) ?></b></div>
           <?php if (!$lbMonth): ?>
-            <div class="muted">Nincs adat.</div>
+            <div class="muted"><?= h(t('gov.no_data')) ?></div>
           <?php else: ?>
             <?php foreach ($lbMonth as $i => $row): ?>
               <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
@@ -267,9 +255,9 @@ $catLabel = [
           <?php endif; ?>
         </div>
         <div style="min-width:220px">
-          <div class="small"><b>Összesített</b></div>
+          <div class="small"><b><?= h(t('user.period_all')) ?></b></div>
           <?php if (!$lbAll): ?>
-            <div class="muted">Nincs adat.</div>
+            <div class="muted"><?= h(t('gov.no_data')) ?></div>
           <?php else: ?>
             <?php foreach ($lbAll as $i => $row): ?>
               <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
@@ -293,7 +281,7 @@ $catLabel = [
     </div>
 
     <div class="card" style="margin-bottom:12px">
-      <div class="title">Kategória toplista (Top 10)</div>
+      <div class="title"><?= h(t('user.category_top')) ?></div>
       <div class="row" style="gap:6px;margin:8px 0 0 0;flex-wrap:wrap">
         <?php foreach ($categories as $key => $label): ?>
           <a class="pill" href="<?php echo h(app_url('/user/my.php?cat=' . $key)); ?>" style="<?php echo $key === $cat ? 'border-color:#c7d2fe;background:#eef2ff;color:#1e3a8a' : ''; ?>">
@@ -302,15 +290,15 @@ $catLabel = [
         <?php endforeach; ?>
       </div>
       <div class="row" style="gap:8px;margin:8px 0 0 0;flex-wrap:wrap">
-        <span class="pill">Helyezésem (heti): <?= $rankCatWeek ? ('#' . (int)$rankCatWeek['rank'] . ' • ' . (int)$rankCatWeek['count'] . ' db') : 'nincs adat' ?></span>
-        <span class="pill">Helyezésem (havi): <?= $rankCatMonth ? ('#' . (int)$rankCatMonth['rank'] . ' • ' . (int)$rankCatMonth['count'] . ' db') : 'nincs adat' ?></span>
-        <span class="pill">Helyezésem (összes): <?= $rankCatAll ? ('#' . (int)$rankCatAll['rank'] . ' • ' . (int)$rankCatAll['count'] . ' db') : 'nincs adat' ?></span>
+        <span class="pill"><?= h(t('user.rank_week')) ?>: <?= $rankCatWeek ? ('#' . (int)$rankCatWeek['rank'] . ' • ' . (int)$rankCatWeek['count'] . ' db') : t('user.no_rank') ?></span>
+        <span class="pill"><?= h(t('user.rank_month')) ?>: <?= $rankCatMonth ? ('#' . (int)$rankCatMonth['rank'] . ' • ' . (int)$rankCatMonth['count'] . ' db') : t('user.no_rank') ?></span>
+        <span class="pill"><?= h(t('user.rank_all')) ?>: <?= $rankCatAll ? ('#' . (int)$rankCatAll['rank'] . ' • ' . (int)$rankCatAll['count'] . ' db') : t('user.no_rank') ?></span>
       </div>
       <div class="row" style="gap:8px;margin-top:8px">
         <div style="min-width:220px">
-          <div class="small"><b>Heti</b></div>
+          <div class="small"><b><?= h(t('user.period_week')) ?></b></div>
           <?php if (!$lbCatWeek): ?>
-            <div class="muted">Nincs adat.</div>
+            <div class="muted"><?= h(t('gov.no_data')) ?></div>
           <?php else: ?>
             <?php foreach ($lbCatWeek as $i => $row): ?>
               <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
@@ -331,9 +319,9 @@ $catLabel = [
           <?php endif; ?>
         </div>
         <div style="min-width:220px">
-          <div class="small"><b>Havi</b></div>
+          <div class="small"><b><?= h(t('user.period_month')) ?></b></div>
           <?php if (!$lbCatMonth): ?>
-            <div class="muted">Nincs adat.</div>
+            <div class="muted"><?= h(t('gov.no_data')) ?></div>
           <?php else: ?>
             <?php foreach ($lbCatMonth as $i => $row): ?>
               <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
@@ -354,9 +342,9 @@ $catLabel = [
           <?php endif; ?>
         </div>
         <div style="min-width:220px">
-          <div class="small"><b>Összesített</b></div>
+          <div class="small"><b><?= h(t('user.period_all')) ?></b></div>
           <?php if (!$lbCatAll): ?>
-            <div class="muted">Nincs adat.</div>
+            <div class="muted"><?= h(t('gov.no_data')) ?></div>
           <?php else: ?>
             <?php foreach ($lbCatAll as $i => $row): ?>
               <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
@@ -386,14 +374,14 @@ $catLabel = [
             <div class="title">#<?php echo (int)$r['id']; ?> — <?php echo h($catLabel[$r['category']] ?? $r['category']); ?></div>
             <span class="pill"><?php echo h($statusLabel[$r['status']] ?? $r['status']); ?></span>
           </div>
-          <div class="small">Létrehozva: <?php echo h($r['created_at']); ?></div>
+          <div class="small"><?= h(t('user.created')) ?>: <?php echo h($r['created_at']); ?></div>
           <div class="hr"></div>
-          <div><b>Rövid cím:</b> <?php echo h($r['title']); ?></div>
+          <div><b><?= h(t('user.short_title')) ?>:</b> <?php echo h($r['title']); ?></div>
           <div class="muted" style="margin-top:6px"><?php echo nl2br(h($r['description'])); ?></div>
           <div class="hr"></div>
           <div class="small"><?php echo h($r['road'] ?: ''); ?> <?php echo h($r['suburb'] ?: ''); ?> <?php echo h($r['city'] ?: ''); ?></div>
           <div class="row" style="margin-top:10px">
-            <a class="btn primary" href="<?php echo h(app_url('/user/report.php?id='.(int)$r['id'])); ?>">Megnyitás</a>
+            <a class="btn primary" href="<?php echo h(app_url('/user/report.php?id='.(int)$r['id'])); ?>"><?= h(t('user.open')) ?></a>
           </div>
         </div>
       <?php endforeach; ?>

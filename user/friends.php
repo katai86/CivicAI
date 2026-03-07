@@ -45,11 +45,12 @@ $stmt = db()->prepare("
 ");
 $stmt->execute([':uid' => $uid]);
 $outgoing = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+$currentLang = current_lang();
 ?>
 <!doctype html>
-<html lang="hu"><head>
+<html lang="<?= h($currentLang) ?>"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Köz.Tér – Barátok</title>
+<title><?= h(t('site.name')) ?> – <?= h(t('user.friends')) ?></title>
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 <script>
 document.addEventListener('DOMContentLoaded', function(){
@@ -90,16 +91,16 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
       <span class="brand-logo" aria-hidden="true"></span>
-      <b>Köz.Tér</b>
+      <b><?= h(t('site.name')) ?></b>
     </a>
     <div class="topbar-links">
-      <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>
-      <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>">Saját ügyeim</a>
-      <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>">Beállítások</a>
+      <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
+      <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>"><?= h(t('nav.my_reports')) ?></a>
+      <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>"><?= h(t('nav.settings')) ?></a>
       <?php if ($role === 'govuser' || $role === 'admin' || $role === 'superadmin'): ?>
-        <a class="topbtn" href="<?= h(app_url('/gov/index.php')) ?>">Közigazgatási</a>
+        <a class="topbtn" href="<?= h(app_url('/gov/index.php')) ?>"><?= h(t('nav.gov')) ?></a>
       <?php endif; ?>
-      <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>">Kilépés</a>
+      <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>"><?= h(t('nav.logout')) ?></a>
     </div>
   </div>
 </header>
@@ -108,26 +109,26 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="card">
     <div class="row" style="justify-content:space-between">
       <div>
-        <div style="font-weight:900;font-size:18px">Barátok</div>
-        <div class="muted">Kapcsolatok és kérések</div>
+        <div style="font-weight:900;font-size:18px"><?= h(t('user.friends')) ?></div>
+        <div class="muted"><?= h(t('user.friends_sub')) ?></div>
       </div>
-      <a class="btn" href="<?= h(app_url('/')) ?>">Térkép</a>
+      <a class="btn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
     </div>
 
     <div class="hr"></div>
     <div class="kv">
-      <div class="k">Barátok</div>
+      <div class="k"><?= h(t('user.friends')) ?></div>
       <div class="v"><?= count($friends) ?></div>
-      <div class="k">Bejövő kérések</div>
+      <div class="k"><?= h(t('user.incoming')) ?></div>
       <div class="v"><?= count($incoming) ?></div>
-      <div class="k">Kimenő kérések</div>
+      <div class="k"><?= h(t('user.outgoing')) ?></div>
       <div class="v"><?= count($outgoing) ?></div>
     </div>
 
     <div class="hr"></div>
-    <h3 style="margin:0 0 8px">Barátok listája</h3>
+    <h3 style="margin:0 0 8px"><?= h(t('user.friends_list')) ?></h3>
     <?php if (!$friends): ?>
-      <div class="muted">Még nincs barátod.</div>
+      <div class="muted"><?= h(t('user.no_friends')) ?></div>
     <?php else: ?>
       <div class="list">
         <?php foreach($friends as $f): ?>
@@ -136,11 +137,11 @@ document.addEventListener('DOMContentLoaded', function(){
               <b><?= h($f['display_name'] ?: $f['email']) ?></b> • <?= h($f['email']) ?>
             </div>
             <div class="actions">
-              <a class="btn" href="<?= h(app_url('/user/profile.php?id=' . (int)$f['id'])) ?>" target="_blank">Profil</a>
+              <a class="btn" href="<?= h(app_url('/user/profile.php?id=' . (int)$f['id'])) ?>" target="_blank"><?= h(t('user.profile')) ?></a>
               <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
                 <input type="hidden" name="action" value="remove">
                 <input type="hidden" name="target_id" value="<?= (int)$f['id'] ?>">
-                <button class="btn soft" type="submit">Eltávolítás</button>
+                <button class="btn soft" type="submit"><?= h(t('user.remove')) ?></button>
               </form>
             </div>
           </div>
@@ -149,9 +150,9 @@ document.addEventListener('DOMContentLoaded', function(){
     <?php endif; ?>
 
     <div class="hr"></div>
-    <h3 style="margin:0 0 8px">Bejövő kérések</h3>
+    <h3 style="margin:0 0 8px"><?= h(t('user.incoming')) ?></h3>
     <?php if (!$incoming): ?>
-      <div class="muted">Nincs új kérés.</div>
+      <div class="muted"><?= h(t('user.no_incoming')) ?></div>
     <?php else: ?>
       <div class="list">
         <?php foreach($incoming as $r): ?>
@@ -163,12 +164,12 @@ document.addEventListener('DOMContentLoaded', function(){
               <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
                 <input type="hidden" name="action" value="accept">
                 <input type="hidden" name="request_id" value="<?= (int)$r['id'] ?>">
-                <button class="btn primary" type="submit">Elfogadás</button>
+                <button class="btn primary" type="submit"><?= h(t('user.accept')) ?></button>
               </form>
               <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
                 <input type="hidden" name="action" value="decline">
                 <input type="hidden" name="request_id" value="<?= (int)$r['id'] ?>">
-                <button class="btn soft" type="submit">Elutasítás</button>
+                <button class="btn soft" type="submit"><?= h(t('user.decline')) ?></button>
               </form>
             </div>
           </div>
@@ -177,9 +178,9 @@ document.addEventListener('DOMContentLoaded', function(){
     <?php endif; ?>
 
     <div class="hr"></div>
-    <h3 style="margin:0 0 8px">Kimenő kérések</h3>
+    <h3 style="margin:0 0 8px"><?= h(t('user.outgoing')) ?></h3>
     <?php if (!$outgoing): ?>
-      <div class="muted">Nincs kimenő kérés.</div>
+      <div class="muted"><?= h(t('user.no_outgoing')) ?></div>
     <?php else: ?>
       <div class="list">
         <?php foreach($outgoing as $r): ?>
@@ -191,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function(){
               <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
                 <input type="hidden" name="action" value="cancel">
                 <input type="hidden" name="target_id" value="<?= (int)$r['user_id'] ?>">
-                <button class="btn soft" type="submit">Visszavonás</button>
+                <button class="btn soft" type="submit"><?= h(t('user.cancel')) ?></button>
               </form>
             </div>
           </div>

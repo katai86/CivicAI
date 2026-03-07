@@ -1,12 +1,17 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/util.php';
+start_secure_session();
+if (isset($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
+  set_lang($_GET['lang']);
+}
+$currentLang = current_lang();
 
 $token = trim($_GET['token'] ?? '');
 
 if ($token === '' || strlen($token) < 16) {
   http_response_code(400);
-  echo "Hibás vagy hiányzó token.";
+  echo t('case.bad_token');
   exit;
 }
 
@@ -28,7 +33,7 @@ $r = $stmt->fetch();
 
 if (!$r) {
   http_response_code(404);
-  echo "Nem található ügy ezzel a tokennel (vagy már nem aktív).";
+  echo t('case.not_found');
   exit;
 }
 
@@ -36,27 +41,27 @@ $rid = (int)$r['id'];
 $caseNo = case_number($rid, (string)$r['created_at']);
 
 $statusLabel = [
-  'pending' => 'Ellenőrzés alatt',
-  'approved' => 'Publikálva',
-  'rejected' => 'Elutasítva',
-
-  'new' => 'Új',
-  'needs_info' => 'Kiegészítésre vár',
-  'forwarded' => 'Továbbítva',
-  'waiting_reply' => 'Válaszra vár',
-  'in_progress' => 'Folyamatban',
-  'solved' => 'Megoldva',
-  'closed' => 'Lezárva',
+  'pending' => t('status.pending'),
+  'approved' => t('status.approved'),
+  'rejected' => t('status.rejected'),
+  'new' => t('status.new'),
+  'needs_info' => t('status.needs_info'),
+  'forwarded' => t('status.forwarded'),
+  'waiting_reply' => t('status.waiting_reply'),
+  'in_progress' => t('status.in_progress'),
+  'solved' => t('status.solved'),
+  'closed' => t('status.closed'),
 ];
 
 $catLabel = [
-  'road' => 'Úthiba / kátyú',
-  'sidewalk' => 'Járda / burkolat hiba',
-  'lighting' => 'Közvilágítás',
-  'trash' => 'Szemét / illegális',
-  'green' => 'Zöldterület / veszélyes fa',
-  'traffic' => 'Közlekedés / tábla',
-  'idea' => 'Ötlet / javaslat'
+  'road' => t('cat.road_desc'),
+  'sidewalk' => t('cat.sidewalk_desc'),
+  'lighting' => t('cat.lighting_desc'),
+  'trash' => t('cat.trash_desc'),
+  'green' => t('cat.green_desc'),
+  'traffic' => t('cat.traffic_desc'),
+  'idea' => t('cat.idea_desc'),
+  'civil_event' => t('cat.civil_event_desc'),
 ];
 
 $st = (string)$r['status'];
@@ -90,11 +95,11 @@ $osmUrl = "https://www.openstreetmap.org/?mlat=" . rawurlencode((string)$r['lat'
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
 ?><!doctype html>
-<html lang="hu">
+<html lang="<?= h($currentLang) ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Köz.Tér – <?= h($caseNo) ?></title>
+  <title><?= h(t('site.name')) ?> – <?= h($caseNo) ?></title>
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="page">
@@ -102,11 +107,11 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
       <span class="brand-logo" aria-hidden="true"></span>
-      <b>Köz.Tér</b>
+      <b><?= h(t('site.name')) ?></b>
     </a>
     <div class="topbar-links">
-      <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>
-      <a class="topbtn" href="<?= h(app_url('/leaderboard.php')) ?>">Toplista</a>
+      <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
+      <a class="topbtn" href="<?= h(app_url('/leaderboard.php')) ?>"><?= h(t('lb.title')) ?></a>
     </div>
   </div>
 </header>
@@ -116,74 +121,74 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
   <div class="card">
     <div class="top">
       <div>
-        <h1 class="h1">Ügykövetés – <?= h($caseNo) ?></h1>
+        <h1 class="h1"><?= h(t('case.tracking')) ?> – <?= h($caseNo) ?></h1>
         <div class="meta">
-          Bejelentés ID: <b>#<?= (int)$rid ?></b> • Kategória: <b><?= h($catHuman) ?></b><br>
-          Létrehozva: <b><?= h($r['created_at']) ?></b> • Frissítve: <b><?= h($updatedAt) ?></b>
+          <?= h(t('case.report_id')) ?>: <b>#<?= (int)$rid ?></b> • <?= h(t('case.category')) ?>: <b><?= h($catHuman) ?></b><br>
+          <?= h(t('case.created')) ?>: <b><?= h($r['created_at']) ?></b> • <?= h(t('case.updated')) ?>: <b><?= h($updatedAt) ?></b>
         </div>
       </div>
-      <div class="pill">Státusz: <b><?= h($stHuman) ?></b></div>
+      <div class="pill"><?= h(t('case.status')) ?>: <b><?= h($stHuman) ?></b></div>
     </div>
 
     <div class="grid cols-split" style="margin-top:12px">
       <div class="card" style="box-shadow:none">
-        <div style="font-weight:800; margin-bottom:6px">Leírás</div>
+        <div style="font-weight:800; margin-bottom:6px"><?= h(t('case.description')) ?></div>
         <div><?= nl2br(h($r['description'])) ?></div>
 
         <?php if (!empty($r['title'])): ?>
-          <div style="margin-top:10px" class="small"><b>Rövid cím:</b> <?= h($r['title']) ?></div>
+          <div style="margin-top:10px" class="small"><b><?= h(t('case.short_title')) ?>:</b> <?= h($r['title']) ?></div>
         <?php endif; ?>
       </div>
 
       <div class="card" style="box-shadow:none">
-        <div style="font-weight:800; margin-bottom:6px">Részletek</div>
+        <div style="font-weight:800; margin-bottom:6px"><?= h(t('case.details')) ?></div>
 
         <div class="kv">
-          <div class="k">Helyszín</div>
+          <div class="k"><?= h(t('case.location')) ?></div>
           <div class="v">
             <?= h($r['address_approx'] ?: '—') ?><br>
-            <a href="<?= h($osmUrl) ?>" target="_blank" rel="noopener">Megnyitás térképen</a>
+            <a href="<?= h($osmUrl) ?>" target="_blank" rel="noopener"><?= h(t('case.open_on_map')) ?></a>
           </div>
 
-          <div class="k">Beküldő</div>
+          <div class="k"><?= h(t('case.reporter')) ?></div>
           <div class="v">
             <?php
               $anon = (int)$r['reporter_is_anonymous'] === 1;
-              if ($anon) echo "Anonim";
+              if ($anon) echo h(t('case.anonymous'));
               else echo h($r['reporter_name'] ?: '—');
             ?>
           </div>
 
-          <div class="k">Értesítések</div>
+          <div class="k"><?= h(t('case.notifications')) ?></div>
           <div class="v">
-            <?= ((int)$r['notify_enabled'] === 1) ? 'Bekapcsolva' : 'Kikapcsolva' ?>
+            <?= ((int)$r['notify_enabled'] === 1) ? h(t('case.notif_on')) : h(t('case.notif_off')) ?>
           </div>
         </div>
 
         <div class="actions">
-          <a class="btn primary" href="<?= h(app_url('/')) ?>">Publikus térkép</a>
-          <a class="btn" href="<?= h($unsubscribeUrl) ?>">Leiratkozás az értesítésekről</a>
+          <a class="btn primary" href="<?= h(app_url('/')) ?>"><?= h(t('case.public_map')) ?></a>
+          <a class="btn" href="<?= h($unsubscribeUrl) ?>"><?= h(t('case.unsubscribe')) ?></a>
         </div>
 
         <div class="small" style="margin-top:10px">
-          Tipp: ha kiegészítésre kérünk, elég válaszolnod az e-mailre (fotóval is lehet).
+          <?= h(t('case.tip')) ?>
         </div>
       </div>
     </div>
   </div>
 
   <div class="card">
-    <div style="font-weight:800; margin-bottom:10px">Státusz-történet</div>
+    <div style="font-weight:800; margin-bottom:10px"><?= h(t('case.history')) ?></div>
 
     <?php if (empty($logs)): ?>
-      <div class="small">Még nincs státuszváltozás rögzítve.</div>
+      <div class="small"><?= h(t('case.no_history')) ?></div>
     <?php else: ?>
       <table>
         <thead>
           <tr>
-            <th>Időpont</th>
-            <th>Változás</th>
-            <th>Megjegyzés</th>
+            <th><?= h(t('case.time')) ?></th>
+            <th><?= h(t('case.change')) ?></th>
+            <th><?= h(t('case.note')) ?></th>
           </tr>
         </thead>
         <tbody>
