@@ -45,6 +45,9 @@ if ($isAdmin) {
 }
 
 $authorityIds = array_map(fn($a) => (int)$a['id'], $authorities);
+$authorityCities = array_values(array_filter(array_unique(array_map(function($a) {
+  return trim((string)($a['city'] ?? ''));
+}, $authorities))));
 
 $statusFilter = isset($_GET['status_filter']) ? trim((string)$_GET['status_filter']) : '';
 $allowedStatuses = ['pending','approved','rejected','new','needs_info','forwarded','waiting_reply','in_progress','solved','closed'];
@@ -73,7 +76,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $err = 'Bejelentés nem található.';
       } else {
         $aid = (int)($r['authority_id'] ?? 0);
-        if (!$isAdmin && (!$aid || !in_array($aid, $authorityIds, true))) {
+        $rCity = trim((string)($r['city'] ?? ''));
+        $allowed = $isAdmin
+          || in_array($aid, $authorityIds, true)
+          || ($aid <= 0 && $rCity !== '' && in_array($rCity, $authorityCities, true));
+        if (!$allowed) {
           $pdo->rollBack();
           $err = 'Nincs jogosultság.';
         } else {
@@ -90,6 +97,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
               ':note' => $note,
               ':by' => $isAdmin ? 'admin' : 'govuser'
             ]);
+          }
+          if (!$isAdmin && $aid <= 0 && count($authorityIds) > 0) {
+            $pdo->prepare("UPDATE reports SET authority_id = ? WHERE id = ?")->execute([$authorityIds[0], $id]);
           }
           $pdo->commit();
 
@@ -163,8 +173,19 @@ $stats = [
   'by_status' => [],
   'by_category' => [],
 ];
-$where = $isAdmin ? '1=1' : ('r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')');
-$params = $isAdmin ? [] : array_values($authorityIds);
+
+// Gov: hatósághoz tartozó VAGY városnév alapján (authority_id még nincs beállítva)
+$govWhere = 'r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')';
+$govParams = array_values($authorityIds);
+if (!empty($authorityCities)) {
+  $govWhere .= ' OR (r.authority_id IS NULL AND r.city IN (' . implode(',', array_fill(0, count($authorityCities), '?')) . '))';
+  $govParams = array_merge($govParams, $authorityCities);
+}
+$baseWhere = $isAdmin ? '1=1' : $govWhere;
+$baseParams = $isAdmin ? [] : $govParams;
+
+$where = $baseWhere;
+$params = $baseParams;
 if ($statusFilter !== '') {
   $where .= ' AND r.status = ?';
   $params[] = $statusFilter;
@@ -187,9 +208,7 @@ if ($isAdmin || $authorityIds) {
   $stmt->execute($listParams);
   $reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-  // Statisztika: csak a városhoz / hatósághoz tartozó bejelentések (szűrés nélkül)
-  $baseWhere = $isAdmin ? '1=1' : ('r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')');
-  $baseParams = $isAdmin ? [] : array_values($authorityIds);
+  // Statisztika: ugyanaz a szűrő (városhoz tartozó)
   try {
     $q0 = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $baseWhere");
     $q0->execute($baseParams);
@@ -231,6 +250,12 @@ $categoryLabels = [
   'green' => 'Zöld', 'traffic' => 'Közlekedés', 'idea' => 'Ötlet', 'civil_event' => 'Civil esemény',
 ];
 
+$statusOrder = ['new','approved','in_progress','solved','rejected','needs_info','forwarded','waiting_reply','closed','pending'];
+$statusColors = [ 'new'=>'#0d6efd', 'approved'=>'#198754', 'in_progress'=>'#ffc107', 'solved'=>'#20c997', 'rejected'=>'#dc3545', 'needs_info'=>'#6f42c1', 'forwarded'=>'#fd7e14', 'waiting_reply'=>'#0dcaf0', 'closed'=>'#6c757d', 'pending'=>'#adb5bd' ];
+$catColors = ['#e74c3c','#3498db','#f1c40f','#34495e','#27ae60','#9b59b6','#ff7a00','#0ea5e9'];
+$maxStatus = $stats['by_status'] ? max(1, ...array_values($stats['by_status'])) : 1;
+$maxCategory = $stats['by_category'] ? max(1, ...array_values($stats['by_category'])) : 1;
+
 function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 ?>
 <!doctype html>
@@ -248,7 +273,8 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
     </a>
     <div class="topbar-links">
       <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>
-      <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>">Saját ügyeim</a>
+      <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>">Beállítások</a>
+      <a class="topbtn primary" href="<?= h(app_url('/gov/index.php')) ?>">Közigazgatási</a>
       <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>">Kilépés</a>
     </div>
   </div>
@@ -289,25 +315,46 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
         <div class="gov-stats-grid">
           <div>
             <h4 class="gov-stats-sub">Státusz megoszlás</h4>
-            <ul class="gov-stats-list">
-              <?php foreach ($stats['by_status'] as $st => $cnt): ?>
-                <li><?= h($statusLabels[$st] ?? $st) ?>: <strong><?= (int)$cnt ?></strong></li>
-              <?php endforeach; ?>
-              <?php if (empty($stats['by_status'])): ?>
-                <li class="muted">Nincs adat</li>
+            <div class="gov-chart">
+              <?php
+              $statusItems = [];
+              foreach ($statusOrder as $st) {
+                if (!empty($stats['by_status'][$st])) {
+                  $statusItems[] = ['k' => $st, 'cnt' => (int)$stats['by_status'][$st], 'label' => $statusLabels[$st] ?? $st, 'color' => $statusColors[$st] ?? '#6c757d'];
+                }
+              }
+              if ($statusItems): ?>
+                <?php foreach ($statusItems as $x): ?>
+                <div class="gov-chart-bar">
+                  <span class="label"><?= h($x['label']) ?></span>
+                  <div class="bar-wrap"><div class="bar" style="width:<?= (int)round(100 * $x['cnt'] / $maxStatus) ?>%;background:<?= h($x['color']) ?>"></div></div>
+                  <span class="val"><?= $x['cnt'] ?></span>
+                </div>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <p class="muted small">Nincs adat.</p>
               <?php endif; ?>
-            </ul>
+            </div>
           </div>
           <div>
             <h4 class="gov-stats-sub">Kategória megoszlás</h4>
-            <ul class="gov-stats-list">
-              <?php foreach ($stats['by_category'] as $cat => $cnt): ?>
-                <li><?= h($categoryLabels[$cat] ?? $cat) ?>: <strong><?= (int)$cnt ?></strong></li>
-              <?php endforeach; ?>
-              <?php if (empty($stats['by_category'])): ?>
-                <li class="muted">Nincs adat</li>
+            <div class="gov-chart">
+              <?php
+              $catItems = $stats['by_category'];
+              arsort($catItems);
+              $i = 0;
+              if (!empty($catItems)): ?>
+                <?php foreach ($catItems as $cat => $cnt): $cnt = (int)$cnt; $color = $catColors[$i % count($catColors)]; $i++; ?>
+                <div class="gov-chart-bar">
+                  <span class="label"><?= h($categoryLabels[$cat] ?? $cat) ?></span>
+                  <div class="bar-wrap"><div class="bar" style="width:<?= (int)round(100 * $cnt / $maxCategory) ?>%;background:<?= h($color) ?>"></div></div>
+                  <span class="val"><?= $cnt ?></span>
+                </div>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <p class="muted small">Nincs adat.</p>
               <?php endif; ?>
-            </ul>
+            </div>
           </div>
         </div>
       </section>

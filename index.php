@@ -35,17 +35,23 @@ $rankAll = $uid ? get_user_rank('all', $uid) : null;
     </form>
 
     <div class="topbar-links">
-      <?php if ($uid > 0 && $rankAll): ?>
+      <?php if ($role === 'govuser'): ?>
+        <?php /* Gov user: csak térkép, beállítások, közigazgatási dashboard, kilépés – nincs barátok, saját ügyeim, toplista */ ?>
+        <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8'); ?>">Térkép</a>
+        <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/settings.php'), ENT_QUOTES, 'UTF-8'); ?>">Beállítások</a>
+        <a class="topbtn primary" href="<?php echo htmlspecialchars(app_url('/gov/index.php'), ENT_QUOTES, 'UTF-8'); ?>">Közigazgatási</a>
+        <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/logout.php'), ENT_QUOTES, 'UTF-8'); ?>">Kilépés</a>
+      <?php elseif ($uid > 0): ?>
+      <?php if ($rankAll): ?>
         <span class="topbtn">
           Helyezésem: <b>#<?= (int)$rankAll['rank'] ?></b> (<?= (int)$rankAll['points'] ?> XP)
         </span>
       <?php endif; ?>
       <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/leaderboard.php'), ENT_QUOTES, 'UTF-8'); ?>">Toplista</a>
-      <?php if ($uid > 0): ?>
         <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/my.php'), ENT_QUOTES, 'UTF-8'); ?>">Saját ügyeim</a>
         <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/friends.php'), ENT_QUOTES, 'UTF-8'); ?>">Barátok</a>
         <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/settings.php'), ENT_QUOTES, 'UTF-8'); ?>">Beállítások</a>
-        <?php if ($role === 'govuser' || $role === 'admin' || $role === 'superadmin'): ?>
+        <?php if ($role === 'admin' || $role === 'superadmin'): ?>
           <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/gov/index.php'), ENT_QUOTES, 'UTF-8'); ?>">Közigazgatási</a>
         <?php endif; ?>
         <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/logout.php'), ENT_QUOTES, 'UTF-8'); ?>">Kilépés</a>
