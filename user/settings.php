@@ -63,6 +63,25 @@ if (!$u) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  // Csak alapértelmezett nyelv és megjelenés mentése (dedikált gomb)
+  if (!empty($_POST['save_defaults'])) {
+    $pl = isset($_POST['preferred_lang']) && in_array($_POST['preferred_lang'], LANG_ALLOWED, true) ? $_POST['preferred_lang'] : null;
+    $pt = isset($_POST['preferred_theme']) && in_array($_POST['preferred_theme'], ['light', 'dark'], true) ? $_POST['preferred_theme'] : null;
+    try {
+      $stmt = db()->prepare("UPDATE users SET preferred_lang = :pl, preferred_theme = :pt WHERE id = :id LIMIT 1");
+      $stmt->execute([':pl' => $pl, ':pt' => $pt, ':id' => $uid]);
+      $_SESSION['settings_ok'] = true;
+      if ($pl) set_lang($pl);
+      $redirectUrl = app_url('/user/settings.php');
+      if ($pl) $redirectUrl .= (strpos($redirectUrl, '?') !== false ? '&' : '?') . 'lang=' . rawurlencode($pl);
+      header('Location: ' . $redirectUrl);
+      exit;
+    } catch (Throwable $e) {
+      $err = 'user.save_error';
+      if (function_exists('log_error')) log_error('settings save_defaults: ' . $e->getMessage());
+    }
+  }
+
   $name = safe_str($_POST['name'] ?? null, 80);
   $firstName = safe_str($_POST['first_name'] ?? null, 80);
   $lastName = safe_str($_POST['last_name'] ?? null, 80);
@@ -84,8 +103,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $marketingGreetings = !empty($_POST['marketing_greetings']) ? 1 : 0;
   $marketingOptOut = $consentMarketing ? ($marketingGreetings ? 0 : 1) : 1;
 
-  $preferredLang = isset($_POST['preferred_lang']) && in_array($_POST['preferred_lang'], LANG_ALLOWED, true) ? $_POST['preferred_lang'] : null;
-  $preferredTheme = isset($_POST['preferred_theme']) && in_array($_POST['preferred_theme'], ['light', 'dark'], true) ? $_POST['preferred_theme'] : null;
+  // Alapértelmezések csak a „save_defaults” űrlapból jönnek; fő űrlapnál megtartjuk a meglévőt
+  $preferredLang = isset($_POST['preferred_lang']) && in_array($_POST['preferred_lang'], LANG_ALLOWED, true) ? $_POST['preferred_lang'] : ($u['preferred_lang'] ?? null);
+  $preferredTheme = isset($_POST['preferred_theme']) && in_array($_POST['preferred_theme'], ['light', 'dark'], true) ? $_POST['preferred_theme'] : ($u['preferred_theme'] ?? null);
 
   if ($birthdate && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) {
     $birthdate = null;
@@ -205,7 +225,7 @@ $currentLang = current_lang();
       <span class="brand-logo" aria-hidden="true"></span>
       <b><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?></b>
     </a>
-    <div class="topbar-links">
+    <?php $currentLang = current_lang(); include __DIR__ . '/inc_topbar_tools.php'; ?>
       <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
       <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/my.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.my_reports'), ENT_QUOTES, 'UTF-8') ?></a>
       <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/profile.php?id=' . (int)$uid), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('user.profile'), ENT_QUOTES, 'UTF-8') ?></a>
@@ -239,7 +259,9 @@ $currentLang = current_lang();
     </div>
   </div>
 
-  <form method="post">
+  <!-- Alapértelmezett nyelv és megjelenés – saját mentés gombbal -->
+  <form method="post" style="margin-bottom:16px;padding:12px;background:var(--card-2);border-radius:12px;border:1px solid var(--border);">
+    <input type="hidden" name="save_defaults" value="1">
     <label><b><?= htmlspecialchars(t('user.preferred_lang'), ENT_QUOTES, 'UTF-8') ?></b></label>
     <select name="preferred_lang">
       <option value="">—</option>
@@ -253,6 +275,10 @@ $currentLang = current_lang();
       <option value="light"<?= ($u['preferred_theme'] ?? '') === 'light' ? ' selected' : '' ?>><?= htmlspecialchars(t('theme.light'), ENT_QUOTES, 'UTF-8') ?></option>
       <option value="dark"<?= ($u['preferred_theme'] ?? '') === 'dark' ? ' selected' : '' ?>><?= htmlspecialchars(t('theme.dark'), ENT_QUOTES, 'UTF-8') ?></option>
     </select>
+    <button type="submit" class="btn-primary" style="margin-top:10px"><?= htmlspecialchars(t('gov.save'), ENT_QUOTES, 'UTF-8') ?></button>
+  </form>
+
+  <form method="post">
     <div class="hr"></div>
     <label><b><?= htmlspecialchars(t('user.display_name'), ENT_QUOTES, 'UTF-8') ?></b></label>
     <input type="text" name="name" value="<?= htmlspecialchars($u['display_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(t('modal.name_placeholder'), ENT_QUOTES, 'UTF-8') ?>">
@@ -337,4 +363,5 @@ $currentLang = current_lang();
 <?php if ($ok): $pt = ($u['preferred_theme'] ?? null) === 'light' || ($u['preferred_theme'] ?? null) === 'dark' ? $u['preferred_theme'] : null; if ($pt): ?>
 <script>try{localStorage.setItem('civicai_theme','<?= $pt === 'light' ? 'light' : 'dark' ?>');document.documentElement.setAttribute('data-theme','<?= $pt ?>');document.documentElement.setAttribute('data-bs-theme','<?= $pt ?>');}catch(_){}</script>
 <?php endif; endif; ?>
+<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body></html>

@@ -198,6 +198,7 @@ return [
     'user.cancel' => 'Cancel',
     'user.settings' => 'Settings',
     'user.saved' => 'Saved.',
+    'user.save_error' => 'Save failed. (You may need to run sql/2026-12-user-preferences-lang-theme.sql)',
     'user.email' => 'Email',
     'user.data_consent_ok' => 'Data consent: accepted',
     'user.open_profile' => 'Open my profile',

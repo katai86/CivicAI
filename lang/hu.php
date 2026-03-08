@@ -204,6 +204,7 @@ return [
     'user.cancel' => 'Visszavonás',
     'user.settings' => 'Beállítások',
     'user.saved' => 'Mentve.',
+    'user.save_error' => 'Hiba a mentéskor. (Lehet, hogy a preferred_lang/preferred_theme oszlopok még hiányoznak – futtasd: sql/2026-12-user-preferences-lang-theme.sql)',
     'user.email' => 'E-mail',
     'user.data_consent_ok' => 'Adatkezelés: elfogadva',
     'user.open_profile' => 'Profilom megnyitása',

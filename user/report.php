@@ -79,9 +79,10 @@ $trackUrl = ((int)$r['notify_enabled'] === 1 && !empty($r['notify_token']))
   : null;
 
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+$currentLang = current_lang();
 
 ?><!doctype html>
-<html lang="hu">
+<html lang="<?= h($currentLang) ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -101,11 +102,11 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
       <span class="brand-logo" aria-hidden="true"></span>
       <b><?= h(t('site.name')) ?></b>
     </a>
-    <div class="topbar-links">
-      <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>
-      <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>">Saját ügyeim</a>
-      <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>">Beállítások</a>
-      <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>">Kilépés</a>
+    <?php include __DIR__ . '/inc_topbar_tools.php'; ?>
+      <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
+      <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>"><?= h(t('nav.my_reports')) ?></a>
+      <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>"><?= h(t('nav.settings')) ?></a>
+      <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>"><?= h(t('nav.logout')) ?></a>
     </div>
   </div>
 </header>
@@ -201,6 +202,6 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
 
 <script src="<?= h(app_url('/assets/user/report.js')) ?>"></script>
-
+<script src="<?= h(app_url('/assets/theme-lang.js')) ?>"></script>
 </body>
 </html>

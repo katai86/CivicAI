@@ -136,7 +136,7 @@ $catLabel = [
       <span class="brand-logo" aria-hidden="true"></span>
       <b><?= h(t('site.name')) ?></b>
     </a>
-    <div class="topbar-links">
+    <?php $currentLang = current_lang(); include __DIR__ . '/inc_topbar_tools.php'; ?>
       <a class="topbtn" href="<?php echo h(app_url('/')); ?>"><?= h(t('nav.map')) ?></a>
       <a class="topbtn" href="<?php echo h(app_url('/user/profile.php?id=' . (int)$userId)); ?>"><?= h(t('user.profile')) ?></a>
       <a class="topbtn" href="<?php echo h(app_url('/user/friends.php')); ?>"><?= h(t('nav.friends')) ?></a>
@@ -389,6 +389,6 @@ $catLabel = [
     </div>
   <?php endif; ?>
 </div>
-
+<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
 </html>

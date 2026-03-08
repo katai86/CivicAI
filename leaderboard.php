@@ -63,7 +63,7 @@ function avatar_url($filename){
       <span class="brand-logo" aria-hidden="true"></span>
       <b><?= h(t('site.name')) ?></b>
     </a>
-    <div class="topbar-links">
+    <?php include __DIR__ . '/user/inc_topbar_tools.php'; ?>
       <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
       <?php if ($uid > 0): ?>
         <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>"><?= h(t('nav.my_reports')) ?></a>
@@ -288,5 +288,6 @@ function avatar_url($filename){
     </div>
   </div>
 </div>
+<script src="<?= h(app_url('/assets/theme-lang.js')) ?>"></script>
 </body>
 </html>

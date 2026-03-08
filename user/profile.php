@@ -98,6 +98,7 @@ $categories = [
 ];
 $cat = isset($_GET['cat']) ? (string)$_GET['cat'] : 'road';
 if (!isset($categories[$cat])) $cat = 'road';
+$currentLang = current_lang();
 $lbCatWeek = get_category_leaderboard('week', $cat, 10);
 $lbCatMonth = get_category_leaderboard('month', $cat, 10);
 $lbCatAll = get_category_leaderboard('all', $cat, 10);
@@ -134,7 +135,7 @@ function avatar_url($filename){
 }
 ?>
 <!doctype html>
-<html lang="hu">
+<html lang="<?= h($currentLang) ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -175,19 +176,19 @@ function avatar_url($filename){
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
       <span class="brand-logo" aria-hidden="true"></span>
-      <b>CivicAI</b>
+      <b><?= h(t('site.name')) ?></b>
     </a>
-    <div class="topbar-links">
-      <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>
-      <a class="topbtn" href="<?= h(app_url('/leaderboard.php')) ?>">Toplista</a>
+    <?php include __DIR__ . '/inc_topbar_tools.php'; ?>
+      <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
+      <a class="topbtn" href="<?= h(app_url('/leaderboard.php')) ?>"><?= h(t('nav.leaderboard')) ?></a>
       <?php if (current_user_id()): ?>
-        <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>">Saját ügyeim</a>
-        <a class="topbtn" href="<?= h(app_url('/user/friends.php')) ?>">Barátok</a>
-        <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>">Beállítások</a>
-        <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>">Kilépés</a>
+        <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>"><?= h(t('nav.my_reports')) ?></a>
+        <a class="topbtn" href="<?= h(app_url('/user/friends.php')) ?>"><?= h(t('nav.friends')) ?></a>
+        <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>"><?= h(t('nav.settings')) ?></a>
+        <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>"><?= h(t('nav.logout')) ?></a>
       <?php else: ?>
-        <a class="topbtn" href="<?= h(app_url('/user/login.php')) ?>">Belépés</a>
-        <a class="topbtn primary" href="<?= h(app_url('/user/register.php')) ?>">Regisztráció</a>
+        <a class="topbtn" href="<?= h(app_url('/user/login.php')) ?>"><?= h(t('nav.login')) ?></a>
+        <a class="topbtn primary" href="<?= h(app_url('/user/register.php')) ?>"><?= h(t('nav.register')) ?></a>
       <?php endif; ?>
     </div>
   </div>
@@ -459,5 +460,6 @@ function avatar_url($filename){
     </div>
   </div>
 </div>
+<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
 </html>

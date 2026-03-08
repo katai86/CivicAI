@@ -102,7 +102,7 @@ $currentLang = current_lang();
       <span class="brand-logo" aria-hidden="true"></span>
       <b><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?></b>
     </a>
-    <div class="topbar-links">
+    <?php include __DIR__ . '/inc_topbar_tools.php'; ?>
       <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
       <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/login.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.login'), ENT_QUOTES, 'UTF-8') ?></a>
     </div>
@@ -159,4 +159,5 @@ $currentLang = current_lang();
   <div style="margin-top:10px"><a href="<?= htmlspecialchars(app_url('/user/login.php')) ?>"><?= htmlspecialchars(t('auth.register_link'), ENT_QUOTES, 'UTF-8') ?></a></div>
 </div>
 </div>
+<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body></html>

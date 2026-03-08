@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function(){
       <span class="brand-logo" aria-hidden="true"></span>
       <b><?= h(t('site.name')) ?></b>
     </a>
-    <div class="topbar-links">
+    <?php include __DIR__ . '/inc_topbar_tools.php'; ?>
       <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
       <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>"><?= h(t('nav.my_reports')) ?></a>
       <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>"><?= h(t('nav.settings')) ?></a>
@@ -202,4 +202,5 @@ document.addEventListener('DOMContentLoaded', function(){
     <?php endif; ?>
   </div>
 </div>
+<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body></html>
