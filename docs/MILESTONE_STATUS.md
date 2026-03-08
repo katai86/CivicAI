@@ -4,6 +4,25 @@ Utolsó átnézés: a Phase 1–5 és a docs alapján összeállított állapot.
 
 ---
 
+## Mindegyik milestone kész van-e? (M1–M10)
+
+| Milestone | Doc | Kódbázis / deliverable | Állapot |
+|-----------|-----|------------------------|---------|
+| **M1** Audit & product map | MILESTONE_1_AUDIT_AND_PRODUCT_MAP.md | API-k, user flows, SOURCE_OF_TRUTH – megegyezik | Kész |
+| **M2** Architektúra | MILESTONE_2_ARCHITECTURE.md | Auth, admin, util, migráció sorrend | Kész |
+| **M3** Adatmodell, migrációk | MILESTONE_3_DATA_MODEL_AND_MIGRATIONS.md | 00_baseline_schema.md, 00_README_MIGRATIONS.md, 2026-03…2026-11 | Kész |
+| **M4** User flows | MILESTONE_4_USER_FLOWS.md | Regisztráció, report_create, gov, admin flow – implementálva | Kész |
+| **M5** Podim demo flow | MILESTONE_5_PODIM_DEMO_FLOW.md | demo_seed.sql, sikeres küldés, státuszváltás, find_authority | Kész |
+| **M6** UI/UX prioritások | MILESTONE_6_UI_UX_PRIORITIES.md | Jelmagyarázat, light theme, buborék, keresés, modal, üres állapotok | Kész |
+| **M7** FixMyStreet/Open311 | MILESTONE_7_FIXMYSTREET_OPEN311_EXPLAINED.md | open311/v2 (discovery, services, requests), fms_bridge (export, sync), api-docs.php | Kész |
+| **M8** AI réteg roadmap | MILESTONE_8_AI_LAYER_ROADMAP.md | suggest_category, reports_nearby 200 m, admin_stats, find_authority – quick wins megvannak | Kész |
+| **M9** Feature prioritization | MILESTONE_9_FEATURE_PRIORITIZATION.md | KEEP/LATER/CUT terv; core (térkép, reg, státusz, XP, Open311, civil/facility) megvan | Kész |
+| **M10** Fejlesztési terv | MILESTONE_10_DEVELOPMENT_PLAN.md | Phase 1–5 kötelező + quick win feladatok implementálva (lásd alább) | Kész |
+
+**Összegzés:** Mind a 10 milestone dokumentálva van, és a terv szerinti implementáció (Phase 1–5) **kész**. Nincs olyan kötelező feladat, ami hiányzik.
+
+---
+
 ## PHASE 1 – Demo stabilizálás
 
 | Feladat | Állapot | Megjegyzés |

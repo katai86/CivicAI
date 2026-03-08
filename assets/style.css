@@ -68,6 +68,32 @@
 [data-theme="light"] .search-results{background:#fff;border-color:var(--border)}
 [data-theme="light"] .lang-menu{background:#fff;border-color:var(--border)}
 [data-theme="light"] .legend-badge{border-color:rgba(0,0,0,0.12)}
+/* Light: minden input, search, modal, topbar, page – konzisztens világos mezők */
+[data-theme="light"] input,[data-theme="light"] select,[data-theme="light"] textarea{
+  background:#fff!important;border-color:var(--border)!important;color:var(--text)!important;
+}
+[data-theme="light"] input::placeholder,[data-theme="light"] textarea::placeholder{color:var(--muted)!important}
+[data-theme="light"] .modal input,[data-theme="light"] .modal textarea,[data-theme="light"] .modal select{
+  background:#fff!important;border-color:var(--border)!important;color:var(--text)!important;
+}
+[data-theme="light"] .modal input::placeholder,[data-theme="light"] .modal textarea::placeholder{color:var(--muted)!important}
+[data-theme="light"] .topbar-search input{
+  background:#fff!important;border-color:var(--border)!important;color:var(--text)!important;
+}
+[data-theme="light"] .topbar-search input::placeholder{color:var(--muted)!important}
+[data-theme="light"] .topbar-search button{background:#fff!important;border-color:var(--border)!important;color:var(--text)!important}
+[data-theme="light"] .search-result:hover{background:var(--bg-2)}
+[data-theme="light"] .page input,[data-theme="light"] .page select,[data-theme="light"] .page textarea{
+  background:#fff!important;border-color:var(--border)!important;color:var(--text)!important;
+}
+[data-theme="light"] .page input::placeholder,[data-theme="light"] .page textarea::placeholder{color:var(--muted)!important}
+[data-theme="light"] .page button{background:#fff!important;border-color:var(--border)!important;color:var(--text)!important}
+[data-theme="light"] .modal-x{background:#fff;border-color:var(--border);color:var(--text)}
+[data-theme="light"] .btn-ghost,[data-theme="light"] .btn-soft{background:var(--bg-2);border-color:var(--border);color:var(--text)}
+[data-theme="light"] .icon-search{filter:invert(0) brightness(0.75)}
+/* Fájlfeltöltés gomb és kapcsolódó szöveg light módban */
+[data-theme="light"] input[type="file"]{color:var(--text)}
+[data-theme="light"] .modal-file+*,[data-theme="light"] .modal label+input[type="file"]~*{color:var(--text)}
 
 *{box-sizing:border-box}
 html,body{height:100%}

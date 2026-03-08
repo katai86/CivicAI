@@ -11,8 +11,17 @@ if ($uid <= 0) {
 }
 $role = current_user_role() ?: '';
 
+// URL-ből nyelv beállítása (pl. mentés után redirect ?lang=hu)
+if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
+  set_lang($_GET['lang']);
+}
+
 $err = null;
 $ok  = null;
+if (isset($_SESSION['settings_ok']) && $_SESSION['settings_ok']) {
+  $ok = 'user.saved';
+  unset($_SESSION['settings_ok']);
+}
 
 // aktuális adatok
 try {
@@ -124,6 +133,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       ':pl' => $preferredLang,
       ':pt' => $preferredTheme
     ]);
+    // Mentés után redirect: a legördülők a mentett értéket mutatják, az oldal az új nyelv/téma szerint tölt
+    $_SESSION['settings_ok'] = true;
+    if ($preferredLang) {
+      set_lang($preferredLang);
+    }
+    $redirectUrl = app_url('/user/settings.php');
+    if ($preferredLang) {
+      $redirectUrl .= (strpos($redirectUrl, '?') !== false ? '&' : '?') . 'lang=' . rawurlencode($preferredLang);
+    }
+    header('Location: ' . $redirectUrl);
+    exit;
   } catch (Throwable $e) {
     $stmt = db()->prepare("
       UPDATE users
@@ -140,6 +160,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       ':as' => $addrStreet, ':ah' => $addrHouse, ':mgo' => $marketingOptOut,
       ':cs' => $consentShare, ':cm' => $consentMarketing, ':id' => $uid, ':pp' => $profilePublic
     ]);
+    $u['preferred_lang'] = $preferredLang;
+    $u['preferred_theme'] = $preferredTheme;
   }
   if ($preferredLang !== null) {
     set_lang($preferredLang);
@@ -173,7 +195,7 @@ $currentLang = current_lang();
 <html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?> – <?= htmlspecialchars(t('user.settings'), ENT_QUOTES, 'UTF-8') ?></title>
-<script>try{var t=localStorage.getItem('civicai_theme');var u=<?= json_encode(($u['preferred_theme'] ?? null) === 'light' || ($u['preferred_theme'] ?? null) === 'dark' ? $u['preferred_theme'] : null, JSON_UNESCAPED_UNICODE) ?>;if(u&&!t)localStorage.setItem('civicai_theme',u);t=localStorage.getItem('civicai_theme');document.documentElement.setAttribute('data-theme',(t==='light'||t==='dark')?t:'dark');document.documentElement.setAttribute('data-bs-theme',(t==='light'||t==='dark')?t:'dark');}catch(_){}</script>
+<script>try{var t=localStorage.getItem('civicai_theme');var u=<?= json_encode(($u['preferred_theme'] ?? null) === 'light' || ($u['preferred_theme'] ?? null) === 'dark' ? $u['preferred_theme'] : null, JSON_UNESCAPED_UNICODE) ?>;if(u){localStorage.setItem('civicai_theme',u);t=u;}t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){}</script>
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
 <body class="page">
@@ -312,4 +334,7 @@ $currentLang = current_lang();
   </div>
 </div>
 </div>
+<?php if ($ok): $pt = ($u['preferred_theme'] ?? null) === 'light' || ($u['preferred_theme'] ?? null) === 'dark' ? $u['preferred_theme'] : null; if ($pt): ?>
+<script>try{localStorage.setItem('civicai_theme','<?= $pt === 'light' ? 'light' : 'dark' ?>');document.documentElement.setAttribute('data-theme','<?= $pt ?>');document.documentElement.setAttribute('data-bs-theme','<?= $pt ?>');}catch(_){}</script>
+<?php endif; endif; ?>
 </body></html>

@@ -40,7 +40,7 @@ $LANG_JS = lang_array_for_js();
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title><?php echo htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8'); ?></title>
-  <script>try{var t=localStorage.getItem('civicai_theme');<?php if ($userPreferredTheme): ?>if(!t)localStorage.setItem('civicai_theme',<?= json_encode($userPreferredTheme, JSON_UNESCAPED_UNICODE) ?>);t=localStorage.getItem('civicai_theme');<?php endif; ?>document.documentElement.setAttribute('data-theme',(t==='light'||t==='dark')?t:'dark');}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
+  <script>try{var t=localStorage.getItem('civicai_theme');<?php if ($userPreferredTheme): ?>if(!t)localStorage.setItem('civicai_theme',<?= json_encode($userPreferredTheme, JSON_UNESCAPED_UNICODE) ?>);t=localStorage.getItem('civicai_theme');<?php endif; ?>t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');document.documentElement.setAttribute('data-bs-theme','dark');}</script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>

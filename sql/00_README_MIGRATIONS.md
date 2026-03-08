@@ -12,6 +12,7 @@
 7. **2026-09-users-role-enum.sql** – role ENUM bővítés (civiluser, communityuser, govuser).
 8. **2026-10-authorities-new-columns.sql** – opcionális; contact_email, is_active stb. (ha régi schema van: email, active).
 9. **2026-11-authority-users-only.sql** – Ha a „Hatósági felhasználó hozzárendelés” 503-at dob (authority_users tábla hiányzik), futtasd ezt: `CREATE TABLE IF NOT EXISTS authority_users`.
+10. **2026-12-user-preferences-lang-theme.sql** – users.preferred_lang, users.preferred_theme (Beállítások alapértelmezett nyelv és stílus mentéséhez).
 
 **Demo adatok (opcionális):** **demo_seed.sql** – 2 bejelentés, 1 civil esemény, 1 facility. Csak demo/teszt DB-n futtasd; a users táblában legyen legalább id=1.
 
