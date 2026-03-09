@@ -15,7 +15,7 @@ if ($limit < 100 || $limit > 5000) $limit = 2000;
 
 $sql = "
   SELECT l.id, l.layer_key, l.name, l.category, l.is_active, l.is_temporary,
-         l.visible_from, l.visible_to
+         l.visible_from, l.visible_to, l.layer_type
   FROM map_layers l
   WHERE l.is_active = 1
     AND (l.visible_from IS NULL OR l.visible_from <= CURDATE())
@@ -27,7 +27,17 @@ $layers = [];
 try {
   $layers = db()->query($sql)->fetchAll() ?: [];
 } catch (Throwable $e) {
-  json_response(['ok'=>true,'data'=>[]]);
+  $sql = "
+    SELECT l.id, l.layer_key, l.name, l.category, l.is_active, l.is_temporary,
+           l.visible_from, l.visible_to
+    FROM map_layers l
+    WHERE l.is_active = 1
+      AND (l.visible_from IS NULL OR l.visible_from <= CURDATE())
+      AND (l.visible_to IS NULL OR l.visible_to >= CURDATE())
+    ORDER BY l.id DESC
+  ";
+  $layers = db()->query($sql)->fetchAll() ?: [];
+  foreach ($layers as &$l) { $l['layer_type'] = null; }
 }
 
 if (!$layers) {

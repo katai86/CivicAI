@@ -193,12 +193,16 @@ $LANG_JS = lang_array_for_js();
                   <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
                     <input id="layerKey" class="form-control form-control-sm" placeholder="Layer kulcs (pl. election)">
                     <input id="layerName" class="form-control form-control-sm" placeholder="Név (pl. Szavazóhelyiségek)">
+                    <select id="layerAuthority" class="form-select form-select-sm" title="Hatóság (opcionális)">
+                      <option value="">— Nincs —</option>
+                    </select>
                     <select id="layerCategory" class="form-select form-select-sm">
                       <option value="election">Választás</option>
                       <option value="public">Közszolgáltató</option>
                       <option value="tourism">Turisztika</option>
-                      <option value="trees">Faültetés</option>
+                      <option value="trees">Fák (fakataszter)</option>
                     </select>
+                    <span id="layerTreesHint" class="small text-info ms-2" style="display:none">Fakataszter – a térképen a fa réteg láthatóságát kapcsolja.</span>
                     <label class="form-check form-check-inline">
                       <input type="checkbox" class="form-check-input" id="layerActive" checked>
                       <span class="form-check-label">Aktív</span>

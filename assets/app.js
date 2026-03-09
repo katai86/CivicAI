@@ -605,12 +605,11 @@ async function loadLayerMarkers(){
     const data = j.data || {};
     const layers = data.layers || [];
     const points = data.points || [];
-    if (!layers.length || !points.length) return;
 
     const layerById = new Map(layers.map(l => [Number(l.id), l]));
     for (const p of points){
       const layer = layerById.get(Number(p.layer_id));
-      if (!layer) continue;
+      if (!layer || (layer.layer_type === 'trees')) continue;
       const mk = L.marker([p.lat, p.lng], { icon: layerIcon(layer.category) })
         .addTo(map)
         .bindPopup(
@@ -619,6 +618,13 @@ async function loadLayerMarkers(){
           `${p.address ? `<small>${esc(p.address)}</small><br>` : ''}`
         );
       layerMarkers.push(mk);
+    }
+
+    const treesLayerActive = layers.some(l => (l.layer_key === 'trees' || l.layer_type === 'trees') && Number(l.is_active) === 1);
+    if (treesLayerActive) {
+      await loadTrees();
+    } else {
+      clearTreeMarkers();
     }
   }catch(e){
     console.warn('layer load failed', e);
@@ -688,7 +694,6 @@ map.on('moveend zoomend', () => {
 loadLayerMarkers().catch(err => console.error(err));
 loadFacilities().catch(err => console.error(err));
 loadCivilEvents().catch(err => console.error(err));
-loadTrees().catch(err => console.error(err));
 
 // ====== Tree layer filter (legend) ======
 (function initTreeLayerFilter(){

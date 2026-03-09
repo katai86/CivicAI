@@ -81,6 +81,11 @@ CREATE TABLE IF NOT EXISTS map_layer_points (
 );
 CALL add_index_if_not_exists('map_layer_points', 'idx_layer_points_layer', '(layer_id)');
 
+-- ========== 2026-17 Layers + hatóság + fakataszter (M2) ==========
+CALL add_column_if_not_exists('map_layers', 'authority_id', 'INT NULL');
+CALL add_column_if_not_exists('map_layers', 'layer_type', 'VARCHAR(32) NULL');
+INSERT IGNORE INTO map_layers (layer_key, name, category, is_active, is_temporary, layer_type) VALUES ('trees', 'Fák (fakataszter)', 'trees', 1, 0, 'trees');
+
 -- ========== 2026-04 FMS bridge ==========
 CREATE TABLE IF NOT EXISTS fms_reports (
   id INT AUTO_INCREMENT PRIMARY KEY,

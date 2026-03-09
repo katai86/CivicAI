@@ -15,15 +15,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       json_response(['ok'=>true,'data'=>$rows]);
     }
 
-    $sql = "
-      SELECT l.id, l.layer_key, l.name, l.category, l.is_active, l.is_temporary,
-             l.visible_from, l.visible_to, COUNT(p.id) AS point_count
-      FROM map_layers l
-      LEFT JOIN map_layer_points p ON p.layer_id = l.id
-      GROUP BY l.id
-      ORDER BY l.id DESC
-    ";
-    $rows = db()->query($sql)->fetchAll() ?: [];
+    try {
+      $sql = "
+        SELECT l.id, l.layer_key, l.name, l.category, l.is_active, l.is_temporary,
+               l.visible_from, l.visible_to, l.authority_id, l.layer_type,
+               a.name AS authority_name, a.city AS authority_city,
+               COALESCE(c.cnt, 0) AS point_count
+        FROM map_layers l
+        LEFT JOIN (SELECT layer_id, COUNT(*) AS cnt FROM map_layer_points GROUP BY layer_id) c ON c.layer_id = l.id
+        LEFT JOIN authorities a ON a.id = l.authority_id
+        ORDER BY l.id DESC
+      ";
+      $rows = db()->query($sql)->fetchAll() ?: [];
+    } catch (Throwable $e) {
+      $sql = "
+        SELECT l.id, l.layer_key, l.name, l.category, l.is_active, l.is_temporary,
+               l.visible_from, l.visible_to, COUNT(p.id) AS point_count
+        FROM map_layers l
+        LEFT JOIN map_layer_points p ON p.layer_id = l.id
+        GROUP BY l.id
+        ORDER BY l.id DESC
+      ";
+      $rows = db()->query($sql)->fetchAll() ?: [];
+      foreach ($rows as &$r) { $r['authority_id'] = null; $r['layer_type'] = null; $r['authority_name'] = null; $r['authority_city'] = null; }
+    }
     if (!$withPoints) {
       json_response(['ok'=>true,'data'=>$rows]);
     }
@@ -57,17 +72,29 @@ if ($action === 'create_layer') {
   $isTemp = !empty($body['is_temporary']) ? 1 : 0;
   $from = safe_str($body['visible_from'] ?? null, 10);
   $to = safe_str($body['visible_to'] ?? null, 10);
-  if (!$key || !$name || !$category) json_response(['ok'=>false,'error'=>'Missing fields'], 400);
+  $authorityId = isset($body['authority_id']) ? (int)$body['authority_id'] : null;
+  $layerType = safe_str($body['layer_type'] ?? null, 32);
+  if (!$category) json_response(['ok'=>false,'error'=>'Missing category'], 400);
+  if ($category === 'trees') {
+    $key = 'trees';
+    $name = $name ?: 'Fák (fakataszter)';
+    $layerType = 'trees';
+  }
+  if (!$key || !$name) json_response(['ok'=>false,'error'=>'Missing fields'], 400);
   if (!preg_match('/^[a-z0-9_\\-]+$/i', $key)) json_response(['ok'=>false,'error'=>'Invalid key'], 400);
+  if ($authorityId !== null && $authorityId <= 0) $authorityId = null;
   try {
-    db()->prepare("
-      INSERT INTO map_layers (layer_key, name, category, is_active, is_temporary, visible_from, visible_to)
-      VALUES (:k,:n,:c,:a,:t,:f,:to)
-    ")->execute([
-      ':k'=>$key,':n'=>$name,':c'=>$category,':a'=>$isActive,':t'=>$isTemp,':f'=>$from ?: null,':to'=>$to ?: null
+    $stmt = db()->prepare("
+      INSERT INTO map_layers (layer_key, name, category, is_active, is_temporary, visible_from, visible_to, authority_id, layer_type)
+      VALUES (:k,:n,:c,:a,:t,:f,:to,:aid,:ltype)
+    ");
+    $stmt->execute([
+      ':k'=>$key,':n'=>$name,':c'=>$category,':a'=>$isActive,':t'=>$isTemp,':f'=>$from ?: null,':to'=>$to ?: null,
+      ':aid'=>$authorityId,':ltype'=>$layerType ?: null
     ]);
     json_response(['ok'=>true]);
   } catch (Throwable $e) {
+    if (strpos($e->getMessage(), 'Duplicate') !== false) json_response(['ok'=>false,'error'=>'A layer kulcs már létezik.'], 400);
     json_response(['ok'=>false,'error'=>'Layer táblák hiányoznak. Futtasd az SQL-t.'], 500);
   }
 }
@@ -81,17 +108,31 @@ if ($action === 'update_layer') {
   $isTemp = !empty($body['is_temporary']) ? 1 : 0;
   $from = safe_str($body['visible_from'] ?? null, 10);
   $to = safe_str($body['visible_to'] ?? null, 10);
+  $authorityId = isset($body['authority_id']) ? (int)$body['authority_id'] : null;
+  if ($authorityId !== null && $authorityId <= 0) $authorityId = null;
   try {
-    db()->prepare("
+    $pdo = db();
+    $pdo->prepare("
       UPDATE map_layers
-      SET name=:n, category=:c, is_active=:a, is_temporary=:t, visible_from=:f, visible_to=:to
+      SET name=:n, category=:c, is_active=:a, is_temporary=:t, visible_from=:f, visible_to=:to, authority_id=:aid
       WHERE id=:id
     ")->execute([
-      ':n'=>$name,':c'=>$category,':a'=>$isActive,':t'=>$isTemp,':f'=>$from ?: null,':to'=>$to ?: null,':id'=>$id
+      ':n'=>$name,':c'=>$category,':a'=>$isActive,':t'=>$isTemp,':f'=>$from ?: null,':to'=>$to ?: null,':aid'=>$authorityId,':id'=>$id
     ]);
     json_response(['ok'=>true]);
   } catch (Throwable $e) {
-    json_response(['ok'=>false,'error'=>'Layer táblák hiányoznak. Futtasd az SQL-t.'], 500);
+    if (strpos($e->getMessage(), 'Unknown column') !== false) {
+      db()->prepare("
+        UPDATE map_layers
+        SET name=:n, category=:c, is_active=:a, is_temporary=:t, visible_from=:f, visible_to=:to
+        WHERE id=:id
+      ")->execute([
+        ':n'=>$name,':c'=>$category,':a'=>$isActive,':t'=>$isTemp,':f'=>$from ?: null,':to'=>$to ?: null,':id'=>$id
+      ]);
+      json_response(['ok'=>true]);
+    } else {
+      json_response(['ok'=>false,'error'=>'Layer táblák hiányoznak. Futtasd az SQL-t.'], 500);
+    }
   }
 }
 
@@ -128,6 +169,14 @@ if ($action === 'create_point') {
   $meta = $body['meta_json'] ?? null;
 
   if ($layerId <= 0) json_response(['ok'=>false,'error'=>'Missing fields'], 400);
+  try {
+    $layerRow = db()->prepare("SELECT layer_type FROM map_layers WHERE id = :id LIMIT 1");
+    $layerRow->execute([':id' => $layerId]);
+    $layer = $layerRow->fetch(PDO::FETCH_ASSOC);
+    if ($layer && (string)($layer['layer_type'] ?? '') === 'trees') {
+      json_response(['ok'=>false,'error'=>'A fakataszter (trees) layerhez nem adhatsz pontot; a fák a Fa felvitelből jönnek.'], 400);
+    }
+  } catch (Throwable $e) { /* no layer_type column */ }
 
   if (!is_numeric($lat) || !is_numeric($lng)) {
     if ($address) {

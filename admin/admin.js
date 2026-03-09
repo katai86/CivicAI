@@ -665,6 +665,25 @@ async function loadUsers(){
   }
 }
 
+async function loadLayerAuthorityOptions(){
+  const sel = document.getElementById('layerAuthority');
+  if (!sel) return;
+  try {
+    const j = await fetchJson(API_AUTHORITIES);
+    const authorities = j.authorities || [];
+    const first = sel.querySelector('option');
+    sel.innerHTML = first ? first.outerHTML : '<option value="">— Nincs —</option>';
+    authorities.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = esc(a.name || a.city || `#${a.id}`);
+      sel.appendChild(opt);
+    });
+  } catch (e) {
+    console.warn('Hatóság lista betöltése (layerekhez):', e);
+  }
+}
+
 async function loadLayers(){
   const list = document.getElementById('layerList');
   list.textContent = t('admin.load') + '...';
@@ -674,17 +693,21 @@ async function loadLayers(){
     if (!rows.length){
       list.innerHTML = '<div class="text-secondary">Nincs layer.</div>';
     } else {
-      list.innerHTML = rows.map(l => `
-        <div class="admin-item" data-layer="${l.id}">
+      list.innerHTML = rows.map(l => {
+        const isTrees = (l.layer_key === 'trees' || l.layer_type === 'trees');
+        const authLine = (l.authority_name || l.authority_city) ? ` • ${esc(l.authority_name || l.authority_city)}` : '';
+        return `
+        <div class="admin-item" data-layer="${l.id}" data-layer-type="${esc(l.layer_type || '')}">
           <div><b>${esc(l.name)}</b> <span class="meta">(${esc(l.layer_key)})</span></div>
-          <div class="meta">${esc(l.category)} • pontok: ${l.point_count || 0}</div>
+          <div class="meta">${esc(l.category)}${authLine}${isTrees ? ' • Fakataszter (billenő = fa réteg ki/be)' : ' • pontok: ' + (l.point_count || 0)}</div>
           <div class="actions">
             <label class="check"><input type="checkbox" class="layer-active" ${Number(l.is_active) ? 'checked' : ''}> Aktív</label>
-            <button class="soft layer-points">Pontok</button>
+            ${isTrees ? '' : '<button class="soft layer-points">Pontok</button>'}
             <button class="del layer-delete">Törlés</button>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
 
     const sel = document.getElementById('pointLayerSelect');
@@ -915,6 +938,7 @@ function initTabs(){
       if (key === 'users') loadUsers();
       if (key === 'layers') {
         clearMarkers();
+        loadLayerAuthorityOptions();
         loadLayers();
         loadLayerMarkers();
       }
@@ -944,25 +968,42 @@ document.getElementById('userSearch')?.addEventListener('input', () => loadUsers
 document.getElementById('userRoleFilter')?.addEventListener('change', () => loadUsers());
 document.getElementById('userActiveFilter')?.addEventListener('change', () => loadUsers());
 
+document.getElementById('layerCategory')?.addEventListener('change', () => {
+  const cat = document.getElementById('layerCategory').value;
+  const keyInput = document.getElementById('layerKey');
+  const hint = document.getElementById('layerTreesHint');
+  if (cat === 'trees') {
+    if (keyInput) { keyInput.value = 'trees'; keyInput.readOnly = true; keyInput.placeholder = 'trees (fix)'; }
+    if (hint) hint.style.display = 'inline';
+  } else {
+    if (keyInput) { keyInput.readOnly = false; keyInput.placeholder = 'Layer kulcs (pl. election)'; }
+    if (hint) hint.style.display = 'none';
+  }
+});
+
 document.getElementById('createLayer')?.addEventListener('click', async () => {
+  const cat = document.getElementById('layerCategory').value;
+  const keyInput = document.getElementById('layerKey');
+  const key = (cat === 'trees') ? 'trees' : (keyInput.value.trim() || '');
   const body = {
     action:'create_layer',
-    layer_key: document.getElementById('layerKey').value.trim(),
-    name: document.getElementById('layerName').value.trim(),
-    category: document.getElementById('layerCategory').value,
+    layer_key: key,
+    name: document.getElementById('layerName').value.trim() || (cat === 'trees' ? 'Fák (fakataszter)' : ''),
+    category: cat,
     is_active: document.getElementById('layerActive').checked ? 1 : 0,
     is_temporary: document.getElementById('layerTemporary').checked ? 1 : 0,
     visible_from: document.getElementById('layerFrom').value || null,
-    visible_to: document.getElementById('layerTo').value || null
+    visible_to: document.getElementById('layerTo').value || null,
+    authority_id: document.getElementById('layerAuthority')?.value ? Number(document.getElementById('layerAuthority').value) : null
   };
   try{
     await fetchJson(API_LAYERS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    document.getElementById('layerKey').value = '';
+    keyInput.value = '';
     document.getElementById('layerName').value = '';
     await loadLayers();
     await loadLayerMarkers();
   }catch(e){
-    alert('Layer mentés hiba: ' + e.message);
+    alert('Layer mentés hiba: ' + (e.message || e));
   }
 });
 
