@@ -55,8 +55,8 @@ if ($statusFilter !== '' && !in_array($statusFilter, $allowedStatuses, true)) {
   $statusFilter = '';
 }
 
-// Gov user: nem láthatja a bejelentések listáját, nem változtathat státuszt – csak statisztika
-$showReportList = $isAdmin;
+// Gov user: ha van hatósága, láthatja a bejelentések listáját és Export FMS-t; admin mindig
+$showReportList = $isAdmin || !empty($authorityIds);
 
 // Status update (csak adminnak van UI hozzá, de a backend ellenőrzi jogosultságot)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'set_status') {
@@ -508,6 +508,15 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
         </div>
       </section>
 
+      <section class="gov-integrations" style="margin-top:20px;padding:16px;background:var(--card-2);border-radius:12px;">
+        <h3 style="margin:0 0 10px 0; font-size:1rem"><?= h(t('gov.integration_status')) ?></h3>
+        <ul class="muted" style="margin:0; list-style:none; padding:0;">
+          <li><?= fms_enabled() ? ('<span style="color:var(--success)">✓</span> ' . h(t('gov.fms_configured'))) : ('<span style="color:var(--muted)">—</span> ' . h(t('gov.fms_not_configured'))) ?></li>
+          <li><?= ai_configured() ? ('<span style="color:var(--success)">✓</span> ' . h(t('gov.ai_configured'))) : ('<span style="color:var(--muted)">—</span> ' . h(t('gov.ai_not_configured'))) ?></li>
+        </ul>
+        <p class="muted small" style="margin:10px 0 0 0"><?= h(t('gov.config_note')) ?></p>
+      </section>
+
       <?php if ($showReportList): ?>
       <h3 style="margin:24px 0 12px 0; font-size:1rem"><?= h(t('gov.reports_list')) ?></h3>
       <form method="get" class="gov-filter-row" style="margin-bottom:12px">
@@ -539,6 +548,9 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
               </select>
               <input type="text" name="note" class="input" placeholder="<?= h(t('gov.note_placeholder')) ?>">
               <button class="btn" type="submit"><?= h(t('gov.save')) ?></button>
+              <?php if (fms_enabled()): ?>
+              <button type="button" class="btn" data-action="export-fms" data-report-id="<?= (int)$r['id'] ?>" title="<?= h(t('gov.export_fms')) ?>"><?= h(t('gov.export_fms')) ?></button>
+              <?php endif; ?>
             </form>
           </div>
         <?php endforeach; ?>
@@ -558,5 +570,29 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
     <?php endif; ?>
   </div>
 </div>
+<script>
+(function(){
+  var exportUrl = <?= json_encode(app_url('/api/fms_bridge/export_report.php'), JSON_UNESCAPED_SLASHES) ?>;
+  document.body.addEventListener('click', function(e){
+    var btn = e.target && e.target.closest && e.target.closest('[data-action="export-fms"]');
+    if (!btn) return;
+    var reportId = parseInt(btn.getAttribute('data-report-id'), 10);
+    if (!reportId) return;
+    btn.disabled = true;
+    fetch(exportUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ report_id: reportId })
+    }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+      .then(function(x){
+        btn.disabled = false;
+        if (x.ok && x.j.ok) alert(x.j.already_exported ? 'Már korábban kiküldve.' : 'Elküldve a FixMyStreet rendszerbe.');
+        else alert(x.j.error || 'Hiba történt.');
+      })
+      .catch(function(){ btn.disabled = false; alert('Hiba történt.'); });
+  });
+})();
+</script>
 <script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body></html>

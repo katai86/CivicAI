@@ -33,6 +33,10 @@ A kezdeti térkép középpontja és zoomja konfigból (env) állítható, így 
 
 Ha nincs beállítva, az alapértelmezés: Magyarország közepén (47.1625, 19.5033), zoom 7. A fő térkép (index.php) és az admin térkép is ezt használja.
 
+## Biztonság – API kulcsok
+
+A **FMS_OPEN311_API_KEY** és a **MISTRAL_API_KEY** (vagy GEMINI_API_KEY) csak **környezeti változókból** (.env vagy szerver env) töltődnek be; a konfigban és a felületen **soha** nem jelennek meg. A Gov és az Admin dashboard csak annyit jelez: „FixMyStreet: beállítva / nincs”, „AI: beállítva / nincs” – a kulcsok értéke nincs kiírva. A .env.example tartalmazza a szükséges változóneveket (értékeket ne commitolj).
+
 ## API dokumentáció
 
 Nyilvános link a partnereknek / integrátoroknak: **/api-docs.php** (Open311 discovery, services, requests rövid leírása).

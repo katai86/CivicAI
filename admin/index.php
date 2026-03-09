@@ -126,6 +126,7 @@ $LANG_JS = lang_array_for_js();
                     <div id="chartCategory" class="admin-chart"></div>
                   </div>
                 </div>
+                <p class="text-secondary small mt-2 mb-0"><?= htmlspecialchars(t('admin.integration_status'), ENT_QUOTES, 'UTF-8') ?> FixMyStreet: <?= fms_enabled() ? htmlspecialchars(t('admin.fms_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.fms_not_configured'), ENT_QUOTES, 'UTF-8') ?> | AI (Mistral): <?= ai_configured() ? htmlspecialchars(t('admin.ai_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.ai_not_configured'), ENT_QUOTES, 'UTF-8') ?></p>
               </div>
             </div>
           </div>

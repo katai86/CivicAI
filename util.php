@@ -237,6 +237,18 @@ function fms_enabled(): bool {
     return defined('FMS_OPEN311_BASE') && (string)FMS_OPEN311_BASE !== '';
 }
 
+/** AI (Mistral/Gemini) be van-e állítva – API kulcs van, nem adja vissza a kulcsot. */
+function ai_configured(): bool {
+    if (!defined('AI_ENABLED') || !AI_ENABLED) {
+        return false;
+    }
+    $provider = defined('AI_PROVIDER') ? (string)AI_PROVIDER : 'mistral';
+    if ($provider === 'gemini') {
+        return defined('GEMINI_API_KEY') && (string)GEMINI_API_KEY !== '';
+    }
+    return defined('MISTRAL_API_KEY') && (string)MISTRAL_API_KEY !== '';
+}
+
 function fms_open311_request(array $payload): array {
     $base = rtrim((string)FMS_OPEN311_BASE, '/');
     if ($base === '') {

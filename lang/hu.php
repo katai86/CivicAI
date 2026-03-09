@@ -134,6 +134,11 @@ return [
     'admin.no_data' => 'Nincs adat.',
     'admin.initial_hint' => 'Kattints',
     'admin.cancel' => 'Mégse',
+    'admin.integration_status' => 'Szolgáltatások:',
+    'admin.fms_configured' => 'FMS beállítva',
+    'admin.fms_not_configured' => 'FMS nincs',
+    'admin.ai_configured' => 'AI beállítva',
+    'admin.ai_not_configured' => 'AI nincs',
 
     // Gov dashboard
     'gov.title' => 'Közigazgatási dashboard',
@@ -158,6 +163,13 @@ return [
     'gov.next_ai' => 'AI integráció – elemzés, javaslatok',
     'gov.next_esg' => 'ESG – fenntarthatósági mutatók',
     'gov.next_dashboard' => 'A közigazgatási felületet – az admin dashboardhoz hasonlóan – teljes dashboardként (oldalsáv, kártyák, grafikonok) is ki lehet majd alakítani.',
+    'gov.integration_status' => 'Szolgáltatások állapota',
+    'gov.fms_configured' => 'FixMyStreet / Open311: beállítva',
+    'gov.fms_not_configured' => 'FixMyStreet / Open311: nincs beállítva (opcionális)',
+    'gov.ai_configured' => 'AI (Mistral): beállítva',
+    'gov.ai_not_configured' => 'AI (Mistral): nincs API kulcs',
+    'gov.export_fms' => 'Küldés FMS-be',
+    'gov.config_note' => 'A kulcsok csak környezeti változókból (.env) töltődnek, a felületen nem jelennek meg.',
 
     // Státusz címkék (közös)
     'status.pending' => 'Ellenőrzés alatt',
