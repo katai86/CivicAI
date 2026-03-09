@@ -12,6 +12,7 @@ const API_CIVIL_EVENTS = `${BASE}/api/civil_events_list.php`;
 const API_TREES = `${BASE}/api/trees_list.php`;
 const API_TREE_ADOPT = `${BASE}/api/tree_adopt.php`;
 const API_TREE_WATER = `${BASE}/api/tree_watering.php`;
+const API_TREE_CREATE = `${BASE}/api/tree_create.php`;
 const API_CIVIL_EVENT_CREATE = `${BASE}/api/civil_event_create.php`;
 const API_REPORT_LIKE = `${BASE}/api/report_like.php`;
 const GEO_SEARCH = 'https://nominatim.openstreetmap.org/search';
@@ -53,6 +54,9 @@ let searchMarkerTimeout = null;
 let layerMarkers = [];
 let treeMarkers = [];
 let activeTreeFilter = 'all';
+let addTreeMode = false;
+let addTreeMarker = null;
+let addTreeMapClick = null;
 let facilityMarkers = [];
 let civilEventMarkers = [];
 let reloadTimer = null;
@@ -266,14 +270,33 @@ function greenActionIcon(){
   return L.divIcon({ className:'', html, iconSize:[34,34], iconAnchor:[17,17], popupAnchor:[0,-14] });
 }
 
-function treeIcon(){
+function treeIcon(tree){
+  const colors = {
+    adopted: '#3b82f6',
+    needs_water: '#eab308',
+    dangerous: '#dc2626',
+    default: '#22c55e'
+  };
+  let ring = colors.default;
+  if (tree) {
+    if (tree.risk_level === 'high' || tree.risk_level === 'medium') ring = colors.dangerous;
+    else if (tree.adopted_by_user_id) ring = colors.adopted;
+    else if (tree.last_watered === null || (tree.last_watered && isOlderThanDays(tree.last_watered, 7))) ring = colors.needs_water;
+  }
   const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f333.svg`;
   const html = `
-    <div class="badge-marker" style="--ring:#22c55e">
+    <div class="badge-marker" style="--ring:${ring}">
       <img src="${url}" alt="" />
     </div>
   `;
   return L.divIcon({ className:'', html, iconSize:[34,34], iconAnchor:[17,17], popupAnchor:[0,-14] });
+}
+function isOlderThanDays(ymdStr, days){
+  if (!ymdStr) return true;
+  const [y, m, d] = String(ymdStr).split('-').map(Number);
+  const then = new Date(y, (m || 1) - 1, d || 1);
+  const now = new Date();
+  return (now - then) / (86400 * 1000) > days;
 }
 
 // ====== Legend toggle (default closed, chevron indicates expandable) ======
@@ -552,7 +575,7 @@ async function loadTrees(){
         </div>
       `;
 
-      const mk = L.marker([t.lat, t.lng], { icon: treeIcon() })
+      const mk = L.marker([t.lat, t.lng], { icon: treeIcon(t) })
         .addTo(map)
         .bindPopup(
           `<b>🌳 ${esc(t.species || (window.LANG && window.LANG['tree.unknown_species']) ? window.LANG['tree.unknown_species'] : 'Fa')}</b><br>` +
@@ -677,6 +700,80 @@ loadTrees().catch(err => console.error(err));
       btns.forEach(b => b.classList.toggle('active', (b.getAttribute('data-tree-filter') || '') === filter));
       loadTrees().catch(err => console.error(err));
     });
+  });
+})();
+
+// ====== Új fa felvitele (térképre kattintás + űrlap) ======
+(function initAddTree(){
+  const btn = document.getElementById('btnAddTree');
+  if (!btn || !IS_LOGGED_IN) return;
+
+  function exitAddTreeMode(){
+    addTreeMode = false;
+    btn.classList.remove('active');
+    map.getContainer().style.cursor = '';
+    if (addTreeMapClick) {
+      map.off('click', addTreeMapClick);
+      addTreeMapClick = null;
+    }
+    if (addTreeMarker) {
+      map.removeLayer(addTreeMarker);
+      addTreeMarker = null;
+    }
+  }
+
+  btn.addEventListener('click', () => {
+    addTreeMode = !addTreeMode;
+    btn.classList.toggle('active', addTreeMode);
+    map.getContainer().style.cursor = addTreeMode ? 'crosshair' : '';
+    if (addTreeMode) {
+      addTreeMapClick = (e) => {
+        const { lat, lng } = e.latlng;
+        if (addTreeMarker) map.removeLayer(addTreeMarker);
+        addTreeMarker = L.marker([lat, lng], { icon: treeIcon(null) }).addTo(map);
+        const addLabel = (window.LANG && window.LANG['legend.tree_add']) ? window.LANG['legend.tree_add'] : 'Új fa felvitele';
+        const speciesPh = (window.LANG && window.LANG['tree.species_placeholder']) ? window.LANG['tree.species_placeholder'] : 'Faj (opcionális)';
+        const notePh = (window.LANG && window.LANG['tree.note_placeholder']) ? window.LANG['tree.note_placeholder'] : 'Megjegyzés (opcionális)';
+        const submitLabel = (window.LANG && window.LANG['tree.submit_add']) ? window.LANG['tree.submit_add'] : 'Fa mentése';
+        const popupContent = `
+          <form class="tree-create-form" data-lat="${lat}" data-lng="${lng}">
+            <input type="text" name="species" placeholder="${esc(speciesPh)}" maxlength="120">
+            <textarea name="note" placeholder="${esc(notePh)}" rows="2" maxlength="500"></textarea>
+            <input type="file" name="photo" accept="image/*">
+            <button type="submit" class="btn-soft">${esc(submitLabel)}</button>
+          </form>
+        `;
+        addTreeMarker.bindPopup(popupContent, { maxWidth: 320 }).openPopup();
+        setTimeout(() => {
+          const popupEl = addTreeMarker && addTreeMarker.getPopup().getElement();
+          const formEl = popupEl?.querySelector('.tree-create-form');
+          if (formEl) {
+            formEl.addEventListener('submit', async (ev) => {
+              ev.preventDefault();
+              const fd = new FormData(formEl);
+              fd.append('lat', String(lat));
+              fd.append('lng', String(lng));
+              try {
+                const res = await fetch(API_TREE_CREATE, { method: 'POST', body: fd });
+                const j = await res.json().catch(() => null);
+                if (!res.ok || !j || !j.ok) {
+                  alert(j && j.error ? j.error : 'Hiba történt.');
+                  return;
+                }
+                exitAddTreeMode();
+                await loadTrees();
+              } catch (err) {
+                console.error(err);
+                alert('Hiba történt.');
+              }
+            });
+          }
+        }, 50);
+      };
+      map.on('click', addTreeMapClick);
+    } else {
+      exitAddTreeMode();
+    }
   });
 })();
 

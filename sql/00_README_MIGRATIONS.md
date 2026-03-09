@@ -17,7 +17,14 @@
 12. **2026-14-tree-adoption.sql** – tree_adoptions, tree_watering_logs. Civic Green Intelligence Platform M2 (fa örökbefogadás, öntözési napló).
 13. **2026-16-ai-results.sql** – ai_results tábla az AI-hívások eredményeihez és limit kontrollhoz. Civic Green Intelligence Platform M5–M10.
 
-**Demo adatok (opcionális):** **demo_seed.sql** – 2 bejelentés, 1 civil esemény, 1 facility. **demo_seed_trees.sql** – 2 fa, 1 öntözési napló (futtatás csak 2026-13 után). Csak demo/teszt DB-n; users táblában legyen legalább id=1.
+**Demo adatok (opcionális):**  
+- **demo_seed.sql** – 2 bejelentés, 1 civil esemény, 1 facility.  
+- **demo_seed_trees.sql** – 2 fa, 1 öntözési napló (futtatás csak 2026-13 után).  
+- **demo_seed_full.sql** – Teljes demo: 10 felhasználó (teszt1..10@kataiattila.hu: 2 user, 2 civil, 3 community, 3 govuser), 4 hatóság (Orosháza, Nagyszénás, Tótkomlós, Mezőkovácsháza), 3 közületi pont (Orosháza: Háziorvos, Fogorvos, Gyógyszertár), 110 bejelentés (40+20+20+30, utcánként ≥3 úthiba és ≥3 fa/ágletörés a stat predikcióhoz), 8 civil esemény (4–4 a két civil usernek). Jelszó: *password*. Csak demo/teszt DB-n.
+
+### Egy futással (feltételes migráció)
+
+- **00_run_all_migrations_safe.sql** – Az összes séma-migráció (2026-03 … 2026-16) egy fájlban; minden lépés feltételes: ha a tábla/oszlop/index már létezik, kihagyja. Egyszer futtatható, nem kell külön ellenőrizni, mi maradt ki. Demo seed fájlok nincsenek benne.
 
 ## Megjegyzések
 

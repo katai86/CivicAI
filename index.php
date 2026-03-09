@@ -34,6 +34,8 @@ if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
 }
 $currentLang = current_lang();
 $LANG_JS = lang_array_for_js();
+$flash = $_SESSION['flash'] ?? null;
+if (isset($_SESSION['flash'])) unset($_SESSION['flash']);
 ?><!doctype html>
 <html lang="<?php echo htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8'); ?>">
 <head>
@@ -44,7 +46,7 @@ $LANG_JS = lang_array_for_js();
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
-<body data-logged-in="<?php echo ($uid > 0 ? '1' : '0'); ?>" data-role="<?php echo htmlspecialchars($role, ENT_QUOTES, 'UTF-8'); ?>" data-lang="<?php echo htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8'); ?>" data-app-base="<?php echo htmlspecialchars(defined('APP_BASE') ? APP_BASE : '/terkep', ENT_QUOTES, 'UTF-8'); ?>" data-map-lat="<?php echo htmlspecialchars((string)(defined('MAP_CENTER_LAT') ? MAP_CENTER_LAT : 47.1625), ENT_QUOTES, 'UTF-8'); ?>" data-map-lng="<?php echo htmlspecialchars((string)(defined('MAP_CENTER_LNG') ? MAP_CENTER_LNG : 19.5033), ENT_QUOTES, 'UTF-8'); ?>" data-map-zoom="<?php echo htmlspecialchars((string)(defined('MAP_ZOOM') ? MAP_ZOOM : 7), ENT_QUOTES, 'UTF-8'); ?>">
+<body data-logged-in="<?php echo ($uid > 0 ? '1' : '0'); ?>" data-role="<?php echo htmlspecialchars($role, ENT_QUOTES, 'UTF-8'); ?>" data-user-id="<?php echo $uid > 0 ? (int)$uid : ''; ?>" data-lang="<?php echo htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8'); ?>" data-app-base="<?php echo htmlspecialchars(defined('APP_BASE') ? APP_BASE : '/terkep', ENT_QUOTES, 'UTF-8'); ?>" data-map-lat="<?php echo htmlspecialchars((string)(defined('MAP_CENTER_LAT') ? MAP_CENTER_LAT : 47.1625), ENT_QUOTES, 'UTF-8'); ?>" data-map-lng="<?php echo htmlspecialchars((string)(defined('MAP_CENTER_LNG') ? MAP_CENTER_LNG : 19.5033), ENT_QUOTES, 'UTF-8'); ?>" data-map-zoom="<?php echo htmlspecialchars((string)(defined('MAP_ZOOM') ? MAP_ZOOM : 7), ENT_QUOTES, 'UTF-8'); ?>">
 
 <header class="topbar">
   <div class="topbar-inner">
@@ -111,6 +113,9 @@ $LANG_JS = lang_array_for_js();
 </header>
 
 <div id="mapWrap">
+  <?php if (!empty($flash)): ?>
+  <div class="map-flash" id="mapFlash" role="status"><?= htmlspecialchars($flash, ENT_QUOTES, 'UTF-8') ?></div>
+  <?php endif; ?>
   <div id="map"></div>
   <button type="button" id="btnNewReport" class="fab-report" aria-label="<?= htmlspecialchars(t('fab.new_report'), ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(t('fab.new_report'), ENT_QUOTES, 'UTF-8') ?>">+ <?= htmlspecialchars(t('fab.report'), ENT_QUOTES, 'UTF-8') ?></button>
 
@@ -142,6 +147,9 @@ $LANG_JS = lang_array_for_js();
         <button type="button" class="legend-tree-filter legend-filter" data-tree-filter="adopted"><?= htmlspecialchars(t('legend.trees_adopted') ?? 'Örökbefogadott', ENT_QUOTES, 'UTF-8') ?></button>
         <button type="button" class="legend-tree-filter legend-filter" data-tree-filter="needs_water"><?= htmlspecialchars(t('legend.trees_needs_water') ?? 'Öntözést igénylő', ENT_QUOTES, 'UTF-8') ?></button>
         <button type="button" class="legend-tree-filter legend-filter" data-tree-filter="dangerous"><?= htmlspecialchars(t('legend.trees_dangerous') ?? 'Veszélyes', ENT_QUOTES, 'UTF-8') ?></button>
+        <div class="legend-tree-add-wrap" id="legendTreeAddWrap" style="display:<?= $uid > 0 ? 'block' : 'none' ?>;margin-top:8px">
+          <button type="button" class="legend-filter legend-add-tree" id="btnAddTree"><?= htmlspecialchars(t('legend.tree_add') ?? 'Új fa felvitele', ENT_QUOTES, 'UTF-8') ?></button>
+        </div>
       </div>
 
       <div class="legend-foot muted">

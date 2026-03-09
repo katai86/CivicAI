@@ -116,6 +116,8 @@ body{
 .muted{color:var(--muted)}
 
 #mapWrap{position:relative;height:calc(100vh - 52px)}
+.map-flash{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:900;padding:10px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);font-size:14px;animation:mapFlashFade 4s ease-out forwards}
+@keyframes mapFlashFade{0%,20%{opacity:1}80%{opacity:1}100%{opacity:0;pointer-events:none}}
 #map{height:100%;width:100%;filter:saturate(0.8) brightness(0.9) contrast(1.05)}
 .fab-report{
   position:absolute;left:14px;bottom:14px;z-index:800;
@@ -342,6 +344,11 @@ body.intro-open #mapWrap{
   font-weight:700;
 }
 .leaflet-popup-content a:hover{text-decoration:underline}
+.tree-create-form{display:flex;flex-direction:column;gap:8px;min-width:240px}
+.tree-create-form input[type="text"],.tree-create-form textarea{width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)}
+.tree-create-form input[type="file"]{font-size:12px}
+.legend-add-tree{margin-top:4px}
+.legend-add-tree.active{outline:2px solid var(--primary)}
 .leaflet-container a.leaflet-popup-close-button{
   color:var(--muted);
   font-weight:800;
