@@ -203,6 +203,34 @@ function lang_array_for_js(): array {
 require_once __DIR__ . '/services/XpBadge.php';
 
 // --------------------
+// AI router & helper (Civic Green Intelligence)
+// --------------------
+require_once __DIR__ . '/services/AiRouter.php';
+require_once __DIR__ . '/services/AiPromptBuilder.php';
+require_once __DIR__ . '/services/AiResultParser.php';
+
+function ai_store_result(string $entityType, ?int $entityId, string $taskType, string $model, string $inputHash, ?array $data, ?float $confidence): void {
+    try {
+        $stmt = db()->prepare("
+            INSERT INTO ai_results (entity_type, entity_id, task_type, model_name, input_hash, output_json, confidence_score)
+            VALUES (:et, :eid, :tt, :m, :h, :out, :c)
+        ");
+        $stmt->execute([
+            ':et' => $entityType,
+            ':eid' => $entityId,
+            ':tt' => $taskType,
+            ':m'  => $model,
+            ':h'  => $inputHash,
+            ':out'=> $data ? json_encode($data, JSON_UNESCAPED_UNICODE) : null,
+            ':c'  => $confidence,
+        ]);
+    } catch (Throwable $e) {
+        // AI eredmény tárolás hibája ne törje el a fő folyamatot
+        log_error('ai_store_result error: ' . $e->getMessage());
+    }
+}
+
+// --------------------
 // FixMyStreet Open311 bridge helpers
 // --------------------
 function fms_enabled(): bool {

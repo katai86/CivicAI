@@ -23,6 +23,10 @@ $end = safe_str($body['end_date'] ?? null, 10);
 $lat = $body['lat'] ?? null;
 $lng = $body['lng'] ?? null;
 $address = safe_str($body['address'] ?? null, 255);
+$eventType = safe_str($body['event_type'] ?? $body['type'] ?? 'civil', 32);
+if (!in_array($eventType, ['civil','green_action'], true)) {
+  $eventType = 'civil';
+}
 
 if (!$title || !$start || !$end) json_response(['ok'=>false,'error'=>'Hiányzó mezők.'], 400);
 if (!is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>'Lat/Lng kötelező.'], 400);
@@ -30,8 +34,8 @@ if (!is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>
 $userId = current_user_id();
 
 try {
-  db()->prepare("INSERT INTO civil_events (user_id, title, description, start_date, end_date, lat, lng, address)
-                VALUES (:uid,:t,:d,:sd,:ed,:lat,:lng,:addr)")
+  db()->prepare("INSERT INTO civil_events (user_id, title, description, start_date, end_date, lat, lng, address, event_type)
+                VALUES (:uid,:t,:d,:sd,:ed,:lat,:lng,:addr,:etype)")
     ->execute([
       ':uid'=>$userId,
       ':t'=>$title,
@@ -40,7 +44,8 @@ try {
       ':ed'=>$end,
       ':lat'=>(float)$lat,
       ':lng'=>(float)$lng,
-      ':addr'=>$address
+      ':addr'=>$address,
+      ':etype'=>$eventType
     ]);
   json_response(['ok'=>true,'id'=>(int)db()->lastInsertId()]);
 } catch (Throwable $e) {

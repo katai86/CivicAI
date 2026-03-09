@@ -13,8 +13,11 @@
 8. **2026-10-authorities-new-columns.sql** – opcionális; contact_email, is_active stb. (ha régi schema van: email, active).
 9. **2026-11-authority-users-only.sql** – Ha a „Hatósági felhasználó hozzárendelés” 503-at dob (authority_users tábla hiányzik), futtasd ezt: `CREATE TABLE IF NOT EXISTS authority_users`.
 10. **2026-12-user-preferences-lang-theme.sql** – users.preferred_lang, users.preferred_theme (Beállítások alapértelmezett nyelv és stílus mentéséhez).
+11. **2026-13-tree-cadastre.sql** – trees, tree_logs; reports bővítés (related_tree_id, ai_category, ai_priority, report_gov_validated, impact_type). Civic Green Intelligence Platform M1.
+12. **2026-14-tree-adoption.sql** – tree_adoptions, tree_watering_logs. Civic Green Intelligence Platform M2 (fa örökbefogadás, öntözési napló).
+13. **2026-16-ai-results.sql** – ai_results tábla az AI-hívások eredményeihez és limit kontrollhoz. Civic Green Intelligence Platform M5–M10.
 
-**Demo adatok (opcionális):** **demo_seed.sql** – 2 bejelentés, 1 civil esemény, 1 facility. Csak demo/teszt DB-n futtasd; a users táblában legyen legalább id=1.
+**Demo adatok (opcionális):** **demo_seed.sql** – 2 bejelentés, 1 civil esemény, 1 facility. **demo_seed_trees.sql** – 2 fa, 1 öntözési napló (futtatás csak 2026-13 után). Csak demo/teszt DB-n; users táblában legyen legalább id=1.
 
 ## Megjegyzések
 

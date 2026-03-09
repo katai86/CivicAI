@@ -16,12 +16,20 @@ Ez a dokumentum a Köz.Tér adatbázis **célállapotát** írja le táblaszinte
 | facilities, civil_events | 2026-04-fms-bridge.sql |
 | map_layers, map_layer_points | 2026-03-admin-dashboard.sql |
 | fms_reports, fms_sync_log | 2026-04 (FMS bridge, opcionális) |
+| trees, tree_logs | 2026-13 (Urban Tree Cadastre, Green Intelligence) |
+| tree_adoptions, tree_watering_logs | 2026-14 (Citizen Tree Adoption, Green Intelligence) |
+| reports (related_tree_id, ai_*, report_gov_validated, impact_type) | 2026-13 |
+| ai_results | 2026-16 (AI cost control, AI eredmények) |
 
 ## Kapcsolatok (rövid)
 
 - **reports.authority_id** → authorities.id  
 - **reports.user_id** → users.id  
 - **authority_users.authority_id** → authorities.id, **authority_users.user_id** → users.id  
-- **report_status_log.report_id**, **report_attachments.report_id** → reports.id  
+- **report_status_log.report_id**, **report_attachments.report_id** → reports.id
+- **reports.related_tree_id** → trees.id
+- **tree_logs.tree_id** → trees.id; **tree_logs.user_id** → users.id  
+- **tree_adoptions.tree_id**, **tree_watering_logs.tree_id** → trees.id  
+- **tree_adoptions.user_id**, **tree_watering_logs.user_id** → users.id  
 
 Részletes entitás–mező leírás: **docs/MILESTONE_3_DATA_MODEL_AND_MIGRATIONS.md**.

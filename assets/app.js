@@ -9,6 +9,9 @@ const API_SUGGEST_CATEGORY = `${BASE}/api/suggest_category.php`;
 const API_LAYERS = `${BASE}/api/layers_public.php`;
 const API_FACILITIES = `${BASE}/api/facilities_list.php`;
 const API_CIVIL_EVENTS = `${BASE}/api/civil_events_list.php`;
+const API_TREES = `${BASE}/api/trees_list.php`;
+const API_TREE_ADOPT = `${BASE}/api/tree_adopt.php`;
+const API_TREE_WATER = `${BASE}/api/tree_watering.php`;
 const API_CIVIL_EVENT_CREATE = `${BASE}/api/civil_event_create.php`;
 const API_REPORT_LIKE = `${BASE}/api/report_like.php`;
 const GEO_SEARCH = 'https://nominatim.openstreetmap.org/search';
@@ -48,6 +51,8 @@ let markerLayers = []; // { marker, data }
 let searchMarker = null;
 let searchMarkerTimeout = null;
 let layerMarkers = [];
+let treeMarkers = [];
+let activeTreeFilter = 'all';
 let facilityMarkers = [];
 let civilEventMarkers = [];
 let reloadTimer = null;
@@ -251,6 +256,26 @@ function civilEventIcon(){
   return L.divIcon({ className:'', html, iconSize:[34,34], iconAnchor:[17,17], popupAnchor:[0,-14] });
 }
 
+function greenActionIcon(){
+  const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f33f.svg`;
+  const html = `
+    <div class="badge-marker" style="--ring:#16a34a">
+      <img src="${url}" alt="" />
+    </div>
+  `;
+  return L.divIcon({ className:'', html, iconSize:[34,34], iconAnchor:[17,17], popupAnchor:[0,-14] });
+}
+
+function treeIcon(){
+  const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f333.svg`;
+  const html = `
+    <div class="badge-marker" style="--ring:#22c55e">
+      <img src="${url}" alt="" />
+    </div>
+  `;
+  return L.divIcon({ className:'', html, iconSize:[34,34], iconAnchor:[17,17], popupAnchor:[0,-14] });
+}
+
 // ====== Legend toggle (default closed, chevron indicates expandable) ======
 (function initLegend(){
   const legend = document.getElementById('legend');
@@ -333,6 +358,7 @@ function scheduleReload(){
     loadLayerMarkers().catch(err => console.error(err));
     loadFacilities().catch(err => console.error(err));
     loadCivilEvents().catch(err => console.error(err));
+    loadTrees().catch(err => console.error(err));
   }, 250);
 }
 
@@ -358,31 +384,102 @@ initLegendFilters();
 map.on('popupopen', (e) => {
   const el = e.popup.getElement();
   if (!el) return;
-  const btn = el.querySelector('.like-btn');
-  if (!btn) return;
-  btn.addEventListener('click', async () => {
-    if (!IS_LOGGED_IN) {
-      alert('Bejelentkezés szükséges.');
-      return;
-    }
-    const id = Number(btn.getAttribute('data-id'));
-    try{
-      const j = await fetchJson(API_REPORT_LIKE, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ id })
-      });
-      if (!j || !j.ok) return;
-      const countEl = el.querySelector('.like-count');
-      const labelEl = el.querySelector('.like-label');
-      if (countEl) countEl.textContent = String(j.count ?? 0);
-      if (labelEl) labelEl.textContent = j.liked ? 'Kedveled' : 'Tetszik';
-      btn.classList.toggle('liked', !!j.liked);
-    }catch(err){
-      console.error(err);
-    }
-  }, { once: true });
 
+  // Like gomb (bejelentésekhez)
+  const likeBtn = el.querySelector('.like-btn');
+  if (likeBtn) {
+    likeBtn.addEventListener('click', async () => {
+      if (!IS_LOGGED_IN) {
+        alert('Bejelentkezés szükséges.');
+        return;
+      }
+      const id = Number(likeBtn.getAttribute('data-id'));
+      try{
+        const j = await fetchJson(API_REPORT_LIKE, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ id })
+        });
+        if (!j || !j.ok) return;
+        const countEl = el.querySelector('.like-count');
+        const labelEl = el.querySelector('.like-label');
+        if (countEl) countEl.textContent = String(j.count ?? 0);
+        if (labelEl) labelEl.textContent = j.liked ? 'Kedveled' : 'Tetszik';
+        likeBtn.classList.toggle('liked', !!j.liked);
+      }catch(err){
+        console.error(err);
+      }
+    }, { once: true });
+  }
+
+  // Fa örökbefogadás + öntözés
+  const treeActions = el.querySelector('.tree-actions');
+  if (treeActions && IS_LOGGED_IN) {
+    const treeId = Number(treeActions.getAttribute('data-tree-id') || '0');
+    const adoptBtn = treeActions.querySelector('.btn-tree-adopt');
+    const waterForm = treeActions.querySelector('.tree-water-form');
+
+    if (adoptBtn && treeId > 0) {
+      adoptBtn.addEventListener('click', async () => {
+        const currentlyAdopted = adoptBtn.getAttribute('data-adopted') === '1';
+        const action = currentlyAdopted ? 'cancel' : 'adopt';
+        try{
+          const j = await fetchJson(API_TREE_ADOPT, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ tree_id: treeId, action })
+          });
+          if (!j || !j.ok) return;
+          adoptBtn.setAttribute('data-adopted', j.adopted ? '1' : '0');
+          const adoptedLabel = j.adopted
+            ? (window.LANG && window.LANG['tree.action_cancel'] ? window.LANG['tree.action_cancel'] : 'Örökbefogadás lemondása')
+            : (window.LANG && window.LANG['tree.action_adopt'] ? window.LANG['tree.action_adopt'] : 'Örökbefogadom');
+          adoptBtn.textContent = adoptedLabel;
+
+          const adoptedLine = el.querySelector('.tree-adopted-line');
+          if (adoptedLine) {
+            if (j.adopted) {
+              adoptedLine.textContent = window.LANG && window.LANG['tree.adopted_by_self']
+                ? window.LANG['tree.adopted_by_self']
+                : 'Örökbefogadtad ezt a fát.';
+            } else {
+              adoptedLine.textContent = window.LANG && window.LANG['tree.not_adopted']
+                ? window.LANG['tree.not_adopted']
+                : 'Nem örökbefogadott';
+            }
+          }
+        }catch(err){
+          console.error(err);
+        }
+      });
+    }
+
+    if (waterForm && treeId > 0) {
+      waterForm.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const fd = new FormData(waterForm);
+        fd.append('tree_id', String(treeId));
+        try{
+          const res = await fetch(API_TREE_WATER, {
+            method:'POST',
+            body: fd
+          });
+          const j = await res.json().catch(() => null);
+          if (!res.ok || !j || !j.ok) return;
+          const lastLine = el.querySelector('.tree-last-watered-line');
+          if (lastLine && j.last_watered) {
+            const tpl = window.LANG && window.LANG['tree.last_watered']
+              ? window.LANG['tree.last_watered']
+              : 'Öntözve: {date}';
+            lastLine.textContent = tpl.replace('{date}', j.last_watered);
+          }
+          waterForm.reset();
+        }catch(err){
+          console.error(err);
+        }
+      });
+    }
+  }
 });
 
 function clearLayerMarkers(){
@@ -398,6 +495,77 @@ function clearFacilityMarkers(){
 function clearCivilEventMarkers(){
   civilEventMarkers.forEach(m => map.removeLayer(m));
   civilEventMarkers = [];
+}
+
+function clearTreeMarkers(){
+  treeMarkers.forEach(m => map.removeLayer(m));
+  treeMarkers = [];
+}
+
+function treeHealthLabel(s){ return (window.LANG && window.LANG['tree.health_' + s]) ? window.LANG['tree.health_' + s] : (s || '–'); }
+function treeRiskLabel(s){ return (window.LANG && window.LANG['tree.risk_' + s]) ? window.LANG['tree.risk_' + s] : (s || '–'); }
+
+async function loadTrees(){
+  clearTreeMarkers();
+  try{
+    const params = new URLSearchParams();
+    const b = getBoundsParams();
+    params.set('minLat', b.minLat);
+    params.set('maxLat', b.maxLat);
+    params.set('minLng', b.minLng);
+    params.set('maxLng', b.maxLng);
+    params.set('limit', '500');
+    params.set('filter', activeTreeFilter);
+    const j = await fetchJson(`${API_TREES}?${params.toString()}`);
+    const rows = j.data || [];
+    for (const t of rows){
+      const lastWateredText = t.last_watered
+        ? ((window.LANG && window.LANG['tree.last_watered']) ? window.LANG['tree.last_watered'].replace('{date}', t.last_watered) : 'Öntözve: ' + t.last_watered)
+        : ((window.LANG && window.LANG['tree.not_watered']) ? window.LANG['tree.not_watered'] : 'Még nem öntözték');
+      const adoptedText = t.adopted_by_user_id
+        ? ((window.LANG && window.LANG['tree.adopted_by']) ? window.LANG['tree.adopted_by'].replace('{name}', esc(t.adopter_name || '')) : 'Örökbefogadta: ' + esc(t.adopter_name || ''))
+        : ((window.LANG && window.LANG['tree.not_adopted']) ? window.LANG['tree.not_adopted'] : 'Nem örökbefogadott');
+      const canInteract = IS_LOGGED_IN;
+      const adoptedByMe = t.adopted_by_user_id && Number(t.adopted_by_user_id) === Number(document.body?.dataset?.userId || 0);
+      const adoptLabel = adoptedByMe
+        ? ((window.LANG && window.LANG['tree.action_cancel']) ? window.LANG['tree.action_cancel'] : 'Örökbefogadás lemondása')
+        : ((window.LANG && window.LANG['tree.action_adopt']) ? window.LANG['tree.action_adopt'] : 'Örökbefogadom');
+      const actionsHtml = canInteract ? `
+        <div class="tree-actions" data-tree-id="${t.id}">
+          <div class="tree-meta-lines">
+            <small class="tree-adopted-line">${adoptedText}</small><br>
+            <small class="tree-last-watered-line">${lastWateredText}</small>
+          </div>
+          <div class="tree-actions-buttons" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" class="btn-soft btn-tree-adopt" data-adopted="${adoptedByMe ? '1' : '0'}">${esc(adoptLabel)}</button>
+            <form class="tree-water-form" enctype="multipart/form-data" style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+              <input type="number" name="water_amount" min="0" step="0.5" placeholder="${window.LANG && window.LANG['tree.water_amount_placeholder'] ? window.LANG['tree.water_amount_placeholder'] : 'Liter'}" style="max-width:90px">
+              <input type="file" name="photo" accept="image/*" style="max-width:150px">
+              <button type="submit" class="btn-soft">${esc(window.LANG && window.LANG['tree.action_water'] ? window.LANG['tree.action_water'] : 'Öntözés naplózása')}</button>
+            </form>
+          </div>
+        </div>
+      ` : `
+        <div class="tree-meta-lines">
+          <small>${adoptedText}</small><br>
+          <small>${lastWateredText}</small>
+        </div>
+      `;
+
+      const mk = L.marker([t.lat, t.lng], { icon: treeIcon() })
+        .addTo(map)
+        .bindPopup(
+          `<b>🌳 ${esc(t.species || (window.LANG && window.LANG['tree.unknown_species']) ? window.LANG['tree.unknown_species'] : 'Fa')}</b><br>` +
+          (t.address ? `<small>${esc(t.address)}</small><br>` : '') +
+          `<small><b>${(window.LANG && window.LANG['tree.health']) ? window.LANG['tree.health'] : 'Állapot'}:</b> ${treeHealthLabel(t.health_status)}</small><br>` +
+          `<small><b>${(window.LANG && window.LANG['tree.risk']) ? window.LANG['tree.risk'] : 'Kockázat'}:</b> ${treeRiskLabel(t.risk_level)}</small><br>` +
+          actionsHtml
+        );
+      treeMarkers.push(mk);
+    }
+  }catch(e){
+    console.warn('trees load failed', e);
+  }
 }
 
 async function loadLayerMarkers(){
@@ -474,10 +642,12 @@ async function loadCivilEvents(){
     const j = await fetchJson(`${API_CIVIL_EVENTS}?${params.toString()}`);
     const rows = j.data || [];
     for (const ev of rows){
-      const mk = L.marker([ev.lat, ev.lng], { icon: civilEventIcon() })
+      const type = ev.event_type || 'civil';
+      const icon = type === 'green_action' ? greenActionIcon() : civilEventIcon();
+      const mk = L.marker([ev.lat, ev.lng], { icon })
         .addTo(map)
         .bindPopup(
-          `<b>${esc(ev.title || 'Civil esemény')}</b><br>` +
+          `<b>${esc(ev.title || (type === 'green_action' ? 'Zöld akció' : 'Civil esemény'))}</b><br>` +
           `${ev.address ? `<small>${esc(ev.address)}</small><br>` : ''}` +
           `${ev.description ? `<small>${esc(ev.description)}</small><br>` : ''}`
         );
@@ -488,11 +658,27 @@ async function loadCivilEvents(){
   }
 }
 
-map.on('moveend zoomend', scheduleReload);
+map.on('moveend zoomend', () => {
+  scheduleReload();
+});
 
 loadLayerMarkers().catch(err => console.error(err));
 loadFacilities().catch(err => console.error(err));
 loadCivilEvents().catch(err => console.error(err));
+loadTrees().catch(err => console.error(err));
+
+// ====== Tree layer filter (legend) ======
+(function initTreeLayerFilter(){
+  const btns = document.querySelectorAll('.legend-tree-filter[data-tree-filter]');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const filter = btn.getAttribute('data-tree-filter') || 'all';
+      activeTreeFilter = filter;
+      btns.forEach(b => b.classList.toggle('active', (b.getAttribute('data-tree-filter') || '') === filter));
+      loadTrees().catch(err => console.error(err));
+    });
+  });
+})();
 
 // ====== Address search ======
 (function initSearch(){

@@ -175,6 +175,9 @@ $stats = [
   'reports_total' => 0,
   'by_status' => [],
   'by_category' => [],
+  'environment' => [],
+  'social' => [],
+  'governance' => [],
 ];
 
 // Gov: hatósághoz tartozó VAGY városnév alapján (authority_id még nincs beállítva)
@@ -244,6 +247,114 @@ if ($isAdmin || $authorityIds) {
       $stats['by_category'][(string)$row['category']] = (int)$row['cnt'];
     }
   } catch (Throwable $e) { /* ignore */ }
+  // Environment stats (fák + zöld bejelentések)
+  $env = [
+    'trees_total' => 0,
+    'trees_needing_inspection' => 0,
+    'trees_needing_water' => 0,
+    'trees_dangerous' => 0,
+    'green_reports' => 0,
+  ];
+  try {
+    $env['trees_total'] = (int)db()->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1")->fetchColumn();
+  } catch (Throwable $e) {}
+  try {
+    $env['trees_needing_inspection'] = (int)db()->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND (last_inspection IS NULL OR last_inspection < DATE_SUB(CURDATE(), INTERVAL 365 DAY))")->fetchColumn();
+  } catch (Throwable $e) {}
+  try {
+    $env['trees_needing_water'] = (int)db()->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND (last_watered IS NULL OR last_watered < DATE_SUB(CURDATE(), INTERVAL 7 DAY))")->fetchColumn();
+  } catch (Throwable $e) {}
+  try {
+    $env['trees_dangerous'] = (int)db()->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND risk_level = 'high'")->fetchColumn();
+  } catch (Throwable $e) {}
+  try {
+    $qg = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $baseWhere AND r.category = 'green'");
+    $qg->execute($baseParams);
+    $env['green_reports'] = (int)$qg->fetchColumn();
+  } catch (Throwable $e) {}
+  $stats['environment'] = $env;
+
+  // Social stats – aktív polgárok, örökbefogadók, zöld események, öntözések
+  $soc = [
+    'active_citizens_30d' => 0,
+    'tree_adopters' => 0,
+    'green_events_active' => 0,
+    'watering_actions_30d' => 0,
+  ];
+  try {
+    $qsoc = $pdo->prepare("SELECT COUNT(DISTINCT r.user_id) FROM reports r WHERE $baseWhere AND r.user_id IS NOT NULL AND r.created_at >= (NOW() - INTERVAL 30 DAY)");
+    $qsoc->execute($baseParams);
+    $soc['active_citizens_30d'] = (int)$qsoc->fetchColumn();
+  } catch (Throwable $e) {}
+  try {
+    $soc['tree_adopters'] = (int)db()->query("SELECT COUNT(DISTINCT user_id) FROM tree_adoptions WHERE status = 'active'")->fetchColumn();
+  } catch (Throwable $e) {}
+  try {
+    $soc['green_events_active'] = (int)db()->query("SELECT COUNT(*) FROM civil_events WHERE is_active = 1 AND event_type = 'green_action' AND end_date >= CURDATE()")->fetchColumn();
+  } catch (Throwable $e) {}
+  try {
+    $soc['watering_actions_30d'] = (int)db()->query("SELECT COUNT(*) FROM tree_watering_logs WHERE created_at >= (NOW() - INTERVAL 30 DAY)")->fetchColumn();
+  } catch (Throwable $e) {}
+  $stats['social'] = $soc;
+
+  // Governance stats – nyitott ügyek, megoldott 30 napban, átlagos megoldási idő (nap)
+  $gov = [
+    'reports_total' => $stats['reports_total'],
+    'reports_open' => 0,
+    'reports_solved_30d' => 0,
+    'avg_resolution_days' => null,
+  ];
+  try {
+    $qo = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $baseWhere AND r.status NOT IN ('solved','closed','rejected')");
+    $qo->execute($baseParams);
+    $gov['reports_open'] = (int)$qo->fetchColumn();
+  } catch (Throwable $e) {}
+  try {
+    $qs30 = $pdo->prepare("
+      SELECT COUNT(*) FROM reports r
+      JOIN report_status_log l ON l.report_id = r.id AND l.new_status IN ('solved','closed')
+      WHERE $baseWhere AND l.changed_at >= (NOW() - INTERVAL 30 DAY)
+    ");
+    $qs30->execute($baseParams);
+    $gov['reports_solved_30d'] = (int)$qs30->fetchColumn();
+  } catch (Throwable $e) {}
+  try {
+    $qa = $pdo->prepare("
+      SELECT AVG(DATEDIFF(l.changed_at, r.created_at)) AS avg_days
+      FROM reports r
+      JOIN report_status_log l ON l.report_id = r.id AND l.new_status IN ('solved','closed')
+      WHERE $baseWhere
+    ");
+    $qa->execute($baseParams);
+    $avg = $qa->fetchColumn();
+    if ($avg !== false && $avg !== null) {
+      $gov['avg_resolution_days'] = (float)$avg;
+    }
+  } catch (Throwable $e) {}
+  $stats['governance'] = $gov;
+}
+
+// Export (JSON / CSV) – még HTML előtt
+if (isset($_GET['export']) && in_array($_GET['export'], ['json','csv'], true)) {
+  $format = $_GET['export'];
+  if ($format === 'json') {
+    json_response(['ok' => true, 'data' => $stats]);
+  } elseif ($format === 'csv') {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="gov_stats.csv"');
+    $outCsv = fopen('php://output', 'w');
+    if ($outCsv) {
+      fputcsv($outCsv, ['section', 'key', 'value']);
+      foreach (['environment','social','governance'] as $section) {
+        if (!isset($stats[$section]) || !is_array($stats[$section])) continue;
+        foreach ($stats[$section] as $k => $v) {
+          fputcsv($outCsv, [$section, $k, (string)$v]);
+        }
+      }
+      fclose($outCsv);
+    }
+    exit;
+  }
 }
 
 if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {

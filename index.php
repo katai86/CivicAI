@@ -136,6 +136,14 @@ $LANG_JS = lang_array_for_js();
         <button type="button" class="legend-item legend-item-btn" data-cat="civil_event"><span class="legend-badge b-civil">🤝</span><span><?= htmlspecialchars(t('cat.civil_event_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
       </div>
 
+      <div class="legend-filters-single" style="margin-top:10px">
+        <span class="muted" style="font-size:11px"><?= htmlspecialchars(t('legend.tree_layer') ?? 'Fák', ENT_QUOTES, 'UTF-8') ?>:</span>
+        <button type="button" class="legend-tree-filter legend-filter active" data-tree-filter="all"><?= htmlspecialchars(t('legend.trees_all') ?? 'Összes', ENT_QUOTES, 'UTF-8') ?></button>
+        <button type="button" class="legend-tree-filter legend-filter" data-tree-filter="adopted"><?= htmlspecialchars(t('legend.trees_adopted') ?? 'Örökbefogadott', ENT_QUOTES, 'UTF-8') ?></button>
+        <button type="button" class="legend-tree-filter legend-filter" data-tree-filter="needs_water"><?= htmlspecialchars(t('legend.trees_needs_water') ?? 'Öntözést igénylő', ENT_QUOTES, 'UTF-8') ?></button>
+        <button type="button" class="legend-tree-filter legend-filter" data-tree-filter="dangerous"><?= htmlspecialchars(t('legend.trees_dangerous') ?? 'Veszélyes', ENT_QUOTES, 'UTF-8') ?></button>
+      </div>
+
       <div class="legend-foot muted">
         <?= htmlspecialchars(t('legend.foot'), ENT_QUOTES, 'UTF-8') ?>
       </div>

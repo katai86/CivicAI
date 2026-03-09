@@ -480,6 +480,51 @@ try {
 $id = (int)db()->lastInsertId();
 // ===== /FixMyStreet =====
 
+// ===== AI – Report understanding (tanácsadó, opcionális) =====
+if ($id > 0 && defined('AI_ENABLED') && AI_ENABLED) {
+  try {
+    $router = new AiRouter();
+    if ($router->isEnabled()) {
+      $prompt = AiPromptBuilder::reportUnderstanding((string)$title, (string)$desc, (string)$category);
+      $inputHash = hash('sha256', $category . '|' . (string)$title . '|' . (string)$desc);
+      $res = $router->callJson('report_classification', $prompt, [
+        'model' => defined('AI_TEXT_MODEL') ? (string)AI_TEXT_MODEL : 'mistral-small-2506',
+      ]);
+      if (!empty($res['ok']) && isset($res['data']) && is_array($res['data'])) {
+        $norm = AiResultParser::normalizeReportUnderstanding($res['data']);
+        $confidence = null;
+        if (isset($norm['confidence_score']) && is_numeric($norm['confidence_score'])) {
+          $c = (float)$norm['confidence_score'];
+          if ($c >= 0 && $c <= 1.5) {
+            $confidence = $c;
+          }
+        }
+        $modelName = isset($res['model']) ? (string)$res['model'] : (defined('AI_TEXT_MODEL') ? (string)AI_TEXT_MODEL : '');
+        ai_store_result('report', $id, 'report_classification', $modelName, $inputHash, $norm, $confidence);
+
+        // Jelzésként próbáljuk eltárolni a reports.ai_category / ai_priority mezőkbe is (ha léteznek).
+        if (!empty($norm['suggested_category']) || !empty($norm['urgency_level'])) {
+          try {
+            $stmtAi = db()->prepare("UPDATE reports SET ai_category = :cat, ai_priority = :prio WHERE id = :id");
+            $stmtAi->execute([
+              ':cat' => isset($norm['suggested_category']) ? (string)$norm['suggested_category'] : null,
+              ':prio' => isset($norm['urgency_level']) ? (string)$norm['urgency_level'] : null,
+              ':id' => $id,
+            ]);
+          } catch (Throwable $eAi) {
+            // ha a mezők nem léteznek, hagyjuk figyelmen kívül
+            log_error('report_create AI update failed: ' . $eAi->getMessage());
+          }
+        }
+      }
+    }
+  } catch (Throwable $e) {
+    log_error('report_create AI error: ' . $e->getMessage());
+    // AI hiba nem törheti el a mentést
+  }
+}
+// ===== /AI – Report understanding =====
+
 // ===== XP + badge rendszer (best-effort) =====
 if ($userId) {
   $points = 15; // bejelentes letrehozasa

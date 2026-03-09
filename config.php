@@ -65,6 +65,23 @@ define('UPLOAD_ALLOWED_MIME', [
   'image/webp' => 'webp',
 ]);
 
+// --- AI / LLM beállítások (Civic Green Intelligence) ---
+define('AI_ENABLED', filter_var(getenv('AI_ENABLED'), FILTER_VALIDATE_BOOLEAN) ?: false);
+define('AI_PROVIDER', getenv('AI_PROVIDER') ?: 'mistral'); // mistral | gemini
+define('AI_PROVIDER_VISION', getenv('AI_PROVIDER_VISION') ?: 'mistral');
+
+define('MISTRAL_API_KEY', getenv('MISTRAL_API_KEY') ?: '');
+define('GEMINI_API_KEY', getenv('GEMINI_API_KEY') ?: '');
+
+define('AI_TEXT_MODEL', getenv('AI_TEXT_MODEL') ?: 'mistral-small-2506');
+define('AI_VISION_MODEL', getenv('AI_VISION_MODEL') ?: 'mistral-small-2506');
+define('AI_PREMIUM_MODEL', getenv('AI_PREMIUM_MODEL') ?: 'mistral-large-2512');
+
+// AI költségkontroll
+define('AI_MAX_REPORTS_PER_DAY', (int)(getenv('AI_MAX_REPORTS_PER_DAY') ?: 1000));
+define('AI_SUMMARY_LIMIT', (int)(getenv('AI_SUMMARY_LIMIT') ?: 20));
+define('AI_IMAGE_ANALYSIS_LIMIT', (int)(getenv('AI_IMAGE_ANALYSIS_LIMIT') ?: 300));
+
 // Production bootstrap: kritikus beállítások ellenőrzése (nem blokkol, csak jelzés)
 if (!defined('DB_HOST') || !defined('DB_NAME') || !defined('APP_BASE_URL')) {
   throw new RuntimeException('Kritikus config hiányzik: DB_HOST, DB_NAME vagy APP_BASE_URL.');
