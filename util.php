@@ -231,17 +231,56 @@ function ai_store_result(string $entityType, ?int $entityId, string $taskType, s
 }
 
 // --------------------
-// FixMyStreet Open311 bridge helpers
+// Beépülő modulok – beállítások DB-ből (admin felületről), env fallback
 // --------------------
+function get_module_setting(string $moduleKey, string $settingKey): ?string {
+    static $cache = [];
+    $k = $moduleKey . '.' . $settingKey;
+    if (array_key_exists($k, $cache)) {
+        return $cache[$k];
+    }
+    try {
+        $stmt = db()->prepare("SELECT value FROM module_settings WHERE module_key = :mk AND setting_key = :sk LIMIT 1");
+        $stmt->execute([':mk' => $moduleKey, ':sk' => $settingKey]);
+        $v = $stmt->fetchColumn();
+        $cache[$k] = $v !== false && $v !== null ? (string)$v : null;
+        return $cache[$k];
+    } catch (Throwable $e) {
+        $cache[$k] = null;
+        return null;
+    }
+}
+
+/** FMS: először modul (admin), majd env. */
 function fms_enabled(): bool {
+    $fromModule = get_module_setting('fms', 'enabled') === '1' && (get_module_setting('fms', 'base_url') ?? '') !== '';
+    if ($fromModule) return true;
     return defined('FMS_OPEN311_BASE') && (string)FMS_OPEN311_BASE !== '';
 }
 
-/** AI (Mistral/Gemini) be van-e állítva – API kulcs van, nem adja vissza a kulcsot. */
+function fms_config_base_url(): string {
+    $v = get_module_setting('fms', 'base_url');
+    if ($v !== null && $v !== '') return rtrim($v, '/');
+    return defined('FMS_OPEN311_BASE') ? rtrim((string)FMS_OPEN311_BASE, '/') : '';
+}
+
+function fms_config_jurisdiction(): string {
+    $v = get_module_setting('fms', 'jurisdiction');
+    if ($v !== null && $v !== '') return $v;
+    return defined('FMS_OPEN311_JURISDICTION') ? (string)FMS_OPEN311_JURISDICTION : '';
+}
+
+function fms_config_api_key(): string {
+    $v = get_module_setting('fms', 'api_key');
+    if ($v !== null && $v !== '') return $v;
+    return defined('FMS_OPEN311_API_KEY') ? (string)FMS_OPEN311_API_KEY : '';
+}
+
+/** AI (Mistral/Gemini) be van-e állítva – modul vagy env, kulcsot nem adja vissza. */
 function ai_configured(): bool {
-    if (!defined('AI_ENABLED') || !AI_ENABLED) {
-        return false;
-    }
+    $fromModule = get_module_setting('mistral', 'enabled') === '1' && (get_module_setting('mistral', 'api_key') ?? '') !== '';
+    if ($fromModule) return true;
+    if (!defined('AI_ENABLED') || !AI_ENABLED) return false;
     $provider = defined('AI_PROVIDER') ? (string)AI_PROVIDER : 'mistral';
     if ($provider === 'gemini') {
         return defined('GEMINI_API_KEY') && (string)GEMINI_API_KEY !== '';
@@ -249,8 +288,18 @@ function ai_configured(): bool {
     return defined('MISTRAL_API_KEY') && (string)MISTRAL_API_KEY !== '';
 }
 
+/** Mistral API kulcs – modul (admin) vagy env. */
+function mistral_api_key(): string {
+    $v = get_module_setting('mistral', 'api_key');
+    if ($v !== null && $v !== '') return $v;
+    return defined('MISTRAL_API_KEY') ? (string)MISTRAL_API_KEY : '';
+}
+
+// --------------------
+// FixMyStreet Open311 bridge helpers
+// --------------------
 function fms_open311_request(array $payload): array {
-    $base = rtrim((string)FMS_OPEN311_BASE, '/');
+    $base = fms_config_base_url();
     if ($base === '') {
         return ['ok' => false, 'error' => 'FMS not configured'];
     }
@@ -280,7 +329,7 @@ function fms_open311_request(array $payload): array {
 }
 
 function fms_open311_get(string $path, array $query = []): array {
-    $base = rtrim((string)FMS_OPEN311_BASE, '/');
+    $base = fms_config_base_url();
     if ($base === '') {
         return ['ok' => false, 'error' => 'FMS not configured'];
     }

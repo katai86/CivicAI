@@ -93,6 +93,12 @@ $LANG_JS = lang_array_for_js();
               <p><?= htmlspecialchars(t('admin.authorities'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="modules">
+              <i class="nav-icon bi bi-puzzle"></i>
+              <p><?= htmlspecialchars(t('admin.modules'), ENT_QUOTES, 'UTF-8') ?></p>
+            </a>
+          </li>
         </ul>
       </nav>
     </div>
@@ -261,6 +267,11 @@ $LANG_JS = lang_array_for_js();
                     <button id="assignUser" class="btn btn-outline-secondary btn-sm ms-auto" type="button">Hozzárendelés</button>
                   </div>
                   <div class="admin-list mt-2" id="assignList">Nincs adat.</div>
+                </div>
+
+                <div class="admin-tab-body" id="tab-modules" hidden>
+                  <p class="text-secondary small mb-3"><?= htmlspecialchars(t('admin.modules_intro'), ENT_QUOTES, 'UTF-8') ?></p>
+                  <div id="moduleList"><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?>...</div>
                 </div>
               </div>
             </div>

@@ -137,6 +137,10 @@ return [
     'admin.fms_not_configured' => 'FMS not set',
     'admin.ai_configured' => 'AI configured',
     'admin.ai_not_configured' => 'AI not set',
+    'admin.modules' => 'Plug-in modules',
+    'admin.modules_intro' => 'Enable/disable FixMyStreet and AI (Mistral), enter API keys here or in .env.',
+    'admin.module_save' => 'Save',
+    'admin.module_saved' => 'Saved.',
 
     'gov.title' => 'Government dashboard',
     'gov.authorities' => 'Authorities',

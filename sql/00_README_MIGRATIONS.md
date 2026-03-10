@@ -17,6 +17,7 @@
 12. **2026-14-tree-adoption.sql** – tree_adoptions, tree_watering_logs. Civic Green Intelligence Platform M2 (fa örökbefogadás, öntözési napló).
 13. **2026-16-ai-results.sql** – ai_results tábla az AI-hívások eredményeihez és limit kontrollhoz. Civic Green Intelligence Platform M5–M10.
 14. **2026-17 (M2 layerek)** – map_layers: authority_id, layer_type; „trees” layer seed (fakataszter billenő a térképen). A 00_run_all_migrations_safe.sql tartalmazza.
+15. **2026-18 (Beépülő modulok)** – module_settings tábla: admin felületen FixMyStreet és Mistral AI ki/be, API kulcsok tárolása.
 
 **Demo adatok (opcionális):**  
 - **demo_seed.sql** – 2 bejelentés, 1 civil esemény, 1 facility.  
@@ -25,7 +26,7 @@
 
 ### Egy futással (feltételes migráció)
 
-- **00_run_all_migrations_safe.sql** – Az összes séma-migráció (2026-03 … 2026-17) egy fájlban; minden lépés feltételes: ha a tábla/oszlop/index már létezik, kihagyja. Egyszer futtatható, nem kell külön ellenőrizni, mi maradt ki. Demo seed fájlok nincsenek benne.
+- **00_run_all_migrations_safe.sql** – Az összes séma-migráció (2026-03 … 2026-18) egy fájlban; minden lépés feltételes: ha a tábla/oszlop/index már létezik, kihagyja. Egyszer futtatható, nem kell külön ellenőrizni, mi maradt ki. Demo seed fájlok nincsenek benne.
 
 ## Megjegyzések
 

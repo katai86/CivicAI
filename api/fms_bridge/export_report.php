@@ -88,8 +88,8 @@ $lat = (float)$latRaw;
 $lng = (float)$lngRaw;
 
 $payload = [
-  'api_key' => (string)FMS_OPEN311_API_KEY,
-  'jurisdiction_id' => (string)FMS_OPEN311_JURISDICTION,
+  'api_key' => fms_config_api_key(),
+  'jurisdiction_id' => fms_config_jurisdiction(),
   'service_code' => $serviceCode,
   'lat' => (float)$lat,
   'long' => (float)$lng,

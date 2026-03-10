@@ -29,7 +29,7 @@ if (!$last) {
 }
 
 $query = [
-  'jurisdiction_id' => (string)FMS_OPEN311_JURISDICTION,
+  'jurisdiction_id' => fms_config_jurisdiction(),
   'start_date' => $last,
   'end_date' => $now,
   'max_requests' => 1000,

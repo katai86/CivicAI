@@ -9,7 +9,7 @@ class MistralProvider implements AiProviderInterface
 
     public function __construct(?string $apiKey = null)
     {
-        $this->apiKey = $apiKey !== null ? $apiKey : (defined('MISTRAL_API_KEY') ? (string)MISTRAL_API_KEY : '');
+        $this->apiKey = (string)($apiKey ?? (defined('MISTRAL_API_KEY') ? (string)MISTRAL_API_KEY : ''));
     }
 
     public function complete(string $model, string $prompt, array $options = []): array

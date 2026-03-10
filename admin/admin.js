@@ -11,6 +11,7 @@ const API_STATS       = `${BASE}/api/admin_stats.php`;
 const API_USERS       = `${BASE}/api/admin_users.php`;
 const API_LAYERS      = `${BASE}/api/admin_layers.php`;
 const API_AUTHORITIES = `${BASE}/api/admin_authorities.php`;
+const API_MODULES     = `${BASE}/api/admin_modules.php`;
 const LOGOUT_URL      = `${BASE}/admin/logout.php`;
 // ========================================================
 
@@ -919,13 +920,83 @@ async function loadAuthorities(){
   }
 }
 
+async function loadModules(){
+  const list = document.getElementById('moduleList');
+  if (!list) return;
+  list.textContent = t('admin.load') + '...';
+  try {
+    const j = await fetchJson(API_MODULES);
+    const modules = j.modules || [];
+    if (!modules.length) {
+      list.innerHTML = '<div class="text-secondary">Nincs modul.</div>';
+      return;
+    }
+    list.innerHTML = modules.map(m => {
+      const setList = m.settings || [];
+      let enabled = false;
+      const fields = setList.map(s => {
+        if (s.key === 'enabled') {
+          enabled = s.value === '1' || s.set;
+          return '';
+        }
+        const type = (s.type === 'password' || s.mask) ? 'password' : 'text';
+        const placeholder = s.mask && s.set ? '•••••••• (változatlan)' : (s.placeholder || '');
+        const val = s.mask && s.set ? '' : (s.value || '');
+        return `<div class="mb-2"><label class="form-label small">${esc(s.label)}</label><input class="form-control form-control-sm" data-module-key="${esc(m.id)}" data-setting-key="${esc(s.key)}" type="${type}" value="${esc(val)}" placeholder="${esc(placeholder)}"></div>`;
+      }).join('');
+      return `
+        <div class="card mb-3" data-module-id="${esc(m.id)}">
+          <div class="card-body">
+            <h6 class="card-title">${esc(m.name)}</h6>
+            <p class="text-secondary small">${esc(m.description || '')}</p>
+            <div class="form-check mb-2">
+              <input class="form-check-input module-enabled" type="checkbox" data-module-id="${esc(m.id)}" id="mod-${esc(m.id)}" ${enabled ? 'checked' : ''}>
+              <label class="form-check-label" for="mod-${esc(m.id)}">Bekapcsolva</label>
+            </div>
+            ${fields}
+            <button type="button" class="btn btn-sm btn-primary module-save" data-module-id="${esc(m.id)}">${t('admin.module_save')}</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    list.querySelectorAll('.module-save').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const moduleId = btn.getAttribute('data-module-id');
+        const card = btn.closest('.card');
+        const enabled = card.querySelector('.module-enabled')?.checked ?? false;
+        const settings = {};
+        card.querySelectorAll('input[data-module-key][data-setting-key]').forEach(inp => {
+          if (inp.type === 'password' && inp.placeholder.includes('változatlan') && inp.value === '') return;
+          if (inp.value.trim() !== '') settings[inp.getAttribute('data-setting-key')] = inp.value.trim();
+        });
+        try {
+          await fetchJson(API_MODULES, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'save_module', module_id: moduleId, enabled: enabled ? 1 : 0, settings })
+          });
+          alert(t('admin.module_saved'));
+          loadModules();
+        } catch (e) {
+          alert('Hiba: ' + (e.message || e));
+        }
+      });
+    });
+  } catch (e) {
+    console.error(e);
+    list.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
+  }
+}
+
 function initTabs(){
   const tabs = document.querySelectorAll('.tab[data-tab]');
   const bodies = {
     reports: document.getElementById('tab-reports'),
     users: document.getElementById('tab-users'),
     layers: document.getElementById('tab-layers'),
-    authorities: document.getElementById('tab-authorities')
+    authorities: document.getElementById('tab-authorities'),
+    modules: document.getElementById('tab-modules')
   };
   tabs.forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -933,7 +1004,8 @@ function initTabs(){
       const key = btn.getAttribute('data-tab');
       tabs.forEach(t => t.classList.toggle('active', t === btn));
       Object.keys(bodies).forEach(k => {
-        bodies[k].hidden = (k !== key);
+        const el = bodies[k];
+        if (el) el.hidden = (k !== key);
       });
       if (key === 'users') loadUsers();
       if (key === 'layers') {
@@ -950,6 +1022,7 @@ function initTabs(){
         clearLayerMarkers();
         loadAuthorities();
       }
+      if (key === 'modules') loadModules();
     });
   });
 }

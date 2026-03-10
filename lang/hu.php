@@ -139,6 +139,10 @@ return [
     'admin.fms_not_configured' => 'FMS nincs',
     'admin.ai_configured' => 'AI beállítva',
     'admin.ai_not_configured' => 'AI nincs',
+    'admin.modules' => 'Beépülő modulok',
+    'admin.modules_intro' => 'FixMyStreet és AI (Mistral) ki-/bekapcsolása, API kulcsok megadása. A kulcsok itt vagy a .env fájlban állíthatók.',
+    'admin.module_save' => 'Mentés',
+    'admin.module_saved' => 'Mentve.',
 
     // Gov dashboard
     'gov.title' => 'Közigazgatási dashboard',

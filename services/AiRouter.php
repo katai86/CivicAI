@@ -14,21 +14,23 @@ class AiRouter
 
     public function __construct()
     {
-        if (!AI_ENABLED) {
+        $moduleMistral = function_exists('get_module_setting') && get_module_setting('mistral', 'enabled') === '1' && ((string)(get_module_setting('mistral', 'api_key') ?? '')) !== '';
+        $envEnabled = defined('AI_ENABLED') && AI_ENABLED;
+        if (!$envEnabled && !$moduleMistral) {
             $this->provider = null;
             return;
         }
         $prov = defined('AI_PROVIDER') ? (string)AI_PROVIDER : 'mistral';
         if ($prov === 'gemini') {
-            $this->provider = new GeminiProvider();
+        $this->provider = new GeminiProvider();
         } else {
-            $this->provider = new MistralProvider();
+            $this->provider = new MistralProvider(function_exists('mistral_api_key') ? mistral_api_key() : null);
         }
     }
 
     public function isEnabled(): bool
     {
-        return AI_ENABLED && $this->provider !== null;
+        return $this->provider !== null;
     }
 
     /**

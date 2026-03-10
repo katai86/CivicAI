@@ -86,6 +86,15 @@ CALL add_column_if_not_exists('map_layers', 'authority_id', 'INT NULL');
 CALL add_column_if_not_exists('map_layers', 'layer_type', 'VARCHAR(32) NULL');
 INSERT IGNORE INTO map_layers (layer_key, name, category, is_active, is_temporary, layer_type) VALUES ('trees', 'Fák (fakataszter)', 'trees', 1, 0, 'trees');
 
+-- ========== 2026-18 Beépülő modulok (FMS, Mistral, stb.) – admin felületen ki/be, API kulcs ==========
+CREATE TABLE IF NOT EXISTS module_settings (
+  module_key VARCHAR(64) NOT NULL,
+  setting_key VARCHAR(64) NOT NULL,
+  value TEXT NULL,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (module_key, setting_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ========== 2026-04 FMS bridge ==========
 CREATE TABLE IF NOT EXISTS fms_reports (
   id INT AUTO_INCREMENT PRIMARY KEY,
