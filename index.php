@@ -7,6 +7,11 @@ $rankAll = null;
 $userPreferredTheme = null;
 try {
     start_secure_session();
+    // Mobilon (webapp) Mobilekit UI, desktopon marad a jelenlegi
+    if (is_mobile_device() && empty($_GET['desktop']) && empty($_COOKIE['force_desktop'])) {
+        header('Location: ' . app_url('/mobile/index.php'));
+        exit;
+    }
     $uid = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
     $role = current_user_role() ?: 'guest';
     if ($uid > 0 && function_exists('get_user_rank')) {

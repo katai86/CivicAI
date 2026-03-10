@@ -75,6 +75,12 @@ function app_url(string $path = ''): string {
     return $base . '/' . ltrim($path, '/');
 }
 
+function is_mobile_device(): bool {
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+    if (!is_string($ua) || $ua === '') return false;
+    return (bool)preg_match('/Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini|webOS/i', $ua);
+}
+
 // --------------------
 // Session bootstrap
 // --------------------

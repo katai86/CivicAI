@@ -1,0 +1,68 @@
+/* Mobilekit integration overrides for CivicAI */
+
+body.civicai-mobile {
+  font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Arial !important;
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+body.civicai-mobile a {
+  color: var(--primary) !important;
+}
+
+/* Bootstrap 5 variables used by Mobilekit */
+body.civicai-mobile {
+  --bs-primary: var(--primary);
+  --bs-link-color: var(--primary);
+  --bs-body-color: var(--text);
+  --bs-body-bg: var(--bg);
+}
+
+/* Header / bottom menu colors */
+body.civicai-mobile .appHeader,
+body.civicai-mobile .appBottomMenu {
+  background: rgba(15, 23, 33, 0.88) !important;
+  border-color: var(--border) !important;
+  backdrop-filter: blur(10px);
+}
+
+body.civicai-mobile .appHeader .pageTitle,
+body.civicai-mobile .appBottomMenu .item .name {
+  color: var(--text) !important;
+}
+
+/* Capsule background */
+body.civicai-mobile #appCapsule {
+  background: transparent !important;
+}
+
+/* Cards */
+body.civicai-mobile .card,
+body.civicai-mobile .section {
+  background: var(--card) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* Inputs */
+body.civicai-mobile .form-control,
+body.civicai-mobile .form-select {
+  background: rgba(22,33,45,0.7) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+body.civicai-mobile .form-control::placeholder {
+  color: var(--muted) !important;
+}
+
+/* Map should fill screen under headers */
+body.civicai-mobile #mapWrap {
+  position: relative;
+  height: calc(100vh - 112px);
+}
+
+body.civicai-mobile #map {
+  height: 100%;
+}
+
