@@ -30,30 +30,35 @@ $MODULE_DEFS = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-  $list = [];
-  foreach ($MODULE_DEFS as $moduleKey => $def) {
-    $settingsList = [];
-    foreach ($def['settings'] as $s) {
-      $v = get_module_setting($moduleKey, $s['key']);
-      $masked = !empty($s['mask']) && $v !== null && $v !== '';
-      $settingsList[] = [
-        'key' => $s['key'],
-        'label' => $s['label'],
-        'type' => $s['type'] ?? 'text',
-        'mask' => !empty($s['mask']),
-        'value' => $masked ? '' : ($v ?? ''),
-        'set' => $v !== null && $v !== '',
-        'placeholder' => !empty($s['placeholder']) ? $s['placeholder'] : '',
+  try {
+    $list = [];
+    foreach ($MODULE_DEFS as $moduleKey => $def) {
+      $settingsList = [];
+      foreach ($def['settings'] as $s) {
+        $v = get_module_setting($moduleKey, $s['key']);
+        $masked = !empty($s['mask']) && $v !== null && $v !== '';
+        $settingsList[] = [
+          'key' => $s['key'],
+          'label' => $s['label'],
+          'type' => $s['type'] ?? 'text',
+          'mask' => !empty($s['mask']),
+          'value' => $masked ? '' : ($v ?? ''),
+          'set' => $v !== null && $v !== '',
+          'placeholder' => !empty($s['placeholder']) ? $s['placeholder'] : '',
+        ];
+      }
+      $list[] = [
+        'id' => $moduleKey,
+        'name' => $def['name'],
+        'description' => $def['description'],
+        'settings' => $settingsList,
       ];
     }
-    $list[] = [
-      'id' => $moduleKey,
-      'name' => $def['name'],
-      'description' => $def['description'],
-      'settings' => $settingsList,
-    ];
+    json_response(['ok' => true, 'modules' => $list]);
+  } catch (Throwable $e) {
+    json_response(['ok' => false, 'error' => 'Modullista betöltése sikertelen: ' . $e->getMessage(), 'modules' => []], 500);
   }
-  json_response(['ok' => true, 'modules' => $list]);
+  exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

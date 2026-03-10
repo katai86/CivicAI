@@ -80,6 +80,7 @@ function avatar_url($filename){
       <b><?= h(t('site.name')) ?></b>
     </a>
     <?php include __DIR__ . '/user/inc_topbar_tools.php'; ?>
+    <div class="topbar-links">
       <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
       <?php if ($uid > 0): ?>
         <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>"><?= h(t('nav.my_reports')) ?></a>

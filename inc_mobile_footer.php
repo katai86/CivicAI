@@ -28,7 +28,7 @@ $role = isset($role) ? (string)$role : '';
         <strong class="name"><?= htmlspecialchars(t('nav.settings'), ENT_QUOTES, 'UTF-8') ?></strong>
       </div>
     </a>
-    <?php if (($role ?? '') === 'govuser'): ?>
+    <?php if (in_array($role ?? '', ['govuser', 'admin', 'superadmin'], true)): ?>
     <a href="<?= htmlspecialchars(app_url('/gov/index.php'), ENT_QUOTES, 'UTF-8') ?>" class="item<?= ($mobileActiveTab ?? '') === 'gov' ? ' active' : '' ?>">
       <div class="col">
         <i class="bi bi-building"></i>

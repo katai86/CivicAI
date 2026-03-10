@@ -985,7 +985,8 @@ async function loadModules(){
     });
   } catch (e) {
     console.error(e);
-    list.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
+    const msg = (e && e.message) ? e.message : 'Hiba a betöltésnél.';
+    list.innerHTML = '<div class="text-secondary">' + esc(msg) + '</div>';
   }
 }
 

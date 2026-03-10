@@ -55,7 +55,18 @@ class MistralProvider implements AiProviderInterface
 
         $json = json_decode($res, true);
         if (!is_array($json) || $code >= 400) {
-            return ['ok' => false, 'error' => $res];
+            $msg = 'Mistral API hiba.';
+            if (is_array($json)) {
+                $detail = $json['detail'] ?? $json['message'] ?? $json['error'] ?? null;
+                if (is_string($detail)) {
+                    $msg = $code === 401 ? 'Mistral API kulcs érvénytelen vagy hiányzik.' : $detail;
+                }
+            } elseif ($code === 401) {
+                $msg = 'Mistral API kulcs érvénytelen vagy hiányzik.';
+            } elseif ($code >= 500) {
+                $msg = 'Mistral szolgáltatás átmenetileg nem elérhető.';
+            }
+            return ['ok' => false, 'error' => $msg];
         }
 
         $content = null;
