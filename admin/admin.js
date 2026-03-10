@@ -939,11 +939,13 @@ async function loadModules(){
           enabled = s.value === '1' || s.set;
           return '';
         }
-        const type = (s.type === 'password' || s.mask) ? 'password' : 'text';
+        const type = (s.type === 'password' || s.mask) ? 'password' : (s.type === 'number' ? 'number' : 'text');
         const placeholder = s.mask && s.set ? '•••••••• (változatlan)' : (s.placeholder || '');
         const val = s.mask && s.set ? '' : (s.value || '');
-        return `<div class="mb-2"><label class="form-label small">${esc(s.label)}</label><input class="form-control form-control-sm" data-module-key="${esc(m.id)}" data-setting-key="${esc(s.key)}" type="${type}" value="${esc(val)}" placeholder="${esc(placeholder)}"></div>`;
+        const minAttr = s.type === 'number' ? ' min="0"' : '';
+        return `<div class="mb-2"><label class="form-label small">${esc(s.label)}</label><input class="form-control form-control-sm" data-module-key="${esc(m.id)}" data-setting-key="${esc(s.key)}" type="${type}" value="${esc(val)}" placeholder="${esc(placeholder)}"${minAttr}></div>`;
       }).join('');
+      const isMistral = (m.id === 'mistral');
       return `
         <div class="card mb-3" data-module-id="${esc(m.id)}">
           <div class="card-body">
@@ -954,7 +956,11 @@ async function loadModules(){
               <label class="form-check-label" for="mod-${esc(m.id)}">Bekapcsolva</label>
             </div>
             ${fields}
-            <button type="button" class="btn btn-sm btn-primary module-save" data-module-id="${esc(m.id)}">${t('admin.module_save')}</button>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+              <button type="button" class="btn btn-sm btn-primary module-save" data-module-id="${esc(m.id)}">${t('admin.module_save')}</button>
+              ${isMistral ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTestMistral">Teszt Mistral</button>' : ''}
+            </div>
+            ${isMistral ? '<div id="mistralTestResult" class="small mt-2 text-secondary"></div>' : ''}
           </div>
         </div>
       `;
@@ -983,6 +989,33 @@ async function loadModules(){
         }
       });
     });
+
+    const btnTest = document.getElementById('btnTestMistral');
+    const testResult = document.getElementById('mistralTestResult');
+    if (btnTest && testResult) {
+      btnTest.addEventListener('click', async () => {
+        testResult.textContent = 'Tesztelés...';
+        btnTest.disabled = true;
+        try {
+          const j = await fetchJson(API_MODULES, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'test_mistral' })
+          });
+          if (j && j.ok) {
+            testResult.textContent = (j.message || 'Mistral: OK');
+            testResult.className = 'small mt-2 text-success';
+          } else {
+            testResult.textContent = (j && j.error) ? j.error : 'Ismeretlen hiba';
+            testResult.className = 'small mt-2 text-danger';
+          }
+        } catch (e) {
+          testResult.textContent = 'Hiba: ' + (e.message || e);
+          testResult.className = 'small mt-2 text-danger';
+        }
+        btnTest.disabled = false;
+      });
+    }
   } catch (e) {
     console.error(e);
     const msg = (e && e.message) ? e.message : 'Hiba a betöltésnél.';

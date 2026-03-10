@@ -310,6 +310,33 @@ function mistral_api_key(): string {
     return defined('MISTRAL_API_KEY') ? (string)MISTRAL_API_KEY : '';
 }
 
+/**
+ * AI hívási limit – először module_settings (mistral), ha nincs akkor env/config.
+ * @param string $key 'summary' | 'reports_per_day' | 'image_analysis'
+ */
+function get_ai_limit(string $key): int {
+    $settingKey = null;
+    if ($key === 'summary') $settingKey = 'ai_summary_limit';
+    elseif ($key === 'reports_per_day') $settingKey = 'ai_max_reports_per_day';
+    elseif ($key === 'image_analysis') $settingKey = 'ai_image_analysis_limit';
+    if ($settingKey !== null) {
+        $v = get_module_setting('mistral', $settingKey);
+        if ($v !== null && $v !== '' && is_numeric($v)) {
+            return max(0, (int) $v);
+        }
+    }
+    if ($key === 'summary') {
+        return defined('AI_SUMMARY_LIMIT') ? max(0, (int) AI_SUMMARY_LIMIT) : 20;
+    }
+    if ($key === 'reports_per_day') {
+        return defined('AI_MAX_REPORTS_PER_DAY') ? max(0, (int) AI_MAX_REPORTS_PER_DAY) : 1000;
+    }
+    if ($key === 'image_analysis') {
+        return defined('AI_IMAGE_ANALYSIS_LIMIT') ? max(0, (int) AI_IMAGE_ANALYSIS_LIMIT) : 300;
+    }
+    return 0;
+}
+
 // --------------------
 // Govuser modul kapcsolók (UI-szint)
 // --------------------

@@ -35,11 +35,12 @@ class AiRouter
 
     /**
      * Egyszerű rate limit: ai_results alapján számol, nap/ task_type szerint.
+     * Limitek: get_ai_limit() – admin Beépülő modulok (mistral) vagy env.
      */
     private function withinLimit(string $taskType): bool
     {
         if ($taskType === 'report_classification') {
-            $max = AI_MAX_REPORTS_PER_DAY ?: 0;
+            $max = function_exists('get_ai_limit') ? get_ai_limit('reports_per_day') : (defined('AI_MAX_REPORTS_PER_DAY') ? (int) AI_MAX_REPORTS_PER_DAY : 0);
             if ($max <= 0) return false;
             try {
                 $stmt = db()->prepare("SELECT COUNT(*) FROM ai_results WHERE task_type = 'report_classification' AND created_at >= CURDATE()");
@@ -51,7 +52,7 @@ class AiRouter
             }
         }
         if (in_array($taskType, ['admin_summary','gov_summary'], true)) {
-            $max = AI_SUMMARY_LIMIT ?: 0;
+            $max = function_exists('get_ai_limit') ? get_ai_limit('summary') : (defined('AI_SUMMARY_LIMIT') ? (int) AI_SUMMARY_LIMIT : 0);
             if ($max <= 0) return false;
             try {
                 $stmt = db()->prepare("SELECT COUNT(*) FROM ai_results WHERE task_type IN ('admin_summary','gov_summary') AND created_at >= CURDATE()");
@@ -63,7 +64,7 @@ class AiRouter
             }
         }
         if ($taskType === 'image_classification') {
-            $max = AI_IMAGE_ANALYSIS_LIMIT ?: 0;
+            $max = function_exists('get_ai_limit') ? get_ai_limit('image_analysis') : (defined('AI_IMAGE_ANALYSIS_LIMIT') ? (int) AI_IMAGE_ANALYSIS_LIMIT : 0);
             if ($max <= 0) return false;
             try {
                 $stmt = db()->prepare("SELECT COUNT(*) FROM ai_results WHERE task_type = 'image_classification' AND created_at >= CURDATE()");

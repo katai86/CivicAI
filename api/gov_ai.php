@@ -1,4 +1,9 @@
 <?php
+/**
+ * Gov dashboard AI: összefoglaló / ESG generálás Mistral (vagy más provider) alapján.
+ * Szükséges: (1) Gov usernek legyen hatóság (authority_users), (2) Mistral modul be + API kulcs,
+ * (3) AI_SUMMARY_LIMIT > 0 (config/env). A statisztika a reports tábla authority_id / city alapján készül.
+ */
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 require_once __DIR__ . '/../services/AiRouter.php';
@@ -160,10 +165,13 @@ try {
   ai_store_result('gov', $authorityId ? (int)$authorityId : null, $taskType, $modelName, $inputHash, $data, null);
 } catch (Throwable $e) { /* ignore */ }
 
-// UI-hoz egyszerű szöveg mező (ha a JSON különböző formátumú)
+// UI-hoz egyszerű szöveg mező: JSON-ból text/summary, vagy nyers válasz (ha nem JSON / nincs text)
 $text = '';
 if (is_array($data)) {
   $text = (string)($data['text'] ?? $data['summary'] ?? '');
+}
+if ($text === '' && !empty($resp['raw']['choices'][0]['message']['content'])) {
+  $text = trim((string)$resp['raw']['choices'][0]['message']['content']);
 }
 json_response(['ok' => true, 'data' => ['text' => $text, 'raw' => $data]]);
 

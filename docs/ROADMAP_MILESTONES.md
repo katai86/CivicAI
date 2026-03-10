@@ -46,15 +46,15 @@ Ez a dokumentum a három prioritásos területet milestone-okra bontja. **Csak e
 - **gov_modules.php:** gov user számára user_module_toggles (mistral, fms) ki/be – ez maradjon és legyen összehangolva az admin modulokkal.
 
 ### Milestone B1 – Admin: AI limitek beállíthatóvá tétele
-- [ ] **B1.1** module_settings vagy külön tábla: `ai_max_reports_per_day`, `ai_summary_limit`, `ai_image_analysis_limit` (opcionális – először csak summary + reports).
-- [ ] **B1.2** admin_modules.php: Mistral modulhoz (és később más AI modulhoz) ezen mezők megjelenítése – szám inputok, alapértelmezett értékek (pl. 20 summary, 1000 report/nap).
-- [ ] **B1.3** util.php vagy config: a limitek olvasása először module_settings-ből, ha nincs akkor env (AI_SUMMARY_LIMIT stb.); AiRouter ezt használja (már használja a config konstansokat – átirányítani get_module_setting vagy új helperre).
-- [ ] **B1.4** Admin „Beépülő modulok” fül: limit mezők mentése és megjelenítése; rövid szöveg: „Napi max AI összefoglaló hívás” / „Napi max bejelentés-kategorizálás”.
+- [x] **B1.1** module_settings (mistral): ai_summary_limit, ai_max_reports_per_day, ai_image_analysis_limit.
+- [x] **B1.2** admin_modules.php: Mistral modulhoz szám inputok (placeholder 20, 1000, 300); admin.js type=number.
+- [x] **B1.3** util.php: get_ai_limit('summary'|'reports_per_day'|'image_analysis') – module_settings, majd env; AiRouter withinLimit() ezt használja.
+- [x] **B1.4** Admin Beépülő modulok: limit mezők megjelenítése és mentése.
 
 ### Milestone B2 – Mistral működés és diagnosztika
-- [ ] **B2.1** Mistral API hívás hibakezelés: gov_ai.php és report_create (AI) ág – hiba esetén egyértelmű JSON üzenet (pl. „Mistral API kulcs érvénytelen” / „Napi limit elfogyott”) és log.
-- [ ] **B2.2** Admin felületen (Beépülő modulok vagy külön „AI állapot”): opcionális „Teszt Mistral” gomb – egy minimális hívás és az eredmény (siker / hibaüzenet) megjelenik, hogy ne kelljen a gov oldalon próbálkozni.
-- [ ] **B2.3** Dokumentáció: API kulcs hol adható meg (admin UI vs .env), és hogy a module_settings elsőbbséget élvezzen.
+- [x] **B2.1** gov_ai.php: egyértelmű JSON hiba + nyers válasz fallback; AiRouter/MistralProvider üzenetek (limit, kulcs).
+- [x] **B2.2** Admin Beépülő modulok: „Teszt Mistral” gomb (api/admin_modules.php action=test_mistral), eredmény a kártyán.
+- [x] **B2.3** docs/AI_SETUP.md: API kulcs (admin vs .env), limitek, teszt gomb.
 
 ### Milestone B3 – ChatGPT és FMS/Open311 modul definíció
 - [ ] **B3.1** admin_modules.php MODULE_DEFS: **chatgpt** (vagy openai) modul hozzáadása – enabled, api_key (opcionális: base_url ha más endpoint); backendben még nem kell hívni, csak a beállítási felület.

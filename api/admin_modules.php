@@ -25,6 +25,9 @@ $MODULE_DEFS = [
     'settings' => [
       ['key' => 'enabled', 'label' => 'Bekapcsolva', 'type' => 'checkbox'],
       ['key' => 'api_key', 'label' => 'API kulcs', 'type' => 'password', 'mask' => true],
+      ['key' => 'ai_summary_limit', 'label' => 'Napi max AI összefoglaló hívás (gov/admin)', 'type' => 'number', 'placeholder' => '20'],
+      ['key' => 'ai_max_reports_per_day', 'label' => 'Napi max bejelentés-kategorizálás (AI)', 'type' => 'number', 'placeholder' => '1000'],
+      ['key' => 'ai_image_analysis_limit', 'label' => 'Napi max kép-elemzés (AI)', 'type' => 'number', 'placeholder' => '300'],
     ],
   ],
 ];
@@ -67,6 +70,21 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $body = read_json_body();
 $action = (string)($body['action'] ?? '');
+
+// Teszt Mistral – minimális hívás, siker/hiba vissza
+if ($action === 'test_mistral') {
+  require_once __DIR__ . '/../services/AiRouter.php';
+  $router = new \AiRouter();
+  if (!$router->isEnabled()) {
+    json_response(['ok' => false, 'error' => 'AI nincs bekapcsolva vagy nincs API kulcs (Mistral).']);
+  }
+  $resp = $router->callJson('gov_summary', 'Reply with exactly: OK', ['max_tokens' => 10]);
+  if (!empty($resp['ok'])) {
+    json_response(['ok' => true, 'message' => 'Mistral: kapcsolat rendben.']);
+  }
+  json_response(['ok' => false, 'error' => $resp['error'] ?? 'Mistral hiba (pl. érvénytelen kulcs vagy limit).']);
+}
+
 if ($action !== 'save_module') {
   json_response(['ok' => false, 'error' => 'Invalid action'], 400);
 }
