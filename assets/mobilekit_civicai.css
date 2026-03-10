@@ -66,3 +66,18 @@ body.civicai-mobile #map {
   height: 100%;
 }
 
+/* Content pages (my, settings, leaderboard, login) – scrollable section */
+body.civicai-mobile #appCapsule .section {
+  overflow-y: auto;
+  max-height: calc(100vh - 112px);
+  padding-bottom: 24px;
+}
+
+body.civicai-mobile .page .card {
+  margin-bottom: 12px;
+}
+
+body.civicai-mobile .auth-page .card {
+  margin: 16px;
+}
+

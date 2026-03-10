@@ -207,9 +207,13 @@ $isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 <?php if ($isMobile): ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/mobilekit_civicai.css'), ENT_QUOTES, 'UTF-8'); ?>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
 <?php endif; ?>
 </head>
 <body class="page<?= $isMobile ? ' civicai-mobile' : '' ?>">
+<?php if ($isMobile): ?>
+  <?php $mobilePageTitle = t('user.settings'); $mobileActiveTab = 'settings'; require __DIR__ . '/../inc_mobile_header.php'; ?>
+<?php else: ?>
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
@@ -228,7 +232,9 @@ $isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
     </div>
   </div>
 </header>
+<?php if (!$isMobile): ?>
 <div class="wrap">
+<?php endif; ?>
 <div class="card">
   <div class="row">
     <h3 style="margin:0"><?= htmlspecialchars(t('user.settings'), ENT_QUOTES, 'UTF-8') ?></h3>
@@ -344,7 +350,15 @@ $isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
     <small><?= htmlspecialchars(t('user.consent_withdraw'), ENT_QUOTES, 'UTF-8') ?></small>
   </div>
 </div>
+<?php if (!$isMobile): ?>
 </div>
+<?php endif; ?>
+<?php if ($isMobile): ?>
+  <?php require __DIR__ . '/../inc_mobile_footer.php'; ?>
+  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/lib/bootstrap.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/base.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php endif; ?>
+<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <?php if ($ok): $pt = ($u['preferred_theme'] ?? null) === 'light' || ($u['preferred_theme'] ?? null) === 'dark' ? $u['preferred_theme'] : null; if ($pt): ?>
 <script>try{localStorage.setItem('civicai_theme','<?= $pt === 'light' ? 'light' : 'dark' ?>');document.documentElement.setAttribute('data-theme','<?= $pt ?>');document.documentElement.setAttribute('data-bs-theme','<?= $pt ?>');}catch(_){}</script>
 <?php endif; endif; ?>

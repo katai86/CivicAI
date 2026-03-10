@@ -63,9 +63,13 @@ $isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 <?php if ($isMobile): ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/mobilekit_civicai.css'), ENT_QUOTES, 'UTF-8'); ?>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
 <?php endif; ?>
 </head>
 <body class="page auth-page<?= $isMobile ? ' civicai-mobile' : '' ?>">
+<?php if ($isMobile): ?>
+  <?php $mobilePageTitle = t('auth.login_title'); $mobileActiveTab = 'profile'; $uid = 0; $role = 'guest'; $mobileBackUrl = app_url('/'); require __DIR__ . '/../inc_mobile_header.php'; ?>
+<?php else: ?>
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
@@ -78,7 +82,10 @@ $isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
     </div>
   </div>
 </header>
+<?php endif; ?>
+<?php if (!$isMobile): ?>
 <div class="auth-wrap">
+<?php endif; ?>
 <div class="card">
   <h3 style="margin:0 0 10px"><?= htmlspecialchars(t('auth.login_title'), ENT_QUOTES, 'UTF-8') ?></h3>
   <?php if($err): ?><div class="err"><?= htmlspecialchars(t($err), ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
@@ -89,6 +96,13 @@ $isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
   </form>
   <div style="margin-top:10px"><a href="<?= htmlspecialchars(app_url('/user/register.php')) ?>"><?= htmlspecialchars(t('nav.register'), ENT_QUOTES, 'UTF-8') ?></a></div>
 </div>
+<?php if (!$isMobile): ?>
 </div>
+<?php endif; ?>
+<?php if ($isMobile): ?>
+  <?php require __DIR__ . '/../inc_mobile_footer.php'; ?>
+  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/lib/bootstrap.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/base.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php endif; ?>
 <script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body></html>

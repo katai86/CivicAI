@@ -138,9 +138,13 @@ $catLabel = [
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
   <?php if ($isMobile): ?>
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/mobilekit_civicai.css'), ENT_QUOTES, 'UTF-8'); ?>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
   <?php endif; ?>
 </head>
 <body class="page<?= $isMobile ? ' civicai-mobile' : '' ?>">
+<?php if ($isMobile): ?>
+  <?php $mobilePageTitle = t('user.my_reports'); $mobileActiveTab = 'my'; $uid = $userId; require __DIR__ . '/../inc_mobile_header.php'; ?>
+<?php else: ?>
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?php echo h(app_url('/')); ?>">
@@ -159,8 +163,8 @@ $catLabel = [
     </div>
   </div>
 </header>
-
   <div class="wrap">
+<?php endif; ?>
   <div class="card">
     <div class="row" style="justify-content:space-between">
       <div>
@@ -399,7 +403,15 @@ $catLabel = [
       <?php endforeach; ?>
     </div>
   <?php endif; ?>
+<?php if (!$isMobile): ?>
 </div>
+<?php endif; ?>
 
+<?php if ($isMobile): ?>
+  <?php require __DIR__ . '/../inc_mobile_footer.php'; ?>
+  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/lib/bootstrap.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/base.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php endif; ?>
+<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
 </html>

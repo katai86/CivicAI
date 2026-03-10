@@ -27,6 +27,7 @@ $lbCatMonth = get_category_leaderboard('month', $cat, 10);
 $lbCatAll = get_category_leaderboard('all', $cat, 10);
 
 $uid = current_user_id() ?: 0;
+$role = current_user_role() ?: 'guest';
 $rankWeek = $uid ? get_user_rank('week', $uid) : null;
 $rankMonth = $uid ? get_user_rank('month', $uid) : null;
 $rankAll = $uid ? get_user_rank('all', $uid) : null;
@@ -65,9 +66,13 @@ function avatar_url($filename){
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
   <?php if ($isMobile): ?>
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/mobilekit_civicai.css'), ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
   <?php endif; ?>
 </head>
 <body class="page<?= $isMobile ? ' civicai-mobile' : '' ?>">
+<?php if ($isMobile): ?>
+  <?php $mobilePageTitle = t('lb.title'); $mobileActiveTab = ''; $mobileBackUrl = app_url('/'); require __DIR__ . '/inc_mobile_header.php'; ?>
+<?php else: ?>
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
@@ -87,8 +92,9 @@ function avatar_url($filename){
     </div>
   </div>
 </header>
-
+<?php if (!$isMobile): ?>
 <div class="wrap">
+<?php endif; ?>
   <div class="card">
     <div class="top">
       <div style="font-weight:900;font-size:18px"><?= h(t('lb.title')) ?></div>
@@ -298,7 +304,14 @@ function avatar_url($filename){
       </div>
     </div>
   </div>
+<?php if (!$isMobile): ?>
 </div>
+<?php endif; ?>
+<?php if ($isMobile): ?>
+  <?php require __DIR__ . '/inc_mobile_footer.php'; ?>
+  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/lib/bootstrap.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/base.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php endif; ?>
 <script src="<?= h(app_url('/assets/theme-lang.js')) ?>"></script>
 </body>
 </html>
