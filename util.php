@@ -81,6 +81,15 @@ function is_mobile_device(): bool {
     return (bool)preg_match('/Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini|webOS/i', $ua);
 }
 
+/**
+ * Whether to show mobile layout (Mobilekit shell). False if desktop is forced via ?desktop=1 or force_desktop cookie.
+ */
+function use_mobile_layout(): bool {
+    if (!is_mobile_device()) return false;
+    if (!empty($_GET['desktop']) || !empty($_COOKIE['force_desktop'])) return false;
+    return true;
+}
+
 // --------------------
 // Session bootstrap
 // --------------------

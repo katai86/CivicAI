@@ -110,8 +110,7 @@ function avatar_url($filename){
 }
 
 $currentLang = current_lang();
-// Mobil shell csak mobil eszközön
-$isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
+$isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : (function_exists('is_mobile_device') && is_mobile_device());
 $statusLabel = [
   'pending' => t('status.pending'), 'approved' => t('status.approved'), 'rejected' => t('status.rejected'),
   'new' => t('status.new'), 'needs_info' => t('status.needs_info'), 'forwarded' => t('status.forwarded'),
@@ -145,24 +144,7 @@ $catLabel = [
 <?php if ($isMobile): ?>
   <?php $mobilePageTitle = t('user.my_reports'); $mobileActiveTab = 'my'; $uid = $userId; require __DIR__ . '/../inc_mobile_header.php'; ?>
 <?php else: ?>
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="brand brand-link" href="<?php echo h(app_url('/')); ?>">
-      <span class="brand-logo" aria-hidden="true"></span>
-      <b><?= h(t('site.name')) ?></b>
-    </a>
-    <div class="topbar-links">
-      <a class="topbtn" href="<?php echo h(app_url('/')); ?>"><?= h(t('nav.map')) ?></a>
-      <a class="topbtn" href="<?php echo h(app_url('/user/profile.php?id=' . (int)$userId)); ?>"><?= h(t('user.profile')) ?></a>
-      <a class="topbtn" href="<?php echo h(app_url('/user/friends.php')); ?>"><?= h(t('nav.friends')) ?></a>
-      <a class="topbtn" href="<?php echo h(app_url('/user/settings.php')); ?>"><?= h(t('nav.settings')) ?></a>
-      <?php if ($role === 'govuser' || $role === 'admin' || $role === 'superadmin'): ?>
-        <a class="topbtn" href="<?php echo h(app_url('/gov/index.php')); ?>"><?= h(t('nav.gov')) ?></a>
-      <?php endif; ?>
-      <a class="topbtn" href="<?php echo h(app_url('/user/logout.php')); ?>"><?= h(t('nav.logout')) ?></a>
-    </div>
-  </div>
-</header>
+<?php $uid = $userId; require __DIR__ . '/../inc_desktop_topbar.php'; ?>
   <div class="wrap">
 <?php endif; ?>
   <div class="card">

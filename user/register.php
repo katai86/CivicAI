@@ -87,6 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 $currentLang = current_lang();
+$uid = 0;
+$role = 'guest';
 ?>
 <!doctype html>
 <html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>"><head>
@@ -96,18 +98,7 @@ $currentLang = current_lang();
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
 <body class="page auth-page">
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="brand-logo" aria-hidden="true"></span>
-      <b><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?></b>
-    </a>
-    <?php include __DIR__ . '/inc_topbar_tools.php'; ?>
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/login.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.login'), ENT_QUOTES, 'UTF-8') ?></a>
-    </div>
-  </div>
-</header>
+<?php require __DIR__ . '/../inc_desktop_topbar.php'; ?>
 <div class="auth-wrap">
 <div class="card">
   <h3 style="margin:0 0 10px"><?= htmlspecialchars(t('auth.register_title'), ENT_QUOTES, 'UTF-8') ?></h3>

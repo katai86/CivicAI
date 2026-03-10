@@ -94,27 +94,19 @@ $osmUrl = "https://www.openstreetmap.org/?mlat=" . rawurlencode((string)$r['lat'
 
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
+$uid = 0;
+$role = 'guest';
 ?><!doctype html>
 <html lang="<?= h($currentLang) ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><?= h(t('site.name')) ?> – <?= h($caseNo) ?></title>
+  <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="page">
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
-      <span class="brand-logo" aria-hidden="true"></span>
-      <b><?= h(t('site.name')) ?></b>
-    </a>
-    <div class="topbar-links">
-      <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
-      <a class="topbtn" href="<?= h(app_url('/leaderboard.php')) ?>"><?= h(t('lb.title')) ?></a>
-    </div>
-  </div>
-</header>
+<?php require __DIR__ . '/inc_desktop_topbar.php'; ?>
 
 <div class="wrap">
 

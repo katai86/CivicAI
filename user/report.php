@@ -81,7 +81,7 @@ $trackUrl = ((int)$r['notify_enabled'] === 1 && !empty($r['notify_token']))
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
 ?><!doctype html>
-<html lang="hu">
+<html lang="<?= h($currentLang) ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -95,20 +95,7 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
   data-api-delete="<?= h(app_url('/api/report_attachment_delete.php')) ?>"
   data-api-upload="<?= h(app_url('/api/report_upload.php')) ?>"
 >
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
-      <span class="brand-logo" aria-hidden="true"></span>
-      <b><?= h(t('site.name')) ?></b>
-    </a>
-    <div class="topbar-links">
-      <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>
-      <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>">Saját ügyeim</a>
-      <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>">Beállítások</a>
-      <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>">Kilépés</a>
-    </div>
-  </div>
-</header>
+<?php $uid = $userId; $role = function_exists('current_user_role') ? (current_user_role() ?: 'user') : 'user'; $currentLang = function_exists('current_lang') ? current_lang() : 'hu'; require __DIR__ . '/../inc_desktop_topbar.php'; ?>
 
 <div class="wrap">
   <div class="card">

@@ -65,6 +65,7 @@ $rankMonth = get_user_rank('month', (int)$u['id']);
 $rankAll = get_user_rank('all', (int)$u['id']);
 
 $viewerId = current_user_id();
+$currentLang = function_exists('current_lang') ? current_lang() : 'hu';
 $friendState = 'none';
 $friendReqId = 0;
 if ($viewerId && $viewerId !== (int)$u['id']) {
@@ -139,11 +140,11 @@ function avatar_url($filename){
 }
 ?>
 <!doctype html>
-<html lang="hu">
+<html lang="<?= h($currentLang) ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CivicAI – Profil</title>
+  <title><?= h(t('site.name')) ?> – <?= h(t('user.profile')) ?></title>
   <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
   <script>
@@ -176,27 +177,7 @@ function avatar_url($filename){
   </script>
 </head>
 <body class="page">
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
-      <span class="brand-logo" aria-hidden="true"></span>
-      <b>CivicAI</b>
-    </a>
-    <div class="topbar-links">
-      <a class="topbtn" href="<?= h(app_url('/')) ?>">Térkép</a>
-      <a class="topbtn" href="<?= h(app_url('/leaderboard.php')) ?>">Toplista</a>
-      <?php if (current_user_id()): ?>
-        <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>">Saját ügyeim</a>
-        <a class="topbtn" href="<?= h(app_url('/user/friends.php')) ?>">Barátok</a>
-        <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>">Beállítások</a>
-        <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>">Kilépés</a>
-      <?php else: ?>
-        <a class="topbtn" href="<?= h(app_url('/user/login.php')) ?>">Belépés</a>
-        <a class="topbtn primary" href="<?= h(app_url('/user/register.php')) ?>">Regisztráció</a>
-      <?php endif; ?>
-    </div>
-  </div>
-</header>
+<?php $uid = $viewerId; $role = function_exists('current_user_role') ? (current_user_role() ?: 'guest') : 'guest'; require __DIR__ . '/../inc_desktop_topbar.php'; ?>
 
 <div class="wrap">
   <div class="card">

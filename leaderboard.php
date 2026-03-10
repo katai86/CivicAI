@@ -1,13 +1,10 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/util.php';
-require_once __DIR__ . '/services/XpBadge.php';
-
-try {
 start_secure_session();
 $currentLang = current_lang();
-// Mobil shell csak mobil eszközön
-$isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
+$isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : (function_exists('is_mobile_device') && is_mobile_device());
+$role = current_user_role() ?: 'guest';
 
 $lbWeek = get_leaderboard('week', 10);
 $lbMonth = get_leaderboard('month', 10);
@@ -30,22 +27,12 @@ $lbCatMonth = get_category_leaderboard('month', $cat, 10);
 $lbCatAll = get_category_leaderboard('all', $cat, 10);
 
 $uid = current_user_id() ?: 0;
-$role = current_user_role() ?: 'guest';
 $rankWeek = $uid ? get_user_rank('week', $uid) : null;
 $rankMonth = $uid ? get_user_rank('month', $uid) : null;
 $rankAll = $uid ? get_user_rank('all', $uid) : null;
 $rankCatWeek = $uid ? get_user_category_rank('week', $uid, $cat) : null;
 $rankCatMonth = $uid ? get_user_category_rank('month', $uid, $cat) : null;
 $rankCatAll = $uid ? get_user_category_rank('all', $uid, $cat) : null;
-} catch (Throwable $e) {
-  if (function_exists('error_log')) {
-    error_log('Leaderboard: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-  }
-  $home = function_exists('app_url') ? app_url('/') : '/';
-  header('Content-Type: text/html; charset=utf-8');
-  echo '<!DOCTYPE html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hiba</title></head><body><p>Az oldal átmenetileg nem érhető el. Próbálja újra később.</p><p><a href="' . htmlspecialchars($home, ENT_QUOTES, 'UTF-8') . '">Főoldal</a></p></body></html>';
-  exit;
-}
 
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function badge_icon_url($code){
@@ -78,27 +65,15 @@ function avatar_url($filename){
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
   <?php if ($isMobile): ?>
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/mobilekit_civicai.css'), ENT_QUOTES, 'UTF-8') ?>">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
   <?php endif; ?>
 </head>
 <body class="page<?= $isMobile ? ' civicai-mobile' : '' ?>">
+<?php if (!$isMobile): $currentLang = $currentLang ?? current_lang(); require __DIR__ . '/inc_desktop_topbar.php'; endif; ?>
 <?php if ($isMobile): ?>
-  <?php $mobilePageTitle = t('lb.title'); $mobileActiveTab = ''; $mobileBackUrl = app_url('/'); require __DIR__ . '/inc_mobile_header.php'; ?>
-<?php else: ?>
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
-      <span class="brand-logo" aria-hidden="true"></span>
-      <b><?= h(t('site.name')) ?></b>
-    </a>
-    <?php
-    $topbarToolsFile = __DIR__ . DIRECTORY_SEPARATOR . 'user' . DIRECTORY_SEPARATOR . 'inc_topbar_tools.php';
-    if (is_file($topbarToolsFile)) {
-      include $topbarToolsFile;
-    } else {
-      echo '<div class="topbar-right"><div class="topbar-tools"></div></div>';
-    }
-    ?>
+    <a class="brand brand-link" href="<?= h(app_url('/')) ?>"><span class="brand-logo" aria-hidden="true"></span><b><?= h(t('site.name')) ?></b></a>
+    <div class="topbar-right"><?php include __DIR__ . '/user/inc_topbar_tools.php'; ?>
     <div class="topbar-links">
       <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
       <?php if ($uid > 0): ?>
@@ -109,12 +84,12 @@ function avatar_url($filename){
         <a class="topbtn" href="<?= h(app_url('/user/login.php')) ?>"><?= h(t('nav.login')) ?></a>
         <a class="topbtn primary" href="<?= h(app_url('/user/register.php')) ?>"><?= h(t('nav.register')) ?></a>
       <?php endif; ?>
-    </div>
+    </div></div>
   </div>
 </header>
-<?php if (!$isMobile): ?>
-<div class="wrap">
 <?php endif; ?>
+
+<div class="wrap">
   <div class="card">
     <div class="top">
       <div style="font-weight:900;font-size:18px"><?= h(t('lb.title')) ?></div>
@@ -324,14 +299,7 @@ function avatar_url($filename){
       </div>
     </div>
   </div>
-<?php if (!$isMobile): ?>
 </div>
-<?php endif; ?>
-<?php if ($isMobile): ?>
-  <?php require __DIR__ . '/inc_mobile_footer.php'; ?>
-  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/lib/bootstrap.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/base.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<?php endif; ?>
 <script src="<?= h(app_url('/assets/theme-lang.js')) ?>"></script>
 </body>
 </html>

@@ -46,8 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 }
 $currentLang = current_lang();
-// Mobil shell csak mobil eszközön
-$isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
+$isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : (function_exists('is_mobile_device') && is_mobile_device());
+$uid = 0;
+$role = 'guest';
 ?>
 <!doctype html>
 <html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>"><head>
@@ -70,18 +71,7 @@ $isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
 <?php if ($isMobile): ?>
   <?php $mobilePageTitle = t('auth.login_title'); $mobileActiveTab = 'profile'; $uid = 0; $role = 'guest'; $mobileBackUrl = app_url('/'); require __DIR__ . '/../inc_mobile_header.php'; ?>
 <?php else: ?>
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="brand-logo" aria-hidden="true"></span>
-      <b><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?></b>
-    </a>
-    <?php $currentLang = current_lang(); include __DIR__ . '/inc_topbar_tools.php'; ?>
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
-      <a class="topbtn primary" href="<?= htmlspecialchars(app_url('/user/register.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.register'), ENT_QUOTES, 'UTF-8') ?></a>
-    </div>
-  </div>
-</header>
+<?php require __DIR__ . '/../inc_desktop_topbar.php'; ?>
 <?php endif; ?>
 <?php if (!$isMobile): ?>
 <div class="auth-wrap">

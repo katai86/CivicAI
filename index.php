@@ -8,7 +8,7 @@ $userPreferredTheme = null;
 try {
     start_secure_session();
     // Mobilon (webapp) Mobilekit UI, desktopon marad a jelenlegi
-    if (is_mobile_device() && empty($_GET['desktop']) && empty($_COOKIE['force_desktop'])) {
+    if (use_mobile_layout()) {
         header('Location: ' . app_url('/mobile/index.php'));
         exit;
     }
@@ -53,69 +53,7 @@ if (isset($_SESSION['flash'])) unset($_SESSION['flash']);
 </head>
 <body data-logged-in="<?php echo ($uid > 0 ? '1' : '0'); ?>" data-role="<?php echo htmlspecialchars($role, ENT_QUOTES, 'UTF-8'); ?>" data-user-id="<?php echo $uid > 0 ? (int)$uid : ''; ?>" data-lang="<?php echo htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8'); ?>" data-app-base="<?php echo htmlspecialchars(defined('APP_BASE') ? APP_BASE : '/terkep', ENT_QUOTES, 'UTF-8'); ?>" data-map-lat="<?php echo htmlspecialchars((string)(defined('MAP_CENTER_LAT') ? MAP_CENTER_LAT : 47.1625), ENT_QUOTES, 'UTF-8'); ?>" data-map-lng="<?php echo htmlspecialchars((string)(defined('MAP_CENTER_LNG') ? MAP_CENTER_LNG : 19.5033), ENT_QUOTES, 'UTF-8'); ?>" data-map-zoom="<?php echo htmlspecialchars((string)(defined('MAP_ZOOM') ? MAP_ZOOM : 7), ENT_QUOTES, 'UTF-8'); ?>">
 
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="brand-logo" aria-hidden="true"></span>
-      <b><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?></b>
-    </a>
-
-    <form class="topbar-search" id="mapSearchForm">
-      <div class="search-wrap">
-        <input id="mapSearchInput" type="search" placeholder="<?= htmlspecialchars(t('search.placeholder'), ENT_QUOTES, 'UTF-8') ?>" aria-label="<?= htmlspecialchars(t('search.aria'), ENT_QUOTES, 'UTF-8') ?>">
-        <div id="mapSearchResults" class="search-results" role="listbox" aria-label="<?= htmlspecialchars(t('search.results_aria'), ENT_QUOTES, 'UTF-8') ?>"></div>
-      </div>
-      <button type="submit" class="search-btn" aria-label="<?= htmlspecialchars(t('search.btn'), ENT_QUOTES, 'UTF-8') ?>">
-        <span class="icon-search" aria-hidden="true"></span>
-        <span class="sr-only"><?= htmlspecialchars(t('search.btn'), ENT_QUOTES, 'UTF-8') ?></span>
-      </button>
-    </form>
-
-    <div class="topbar-right">
-      <div class="topbar-tools">
-        <button type="button" id="themeToggle" class="topbtn topbtn-icon" aria-label="<?= htmlspecialchars(t('theme.aria'), ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(t('theme.dark'), ENT_QUOTES, 'UTF-8') ?>" data-title-light="<?= htmlspecialchars(t('theme.light'), ENT_QUOTES, 'UTF-8') ?>" data-title-dark="<?= htmlspecialchars(t('theme.dark'), ENT_QUOTES, 'UTF-8') ?>">
-          <span class="theme-icon theme-sun" aria-hidden="true">☀️</span>
-          <span class="theme-icon theme-moon" aria-hidden="true">🌙</span>
-        </button>
-        <div class="lang-dropdown">
-          <button type="button" class="topbtn lang-btn" id="langToggle" aria-haspopup="listbox" aria-expanded="false" aria-label="<?= htmlspecialchars(t('lang.choose'), ENT_QUOTES, 'UTF-8') ?>">
-            <span class="lang-label"><?= htmlspecialchars(strtoupper($currentLang), ENT_QUOTES, 'UTF-8') ?></span><span class="lang-chevron" aria-hidden="true">▼</span>
-          </button>
-          <div class="lang-menu" id="langMenu" role="listbox" aria-hidden="true">
-            <?php foreach (LANG_ALLOWED as $code): ?>
-              <a class="lang-option<?= $code === $currentLang ? ' active' : '' ?>" href="<?= htmlspecialchars(app_url('/?lang=' . $code), ENT_QUOTES, 'UTF-8') ?>" data-lang="<?= htmlspecialchars($code, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(strtoupper($code), ENT_QUOTES, 'UTF-8') ?></a>
-            <?php endforeach; ?>
-          </div>
-        </div>
-      </div>
-    <div class="topbar-links">
-      <?php if ($role === 'govuser'): ?>
-        <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
-        <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/settings.php'), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars(t('nav.settings'), ENT_QUOTES, 'UTF-8') ?></a>
-        <a class="topbtn primary" href="<?php echo htmlspecialchars(app_url('/gov/index.php'), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars(t('nav.gov'), ENT_QUOTES, 'UTF-8') ?></a>
-        <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/logout.php'), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars(t('nav.logout'), ENT_QUOTES, 'UTF-8') ?></a>
-      <?php elseif ($uid > 0): ?>
-      <?php if ($rankAll): ?>
-        <span class="topbtn">
-          <?= htmlspecialchars(t('nav.rank'), ENT_QUOTES, 'UTF-8') ?>: <b>#<?= (int)$rankAll['rank'] ?></b> (<?= (int)$rankAll['points'] ?> XP)
-        </span>
-      <?php endif; ?>
-      <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/leaderboard.php'), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars(t('nav.leaderboard'), ENT_QUOTES, 'UTF-8') ?></a>
-        <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/my.php'), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars(t('nav.my_reports'), ENT_QUOTES, 'UTF-8') ?></a>
-        <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/friends.php'), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars(t('nav.friends'), ENT_QUOTES, 'UTF-8') ?></a>
-        <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/settings.php'), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars(t('nav.settings'), ENT_QUOTES, 'UTF-8') ?></a>
-        <?php if ($role === 'admin' || $role === 'superadmin'): ?>
-          <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/gov/index.php'), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars(t('nav.gov'), ENT_QUOTES, 'UTF-8') ?></a>
-        <?php endif; ?>
-        <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/logout.php'), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars(t('nav.logout'), ENT_QUOTES, 'UTF-8') ?></a>
-      <?php else: ?>
-        <a class="topbtn" href="<?php echo htmlspecialchars(app_url('/user/login.php'), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars(t('nav.login'), ENT_QUOTES, 'UTF-8') ?></a>
-        <a class="topbtn primary" href="<?php echo htmlspecialchars(app_url('/user/register.php'), ENT_QUOTES, 'UTF-8'); ?>"><?= htmlspecialchars(t('nav.register'), ENT_QUOTES, 'UTF-8') ?></a>
-      <?php endif; ?>
-    </div>
-    </div>
-  </div>
-</header>
+<?php $desktop_topbar_show_search = true; require __DIR__ . '/inc_desktop_topbar.php'; ?>
 
 <div id="mapWrap">
   <?php if (!empty($flash)): ?>

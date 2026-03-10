@@ -2,7 +2,6 @@
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 
-try {
 start_secure_session();
 
 $uid = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
@@ -24,8 +23,7 @@ if (isset($_SESSION['settings_ok']) && $_SESSION['settings_ok']) {
   unset($_SESSION['settings_ok']);
 }
 
-// aktuális adatok – több fallback (régi séma esetén)
-$u = null;
+// aktuális adatok
 try {
   $stmt = db()->prepare("
     SELECT id, email, display_name, avatar_filename, profile_public,
@@ -41,52 +39,26 @@ try {
   ");
   $stmt->execute([':id' => $uid]);
   $u = $stmt->fetch();
-} catch (Throwable $e1) {
-  try {
-    $stmt = db()->prepare("
-      SELECT id, email, display_name, avatar_filename, profile_public,
-             first_name, last_name, prefix, birthdate, phone,
-             address_zip, address_city, address_street, address_house,
-             marketing_greetings_optout,
-             consent_data, consent_share, consent_marketing,
-             consent_version, consent_at
-      FROM users
-      WHERE id = :id
-      LIMIT 1
-    ");
-    $stmt->execute([':id' => $uid]);
-    $u = $stmt->fetch();
-    if ($u) { $u['preferred_lang'] = null; $u['preferred_theme'] = null; }
-  } catch (Throwable $e2) {
-    try {
-      $stmt = db()->prepare("SELECT id, email, display_name FROM users WHERE id = :id LIMIT 1");
-      $stmt->execute([':id' => $uid]);
-      $u = $stmt->fetch();
-      if ($u) {
-        $u['avatar_filename'] = $u['profile_public'] = $u['first_name'] = $u['last_name'] = $u['prefix'] = null;
-        $u['birthdate'] = $u['phone'] = $u['address_zip'] = $u['address_city'] = $u['address_street'] = $u['address_house'] = null;
-        $u['marketing_greetings_optout'] = $u['consent_data'] = $u['consent_share'] = $u['consent_marketing'] = $u['consent_version'] = $u['consent_at'] = null;
-        $u['preferred_lang'] = $u['preferred_theme'] = null;
-      }
-    } catch (Throwable $e3) {
-      $u = null;
-    }
-  }
+} catch (Throwable $e) {
+  $stmt = db()->prepare("
+    SELECT id, email, display_name, avatar_filename, profile_public,
+           first_name, last_name, prefix, birthdate, phone,
+           address_zip, address_city, address_street, address_house,
+           marketing_greetings_optout,
+           consent_data, consent_share, consent_marketing,
+           consent_version, consent_at
+    FROM users
+    WHERE id = :id
+    LIMIT 1
+  ");
+  $stmt->execute([':id' => $uid]);
+  $u = $stmt->fetch();
+  if ($u) { $u['preferred_lang'] = null; $u['preferred_theme'] = null; }
 }
 if (!$u) {
+  // ha valamiért eltűnt a user
   session_destroy();
   header('Location: ' . app_url('/user/login.php'));
-  exit;
-}
-
-} catch (Throwable $e) {
-  if (function_exists('error_log')) {
-    error_log('Settings: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-  }
-  $home = function_exists('app_url') ? app_url('/') : '/';
-  $login = function_exists('app_url') ? app_url('/user/login.php') : '/user/login.php';
-  header('Content-Type: text/html; charset=utf-8');
-  echo '<!DOCTYPE html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hiba</title></head><body><p>Az oldal átmenetileg nem érhető el. Próbálja újra később.</p><p><a href="' . htmlspecialchars($home, ENT_QUOTES, 'UTF-8') . '">Főoldal</a> | <a href="' . htmlspecialchars($login, ENT_QUOTES, 'UTF-8') . '">Bejelentkezés</a></p></body></html>';
   exit;
 }
 
@@ -218,8 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
 $currentLang = current_lang();
-// Mobil shell csak mobil eszközön
-$isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
+$isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : (function_exists('is_mobile_device') && is_mobile_device());
 ?>
 <!doctype html>
 <html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>"><head>
@@ -235,34 +206,11 @@ $isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 <?php if ($isMobile): ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/mobilekit_civicai.css'), ENT_QUOTES, 'UTF-8'); ?>">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
 <?php endif; ?>
 </head>
 <body class="page<?= $isMobile ? ' civicai-mobile' : '' ?>">
-<?php if ($isMobile): ?>
-  <?php $mobilePageTitle = t('user.settings'); $mobileActiveTab = 'settings'; require __DIR__ . '/../inc_mobile_header.php'; ?>
-<?php else: ?>
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="brand-logo" aria-hidden="true"></span>
-      <b><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?></b>
-    </a>
-    <div class="topbar-links">
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/my.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.my_reports'), ENT_QUOTES, 'UTF-8') ?></a>
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/profile.php?id=' . (int)$uid), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('user.profile'), ENT_QUOTES, 'UTF-8') ?></a>
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/friends.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.friends'), ENT_QUOTES, 'UTF-8') ?></a>
-      <?php if ($role === 'govuser' || $role === 'admin' || $role === 'superadmin'): ?>
-        <a class="topbtn" href="<?= htmlspecialchars(app_url('/gov/index.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.gov'), ENT_QUOTES, 'UTF-8') ?></a>
-      <?php endif; ?>
-      <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/logout.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.logout'), ENT_QUOTES, 'UTF-8') ?></a>
-    </div>
-  </div>
-</header>
-<?php if (!$isMobile): ?>
+<?php if (!$isMobile): require __DIR__ . '/../inc_desktop_topbar.php'; endif; ?>
 <div class="wrap">
-<?php endif; ?>
 <div class="card">
   <div class="row">
     <h3 style="margin:0"><?= htmlspecialchars(t('user.settings'), ENT_QUOTES, 'UTF-8') ?></h3>
@@ -378,15 +326,7 @@ $isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
     <small><?= htmlspecialchars(t('user.consent_withdraw'), ENT_QUOTES, 'UTF-8') ?></small>
   </div>
 </div>
-<?php if (!$isMobile): ?>
 </div>
-<?php endif; ?>
-<?php if ($isMobile): ?>
-  <?php require __DIR__ . '/../inc_mobile_footer.php'; ?>
-  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/lib/bootstrap.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/base.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-<?php endif; ?>
-<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <?php if ($ok): $pt = ($u['preferred_theme'] ?? null) === 'light' || ($u['preferred_theme'] ?? null) === 'dark' ? $u['preferred_theme'] : null; if ($pt): ?>
 <script>try{localStorage.setItem('civicai_theme','<?= $pt === 'light' ? 'light' : 'dark' ?>');document.documentElement.setAttribute('data-theme','<?= $pt ?>');document.documentElement.setAttribute('data-bs-theme','<?= $pt ?>');}catch(_){}</script>
 <?php endif; endif; ?>
