@@ -3,7 +3,8 @@
  * Mobilekit webapp – header + appCapsule nyitó
  * Változók: $mobilePageTitle, $mobileActiveTab, $mobileBackUrl (opcionális), $isMobile, $role, $uid
  */
-$mobileBackUrl = $mobileBackUrl ?? ($isMobile ? app_url('/mobile/index.php') : app_url('/'));
+$mobileBackUrl = $mobileBackUrl ?? (isset($isMobile) && $isMobile ? app_url('/mobile/index.php') : app_url('/'));
+$mobilePageTitle = isset($mobilePageTitle) ? $mobilePageTitle : (function_exists('t') ? t('site.name') : 'CivicAI');
 ?>
   <div class="appHeader">
     <div class="left">

@@ -6,8 +6,13 @@ start_secure_session();
 
 $uid = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($uid <= 0) {
+  $selfId = current_user_id();
+  if ($selfId > 0) {
+    header('Location: ' . app_url('/user/profile.php?id=' . $selfId));
+    exit;
+  }
   http_response_code(400);
-  echo 'Hibas felhasznalo.';
+  echo 'Hibás felhasználó.';
   exit;
 }
 
