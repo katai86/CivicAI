@@ -46,12 +46,18 @@ $stmt = db()->prepare("
 $stmt->execute([':uid' => $uid]);
 $outgoing = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 $currentLang = current_lang();
+$isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : false;
 ?>
 <!doctype html>
 <html lang="<?= h($currentLang) ?>"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= h(t('site.name')) ?> – <?= h(t('user.friends')) ?></title>
 <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
+<?php if ($isMobile): ?>
+<link rel="stylesheet" href="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/css/style.css')) ?>">
+<link rel="stylesheet" href="<?= h(app_url('/assets/mobilekit_civicai.css')) ?>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
+<?php endif; ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 <script>
 document.addEventListener('DOMContentLoaded', function(){
@@ -87,8 +93,12 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 </head>
-<body class="page">
-<?php require __DIR__ . '/../inc_desktop_topbar.php'; ?>
+<body class="page<?= $isMobile ? ' civicai-mobile' : '' ?>">
+<?php if ($isMobile): ?>
+  <?php $mobilePageTitle = t('user.friends'); $mobileActiveTab = ''; $mobileBackUrl = app_url('/user/my.php'); require __DIR__ . '/../inc_mobile_header.php'; ?>
+<?php else: ?>
+  <?php require __DIR__ . '/../inc_desktop_topbar.php'; ?>
+<?php endif; ?>
 
 <div class="wrap">
   <div class="card">
@@ -186,4 +196,9 @@ document.addEventListener('DOMContentLoaded', function(){
     <?php endif; ?>
   </div>
 </div>
+<?php if ($isMobile): ?>
+  <?php require __DIR__ . '/../inc_mobile_footer.php'; ?>
+  <script src="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/js/lib/bootstrap.min.js')) ?>"></script>
+  <script src="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/js/base.js')) ?>"></script>
+<?php endif; ?>
 </body></html>

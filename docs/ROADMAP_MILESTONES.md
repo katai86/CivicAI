@@ -26,12 +26,12 @@ Ez a dokumentum a három prioritásos területet milestone-okra bontja. **Csak e
 
 ### Milestone A3 – Mobil egységesítés
 - [x] **A3.1** Mobil detektálás egy helyen: `use_mobile_layout()` (util.php) – `?desktop=1` vagy cookie `force_desktop` kikapcsolja a mobil layoutot.
-- [ ] **A3.2** Minden olyan oldal, ahol már van mobil nézet (my, settings, login, leaderboard), ugyanazt a Mobilekit shell-t használja: inc_mobile_header.php + inc_mobile_footer.php, appBottomMenu linkek konzisztensen.
-- [ ] **A3.3** Olyan oldalak, ahol még nincs mobil shell (pl. case.php, user/report.php, user/profile.php, user/friends.php), mobilra is Mobilekit shell-t kapnak (header + footer + ugyanaz a tartalom).
+- [x] **A3.2** my, settings, login, leaderboard: ugyanaz a Mobilekit shell (inc_mobile_header + inc_mobile_footer), konzisztens appBottomMenu.
+- [x] **A3.3** case.php, user/report.php, user/profile.php, user/friends.php: mobilra Mobilekit shell (header + footer + ugyanaz a tartalom).
 
 ### Milestone A4 – Tisztítás és teszt
-- [ ] **A4.1** Duplikált topbar kód eltávolítása – csak egy desktop topbar include, egy mobil header/footer.
-- [ ] **A4.2** Böngészőben teszt: desktop + mobil (vagy reszponzív mód) minden felsorolt oldalon; téma váltó és nyelv mindkét layouton működik.
+- [x] **A4.1** Egy desktop topbar (inc_desktop_topbar.php), egy mobil shell (inc_mobile_header + inc_mobile_footer); duplikált topbar eltávolítva.
+- [ ] **A4.2** Böngészőben teszt: desktop + mobil minden felsorolt oldalon; téma és nyelv mindkét layouton (kézi ellenőrzés).
 
 ---
 

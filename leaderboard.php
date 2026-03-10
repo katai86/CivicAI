@@ -65,28 +65,14 @@ function avatar_url($filename){
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
   <?php if ($isMobile): ?>
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/mobilekit_civicai.css'), ENT_QUOTES, 'UTF-8') ?>">
-  <?php endif; ?>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
+<?php endif; ?>
 </head>
 <body class="page<?= $isMobile ? ' civicai-mobile' : '' ?>">
-<?php if (!$isMobile): $currentLang = $currentLang ?? current_lang(); require __DIR__ . '/inc_desktop_topbar.php'; endif; ?>
 <?php if ($isMobile): ?>
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="brand brand-link" href="<?= h(app_url('/')) ?>"><span class="brand-logo" aria-hidden="true"></span><b><?= h(t('site.name')) ?></b></a>
-    <div class="topbar-right"><?php include __DIR__ . '/user/inc_topbar_tools.php'; ?>
-    <div class="topbar-links">
-      <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
-      <?php if ($uid > 0): ?>
-        <a class="topbtn" href="<?= h(app_url('/user/my.php')) ?>"><?= h(t('nav.my_reports')) ?></a>
-        <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>"><?= h(t('nav.settings')) ?></a>
-        <a class="topbtn" href="<?= h(app_url('/user/logout.php')) ?>"><?= h(t('nav.logout')) ?></a>
-      <?php else: ?>
-        <a class="topbtn" href="<?= h(app_url('/user/login.php')) ?>"><?= h(t('nav.login')) ?></a>
-        <a class="topbtn primary" href="<?= h(app_url('/user/register.php')) ?>"><?= h(t('nav.register')) ?></a>
-      <?php endif; ?>
-    </div></div>
-  </div>
-</header>
+  <?php $mobilePageTitle = t('lb.title'); $mobileActiveTab = ''; $mobileBackUrl = app_url('/'); require __DIR__ . '/inc_mobile_header.php'; ?>
+<?php else: ?>
+  <?php $currentLang = $currentLang ?? current_lang(); require __DIR__ . '/inc_desktop_topbar.php'; ?>
 <?php endif; ?>
 
 <div class="wrap">
@@ -300,6 +286,11 @@ function avatar_url($filename){
     </div>
   </div>
 </div>
+<?php if ($isMobile): ?>
+  <?php require __DIR__ . '/inc_mobile_footer.php'; ?>
+  <script src="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/js/lib/bootstrap.min.js')) ?>"></script>
+  <script src="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/js/base.js')) ?>"></script>
+<?php endif; ?>
 <script src="<?= h(app_url('/assets/theme-lang.js')) ?>"></script>
 </body>
 </html>

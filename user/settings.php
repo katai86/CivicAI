@@ -206,10 +206,15 @@ $isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : (functi
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 <?php if ($isMobile): ?>
 <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/mobilekit_civicai.css'), ENT_QUOTES, 'UTF-8'); ?>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
 <?php endif; ?>
 </head>
 <body class="page<?= $isMobile ? ' civicai-mobile' : '' ?>">
-<?php if (!$isMobile): require __DIR__ . '/../inc_desktop_topbar.php'; endif; ?>
+<?php if ($isMobile): ?>
+  <?php $mobilePageTitle = t('user.settings'); $mobileActiveTab = 'settings'; $mobileBackUrl = app_url('/user/my.php'); require __DIR__ . '/../inc_mobile_header.php'; ?>
+<?php else: ?>
+  <?php require __DIR__ . '/../inc_desktop_topbar.php'; ?>
+<?php endif; ?>
 <div class="wrap">
 <div class="card">
   <div class="row">
@@ -327,7 +332,13 @@ $isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : (functi
   </div>
 </div>
 </div>
+<?php if ($isMobile): ?>
+  <?php require __DIR__ . '/../inc_mobile_footer.php'; ?>
+  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/lib/bootstrap.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+  <script src="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/js/base.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php endif; ?>
 <?php if ($ok): $pt = ($u['preferred_theme'] ?? null) === 'light' || ($u['preferred_theme'] ?? null) === 'dark' ? $u['preferred_theme'] : null; if ($pt): ?>
 <script>try{localStorage.setItem('civicai_theme','<?= $pt === 'light' ? 'light' : 'dark' ?>');document.documentElement.setAttribute('data-theme','<?= $pt ?>');document.documentElement.setAttribute('data-bs-theme','<?= $pt ?>');}catch(_){}</script>
 <?php endif; endif; ?>
+<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body></html>

@@ -80,22 +80,35 @@ $trackUrl = ((int)$r['notify_enabled'] === 1 && !empty($r['notify_token']))
 
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
+$currentLang = function_exists('current_lang') ? current_lang() : 'hu';
+$isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : false;
+$uid = $userId;
+$role = function_exists('current_user_role') ? (current_user_role() ?: 'user') : 'user';
 ?><!doctype html>
 <html lang="<?= h($currentLang) ?>">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,viewport-fit=cover">
   <title><?= h(t('site.name')) ?> – <?= h($caseNo) ?></title>
   <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
+  <?php if ($isMobile): ?>
+  <link rel="stylesheet" href="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/css/style.css')) ?>">
+  <link rel="stylesheet" href="<?= h(app_url('/assets/mobilekit_civicai.css')) ?>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
+  <?php endif; ?>
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
 </head>
-<body class="page"
+<body class="page<?= $isMobile ? ' civicai-mobile' : '' ?>"
   data-report-id="<?= (int)$rid ?>"
   data-api-attachments="<?= h(app_url('/api/report_attachments.php')) ?>"
   data-api-delete="<?= h(app_url('/api/report_attachment_delete.php')) ?>"
   data-api-upload="<?= h(app_url('/api/report_upload.php')) ?>"
 >
-<?php $uid = $userId; $role = function_exists('current_user_role') ? (current_user_role() ?: 'user') : 'user'; $currentLang = function_exists('current_lang') ? current_lang() : 'hu'; require __DIR__ . '/../inc_desktop_topbar.php'; ?>
+<?php if ($isMobile): ?>
+  <?php $mobilePageTitle = t('user.my_reports') . ' – ' . $caseNo; $mobileActiveTab = 'my'; $mobileBackUrl = app_url('/user/my.php'); require __DIR__ . '/../inc_mobile_header.php'; ?>
+<?php else: ?>
+  <?php require __DIR__ . '/../inc_desktop_topbar.php'; ?>
+<?php endif; ?>
 
 <div class="wrap">
   <div class="card">
@@ -185,9 +198,11 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
   </div>
 
 </div>
-
-
+<?php if ($isMobile): ?>
+  <?php require __DIR__ . '/../inc_mobile_footer.php'; ?>
+  <script src="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/js/lib/bootstrap.min.js')) ?>"></script>
+  <script src="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/js/base.js')) ?>"></script>
+<?php endif; ?>
 <script src="<?= h(app_url('/assets/user/report.js')) ?>"></script>
-
 </body>
 </html>

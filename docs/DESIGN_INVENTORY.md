@@ -26,15 +26,15 @@
 | Oldal | Desktop layout | Mobil layout |
 |-------|----------------|--------------|
 | index.php | sima (style.css) + topbar + térkép | átirányítás → mobile/index.php |
-| case.php | sima (style.css) + topbar | Nincs mobil shell (sima topbar) |
-| leaderboard.php | sima + topbar | Mobilekit CSS + ugyanaz a topbar HTML (civicai-mobile) |
+| case.php | sima + topbar | Mobilekit (inc_mobile_header/footer) |
+| leaderboard.php | sima + topbar | Mobilekit (inc_mobile_header/footer) |
 | user/login.php | sima + topbar | Mobilekit (inc_mobile_header/footer) |
 | user/register.php | sima + topbar | Nincs mobil shell |
-| user/settings.php | sima + topbar | Mobilekit CSS (nincs header/footer) |
+| user/settings.php | sima + topbar | Mobilekit (inc_mobile_header/footer) |
 | user/my.php | sima + topbar | Mobilekit (inc_mobile_header/footer) |
-| user/profile.php | sima + topbar (nincs téma/nyelv) | Nincs mobil shell |
-| user/friends.php | sima + topbar | Nincs mobil shell |
-| user/report.php | sima + topbar | Nincs mobil shell |
+| user/profile.php | sima + topbar | Mobilekit (inc_mobile_header/footer) |
+| user/friends.php | sima + topbar | Mobilekit (inc_mobile_header/footer) |
+| user/report.php | sima + topbar | Mobilekit (inc_mobile_header/footer) |
 | admin/index.php | AdminLTE (dashboard/dist) | AdminLTE (reszponzív) |
 | gov/index.php | AdminLTE (dashboard/dist) | AdminLTE (reszponzív) |
 | mobile/index.php | — | Mobilekit (teljes shell) |

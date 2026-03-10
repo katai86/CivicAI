@@ -66,6 +66,7 @@ $rankAll = get_user_rank('all', (int)$u['id']);
 
 $viewerId = current_user_id();
 $currentLang = function_exists('current_lang') ? current_lang() : 'hu';
+$isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : false;
 $friendState = 'none';
 $friendReqId = 0;
 if ($viewerId && $viewerId !== (int)$u['id']) {
@@ -146,6 +147,11 @@ function avatar_url($filename){
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><?= h(t('site.name')) ?> – <?= h(t('user.profile')) ?></title>
   <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
+  <?php if ($isMobile): ?>
+  <link rel="stylesheet" href="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/css/style.css')) ?>">
+  <link rel="stylesheet" href="<?= h(app_url('/assets/mobilekit_civicai.css')) ?>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
+  <?php endif; ?>
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
   <script>
   document.addEventListener('DOMContentLoaded', function(){
@@ -176,8 +182,12 @@ function avatar_url($filename){
   });
   </script>
 </head>
-<body class="page">
-<?php $uid = $viewerId; $role = function_exists('current_user_role') ? (current_user_role() ?: 'guest') : 'guest'; require __DIR__ . '/../inc_desktop_topbar.php'; ?>
+<body class="page<?= $isMobile ? ' civicai-mobile' : '' ?>">
+<?php if ($isMobile): ?>
+  <?php $uid = $viewerId; $role = function_exists('current_user_role') ? (current_user_role() ?: 'guest') : 'guest'; $mobilePageTitle = $u['display_name'] ?: ('User #' . $u['id']); $mobileActiveTab = ''; $mobileBackUrl = app_url('/leaderboard.php'); require __DIR__ . '/../inc_mobile_header.php'; ?>
+<?php else: ?>
+  <?php $uid = $viewerId; $role = function_exists('current_user_role') ? (current_user_role() ?: 'guest') : 'guest'; require __DIR__ . '/../inc_desktop_topbar.php'; ?>
+<?php endif; ?>
 
 <div class="wrap">
   <div class="card">
@@ -445,5 +455,10 @@ function avatar_url($filename){
     </div>
   </div>
 </div>
+<?php if ($isMobile): ?>
+  <?php $uid = $viewerId; require __DIR__ . '/../inc_mobile_footer.php'; ?>
+  <script src="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/js/lib/bootstrap.min.js')) ?>"></script>
+  <script src="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/js/base.js')) ?>"></script>
+<?php endif; ?>
 </body>
 </html>
