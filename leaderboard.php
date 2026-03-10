@@ -3,6 +3,8 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/util.php';
 start_secure_session();
 $currentLang = current_lang();
+// Mobil shell csak mobil eszközön
+$isMobile = function_exists('is_mobile_device') ? is_mobile_device() : false;
 
 $lbWeek = get_leaderboard('week', 10);
 $lbMonth = get_leaderboard('month', 10);
@@ -51,12 +53,21 @@ function avatar_url($filename){
 <html lang="<?= h($currentLang) ?>">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f1721">
   <title><?= h(t('site.name')) ?> – <?= h(t('lb.title')) ?></title>
-  <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
+  <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');document.documentElement.setAttribute('data-bs-theme','dark');}</script>
+  <?php if ($isMobile): ?>
+  <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/css/style.css'), ENT_QUOTES, 'UTF-8') ?>">
+  <?php endif; ?>
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
+  <?php if ($isMobile): ?>
+  <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/mobilekit_civicai.css'), ENT_QUOTES, 'UTF-8') ?>">
+  <?php endif; ?>
 </head>
-<body class="page">
+<body class="page<?= $isMobile ? ' civicai-mobile' : '' ?>">
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
