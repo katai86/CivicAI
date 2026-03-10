@@ -296,6 +296,22 @@ function mistral_api_key(): string {
 }
 
 // --------------------
+// Govuser modul kapcsolók (UI-szint)
+// --------------------
+function user_module_enabled(?int $userId, string $moduleKey): bool {
+    if (!$userId) return true;
+    try {
+        $stmt = db()->prepare("SELECT is_enabled FROM user_module_toggles WHERE user_id = ? AND module_key = ? LIMIT 1");
+        $stmt->execute([$userId, $moduleKey]);
+        $v = $stmt->fetchColumn();
+        if ($v === false || $v === null) return true; // default ON
+        return (int)$v === 1;
+    } catch (Throwable $e) {
+        return true;
+    }
+}
+
+// --------------------
 // FixMyStreet Open311 bridge helpers
 // --------------------
 function fms_open311_request(array $payload): array {

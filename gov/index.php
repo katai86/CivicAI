@@ -44,6 +44,11 @@ if ($isAdmin) {
   }
 }
 
+// Gov user: csak egy "saját" város/hatóság jelenjen meg (első hozzárendelés)
+if (!$isAdmin && !empty($authorities)) {
+  $authorities = [ $authorities[0] ];
+}
+
 $authorityIds = array_map(fn($a) => (int)$a['id'], $authorities);
 $authorityCities = array_values(array_filter(array_unique(array_map(function($a) {
   return trim((string)($a['city'] ?? ''));
@@ -55,11 +60,14 @@ if ($statusFilter !== '' && !in_array($statusFilter, $allowedStatuses, true)) {
   $statusFilter = '';
 }
 
-// Gov user: ha van hatósága, láthatja a bejelentések listáját és Export FMS-t; admin mindig
+// Gov user: ha van hatósága, láthatja a bejelentések listáját (read-only); admin mindig
 $showReportList = $isAdmin || !empty($authorityIds);
 
-// Status update (csak adminnak van UI hozzá, de a backend ellenőrzi jogosultságot)
+// Status update: csak admin
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'set_status') {
+  if (!$isAdmin) {
+    $err = 'Nincs jogosultság.';
+  } else {
   $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
   $new = isset($_POST['status']) ? trim((string)$_POST['status']) : '';
   $note = safe_str($_POST['note'] ?? null, 255);
@@ -165,6 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
       if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
       $err = 'Hiba történt mentés közben.';
     }
+  }
   }
 }
 
@@ -389,210 +398,328 @@ if (!empty($stats['by_category'])) {
 
 function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 ?>
+<?php
+$govUid = current_user_id();
+$govAiUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'mistral');
+$govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
+?>
 <!doctype html>
-<html lang="<?= h($currentLang) ?>"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= h(t('site.name')) ?> – <?= h(t('gov.title')) ?></title>
-<script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
-<link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
+<html lang="<?= h($currentLang) ?>">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title><?= h(t('site.name')) ?> – <?= h(t('gov.title')) ?></title>
+  <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');document.documentElement.setAttribute('data-bs-theme','dark');}</script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/dashboard/dist/css/adminlte.min.css'), ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/admin.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
-<body class="page">
-<header class="topbar">
-  <div class="topbar-inner">
-    <a class="brand brand-link" href="<?= h(app_url('/')) ?>">
-      <span class="brand-logo" aria-hidden="true"></span>
-      <b><?= h(t('site.name')) ?></b>
-    </a>
-    <div class="topbar-right">
-      <div class="topbar-tools">
-        <button type="button" id="themeToggle" class="topbtn topbtn-icon" aria-label="<?= h(t('theme.aria')) ?>" title="<?= h(t('theme.dark')) ?>" data-title-light="<?= h(t('theme.light')) ?>" data-title-dark="<?= h(t('theme.dark')) ?>">
-          <span class="theme-icon theme-sun" aria-hidden="true">☀️</span>
-          <span class="theme-icon theme-moon" aria-hidden="true">🌙</span>
-        </button>
-        <div class="lang-dropdown">
-          <button type="button" class="topbtn lang-btn" id="langToggle" aria-haspopup="listbox" aria-expanded="false" aria-label="<?= h(t('lang.choose')) ?>">
-            <span class="lang-label"><?= h(strtoupper($currentLang)) ?></span><span class="lang-chevron" aria-hidden="true">▼</span>
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
+<div class="app-wrapper">
+  <nav class="app-header navbar navbar-expand bg-body">
+    <div class="container-fluid">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" data-lte-toggle="sidebar" href="#" role="button">
+            <i class="bi bi-list"></i>
+          </a>
+        </li>
+        <li class="nav-item d-none d-md-block">
+          <span class="nav-link fw-semibold"><?= h(t('gov.title')) ?></span>
+        </li>
+      </ul>
+      <ul class="navbar-nav ms-auto align-items-center">
+        <li class="nav-item">
+          <button type="button" id="themeToggle" class="btn btn-link nav-link py-2" aria-label="<?= h(t('theme.aria')) ?>" title="<?= h(t('theme.dark')) ?>" data-title-light="<?= h(t('theme.light')) ?>" data-title-dark="<?= h(t('theme.dark')) ?>">
+            <span class="theme-icon theme-sun" aria-hidden="true"><i class="bi bi-sun-fill"></i></span>
+            <span class="theme-icon theme-moon" aria-hidden="true"><i class="bi bi-moon-fill"></i></span>
           </button>
-          <div class="lang-menu" id="langMenu" role="listbox" aria-hidden="true">
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="govLangDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false"><?= h(strtoupper($currentLang)) ?></a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="govLangDropdown">
             <?php foreach (LANG_ALLOWED as $code): ?>
-              <a class="lang-option<?= $code === $currentLang ? ' active' : '' ?>" href="<?= h(app_url('/gov/index.php?lang=' . $code)) ?>" data-lang="<?= h($code) ?>"><?= h(strtoupper($code)) ?></a>
+              <li><a class="dropdown-item<?= $code === $currentLang ? ' active' : '' ?>" href="<?= h(app_url('/gov/index.php?lang=' . $code)) ?>"><?= h(strtoupper($code)) ?></a></li>
             <?php endforeach; ?>
-          </div>
-        </div>
-      </div>
-    <div class="topbar-links">
-      <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
-      <a class="topbtn" href="<?= h(app_url('/user/settings.php')) ?>"><?= h(t('nav.settings')) ?></a>
-      <a class="topbtn primary" href="<?= h(app_url('/gov/index.php')) ?>"><?= h(t('nav.gov')) ?></a>
-      <a class="topbtn" href="<?= h(app_url('/user/logout.php?from_gov=1')) ?>"><?= h(t('nav.logout')) ?></a>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="<?= h(app_url('/user/logout.php?from_gov=1')) ?>"><?= h(t('nav.logout')) ?></a>
+        </li>
+      </ul>
     </div>
-  </div>
-</header>
+  </nav>
 
-<div class="wrap">
-  <div class="card">
-    <div class="row" style="justify-content:space-between">
-      <div>
-        <div style="font-weight:900;font-size:18px"><?= h(t('gov.title')) ?></div>
-        <div class="muted"><?= h(t('gov.authorities')) ?>: <?= h(implode(', ', array_map(fn($a)=>$a['name'], $authorities))) ?></div>
-      </div>
-      <a class="btn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
+  <aside class="app-sidebar bg-body-secondary shadow">
+    <div class="sidebar-brand">
+      <a href="<?= h(app_url('/')) ?>" class="brand-link">
+        <span class="brand-text fw-light">CivicAI</span>
+      </a>
     </div>
-
-    <?php if($ok): ?><div class="ok"><?= h($ok) ?></div><?php endif; ?>
-    <?php if($err): ?><div class="err"><?= h($err) ?></div><?php endif; ?>
-
-    <?php if(!$isAdmin && !$authorityIds): ?>
-      <div class="muted"><?= h(t('gov.no_authority')) ?></div>
-    <?php else: ?>
-      <section class="gov-stats" aria-label="<?= h(t('gov.stats_title')) ?>">
-        <h3 style="margin:0 0 12px 0; font-size:1rem"><?= h(t('gov.stats_title')) ?></h3>
-        <div class="gov-stats-row">
-          <div class="gov-stat-box">
-            <span class="gov-stat-value"><?= (int)$stats['reports_1d'] ?></span>
-            <span class="gov-stat-label"><?= h(t('gov.stat_today')) ?></span>
-          </div>
-          <div class="gov-stat-box">
-            <span class="gov-stat-value"><?= (int)$stats['reports_7d'] ?></span>
-            <span class="gov-stat-label"><?= h(t('gov.stat_7d')) ?></span>
-          </div>
-          <div class="gov-stat-box">
-            <span class="gov-stat-value"><?= (int)$stats['reports_total'] ?></span>
-            <span class="gov-stat-label"><?= h(t('gov.stat_total')) ?></span>
-          </div>
-        </div>
-        <div class="gov-stats-grid">
-          <div>
-            <h4 class="gov-stats-sub"><?= h(t('gov.by_status')) ?></h4>
-            <div class="gov-chart">
-              <?php
-              $statusItems = [];
-              foreach ($statusOrder as $st) {
-                if (!empty($stats['by_status'][$st])) {
-                  $statusItems[] = ['k' => $st, 'cnt' => (int)$stats['by_status'][$st], 'label' => $statusLabels[$st] ?? $st, 'color' => $statusColors[$st] ?? '#6c757d'];
-                }
-              }
-              if ($statusItems): ?>
-                <?php foreach ($statusItems as $x): ?>
-                <div class="gov-chart-bar">
-                  <span class="label"><?= h($x['label']) ?></span>
-                  <div class="bar-wrap"><div class="bar" style="width:<?= (int)round(100 * $x['cnt'] / $maxStatus) ?>%;background:<?= h($x['color']) ?>"></div></div>
-                  <span class="val"><?= $x['cnt'] ?></span>
-                </div>
-                <?php endforeach; ?>
-              <?php else: ?>
-                <p class="muted small"><?= h(t('gov.no_data')) ?></p>
-              <?php endif; ?>
-            </div>
-          </div>
-          <div>
-            <h4 class="gov-stats-sub"><?= h(t('gov.by_category')) ?></h4>
-            <div class="gov-chart">
-              <?php
-              $catItems = $stats['by_category'];
-              arsort($catItems);
-              $i = 0;
-              if (!empty($catItems)): ?>
-                <?php foreach ($catItems as $cat => $cnt): $cnt = (int)$cnt; $color = $catColors[$i % count($catColors)]; $i++; ?>
-                <div class="gov-chart-bar">
-                  <span class="label"><?= h($categoryLabels[$cat] ?? $cat) ?></span>
-                  <div class="bar-wrap"><div class="bar" style="width:<?= (int)round(100 * $cnt / $maxCategory) ?>%;background:<?= h($color) ?>"></div></div>
-                  <span class="val"><?= $cnt ?></span>
-                </div>
-                <?php endforeach; ?>
-              <?php else: ?>
-                <p class="muted small"><?= h(t('gov.no_data')) ?></p>
-              <?php endif; ?>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="gov-integrations" style="margin-top:20px;padding:16px;background:var(--card-2);border-radius:12px;">
-        <h3 style="margin:0 0 10px 0; font-size:1rem"><?= h(t('gov.integration_status')) ?></h3>
-        <ul class="muted" style="margin:0; list-style:none; padding:0;">
-          <li><?= fms_enabled() ? ('<span style="color:var(--success)">✓</span> ' . h(t('gov.fms_configured'))) : ('<span style="color:var(--muted)">—</span> ' . h(t('gov.fms_not_configured'))) ?></li>
-          <li><?= ai_configured() ? ('<span style="color:var(--success)">✓</span> ' . h(t('gov.ai_configured'))) : ('<span style="color:var(--muted)">—</span> ' . h(t('gov.ai_not_configured'))) ?></li>
+    <div class="sidebar-wrapper">
+      <nav class="mt-2">
+        <ul class="nav sidebar-menu flex-column">
+          <li class="nav-item">
+            <a href="#" class="nav-link tab active" data-tab="dashboard">
+              <i class="nav-icon bi bi-speedometer2"></i>
+              <p><?= h(t('gov.tab_dashboard')) ?></p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="reports">
+              <i class="nav-icon bi bi-flag-fill"></i>
+              <p><?= h(t('gov.tab_reports')) ?></p>
+            </a>
+          </li>
+          <?php if (!$isAdmin): ?>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="modules">
+              <i class="nav-icon bi bi-sliders"></i>
+              <p><?= h(t('gov.tab_modules')) ?></p>
+            </a>
+          </li>
+          <?php endif; ?>
         </ul>
-        <p class="muted small" style="margin:10px 0 0 0"><?= h(t('gov.config_note')) ?></p>
-      </section>
+      </nav>
+    </div>
+  </aside>
 
-      <?php if ($showReportList): ?>
-      <h3 style="margin:24px 0 12px 0; font-size:1rem"><?= h(t('gov.reports_list')) ?></h3>
-      <form method="get" class="gov-filter-row" style="margin-bottom:12px">
-        <label for="govStatusFilter" class="muted" style="margin-right:8px"><?= h(t('gov.filter_status')) ?></label>
-        <select id="govStatusFilter" name="status_filter" onchange="this.form.submit()" class="select">
-          <option value=""<?= $statusFilter === '' ? ' selected' : '' ?>><?= h(t('legend.all')) ?></option>
-          <?php foreach ($allowedStatuses as $st): ?>
-            <option value="<?= h($st) ?>"<?= $statusFilter === $st ? ' selected' : '' ?>><?= h($statusLabels[$st] ?? $st) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </form>
-      <p class="muted small" style="margin:0 0 8px 0"><?= h(t('gov.list_max')) ?></p>
-      <div class="gov-list">
-        <?php foreach($reports as $r): ?>
-          <div class="gov-item">
-            <div class="gov-meta">
-              <b>#<?= (int)$r['id'] ?></b> • <?= h($r['category']) ?> • <?= h($r['status']) ?>
+  <main class="app-main">
+    <div class="app-content">
+      <div class="container-fluid">
+        <?php if($ok): ?><div class="alert alert-success py-2"><?= h($ok) ?></div><?php endif; ?>
+        <?php if($err): ?><div class="alert alert-danger py-2"><?= h($err) ?></div><?php endif; ?>
+
+        <?php if(!$isAdmin && !$authorityIds): ?>
+          <div class="alert alert-warning py-2"><?= h(t('gov.no_authority')) ?></div>
+        <?php else: ?>
+
+        <div class="admin-tab-body" id="tab-dashboard">
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h6 class="card-title mb-2"><?= h(t('gov.stats_title')) ?></h6>
+                  <div class="row g-2">
+                    <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_today')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_1d'] ?></span></div></div>
+                    <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_7d')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_7d'] ?></span></div></div>
+                    <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_total')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_total'] ?></span></div></div>
+                    <div class="col-md-6"><div class="text-secondary small"><?= h(t('gov.authorities')) ?>: <b><?= h(implode(', ', array_map(fn($a)=>$a['name'], $authorities))) ?></b></div></div>
+                  </div>
+                  <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                      <h6 class="text-secondary small mb-2"><?= h(t('gov.by_status')) ?></h6>
+                      <div class="admin-chart">
+                        <?php
+                        $statusItems = [];
+                        foreach ($statusOrder as $st) {
+                          if (!empty($stats['by_status'][$st])) {
+                            $statusItems[] = ['k' => $st, 'cnt' => (int)$stats['by_status'][$st], 'label' => $statusLabels[$st] ?? $st, 'color' => $statusColors[$st] ?? '#6c757d'];
+                          }
+                        }
+                        if ($statusItems): ?>
+                          <?php foreach ($statusItems as $x): ?>
+                          <div class="admin-chart-bar">
+                            <span class="label"><?= h($x['label']) ?></span>
+                            <div class="bar-wrap"><div class="bar" style="width:<?= (int)round(100 * $x['cnt'] / $maxStatus) ?>%;background:<?= h($x['color']) ?>"></div></div>
+                            <span class="val"><?= $x['cnt'] ?></span>
+                          </div>
+                          <?php endforeach; ?>
+                        <?php else: ?>
+                          <div class="text-secondary small"><?= h(t('gov.no_data')) ?></div>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <h6 class="text-secondary small mb-2"><?= h(t('gov.by_category')) ?></h6>
+                      <div class="admin-chart">
+                        <?php
+                        $catItems = $stats['by_category'];
+                        arsort($catItems);
+                        $i = 0;
+                        if (!empty($catItems)): ?>
+                          <?php foreach ($catItems as $cat => $cnt): $cnt = (int)$cnt; $color = $catColors[$i % count($catColors)]; $i++; ?>
+                          <div class="admin-chart-bar">
+                            <span class="label"><?= h($categoryLabels[$cat] ?? $cat) ?></span>
+                            <div class="bar-wrap"><div class="bar" style="width:<?= (int)round(100 * $cnt / $maxCategory) ?>%;background:<?= h($color) ?>"></div></div>
+                            <span class="val"><?= $cnt ?></span>
+                          </div>
+                          <?php endforeach; ?>
+                        <?php else: ?>
+                          <div class="text-secondary small"><?= h(t('gov.no_data')) ?></div>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="text-secondary small mt-2 mb-0">
+                    <?= h(t('gov.integration_status')) ?>:
+                    <?= ($govFmsUiEnabled && fms_enabled()) ? h(t('gov.fms_configured')) : h(t('gov.fms_not_configured')) ?>
+                    |
+                    <?= ($govAiUiEnabled && ai_configured()) ? h(t('gov.ai_configured')) : h(t('gov.ai_not_configured')) ?>
+                  </p>
+                </div>
+              </div>
             </div>
-            <div class="gov-title"><?= h($r['title'] ?: t('gov.report_anonymous')) ?></div>
-            <div class="muted"><?= h($r['address_approx'] ?: $r['city'] ?: '') ?></div>
-            <form method="post" class="gov-actions">
-              <input type="hidden" name="action" value="set_status">
-              <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-              <input type="hidden" name="status_filter" value="<?= h($statusFilter) ?>">
-              <select name="status" class="select">
-                <?php foreach(['new','approved','needs_info','forwarded','waiting_reply','in_progress','solved','closed','rejected','pending'] as $st): ?>
-                  <option value="<?= h($st) ?>" <?= $st === $r['status'] ? 'selected' : '' ?>><?= h($statusLabels[$st] ?? $st) ?></option>
-                <?php endforeach; ?>
-              </select>
-              <input type="text" name="note" class="input" placeholder="<?= h(t('gov.note_placeholder')) ?>">
-              <button class="btn" type="submit"><?= h(t('gov.save')) ?></button>
-              <?php if (fms_enabled()): ?>
-              <button type="button" class="btn" data-action="export-fms" data-report-id="<?= (int)$r['id'] ?>" title="<?= h(t('gov.export_fms')) ?>"><?= h(t('gov.export_fms')) ?></button>
-              <?php endif; ?>
-            </form>
           </div>
-        <?php endforeach; ?>
+
+          <?php if ($govAiUiEnabled): ?>
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h6 class="card-title mb-2"><?= h(t('gov.ai_panel')) ?></h6>
+                  <div class="d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnGovAiSummary" <?= ai_configured() ? '' : 'disabled' ?>><?= h(t('gov.ai_request_summary')) ?></button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnGovEsg" <?= ai_configured() ? '' : 'disabled' ?>><?= h(t('gov.ai_request_esg')) ?></button>
+                  </div>
+                  <div id="govAiOut" class="text-secondary small mt-2"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
+        </div>
+
+        <div class="admin-tab-body" id="tab-reports" hidden>
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.reports_list')) ?></h6>
+              <form method="get" class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                <label for="govStatusFilter" class="text-secondary small"><?= h(t('gov.filter_status')) ?></label>
+                <select id="govStatusFilter" name="status_filter" onchange="this.form.submit()" class="form-select form-select-sm" style="max-width:240px">
+                  <option value=""<?= $statusFilter === '' ? ' selected' : '' ?>><?= h(t('legend.all')) ?></option>
+                  <?php foreach ($allowedStatuses as $st): ?>
+                    <option value="<?= h($st) ?>"<?= $statusFilter === $st ? ' selected' : '' ?>><?= h($statusLabels[$st] ?? $st) ?></option>
+                  <?php endforeach; ?>
+                </select>
+                <span class="text-secondary small ms-auto"><?= h(t('gov.list_max')) ?></span>
+              </form>
+
+              <div class="admin-list" style="max-height:60vh">
+                <?php foreach($reports as $r): ?>
+                  <div class="admin-item">
+                    <div><b>#<?= (int)$r['id'] ?></b> <span class="text-secondary small">• <?= h($r['category']) ?> • <?= h($r['status']) ?></span></div>
+                    <div class="text-secondary small"><?= h($r['title'] ?: t('gov.report_anonymous')) ?></div>
+                    <div class="text-secondary small"><?= h($r['address_approx'] ?: $r['city'] ?: '') ?></div>
+                  </div>
+                <?php endforeach; ?>
+                <?php if (!$reports): ?>
+                  <div class="text-secondary small"><?= h(t('gov.no_data')) ?></div>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <?php if (!$isAdmin): ?>
+        <div class="admin-tab-body" id="tab-modules" hidden>
+          <div class="card">
+            <div class="card-body">
+              <p class="text-secondary small mb-3"><?= h(t('gov.modules_intro')) ?></p>
+              <div id="govModuleList"><?= h(t('admin.load')) ?>...</div>
+            </div>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php endif; // auth/no authority ?>
       </div>
-      <?php else: ?>
-      <section class="gov-next" style="margin-top:24px;padding:20px;background:var(--card-2);border:1px dashed var(--border);border-radius:12px;">
-        <h3 style="margin:0 0 8px 0; font-size:1rem"><?= h(t('gov.next_steps')) ?></h3>
-        <p class="muted" style="margin:0 0 12px 0"><?= h(t('gov.next_intro')) ?></p>
-        <ul class="muted" style="margin:0; padding-left:1.2em;">
-          <li><strong><?= h(t('gov.next_street')) ?></strong></li>
-          <li><strong><?= h(t('gov.next_ai')) ?></strong></li>
-          <li><strong><?= h(t('gov.next_esg')) ?></strong></li>
-        </ul>
-        <p class="muted small" style="margin:12px 0 0 0"><?= h(t('gov.next_dashboard')) ?></p>
-      </section>
-      <?php endif; ?>
-    <?php endif; ?>
-  </div>
+    </div>
+  </main>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+<script src="<?= htmlspecialchars(app_url('/dashboard/dist/js/adminlte.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script>
 (function(){
-  var exportUrl = <?= json_encode(app_url('/api/fms_bridge/export_report.php'), JSON_UNESCAPED_SLASHES) ?>;
-  document.body.addEventListener('click', function(e){
-    var btn = e.target && e.target.closest && e.target.closest('[data-action="export-fms"]');
-    if (!btn) return;
-    var reportId = parseInt(btn.getAttribute('data-report-id'), 10);
-    if (!reportId) return;
-    btn.disabled = true;
-    fetch(exportUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ report_id: reportId })
-    }).then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
-      .then(function(x){
-        btn.disabled = false;
-        if (x.ok && x.j.ok) alert(x.j.already_exported ? 'Már korábban kiküldve.' : 'Elküldve a FixMyStreet rendszerbe.');
-        else alert(x.j.error || 'Hiba történt.');
-      })
-      .catch(function(){ btn.disabled = false; alert('Hiba történt.'); });
+  var aiUrl = <?= json_encode(app_url('/api/gov_ai.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var modulesUrl = <?= json_encode(app_url('/api/gov_modules.php'), JSON_UNESCAPED_SLASHES) ?>;
+
+  function postJson(url, body){
+    return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(body) })
+      .then(function(r){ return r.text().then(function(t){ var j=null; try{j=JSON.parse(t);}catch(_){}; return { ok:r.ok, j:j, t:t }; }); });
+  }
+
+  // Tabs
+  document.querySelectorAll('.tab[data-tab]').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      var key = btn.getAttribute('data-tab');
+      document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
+      ['dashboard','reports','modules'].forEach(function(k){
+        var el = document.getElementById('tab-' + k);
+        if (el) el.hidden = (k !== key);
+      });
+      if (key === 'modules') loadGovModules();
+    });
   });
+
+  // AI buttons
+  var out = document.getElementById('govAiOut');
+  var btnSum = document.getElementById('btnGovAiSummary');
+  var btnEsg = document.getElementById('btnGovEsg');
+  function setBusy(b){
+    if (btnSum) btnSum.disabled = b;
+    if (btnEsg) btnEsg.disabled = b;
+  }
+  function renderResult(title, data){
+    if (!out) return;
+    out.innerHTML = '<b>' + title + '</b><div style="margin-top:6px">' + (data && data.text ? data.text : '') + '</div>';
+  }
+  btnSum && btnSum.addEventListener('click', function(){
+    if (!out) return;
+    out.textContent = 'Generálás...';
+    setBusy(true);
+    postJson(aiUrl, { action:'generate', type:'summary' }).then(function(x){
+      setBusy(false);
+      if (x.ok && x.j && x.j.ok) renderResult('AI összefoglaló', x.j.data);
+      else out.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : (x.t || 'Hiba.');
+    }).catch(function(){ setBusy(false); if(out) out.textContent='Hiba.'; });
+  });
+  btnEsg && btnEsg.addEventListener('click', function(){
+    if (!out) return;
+    out.textContent = 'Generálás...';
+    setBusy(true);
+    postJson(aiUrl, { action:'generate', type:'esg' }).then(function(x){
+      setBusy(false);
+      if (x.ok && x.j && x.j.ok) renderResult('ESG / fenntarthatóság', x.j.data);
+      else out.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : (x.t || 'Hiba.');
+    }).catch(function(){ setBusy(false); if(out) out.textContent='Hiba.'; });
+  });
+
+  // Gov modules list
+  function loadGovModules(){
+    var list = document.getElementById('govModuleList');
+    if (!list) return;
+    list.textContent = 'Betöltés...';
+    fetch(modulesUrl, { credentials:'same-origin' })
+      .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
+      .then(function(x){
+        if (!x.ok || !x.j || !x.j.ok) { list.textContent = 'Hiba a betöltésnél.'; return; }
+        var mods = x.j.modules || [];
+        list.innerHTML = mods.map(function(m){
+          return '<div class="d-flex align-items-center justify-content-between border rounded p-2 mb-2">' +
+            '<div><div class="fw-semibold">' + m.label + '</div><div class="text-secondary small">' + (m.description||'') + '</div></div>' +
+            '<div class="form-check form-switch mb-0">' +
+              '<input class="form-check-input gov-mod-toggle" type="checkbox" data-key="' + m.key + '" ' + (m.enabled ? 'checked' : '') + '>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+        list.querySelectorAll('.gov-mod-toggle').forEach(function(sw){
+          sw.addEventListener('change', function(){
+            postJson(modulesUrl, { action:'save', module_key: sw.getAttribute('data-key'), enabled: sw.checked ? 1 : 0 })
+              .then(function(){ /* ignore */ })
+              .catch(function(){ /* ignore */ });
+          });
+        });
+      })
+      .catch(function(){ list.textContent='Hiba a betöltésnél.'; });
+  }
 })();
 </script>
-<script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body></html>

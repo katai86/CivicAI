@@ -174,6 +174,14 @@ return [
     'gov.ai_not_configured' => 'AI (Mistral): nincs API kulcs',
     'gov.export_fms' => 'Küldés FMS-be',
     'gov.config_note' => 'A kulcsok csak környezeti változókból (.env) töltődnek, a felületen nem jelennek meg.',
+    'gov.ai_panel' => 'AI / ESG',
+    'gov.ai_request_summary' => 'AI összefoglaló kérése',
+    'gov.ai_request_esg' => 'ESG összefoglaló kérése',
+    'gov.tab_dashboard' => 'Dashboard',
+    'gov.tab_reports' => 'Bejelentések',
+    'gov.tab_modules' => 'Beépülő modulok',
+    'gov.modules_intro' => 'Saját fiók szintjén ki/be kapcsolók. Ezek csak a közig felület elemeit érintik (nem globális beállítások).',
+    'gov.module_saved' => 'Mentve.',
 
     // Státusz címkék (közös)
     'status.pending' => 'Ellenőrzés alatt',

@@ -95,6 +95,16 @@ CREATE TABLE IF NOT EXISTS module_settings (
   PRIMARY KEY (module_key, setting_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ========== 2026-19 Govuser saját modul kapcsolók (csak UI/használat) ==========
+CREATE TABLE IF NOT EXISTS user_module_toggles (
+  user_id INT NOT NULL,
+  module_key VARCHAR(64) NOT NULL,
+  is_enabled TINYINT(1) NOT NULL DEFAULT 1,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, module_key),
+  KEY idx_user_module (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ========== 2026-04 FMS bridge ==========
 CREATE TABLE IF NOT EXISTS fms_reports (
   id INT AUTO_INCREMENT PRIMARY KEY,
