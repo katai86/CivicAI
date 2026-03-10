@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/util.php';
+require_once __DIR__ . '/services/XpBadge.php';
+
+try {
 start_secure_session();
 $currentLang = current_lang();
 // Mobil shell csak mobil eszközön
@@ -34,6 +37,15 @@ $rankAll = $uid ? get_user_rank('all', $uid) : null;
 $rankCatWeek = $uid ? get_user_category_rank('week', $uid, $cat) : null;
 $rankCatMonth = $uid ? get_user_category_rank('month', $uid, $cat) : null;
 $rankCatAll = $uid ? get_user_category_rank('all', $uid, $cat) : null;
+} catch (Throwable $e) {
+  if (function_exists('error_log')) {
+    error_log('Leaderboard: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+  }
+  $home = function_exists('app_url') ? app_url('/') : '/';
+  header('Content-Type: text/html; charset=utf-8');
+  echo '<!DOCTYPE html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hiba</title></head><body><p>Az oldal átmenetileg nem érhető el. Próbálja újra később.</p><p><a href="' . htmlspecialchars($home, ENT_QUOTES, 'UTF-8') . '">Főoldal</a></p></body></html>';
+  exit;
+}
 
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function badge_icon_url($code){
@@ -79,7 +91,14 @@ function avatar_url($filename){
       <span class="brand-logo" aria-hidden="true"></span>
       <b><?= h(t('site.name')) ?></b>
     </a>
-    <?php include __DIR__ . '/user/inc_topbar_tools.php'; ?>
+    <?php
+    $topbarToolsFile = __DIR__ . DIRECTORY_SEPARATOR . 'user' . DIRECTORY_SEPARATOR . 'inc_topbar_tools.php';
+    if (is_file($topbarToolsFile)) {
+      include $topbarToolsFile;
+    } else {
+      echo '<div class="topbar-right"><div class="topbar-tools"></div></div>';
+    }
+    ?>
     <div class="topbar-links">
       <a class="topbtn" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
       <?php if ($uid > 0): ?>
