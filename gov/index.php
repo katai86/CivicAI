@@ -641,7 +641,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   var modulesUrl = <?= json_encode(app_url('/api/gov_modules.php'), JSON_UNESCAPED_SLASHES) ?>;
 
   function postJson(url, body){
-    return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(body) })
+    return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify(body) })
       .then(function(r){ return r.text().then(function(t){ var j=null; try{j=JSON.parse(t);}catch(_){}; return { ok:r.ok, j:j, t:t }; }); });
   }
 
@@ -678,7 +678,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
     postJson(aiUrl, { action:'generate', type:'summary' }).then(function(x){
       setBusy(false);
       if (x.ok && x.j && x.j.ok) renderResult('AI összefoglaló', x.j.data);
-      else out.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : (x.t || 'Hiba.');
+      else out.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : ('Hiba: ' + (x.t || 'Ismeretlen'));
     }).catch(function(){ setBusy(false); if(out) out.textContent='Hiba.'; });
   });
   btnEsg && btnEsg.addEventListener('click', function(){
@@ -688,7 +688,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
     postJson(aiUrl, { action:'generate', type:'esg' }).then(function(x){
       setBusy(false);
       if (x.ok && x.j && x.j.ok) renderResult('ESG / fenntarthatóság', x.j.data);
-      else out.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : (x.t || 'Hiba.');
+      else out.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : ('Hiba: ' + (x.t || 'Ismeretlen'));
     }).catch(function(){ setBusy(false); if(out) out.textContent='Hiba.'; });
   });
 
@@ -697,7 +697,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
     var list = document.getElementById('govModuleList');
     if (!list) return;
     list.textContent = 'Betöltés...';
-    fetch(modulesUrl, { credentials:'same-origin' })
+    fetch(modulesUrl, { credentials:'include' })
       .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
       .then(function(x){
         if (!x.ok || !x.j || !x.j.ok) { list.textContent = 'Hiba a betöltésnél.'; return; }
@@ -713,7 +713,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
         list.querySelectorAll('.gov-mod-toggle').forEach(function(sw){
           sw.addEventListener('change', function(){
             postJson(modulesUrl, { action:'save', module_key: sw.getAttribute('data-key'), enabled: sw.checked ? 1 : 0 })
-              .then(function(){ /* ignore */ })
+              .then(function(x){ if (x && x.ok && x.j && x.j.ok) { /* ok */ } })
               .catch(function(){ /* ignore */ });
           });
         });
