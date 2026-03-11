@@ -82,12 +82,14 @@ body.civicai-mobile .map-overlay-actions {
   z-index: 800;
   align-items: flex-end;
 }
+/* Bejelentés gomb: fix a viewporthoz, mindig az alsó menü fölött 5 px-rel */
 body.civicai-mobile .fab-report {
-  position: absolute;
+  position: fixed;
   right: 14px;
-  bottom: 5px;
+  bottom: calc(56px + 5px + env(safe-area-inset-bottom, 0));
   left: auto;
   top: auto;
+  z-index: 900;
 }
 
 body.civicai-mobile #map {
