@@ -591,6 +591,59 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             </div>
           </div>
 
+          <div class="row g-3 mt-1">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h6 class="card-title mb-1"><?= h(t('gov.esg_dashboard_title')) ?></h6>
+                  <p class="text-secondary small mb-3"><?= h(t('gov.esg_dashboard_desc')) ?></p>
+                  <div class="row g-2 mb-3">
+                    <div class="col-md-4">
+                      <div class="border rounded p-2 bg-light">
+                        <div class="fw-semibold small text-success"><?= h(t('gov.esg_env')) ?></div>
+                        <ul class="small mb-0 ps-3">
+                          <li><?= h(t('gov.esg_trees_total')) ?>: <strong><?= (int)($stats['environment']['trees_total'] ?? 0) ?></strong></li>
+                          <li><?= h(t('gov.esg_green_reports')) ?>: <strong><?= (int)($stats['environment']['green_reports'] ?? 0) ?></strong></li>
+                          <li><?= h(t('gov.esg_trees_water')) ?>: <?= (int)($stats['environment']['trees_needing_water'] ?? 0) ?></li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="border rounded p-2 bg-light">
+                        <div class="fw-semibold small text-primary"><?= h(t('gov.esg_social')) ?></div>
+                        <ul class="small mb-0 ps-3">
+                          <li><?= h(t('gov.esg_active_citizens')) ?>: <strong><?= (int)($stats['social']['active_citizens_30d'] ?? 0) ?></strong></li>
+                          <li><?= h(t('gov.esg_tree_adopters')) ?>: <strong><?= (int)($stats['social']['tree_adopters'] ?? 0) ?></strong></li>
+                          <li><?= h(t('gov.esg_watering_30d')) ?>: <?= (int)($stats['social']['watering_actions_30d'] ?? 0) ?></li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="border rounded p-2 bg-light">
+                        <div class="fw-semibold small text-secondary"><?= h(t('gov.esg_gov')) ?></div>
+                        <ul class="small mb-0 ps-3">
+                          <li><?= h(t('gov.esg_open')) ?>: <strong><?= (int)($stats['governance']['reports_open'] ?? 0) ?></strong></li>
+                          <li><?= h(t('gov.esg_solved_30d')) ?>: <?= (int)($stats['governance']['reports_solved_30d'] ?? 0) ?></li>
+                          <li><?= h(t('gov.esg_avg_days')) ?>: <?= $stats['governance']['avg_resolution_days'] !== null ? round($stats['governance']['avg_resolution_days'], 1) : '—' ?></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <label class="small mb-0"><?= h(t('gov.esg_report_year')) ?></label>
+                    <select id="govEsgYear" class="form-select form-select-sm" style="max-width:100px">
+                      <?php for ($y = (int)date('Y'); $y >= (int)date('Y') - 3; $y--): ?>
+                        <option value="<?= $y ?>"<?= $y === (int)date('Y') ? ' selected' : '' ?>><?= $y ?></option>
+                      <?php endfor; ?>
+                    </select>
+                    <a href="#" id="linkEsgJson" class="btn btn-outline-primary btn-sm">JSON</a>
+                    <a href="#" id="linkEsgCsv" class="btn btn-outline-secondary btn-sm" download>CSV (Excel)</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <?php if ($govAiUiEnabled): ?>
           <div class="row g-3">
             <div class="col-md-6">
@@ -704,8 +757,20 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
 (function(){
   var aiUrl = <?= json_encode(app_url('/api/gov_ai.php'), JSON_UNESCAPED_SLASHES) ?>;
   var modulesUrl = <?= json_encode(app_url('/api/gov_modules.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var esgExportUrl = <?= json_encode(app_url('/api/esg_export.php'), JSON_UNESCAPED_SLASHES) ?>;
   var appName = <?= json_encode(t('site.name'), JSON_UNESCAPED_UNICODE) ?>;
   var logoUrl = <?= json_encode(app_url('/assets/logo.png'), JSON_UNESCAPED_SLASHES) ?>;
+
+  var govEsgYear = document.getElementById('govEsgYear');
+  var linkEsgJson = document.getElementById('linkEsgJson');
+  var linkEsgCsv = document.getElementById('linkEsgCsv');
+  function updateEsgExportLinks(){
+    var y = govEsgYear ? govEsgYear.value : new Date().getFullYear();
+    if (linkEsgJson) linkEsgJson.href = esgExportUrl + '?year=' + y + '&format=json';
+    if (linkEsgCsv) linkEsgCsv.href = esgExportUrl + '?year=' + y + '&format=csv';
+  }
+  if (govEsgYear) govEsgYear.addEventListener('change', updateEsgExportLinks);
+  updateEsgExportLinks();
 
   function postJson(url, body){
     return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify(body) })

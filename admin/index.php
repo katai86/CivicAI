@@ -133,7 +133,7 @@ $LANG_JS = lang_array_for_js();
                   </div>
                 </div>
                 <p class="text-secondary small mt-2 mb-0"><?= htmlspecialchars(t('admin.integration_status'), ENT_QUOTES, 'UTF-8') ?> FixMyStreet: <?= fms_enabled() ? htmlspecialchars(t('admin.fms_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.fms_not_configured'), ENT_QUOTES, 'UTF-8') ?> | AI (Mistral): <?= ai_configured() ? htmlspecialchars(t('admin.ai_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.ai_not_configured'), ENT_QUOTES, 'UTF-8') ?></p>
-                <p class="text-secondary small mt-1 mb-0"><strong>CivicAI Analytics:</strong> <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a></p>
+                <p class="text-secondary small mt-1 mb-0"><strong>CivicAI Analytics:</strong> <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a> &nbsp;|&nbsp; <strong>ESG:</strong> <a href="<?= htmlspecialchars(app_url('/api/esg_export.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/esg_export.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a></p>
               </div>
             </div>
           </div>

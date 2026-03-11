@@ -82,9 +82,11 @@ A cél: **minimal change**, **moduláris bővítés**, és hogy minden épüljö
 
 ---
 
-### M3 — ESG dashboard bővítés (Urban ESG Dashboard)
+### M3 — ESG dashboard bővítés (Urban ESG Dashboard) ✅
 
 **Cél:** ESG struktúra E/S/G alapon, export és év szerinti jelentés.
+
+**Megvalósítva:** `api/esg_export.php` (year, format=json|csv), E/S/G metrikák évre; Gov „Urban ESG Dashboard" kártya + export; Admin ESG link.
 
 - **Environment:** pl. fák száma, új ültetések, becsült CO2, zöldfelület indikátor, illegális hulladék csökkenés (report kategóriákból).
 - **Social:** aktív polgárok, részvétel, önkéntes fa gondozás (adopt/watering), bejelentések.
