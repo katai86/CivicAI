@@ -1335,9 +1335,15 @@ function openModal(latlng){
           formData.append('photo', fileInput.files[0]);
         }
         const res = await fetch(API_TREE_CREATE, { method: 'POST', body: formData, credentials: 'same-origin' });
-        const j = await res.json();
+        let j = null;
+        try {
+          j = await res.json();
+        } catch (e) {
+          if (res.status >= 400) throw new Error(t('common.error_server') || 'Szerver hiba.');
+          throw e;
+        }
         if (!j || !j.ok) {
-          throw new Error(j && j.error ? j.error : 'Fa feltöltés sikertelen.');
+          throw new Error(j && j.error ? j.error : (t('common.error_server') || 'Fa feltöltés sikertelen.'));
         }
         alert(t('tree.submit_success') || 'Fa rögzítve. Megjelenik a térképen.');
         closeModal();
