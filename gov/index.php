@@ -24,7 +24,14 @@ $err = '';
 $authorities = [];
 if ($isAdmin) {
   try {
-    $authorities = db()->query("SELECT * FROM authorities ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+    $rows = db()->query("SELECT * FROM authorities ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+    // Dedupe by id (egy hatóság csak egyszer)
+    $byId = [];
+    foreach ($rows as $a) {
+      $id = (int)($a['id'] ?? 0);
+      if ($id && !isset($byId[$id])) $byId[$id] = $a;
+    }
+    $authorities = array_values($byId);
   } catch (Throwable $e) {
     $authorities = [];
   }
@@ -38,13 +45,19 @@ if ($isAdmin) {
       ORDER BY a.name ASC
     ");
     $stmt->execute([':uid' => $uid]);
-    $authorities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    $byId = [];
+    foreach ($rows as $a) {
+      $id = (int)($a['id'] ?? 0);
+      if ($id && !isset($byId[$id])) $byId[$id] = $a;
+    }
+    $authorities = array_values($byId);
   } catch (Throwable $e) {
     $authorities = [];
   }
 }
 
-// Gov user: csak egy "saját" város/hatóság jelenjen meg (első hozzárendelés)
+// Gov user: csak egy "saját" hatóság jelenjen meg (pl. Orosháza felhasználónak csak Orosháza)
 if (!$isAdmin && !empty($authorities)) {
   $authorities = [ $authorities[0] ];
 }
@@ -567,15 +580,25 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
 
           <?php if ($govAiUiEnabled): ?>
           <div class="row g-3">
-            <div class="col-12">
-              <div class="card">
+            <div class="col-md-6">
+              <div class="card h-100">
                 <div class="card-body">
-                  <h6 class="card-title mb-2"><?= h(t('gov.ai_panel')) ?></h6>
-                  <div class="d-flex gap-2 flex-wrap">
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnGovAiSummary" <?= ai_configured() ? '' : 'disabled' ?>><?= h(t('gov.ai_request_summary')) ?></button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnGovEsg" <?= ai_configured() ? '' : 'disabled' ?>><?= h(t('gov.ai_request_esg')) ?></button>
-                  </div>
-                  <div id="govAiOut" class="text-secondary small mt-2"></div>
+                  <h6 class="card-title mb-1"><?= h(t('gov.ai_panel')) ?></h6>
+                  <p class="text-secondary small mb-3"><?= h(t('gov.ai_desc')) ?></p>
+                  <button type="button" class="btn btn-primary btn-sm mb-3" id="btnGovAiSummary" <?= ai_configured() ? '' : 'disabled' ?>><?= h(t('gov.ai_request_summary')) ?></button>
+                  <div id="govAiOutSummary" class="gov-ai-result border rounded p-3 bg-light small mt-2" style="min-height:80px;white-space:pre-wrap;"></div>
+                  <button type="button" class="btn btn-outline-secondary btn-sm mt-2 d-none" id="btnPdfSummary"><?= h(t('gov.export_pdf')) ?></button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card h-100">
+                <div class="card-body">
+                  <h6 class="card-title mb-1"><?= h(t('gov.ai_panel_esg')) ?></h6>
+                  <p class="text-secondary small mb-3"><?= h(t('gov.esg_desc')) ?></p>
+                  <button type="button" class="btn btn-primary btn-sm mb-3" id="btnGovEsg" <?= ai_configured() ? '' : 'disabled' ?>><?= h(t('gov.ai_request_esg')) ?></button>
+                  <div id="govAiOutEsg" class="gov-ai-result border rounded p-3 bg-light small mt-2" style="min-height:80px;white-space:pre-wrap;"></div>
+                  <button type="button" class="btn btn-outline-secondary btn-sm mt-2 d-none" id="btnPdfEsg"><?= h(t('gov.export_pdf')) ?></button>
                 </div>
               </div>
             </div>
@@ -633,16 +656,115 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
 
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
 <script src="<?= htmlspecialchars(app_url('/dashboard/dist/js/adminlte.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script>
 (function(){
   var aiUrl = <?= json_encode(app_url('/api/gov_ai.php'), JSON_UNESCAPED_SLASHES) ?>;
   var modulesUrl = <?= json_encode(app_url('/api/gov_modules.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var appName = <?= json_encode(t('site.name'), JSON_UNESCAPED_UNICODE) ?>;
+  var logoUrl = <?= json_encode(app_url('/assets/logo.png'), JSON_UNESCAPED_SLASHES) ?>;
 
   function postJson(url, body){
     return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify(body) })
       .then(function(r){ return r.text().then(function(t){ var j=null; try{j=JSON.parse(t);}catch(_){}; return { ok:r.ok, j:j, t:t }; }); });
+  }
+
+  function formatAiData(data){
+    if (!data) return '';
+    var text = (data.text || data.summary || '').trim();
+    if (text) {
+      var jsonStart = text.indexOf('{');
+      if (jsonStart !== -1) {
+        var maybeJson = text.slice(jsonStart).replace(/^\s*```\w*\n?|\n?```\s*$/g, '').trim();
+        try {
+          var parsed = JSON.parse(maybeJson);
+          if (parsed.text) text = parsed.text;
+          else if (parsed.summary) text = parsed.summary;
+          else if (parsed.esg_metrics || parsed.citizen_engagement) data.raw = parsed;
+        } catch(_) {}
+      }
+    }
+    if (text) return text;
+    var raw = data.raw;
+    if (raw && typeof raw === 'object') {
+      if (raw.text) return raw.text;
+      var parts = [];
+      if (raw.esg_metrics && Array.isArray(raw.esg_metrics)) {
+        parts.push('Fenntarthatósági mutatók:');
+        raw.esg_metrics.forEach(function(m){
+          parts.push('• ' + (m.metric || m.name || '') + ': ' + (m.current_signal != null ? m.current_signal : '') + (m.next_step ? ' – Következő lépés: ' + m.next_step : ''));
+        });
+      }
+      if (raw.citizen_engagement && Array.isArray(raw.citizen_engagement)) {
+        parts.push('\nPolgári részvétel:');
+        raw.citizen_engagement.forEach(function(c){
+          parts.push('• ' + (c.idea || c.title || '') + (c.how_to_measure ? ' – Mérés: ' + c.how_to_measure : ''));
+        });
+      }
+      if (raw.text) parts.unshift(raw.text);
+      return parts.join('\n');
+    }
+    return '';
+  }
+
+  function renderResult(container, pdfBtn, title, data){
+    if (!container) return;
+    var html = formatAiData(data);
+    if (!html) { container.textContent = (data && (data.text || data.raw)) ? 'Nem sikerült formázni.' : ''; pdfBtn.classList.add('d-none'); return; }
+    container.innerHTML = html.replace(/\n/g, '<br>');
+    container.setAttribute('data-pdf-title', title);
+    container.setAttribute('data-pdf-content', html.replace(/<br\s*\/?>/gi, '\n'));
+    pdfBtn.classList.remove('d-none');
+  }
+
+  function downloadPdf(btnId){
+    var block = btnId === 'btnPdfSummary' ? document.getElementById('govAiOutSummary') : document.getElementById('govAiOutEsg');
+    if (!block || !block.getAttribute('data-pdf-content')) return;
+    var title = block.getAttribute('data-pdf-title') || 'Összefoglaló';
+    var content = block.getAttribute('data-pdf-content');
+    var JsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (!JsPDF) { alert('PDF könyvtár nem elérhető.'); return; }
+    var doc = new JsPDF();
+    var y = 20;
+    function addContent(){
+      doc.setFontSize(12);
+      doc.text(title, 14, y); y += 8;
+      doc.setFontSize(9);
+      doc.text('Készült: ' + new Date().toLocaleString('hu-HU'), 14, y); y += 12;
+      var lines = doc.splitTextToSize(content, 180);
+      doc.setFontSize(10);
+      doc.text(lines, 14, y);
+      doc.save('civic-ai-' + title.replace(/\s+/g, '-').toLowerCase() + '.pdf');
+    }
+    if (logoUrl) {
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function(){
+        try {
+          var c = document.createElement('canvas');
+          c.width = img.naturalWidth || img.width;
+          c.height = img.naturalHeight || img.height;
+          var ctx = c.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          var dataUrl = c.toDataURL('image/png');
+          var w = Math.min(24, c.width);
+          var h = (c.height / c.width) * w;
+          doc.addImage(dataUrl, 'PNG', 14, 10, w, h);
+          doc.setFontSize(16);
+          doc.text(appName || 'Civic AI', 14 + w + 6, 18);
+          y = 14 + h + 8;
+        } catch (_) { y = 20; doc.setFontSize(16); doc.text(appName || 'Civic AI', 14, y); y += 10; }
+        addContent();
+      };
+      img.onerror = function(){ doc.setFontSize(16); doc.text(appName || 'Civic AI', 14, y); y += 10; addContent(); };
+      img.src = logoUrl;
+    } else {
+      doc.setFontSize(16);
+      doc.text(appName || 'Civic AI', 14, y); y += 10;
+      addContent();
+    }
   }
 
   // Tabs
@@ -659,38 +781,38 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
     });
   });
 
-  // AI buttons
-  var out = document.getElementById('govAiOut');
+  var outSum = document.getElementById('govAiOutSummary');
+  var outEsg = document.getElementById('govAiOutEsg');
   var btnSum = document.getElementById('btnGovAiSummary');
   var btnEsg = document.getElementById('btnGovEsg');
   function setBusy(b){
     if (btnSum) btnSum.disabled = b;
     if (btnEsg) btnEsg.disabled = b;
   }
-  function renderResult(title, data){
-    if (!out) return;
-    out.innerHTML = '<b>' + title + '</b><div style="margin-top:6px">' + (data && data.text ? data.text : '') + '</div>';
-  }
   btnSum && btnSum.addEventListener('click', function(){
-    if (!out) return;
-    out.textContent = 'Generálás...';
+    if (!outSum) return;
+    outSum.textContent = 'Generálás...';
+    document.getElementById('btnPdfSummary').classList.add('d-none');
     setBusy(true);
     postJson(aiUrl, { action:'generate', type:'summary' }).then(function(x){
       setBusy(false);
-      if (x.ok && x.j && x.j.ok) renderResult('AI összefoglaló', x.j.data);
-      else out.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : ('Hiba: ' + (x.t || 'Ismeretlen'));
-    }).catch(function(){ setBusy(false); if(out) out.textContent='Hiba.'; });
+      if (x.ok && x.j && x.j.ok) renderResult(outSum, document.getElementById('btnPdfSummary'), 'AI összefoglaló', x.j.data);
+      else outSum.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : ('Hiba: ' + (x.t || 'Ismeretlen'));
+    }).catch(function(){ setBusy(false); if(outSum) outSum.textContent='Hiba.'; });
   });
   btnEsg && btnEsg.addEventListener('click', function(){
-    if (!out) return;
-    out.textContent = 'Generálás...';
+    if (!outEsg) return;
+    outEsg.textContent = 'Generálás...';
+    document.getElementById('btnPdfEsg').classList.add('d-none');
     setBusy(true);
     postJson(aiUrl, { action:'generate', type:'esg' }).then(function(x){
       setBusy(false);
-      if (x.ok && x.j && x.j.ok) renderResult('ESG / fenntarthatóság', x.j.data);
-      else out.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : ('Hiba: ' + (x.t || 'Ismeretlen'));
-    }).catch(function(){ setBusy(false); if(out) out.textContent='Hiba.'; });
+      if (x.ok && x.j && x.j.ok) renderResult(outEsg, document.getElementById('btnPdfEsg'), 'ESG / fenntarthatóság', x.j.data);
+      else outEsg.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : ('Hiba: ' + (x.t || 'Ismeretlen'));
+    }).catch(function(){ setBusy(false); if(outEsg) outEsg.textContent='Hiba.'; });
   });
+  document.getElementById('btnPdfSummary') && document.getElementById('btnPdfSummary').addEventListener('click', function(){ downloadPdf('btnPdfSummary'); });
+  document.getElementById('btnPdfEsg') && document.getElementById('btnPdfEsg').addEventListener('click', function(){ downloadPdf('btnPdfEsg'); });
 
   // Gov modules list
   function loadGovModules(){
