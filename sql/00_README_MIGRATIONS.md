@@ -25,9 +25,10 @@
 - **demo_seed_trees.sql** – 2 fa, 1 öntözési napló (futtatás csak 2026-13 után).  
 - **demo_seed_full.sql** – Teljes demo: 10 felhasználó (teszt1..10@kataiattila.hu: 2 user, 2 civil, 3 community, 3 govuser), 4 hatóság (Orosháza, Nagyszénás, Tótkomlós, Mezőkovácsháza), 3 közületi pont (Orosháza: Háziorvos, Fogorvos, Gyógyszertár), 110 bejelentés (40+20+20+30, utcánként ≥3 úthiba és ≥3 fa/ágletörés a stat predikcióhoz), 8 civil esemény (4–4 a két civil usernek). Jelszó: *password*. Csak demo/teszt DB-n.
 
-### Egy futással (feltételes migráció)
+### Egy futással (feltételes migráció) – összevont SQL
 
-- **00_run_all_migrations_safe.sql** – Az összes séma-migráció (2026-03 … 2026-19) egy fájlban; minden lépés feltételes: ha a tábla/oszlop/index már létezik, kihagyja. Egyszer futtatható, nem kell külön ellenőrizni, mi maradt ki. Demo seed fájlok nincsenek benne.
+- **01_consolidated_migrations.sql** – **Egy fájlban az összes eddigi SQL bővítés és módosítás** (2026-03 … 2026-19): users, reports, map_layers, trees, tree_logs, tree_adoptions, tree_watering_logs, FMS, authorities, facilities, civil_events, report_likes, friends, module_settings, user_module_toggles, ai_results stb. Minden lépés feltételes (ha már létezik, kihagyja). Futtatás: `mysql -u user -p adatbazis < sql/01_consolidated_migrations.sql`. Demo seed fájlok nincsenek benne.
+- **00_run_all_migrations_safe.sql** – Ugyanaz a tartalom (régi név, visszafelé kompatibilitás).
 
 ## Megjegyzések
 
