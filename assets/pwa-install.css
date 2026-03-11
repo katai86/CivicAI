@@ -1,6 +1,6 @@
 /* CivicAI PWA install banner & iOS card */
 
-/* ----- Bottom card / banner (Android, Chrome) ----- */
+/* ----- Android/Chrome: asztali = alul, mobil = középen popup ----- */
 .civicai-pwa-banner {
   position: fixed;
   left: 0;
@@ -10,6 +10,9 @@
   padding: 12px 16px 24px;
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0));
   background: linear-gradient(to top, #0f1721 0%, #0f1721 85%, transparent);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   pointer-events: none;
   opacity: 0;
   transform: translateY(100%);
@@ -20,6 +23,28 @@
   pointer-events: auto;
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Mobil: teljes képernyős overlay, kártya középen (popup) */
+body.civicai-mobile .civicai-pwa-banner,
+body.civicai-mobile .civicai-pwa-banner--visible {
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+  background: rgba(0, 0, 0, 0.65);
+  transform: none;
+}
+body.civicai-mobile .civicai-pwa-banner--visible {
+  transform: none;
+}
+body.civicai-mobile .civicai-pwa-banner .civicai-pwa-banner__inner {
+  max-width: 90vw;
+  animation: civicai-pwa-popin 0.25s ease;
+}
+@keyframes civicai-pwa-popin {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .civicai-pwa-banner__inner {
@@ -87,24 +112,30 @@
   color: #f1f5f9;
 }
 
-/* ----- iOS info card ----- */
+/* ----- iOS: mobil = középen popup ----- */
 .civicai-pwa-ios-card {
   position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: 24px;
-  bottom: calc(24px + env(safe-area-inset-bottom, 0));
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
   z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.65);
   pointer-events: none;
   opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition: opacity 0.25s ease;
 }
 
 .civicai-pwa-ios-card--visible {
   pointer-events: auto;
   opacity: 1;
-  transform: translateY(0);
+}
+.civicai-pwa-ios-card--visible .civicai-pwa-ios-card__inner {
+  animation: civicai-pwa-popin 0.25s ease;
 }
 
 .civicai-pwa-ios-card__inner {

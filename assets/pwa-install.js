@@ -94,15 +94,30 @@
   }
 
   function onInstallClick() {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt().then(function () {
-      return deferredPrompt.userChoice;
-    }).then(function (choice) {
-      if (choice && choice.outcome === 'accepted') hideBanner();
+    var msgEl = document.getElementById('civicai-pwa-install-msg');
+    if (!deferredPrompt) {
+      if (msgEl) {
+        msgEl.textContent = 'A böngésző jelenleg nem kínálja a telepítést. Chrome: menü (⋮) → Hozzáadás a kezdőképernyőhöz.';
+        msgEl.style.display = 'block';
+      }
+      return;
+    }
+    var p = deferredPrompt;
+    try {
+      p.prompt();
+    } catch (e) {
+      if (msgEl) { msgEl.textContent = 'Telepítés nem elérhető.'; msgEl.style.display = 'block'; }
       deferredPrompt = null;
-    }).catch(function () {
+      return;
+    }
+    if (p.userChoice && typeof p.userChoice.then === 'function') {
+      p.userChoice.then(function (choice) {
+        if (choice && choice.outcome === 'accepted') hideBanner();
+        deferredPrompt = null;
+      }).catch(function () { deferredPrompt = null; });
+    } else {
       deferredPrompt = null;
-    });
+    }
   }
 
   function onDismissClick() {
@@ -152,6 +167,7 @@
       '<div class="civicai-pwa-banner__inner">' +
         '<h2 id="civicai-pwa-banner-title" class="civicai-pwa-banner__title">Használd appként a CivicAI-t</h2>' +
         '<p class="civicai-pwa-banner__text">Tedd ki a CivicAI-t a kezdőképernyődre, hogy gyorsabban bejelenthess problémákat.</p>' +
+        '<p id="civicai-pwa-install-msg" class="civicai-pwa-banner__msg" style="display:none;font-size:0.85rem;color:#94a3b8;margin-bottom:10px;"></p>' +
         '<div class="civicai-pwa-banner__actions">' +
           '<button type="button" class="civicai-pwa-banner__btn civicai-pwa-banner__btn--primary" id="civicai-pwa-install-btn">Telepítés</button>' +
           '<button type="button" class="civicai-pwa-banner__btn civicai-pwa-banner__btn--secondary" id="civicai-pwa-dismiss-btn">Most nem</button>' +

@@ -74,19 +74,18 @@ body.civicai-mobile #mapWrap {
   height: calc(100vh - 112px);
 }
 
-/* Térkép overlay: jelmagyarázat fent, Bejelentés gomb közvetlenül alatta (jobb felső) */
+/* Térkép overlay: csak jelmagyarázat jobb felső; Bejelentés gomb jobb alsó (style.css) */
 body.civicai-mobile .map-overlay-actions {
   position: absolute;
   right: 14px;
   top: 14px;
   z-index: 800;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
   align-items: flex-end;
 }
-body.civicai-mobile .map-overlay-actions .fab-report {
-  position: static;
+body.civicai-mobile .fab-report {
+  position: absolute;
+  right: 14px;
+  bottom: 5px;
   left: auto;
   top: auto;
 }

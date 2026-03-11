@@ -120,15 +120,16 @@ body{
 @keyframes mapFlashFade{0%,20%{opacity:1}80%{opacity:1}100%{opacity:0;pointer-events:none}}
 #map{height:100%;width:100%;filter:saturate(0.8) brightness(0.9) contrast(1.05)}
 .fab-report{
-  position:absolute;left:14px;top:14px;z-index:800;
+  position:absolute;right:14px;bottom:5px;left:auto;top:auto;z-index:800;
   padding:12px 18px;border-radius:999px;border:1px solid var(--border);
   background:var(--card);color:var(--text);font:700 14px "Montserrat",system-ui,sans-serif;
   cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(10px)
 }
 .fab-report:hover{background:var(--primary);color:#0f1721;border-color:var(--primary)}
 
-/* ===== Legend ===== */
-.legend{position:absolute;right:14px;top:14px;z-index:800;width:260px;max-width:85vw}
+/* ===== Legend (60% méret, beleférjen a képernyőbe) ===== */
+.legend{position:absolute;right:14px;top:14px;z-index:800;width:260px;max-width:85vw;
+  transform:scale(0.6);transform-origin:top right}
 .legend-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;
   border:1px solid var(--border);background:var(--card);border-radius:14px;padding:10px 12px;
   cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(10px);font:inherit;color:var(--text);text-align:left

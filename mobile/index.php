@@ -75,7 +75,7 @@ $LANG_JS = lang_array_for_js();
     <div id="mapWrap">
       <div id="map"></div>
       <div class="map-overlay-actions">
-        <div class="legend" id="legend" aria-label="<?= htmlspecialchars(t('legend.title'), ENT_QUOTES, 'UTF-8') ?>">
+        <div class="legend legend-scaled" id="legend" aria-label="<?= htmlspecialchars(t('legend.title'), ENT_QUOTES, 'UTF-8') ?>">
           <button type="button" class="legend-toggle" id="legendToggle" aria-expanded="false">
             <span class="legend-toggle-text"><?= htmlspecialchars(t('legend.title'), ENT_QUOTES, 'UTF-8') ?></span>
             <span class="legend-chevron" aria-hidden="true">▼</span>
@@ -111,8 +111,8 @@ $LANG_JS = lang_array_for_js();
             </div>
           </div>
         </div>
-        <button type="button" id="btnNewReport" class="fab-report" aria-label="<?= htmlspecialchars(t('fab.new_report'), ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(t('fab.new_report'), ENT_QUOTES, 'UTF-8') ?>">+ <?= htmlspecialchars(t('fab.report'), ENT_QUOTES, 'UTF-8') ?></button>
       </div>
+      <button type="button" id="btnNewReport" class="fab-report" aria-label="<?= htmlspecialchars(t('fab.new_report'), ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(t('fab.new_report'), ENT_QUOTES, 'UTF-8') ?>">+ <?= htmlspecialchars(t('fab.report'), ENT_QUOTES, 'UTF-8') ?></button>
     </div>
   </div>
 
