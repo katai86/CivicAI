@@ -33,9 +33,28 @@ if ((string)($body['action'] ?? '') !== 'generate') {
   json_response(['ok' => false, 'error' => 'Invalid action'], 400);
 }
 $type = (string)($body['type'] ?? 'summary');
-if (!in_array($type, ['summary','esg'], true)) {
+$allowedTypes = ['summary', 'esg', 'maintenance', 'engagement', 'sustainability'];
+if (!in_array($type, $allowedTypes, true)) {
   json_response(['ok' => false, 'error' => 'Invalid type'], 400);
 }
+$timeframe = (string)($body['timeframe'] ?? 'last_90_days');
+$allowedTimeframes = ['last_30_days', 'last_90_days', 'last_year'];
+if (!in_array($timeframe, $allowedTimeframes, true)) {
+  $timeframe = 'last_90_days';
+}
+// Date range for maintenance/engagement/sustainability reports
+$dateFrom = null;
+$dateTo = date('Y-m-d');
+switch ($timeframe) {
+  case 'last_30_days': $dateFrom = date('Y-m-d', strtotime('-30 days')); break;
+  case 'last_90_days': $dateFrom = date('Y-m-d', strtotime('-90 days')); break;
+  case 'last_year': $dateFrom = date('Y-m-d', strtotime('-1 year')); break;
+}
+$timeframeLabel = [
+  'last_30_days' => 'Utolsó 30 nap',
+  'last_90_days' => 'Utolsó 90 nap',
+  'last_year' => 'Elmúlt év',
+][$timeframe] ?? $timeframe;
 
 // Kontextus: govuser első hatósága, adminnál nincs korlátozás (de itt is kérhet majd paraméterezést)
 $authority = null;
@@ -69,7 +88,7 @@ if ($isAdmin) {
   $city = trim((string)($authority['city'] ?? ''));
 }
 
-// Statisztika összeszedése a kiválasztott scope-ra
+// Statisztika összeszedése a kiválasztott scope-ra (+ időablak maintenance/engagement/sustainability esetén)
 $where = '1=1';
 $params = [];
 if ($authorityId) {
@@ -78,6 +97,13 @@ if ($authorityId) {
 } elseif ($city) {
   $where = '(r.authority_id IS NULL AND r.city = ?)';
   $params[] = $city;
+}
+
+$dateWhere = '';
+if ($dateFrom !== null && in_array($type, ['maintenance', 'engagement', 'sustainability'], true)) {
+  $dateWhere = ' AND r.created_at >= ? AND r.created_at <= ?';
+  $params[] = $dateFrom . ' 00:00:00';
+  $params[] = $dateTo . ' 23:59:59';
 }
 
 $pdo = db();
@@ -93,34 +119,58 @@ $stats = [
 ];
 
 try {
-  $q0 = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $where");
+  $q0 = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $where $dateWhere");
   $q0->execute($params);
   $stats['reports_total'] = (int)$q0->fetchColumn();
 } catch (Throwable $e) {}
 try {
-  $q7 = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $where AND r.created_at >= (NOW() - INTERVAL 7 DAY)");
+  $q7 = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $where $dateWhere AND r.created_at >= (NOW() - INTERVAL 7 DAY)");
   $q7->execute($params);
   $stats['reports_7d'] = (int)$q7->fetchColumn();
 } catch (Throwable $e) {}
 try {
-  $qo = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $where AND r.status NOT IN ('solved','closed','rejected')");
+  $qo = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $where $dateWhere AND r.status NOT IN ('solved','closed','rejected')");
   $qo->execute($params);
   $stats['reports_open'] = (int)$qo->fetchColumn();
 } catch (Throwable $e) {}
 try {
-  $qs = $pdo->prepare("SELECT r.status, COUNT(*) AS cnt FROM reports r WHERE $where GROUP BY r.status");
+  $qs = $pdo->prepare("SELECT r.status, COUNT(*) AS cnt FROM reports r WHERE $where $dateWhere GROUP BY r.status");
   $qs->execute($params);
   foreach ($qs->fetchAll(PDO::FETCH_ASSOC) as $row) {
     $stats['by_status'][(string)$row['status']] = (int)$row['cnt'];
   }
 } catch (Throwable $e) {}
 try {
-  $qc = $pdo->prepare("SELECT r.category, COUNT(*) AS cnt FROM reports r WHERE $where GROUP BY r.category");
+  $qc = $pdo->prepare("SELECT r.category, COUNT(*) AS cnt FROM reports r WHERE $where $dateWhere GROUP BY r.category");
   $qc->execute($params);
   foreach ($qc->fetchAll(PDO::FETCH_ASSOC) as $row) {
     $stats['by_category'][(string)$row['category']] = (int)$row['cnt'];
   }
 } catch (Throwable $e) {}
+
+// Engagement/sustainability: active users, upvotes in period
+if (in_array($type, ['engagement', 'sustainability'], true)) {
+  try {
+    $qu = $pdo->prepare("SELECT COUNT(DISTINCT r.user_id) FROM reports r WHERE $where $dateWhere AND r.user_id IS NOT NULL AND r.user_id > 0");
+    $qu->execute($params);
+    $stats['active_users_period'] = (int)$qu->fetchColumn();
+  } catch (Throwable $e) { $stats['active_users_period'] = 0; }
+  try {
+    $ql = $pdo->prepare("SELECT COUNT(*) FROM report_likes rl INNER JOIN reports r ON r.id = rl.report_id WHERE $where $dateWhere");
+    $ql->execute($params);
+    $stats['upvotes_period'] = (int)$ql->fetchColumn();
+  } catch (Throwable $e) { $stats['upvotes_period'] = 0; }
+}
+
+// Environment/trees for sustainability
+if ($type === 'sustainability') {
+  try {
+    $stats['trees_total'] = (int)$pdo->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1")->fetchColumn();
+  } catch (Throwable $e) { $stats['trees_total'] = 0; }
+  try {
+    $stats['green_reports'] = (int)(isset($stats['by_category']['green']) ? $stats['by_category']['green'] : 0);
+  } catch (Throwable $e) {}
+}
 
 // Legutóbbi bejelentések minták (token-szűkítés)
 $recent = [];
@@ -128,7 +178,7 @@ try {
   $stmt = $pdo->prepare("
     SELECT r.id, r.category, r.status, r.title, r.description, r.address_approx, r.created_at
     FROM reports r
-    WHERE $where
+    WHERE $where $dateWhere
     ORDER BY r.created_at DESC
     LIMIT 25
   ");
@@ -142,12 +192,21 @@ if (!$router->isEnabled()) {
 }
 
 $scopeTitle = $city ?: ($authority ? (string)$authority['name'] : 'Terület');
-$prompt = ($type === 'esg')
-  ? AiPromptBuilder::govEsg($scopeTitle, $stats, $recent)
-  : AiPromptBuilder::govSummary($scopeTitle, $stats, $recent);
 
-$taskType = $type === 'esg' ? 'gov_esg' : 'gov_summary';
-$inputHash = hash('sha256', $taskType . '|' . $scopeTitle . '|' . json_encode($stats) . '|' . json_encode($recent));
+if ($type === 'maintenance') {
+  $prompt = AiPromptBuilder::reportMaintenance($scopeTitle, $timeframeLabel, $stats, $recent);
+} elseif ($type === 'engagement') {
+  $prompt = AiPromptBuilder::reportEngagement($scopeTitle, $timeframeLabel, $stats, $recent);
+} elseif ($type === 'sustainability') {
+  $prompt = AiPromptBuilder::reportSustainability($scopeTitle, $timeframeLabel, $stats, $recent);
+} elseif ($type === 'esg') {
+  $prompt = AiPromptBuilder::govEsg($scopeTitle, $stats, $recent);
+} else {
+  $prompt = AiPromptBuilder::govSummary($scopeTitle, $stats, $recent);
+}
+
+$taskType = ($type === 'esg') ? 'gov_esg' : 'gov_summary';
+$inputHash = hash('sha256', $taskType . '|' . $scopeTitle . '|' . $type . '|' . $timeframe . '|' . json_encode($stats) . '|' . json_encode($recent));
 
 $resp = $router->callJson($taskType === 'gov_esg' ? 'gov_summary' : 'gov_summary', $prompt, [
   'max_tokens' => 900,

@@ -74,16 +74,11 @@ A cél: **minimal change**, **moduláris bővítés**, és hogy minden épüljö
 
 ---
 
-### M2 — AI report generator (típus + időablak)
+### M2 — AI report generator (típus + időablak) ✅
 
 **Cél:** AI által generált, típusos jelentések (karbantartás, részvétel, fenntarthatóság).
 
-- **Függvény / API:** `generate_ai_report(type, timeframe)` ahol `type`: maintenance | engagement | sustainability; `timeframe`: pl. last_30_days, last_90_days, last_year.
-- **Bemenet:** M1 statisztikák (és/vagy élő lekérdezés) a kiválasztott scope + időablak alapján; prompt sablonok a három típushoz.
-- **Kimenet:** összefoglaló szöveg, trendek, anomáliák, AI javaslatok (pl. „Szőlőváros legtöbb nyitott bejelentéssel”).
-- **Provider:** Meglévő AiRouter (Mistral primary, OpenAI); Gemini opcionális placeholder (már van GeminiProvider váz).
-
-**Kimenet:** pl. `api/gov_reports.php` vagy bővített `gov_ai.php` action `generate_report` + típus/időablak; gov UI-n választható típus és időszak.
+**Megvalósítva:** Bővített `api/gov_ai.php`: `action=generate`, `type`: summary | esg | maintenance | engagement | sustainability, `timeframe`: last_30_days | last_90_days | last_year. A maintenance/engagement/sustainability típusoknál a statisztika az időablak alapján szűrve. `AiPromptBuilder`: reportMaintenance(), reportEngagement(), reportSustainability(). Gov dashboard: „AI jelentés (típus + időszak)” kártya, típus és időszak választó, Generálás gomb.
 
 ---
 

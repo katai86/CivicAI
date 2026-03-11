@@ -616,6 +616,34 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
               </div>
             </div>
           </div>
+          <div class="row g-3 mt-1">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h6 class="card-title mb-1"><?= h(t('gov.ai_report_title')) ?></h6>
+                  <p class="text-secondary small mb-3"><?= h(t('gov.ai_report_desc')) ?></p>
+                  <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                    <label class="small mb-0"><?= h(t('gov.ai_report_type')) ?></label>
+                    <select id="govReportType" class="form-select form-select-sm" style="max-width:220px">
+                      <option value="summary"><?= h(t('gov.ai_report_type_summary')) ?></option>
+                      <option value="esg"><?= h(t('gov.ai_report_type_esg')) ?></option>
+                      <option value="maintenance"><?= h(t('gov.ai_report_type_maintenance')) ?></option>
+                      <option value="engagement"><?= h(t('gov.ai_report_type_engagement')) ?></option>
+                      <option value="sustainability"><?= h(t('gov.ai_report_type_sustainability')) ?></option>
+                    </select>
+                    <label class="small mb-0 ms-2"><?= h(t('gov.ai_report_timeframe')) ?></label>
+                    <select id="govReportTimeframe" class="form-select form-select-sm" style="max-width:160px">
+                      <option value="last_30_days"><?= h(t('gov.ai_report_30d')) ?></option>
+                      <option value="last_90_days" selected><?= h(t('gov.ai_report_90d')) ?></option>
+                      <option value="last_year"><?= h(t('gov.ai_report_year')) ?></option>
+                    </select>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnGovReport" <?= ai_configured() ? '' : 'disabled' ?>><?= h(t('gov.ai_report_generate')) ?></button>
+                  </div>
+                  <div id="govAiOutReport" class="gov-ai-result border rounded p-3 bg-light small mt-2" style="min-height:80px;white-space:pre-wrap;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
           <?php endif; ?>
         </div>
 
@@ -725,11 +753,11 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   function renderResult(container, pdfBtn, title, data){
     if (!container) return;
     var html = formatAiData(data);
-    if (!html) { container.textContent = (data && (data.text || data.raw)) ? 'Nem sikerült formázni.' : ''; pdfBtn.classList.add('d-none'); return; }
+    if (!html) { container.textContent = (data && (data.text || data.raw)) ? 'Nem sikerült formázni.' : ''; if (pdfBtn) pdfBtn.classList.add('d-none'); return; }
     container.innerHTML = html.replace(/\n/g, '<br>');
     container.setAttribute('data-pdf-title', title);
     container.setAttribute('data-pdf-content', html.replace(/<br\s*\/?>/gi, '\n'));
-    pdfBtn.classList.remove('d-none');
+    if (pdfBtn) pdfBtn.classList.remove('d-none');
   }
 
   function downloadPdf(btnId){
@@ -796,11 +824,14 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
 
   var outSum = document.getElementById('govAiOutSummary');
   var outEsg = document.getElementById('govAiOutEsg');
+  var outReport = document.getElementById('govAiOutReport');
   var btnSum = document.getElementById('btnGovAiSummary');
   var btnEsg = document.getElementById('btnGovEsg');
+  var btnReport = document.getElementById('btnGovReport');
   function setBusy(b){
     if (btnSum) btnSum.disabled = b;
     if (btnEsg) btnEsg.disabled = b;
+    if (btnReport) btnReport.disabled = b;
   }
   btnSum && btnSum.addEventListener('click', function(){
     if (!outSum) return;
@@ -826,6 +857,20 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   });
   document.getElementById('btnPdfSummary') && document.getElementById('btnPdfSummary').addEventListener('click', function(){ downloadPdf('btnPdfSummary'); });
   document.getElementById('btnPdfEsg') && document.getElementById('btnPdfEsg').addEventListener('click', function(){ downloadPdf('btnPdfEsg'); });
+
+  if (btnReport && outReport) {
+    btnReport.addEventListener('click', function(){
+      var reportType = (document.getElementById('govReportType') && document.getElementById('govReportType').value) || 'summary';
+      var timeframe = (document.getElementById('govReportTimeframe') && document.getElementById('govReportTimeframe').value) || 'last_90_days';
+      outReport.textContent = 'Generálás...';
+      setBusy(true);
+      postJson(aiUrl, { action:'generate', type: reportType, timeframe: timeframe }).then(function(x){
+        setBusy(false);
+        if (x.ok && x.j && x.j.ok) renderResult(outReport, null, 'Jelentés', x.j.data);
+        else outReport.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : ('Hiba: ' + (x.t || 'Ismeretlen'));
+      }).catch(function(){ setBusy(false); if(outReport) outReport.textContent='Hiba.'; });
+    });
+  }
 
   // Gov modules list
   function loadGovModules(){

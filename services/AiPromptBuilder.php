@@ -62,5 +62,59 @@ class AiPromptBuilder
             "Recent reports JSON: " . ($recentJson ?: '[]') . "\n\n" .
             "JSON:";
     }
+
+    /** M2: Monthly/quarterly city maintenance report (potholes, lighting, park, drainage). */
+    public static function reportMaintenance(string $scopeTitle, string $timeframeLabel, array $stats, array $recentReports): string
+    {
+        $statsJson = json_encode($stats, JSON_UNESCAPED_UNICODE);
+        $recentJson = json_encode($recentReports, JSON_UNESCAPED_UNICODE);
+        return
+            "You are an assistant for a Hungarian municipal maintenance report. " .
+            "Return ONLY a compact JSON object, no prose.\n\n" .
+            "Fields:\n" .
+            "- text: Hungarian summary (max 1200 chars): main issue categories (road, lighting, park, drainage, trash), open vs resolved, trends, which areas need attention.\n" .
+            "- top_categories: array of up to 5 items {category, count, trend_comment}\n" .
+            "- recommendations: array of 3–5 short AI suggestions for city priorities (e.g. prioritise road repairs in northern districts).\n\n" .
+            "Scope: " . trim($scopeTitle) . ". Period: " . trim($timeframeLabel) . ".\n" .
+            "Stats JSON: " . ($statsJson ?: '{}') . "\n" .
+            "Recent reports sample: " . ($recentJson ?: '[]') . "\n\n" .
+            "JSON:";
+    }
+
+    /** M2: Quarterly civic engagement report. */
+    public static function reportEngagement(string $scopeTitle, string $timeframeLabel, array $stats, array $recentReports): string
+    {
+        $statsJson = json_encode($stats, JSON_UNESCAPED_UNICODE);
+        $recentJson = json_encode($recentReports, JSON_UNESCAPED_UNICODE);
+        return
+            "You are an assistant for a Hungarian municipal citizen engagement report. " .
+            "Return ONLY a compact JSON object, no prose.\n\n" .
+            "Fields:\n" .
+            "- text: Hungarian summary (max 1200 chars): active users, new users, reports per citizen, upvotes, participation trends; whether participation is increasing.\n" .
+            "- engagement_metrics: array of up to 5 items {metric, value, interpretation}\n" .
+            "- recommendations: array of 2–4 suggestions to increase citizen participation.\n\n" .
+            "Scope: " . trim($scopeTitle) . ". Period: " . trim($timeframeLabel) . ".\n" .
+            "Stats JSON: " . ($statsJson ?: '{}') . "\n" .
+            "Recent reports sample: " . ($recentJson ?: '[]') . "\n\n" .
+            "JSON:";
+    }
+
+    /** M2: Annual sustainability report. */
+    public static function reportSustainability(string $scopeTitle, string $timeframeLabel, array $stats, array $recentReports): string
+    {
+        $statsJson = json_encode($stats, JSON_UNESCAPED_UNICODE);
+        $recentJson = json_encode($recentReports, JSON_UNESCAPED_UNICODE);
+        return
+            "You are an assistant for a Hungarian municipal sustainability / green report. " .
+            "Return ONLY a compact JSON object, no prose.\n\n" .
+            "Fields:\n" .
+            "- text: Hungarian summary (max 1200 chars): environmental indicators (green reports, trees if in stats), citizen engagement, governance (resolution rate, response time); trends and anomalies.\n" .
+            "- sustainability_highlights: array of up to 5 items {area, indicator, note}\n" .
+            "- recommendations: array of 3–5 AI suggestions (e.g. expand tree watering program, prioritise green areas).\n\n" .
+            "Scope: " . trim($scopeTitle) . ". Period: " . trim($timeframeLabel) . ".\n" .
+            "Stats JSON: " . ($statsJson ?: '{}') . "\n" .
+            "Recent reports sample: " . ($recentJson ?: '[]') . "\n\n" .
+            "JSON:";
+    }
 }
 
