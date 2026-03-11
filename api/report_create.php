@@ -487,9 +487,7 @@ if ($id > 0 && defined('AI_ENABLED') && AI_ENABLED) {
     if ($router->isEnabled()) {
       $prompt = AiPromptBuilder::reportUnderstanding((string)$title, (string)$desc, (string)$category);
       $inputHash = hash('sha256', $category . '|' . (string)$title . '|' . (string)$desc);
-      $res = $router->callJson('report_classification', $prompt, [
-        'model' => defined('AI_TEXT_MODEL') ? (string)AI_TEXT_MODEL : 'mistral-small-2506',
-      ]);
+      $res = $router->callJson('report_classification', $prompt, []);
       if (!empty($res['ok']) && isset($res['data']) && is_array($res['data'])) {
         $norm = AiResultParser::normalizeReportUnderstanding($res['data']);
         $confidence = null;

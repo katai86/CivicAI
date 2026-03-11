@@ -44,6 +44,47 @@ class AiRouter
     }
 
     /**
+     * Task típus alapján a megfelelő modell kiválasztása (model routing).
+     * 1) image_classification → vision (primary, optional fallback Pixtral)
+     * 2) report_classification → Small 3.2
+     * 3) admin_summary, gov_summary, gov_esg → Large 3 (optional fallback Medium)
+     * 4) citizen_assistant → Medium 3.1 (optional fallback Large)
+     * 5) document_ocr → OCR modell ha be van állítva
+     */
+    public function getModelForTask(string $taskType, bool $isImage = false): string
+    {
+        if ($isImage || $taskType === 'image_classification') {
+            $m = defined('AI_MODEL_VISION') ? (string) AI_MODEL_VISION : '';
+            if ($m === '' && defined('AI_VISION_MODEL')) {
+                $m = (string) AI_VISION_MODEL;
+            }
+            return $m !== '' ? $m : 'pixtral-12b-2409';
+        }
+        if ($taskType === 'report_classification') {
+            $m = defined('AI_MODEL_SMALL') ? (string) AI_MODEL_SMALL : '';
+            if ($m === '' && defined('AI_TEXT_MODEL')) {
+                $m = (string) AI_TEXT_MODEL;
+            }
+            return $m !== '' ? $m : 'mistral-small-2506';
+        }
+        if (in_array($taskType, ['admin_summary', 'gov_summary', 'gov_esg'], true)) {
+            $m = defined('AI_MODEL_LARGE') ? (string) AI_MODEL_LARGE : '';
+            if ($m === '' && defined('AI_PREMIUM_MODEL')) {
+                $m = (string) AI_PREMIUM_MODEL;
+            }
+            return $m !== '' ? $m : 'mistral-large-2512';
+        }
+        if ($taskType === 'citizen_assistant') {
+            $m = defined('AI_MODEL_MEDIUM') ? (string) AI_MODEL_MEDIUM : '';
+            return $m !== '' ? $m : 'mistral-medium-2310';
+        }
+        if ($taskType === 'document_ocr' && defined('AI_MODEL_OCR') && (string) AI_MODEL_OCR !== '') {
+            return (string) AI_MODEL_OCR;
+        }
+        return defined('AI_TEXT_MODEL') ? (string) AI_TEXT_MODEL : 'mistral-small-2506';
+    }
+
+    /**
      * Egyszerű rate limit: ai_results alapján számol, nap/ task_type szerint.
      * Limitek: get_ai_limit() – admin Beépülő modulok (mistral) vagy env.
      */
@@ -111,7 +152,10 @@ class AiRouter
                 $model = 'gpt-4o-mini';
             }
         } else {
-            $model = $meta['model'] ?? (string)(defined('AI_TEXT_MODEL') ? AI_TEXT_MODEL : '');
+            $model = (string)($meta['model'] ?? '');
+            if ($model === '') {
+                $model = $this->getModelForTask($taskType);
+            }
         }
         if ($model === '') {
             return ['ok' => false, 'error' => 'AI model missing'];
@@ -184,10 +228,7 @@ class AiRouter
                 $model = 'gpt-4o-mini';
             }
         } else {
-            $model = (string)(defined('AI_VISION_MODEL') ? AI_VISION_MODEL : (defined('AI_TEXT_MODEL') ? AI_TEXT_MODEL : ''));
-            if ($model === '') {
-                $model = 'mistral-small-latest';
-            }
+            $model = $this->getModelForTask('image_classification', true);
         }
 
         $system = $systemOverride ?? 'You are a tree health analyst. Reply with a JSON object only. Use keys: status (exactly one of: healthy, dry, disease_suspected), confidence (0-1), suggestion (short string).';
@@ -201,6 +242,17 @@ class AiRouter
         ];
 
         $resp = $this->provider->complete($model, $prompt, $options);
+        if (empty($resp['ok']) && $this->provider instanceof \MistralProvider) {
+            $fallback = defined('AI_MODEL_VISION_FALLBACK') ? (string) AI_MODEL_VISION_FALLBACK : '';
+            if ($fallback !== '' && $fallback !== $model) {
+                $options['image_base64'] = $base64;
+                $options['image_mime'] = $mimeType;
+                $resp = $this->provider->complete($fallback, $prompt, $options);
+                if (!empty($resp['ok'])) {
+                    $model = $fallback;
+                }
+            }
+        }
         if (empty($resp['ok'])) {
             return ['ok' => false, 'error' => $resp['error'] ?? 'Vision API failed'];
         }

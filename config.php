@@ -79,6 +79,21 @@ define('AI_TEXT_MODEL', getenv('AI_TEXT_MODEL') ?: 'mistral-small-2506');
 define('AI_VISION_MODEL', getenv('AI_VISION_MODEL') ?: 'mistral-small-2506');
 define('AI_PREMIUM_MODEL', getenv('AI_PREMIUM_MODEL') ?: 'mistral-large-2512');
 
+// --- Model routing (task → modell) – ne egy modell mindenre ---
+// 1) Kép / fa felismerés / közterületi objektumok: vision modell (primary + optional fallback)
+define('AI_MODEL_VISION', getenv('AI_MODEL_VISION') ?: (defined('AI_VISION_MODEL') ? AI_VISION_MODEL : 'pixtral-12b-2409'));
+define('AI_MODEL_VISION_FALLBACK', getenv('AI_MODEL_VISION_FALLBACK') ?: 'pixtral-12b-2409');
+// 2) Rövid szöveges kategorizálás: Mistral Small 3.2
+define('AI_MODEL_SMALL', getenv('AI_MODEL_SMALL') ?: (defined('AI_TEXT_MODEL') ? AI_TEXT_MODEL : 'mistral-small-2506'));
+// 3) Összefoglalók / ESG / vezetői riport: Mistral Large 3 (optional fallback: Medium)
+define('AI_MODEL_LARGE', getenv('AI_MODEL_LARGE') ?: (defined('AI_PREMIUM_MODEL') ? AI_PREMIUM_MODEL : 'mistral-large-2512'));
+define('AI_MODEL_LARGE_FALLBACK', getenv('AI_MODEL_LARGE_FALLBACK') ?: 'mistral-medium-2310');
+// 4) Lakossági AI asszisztens: Mistral Medium 3.1 (premium fallback: Large)
+define('AI_MODEL_MEDIUM', getenv('AI_MODEL_MEDIUM') ?: 'mistral-medium-2310');
+define('AI_MODEL_MEDIUM_FALLBACK', getenv('AI_MODEL_MEDIUM_FALLBACK') ?: (defined('AI_MODEL_LARGE') ? AI_MODEL_LARGE : 'mistral-large-2512'));
+// 5) Dokumentum OCR / mellékletek (ahol releváns)
+define('AI_MODEL_OCR', getenv('AI_MODEL_OCR') ?: '');
+
 // AI költségkontroll
 define('AI_MAX_REPORTS_PER_DAY', (int)(getenv('AI_MAX_REPORTS_PER_DAY') ?: 1000));
 define('AI_SUMMARY_LIMIT', (int)(getenv('AI_SUMMARY_LIMIT') ?: 20));

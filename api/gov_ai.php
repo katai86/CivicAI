@@ -208,7 +208,7 @@ if ($type === 'maintenance') {
 $taskType = ($type === 'esg') ? 'gov_esg' : 'gov_summary';
 $inputHash = hash('sha256', $taskType . '|' . $scopeTitle . '|' . $type . '|' . $timeframe . '|' . json_encode($stats) . '|' . json_encode($recent));
 
-$resp = $router->callJson($taskType === 'gov_esg' ? 'gov_summary' : 'gov_summary', $prompt, [
+$resp = $router->callJson($taskType, $prompt, [
   'max_tokens' => 900,
   'temperature' => 0.2,
 ]);
