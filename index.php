@@ -86,14 +86,15 @@ if (isset($_SESSION['flash'])) unset($_SESSION['flash']);
         <button type="button" class="legend-item legend-item-btn" data-cat="civil_event"><span class="legend-badge b-civil">🤝</span><span><?= htmlspecialchars(t('cat.civil_event_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
       </div>
 
-      <div class="legend-filters-single" style="margin-top:10px">
-        <span class="muted" style="font-size:11px"><?= htmlspecialchars(t('legend.tree_layer') ?? 'Fák', ENT_QUOTES, 'UTF-8') ?>:</span>
-        <button type="button" class="legend-tree-filter legend-filter active" data-tree-filter="all"><?= htmlspecialchars(t('legend.trees_all') ?? 'Összes', ENT_QUOTES, 'UTF-8') ?></button>
-        <button type="button" class="legend-tree-filter legend-filter" data-tree-filter="adopted"><?= htmlspecialchars(t('legend.trees_adopted') ?? 'Örökbefogadott', ENT_QUOTES, 'UTF-8') ?></button>
-        <button type="button" class="legend-tree-filter legend-filter" data-tree-filter="needs_water"><?= htmlspecialchars(t('legend.trees_needs_water') ?? 'Öntözést igénylő', ENT_QUOTES, 'UTF-8') ?></button>
-        <button type="button" class="legend-tree-filter legend-filter" data-tree-filter="dangerous"><?= htmlspecialchars(t('legend.trees_dangerous') ?? 'Veszélyes', ENT_QUOTES, 'UTF-8') ?></button>
-        <div class="legend-tree-add-wrap" id="legendTreeAddWrap" style="display:<?= $uid > 0 ? 'block' : 'none' ?>;margin-top:8px">
-          <button type="button" class="legend-filter legend-add-tree" id="btnAddTree"><?= htmlspecialchars(t('legend.tree_add') ?? 'Új fa felvitele', ENT_QUOTES, 'UTF-8') ?></button>
+      <div class="legend-tree-section">
+        <div class="legend-list">
+          <button type="button" class="legend-item legend-item-btn legend-tree-filter active" data-tree-filter="all"><span class="legend-badge b-green">🌳</span><span><?= htmlspecialchars(t('legend.trees_all') ?? 'Összes', ENT_QUOTES, 'UTF-8') ?></span></button>
+          <button type="button" class="legend-item legend-item-btn legend-tree-filter" data-tree-filter="adopted"><span class="legend-badge b-green">🌳</span><span><?= htmlspecialchars(t('legend.trees_adopted') ?? 'Örökbefogadott', ENT_QUOTES, 'UTF-8') ?></span></button>
+          <button type="button" class="legend-item legend-item-btn legend-tree-filter" data-tree-filter="needs_water"><span class="legend-badge b-green">🌳</span><span><?= htmlspecialchars(t('legend.trees_needs_water') ?? 'Öntözést igénylő', ENT_QUOTES, 'UTF-8') ?></span></button>
+          <button type="button" class="legend-item legend-item-btn legend-tree-filter" data-tree-filter="dangerous"><span class="legend-badge b-green">🌳</span><span><?= htmlspecialchars(t('legend.trees_dangerous') ?? 'Veszélyes', ENT_QUOTES, 'UTF-8') ?></span></button>
+          <div class="legend-tree-add-wrap" id="legendTreeAddWrap" style="display:<?= $uid > 0 ? 'block' : 'none' ?>">
+            <button type="button" class="legend-item legend-item-btn legend-add-tree" id="btnAddTree"><span class="legend-badge b-green">➕</span><span><?= htmlspecialchars(t('legend.tree_add') ?? 'Új fa felvitele', ENT_QUOTES, 'UTF-8') ?></span></button>
+          </div>
         </div>
       </div>
 

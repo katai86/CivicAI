@@ -971,6 +971,7 @@ function openModal(latlng){
           <label>${esc(t('modal.image_optional'))}</label>
           <input id="mImage" type="file" accept="image/*" class="modal-file">
           <button type="button" id="mAnalyzePhotoBtn" class="btn-soft" style="display:none; margin-top:8px">${esc(t('tree.analyze_photo_btn') || 'Fotó elemzése (AI)')}</button>
+          <div id="mTreeAnalyzeResult" class="tree-analyze-result" style="display:none" aria-live="polite"></div>
         </div>
 
         <label id="mTitleLabel">${esc(t('modal.category'))} – rövid cím</label>
@@ -1220,6 +1221,8 @@ function openModal(latlng){
     }
     const btn = modal.querySelector('#mAnalyzePhotoBtn');
     const origText = btn?.textContent;
+    const resultEl = modal.querySelector('#mTreeAnalyzeResult');
+    if (resultEl) { resultEl.style.display = 'none'; resultEl.textContent = ''; }
     if (btn) { btn.disabled = true; btn.textContent = t('tree.analyze_photo_analyzing') || 'Elemzés...'; }
     try {
       const fd = new FormData();
@@ -1233,10 +1236,25 @@ function openModal(latlng){
         if (j.trunk_diameter_cm != null && mTrunk) mTrunk.value = String(j.trunk_diameter_cm);
         const mCanopy = modal.querySelector('#mCanopyDiameter');
         if (j.canopy_diameter_m != null && mCanopy) mCanopy.value = String(j.canopy_diameter_m);
+        const resultEl = modal.querySelector('#mTreeAnalyzeResult');
+        if (resultEl) {
+          const hasAny = (j.species && j.species.trim()) || j.trunk_diameter_cm != null || j.canopy_diameter_m != null;
+          if (hasAny) {
+            resultEl.style.display = 'none';
+            resultEl.textContent = '';
+          } else {
+            resultEl.textContent = t('tree.analyze_no_result') || 'Nem sikerült a felismerés.';
+            resultEl.style.display = 'block';
+          }
+        }
       } else {
+        const resultEl = modal.querySelector('#mTreeAnalyzeResult');
+        if (resultEl) { resultEl.style.display = 'none'; resultEl.textContent = ''; }
         alert(j && j.error ? j.error : (t('common.error_server') || 'Elemzés sikertelen.'));
       }
     } catch (e) {
+      const re = modal.querySelector('#mTreeAnalyzeResult');
+      if (re) { re.style.display = 'none'; re.textContent = ''; }
       alert(t('common.error_server') || 'Elemzés sikertelen.');
     }
     if (btn) { btn.disabled = false; btn.textContent = origText || (t('tree.analyze_photo_btn') || 'Fotó elemzése (AI)'); }
@@ -1271,6 +1289,7 @@ function openModal(latlng){
   }
 
   modal.querySelector('#mSubmit').addEventListener('click', async () => {
+    if (modal._treeSubmitting) return;
     const category = modal.querySelector('#mCategory').value;
     const title = modal.querySelector('#mTitle').value.trim();
     const description = modal.querySelector('#mDesc').value.trim();
@@ -1389,6 +1408,7 @@ function openModal(latlng){
 
     try{
       if (category === 'tree_upload') {
+        modal._treeSubmitting = true;
         const formData = new FormData();
         formData.append('lat', String(latlng.lat));
         formData.append('lng', String(latlng.lng));
@@ -1411,9 +1431,11 @@ function openModal(latlng){
           throw e;
         }
         if (!j || !j.ok) {
+          modal._treeSubmitting = false;
           throw new Error(j && j.error ? j.error : (t('common.error_server') || 'Fa feltöltés sikertelen.'));
         }
         alert(t('tree.submit_success') || 'Fa rögzítve. Megjelenik a térképen.');
+        modal._treeSubmitting = false;
         closeModal();
         loadTrees().catch(e => console.warn('loadTrees after tree_create', e));
         btn.disabled = false;
@@ -1488,6 +1510,7 @@ function openModal(latlng){
 
     }catch(err){
       console.error(err);
+      modal._treeSubmitting = false;
       alert('Hiba a beküldésnél: ' + err.message);
       btn.disabled = false;
       btn.textContent = 'Beküldés';

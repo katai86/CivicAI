@@ -120,7 +120,7 @@ body{
 @keyframes mapFlashFade{0%,20%{opacity:1}80%{opacity:1}100%{opacity:0;pointer-events:none}}
 #map{height:100%;width:100%;filter:saturate(0.8) brightness(0.9) contrast(1.05)}
 .fab-report{
-  position:absolute;left:14px;bottom:14px;z-index:800;
+  position:absolute;left:14px;top:14px;z-index:800;
   padding:12px 18px;border-radius:999px;border:1px solid var(--border);
   background:var(--card);color:var(--text);font:700 14px "Montserrat",system-ui,sans-serif;
   cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(10px)
@@ -166,6 +166,10 @@ body{
 .b-traffic{border-color:#9b59b6}
 .b-idea{border-color:#ff7a00}
 .b-civil{border-color:#0ea5e9}
+.legend-tree-section{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.legend-tree-section .legend-list{display:flex;flex-direction:column;gap:2px}
+.legend-tree-section .legend-tree-filter .legend-badge{font-size:14px}
+.legend-tree-add-wrap{margin-top:2px}
 .legend-foot{margin-top:8px;font-size:12px}
 
 /* ===== Badge marker ===== */
@@ -221,6 +225,7 @@ body{
 .gdpr{margin-top:12px;padding-top:10px;border-top:1px solid #e5e7eb}
 .gdpr-note{margin-top:8px;color:var(--muted);font-size:12px}
 .modal-note{margin-top:10px;color:var(--muted);font-size:12px}
+.tree-analyze-result{margin-top:6px;font-size:12px;color:var(--muted)}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
 
 .btn-primary, .btn-ghost, .btn-soft{
@@ -347,8 +352,7 @@ body.intro-open #mapWrap{
 .tree-create-form{display:flex;flex-direction:column;gap:8px;min-width:240px}
 .tree-create-form input[type="text"],.tree-create-form textarea{width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)}
 .tree-create-form input[type="file"]{font-size:12px}
-.legend-add-tree{margin-top:4px}
-.legend-add-tree.active{outline:2px solid var(--primary)}
+.legend-add-tree.active{border-color:var(--accent);background:var(--card-2);box-shadow:0 0 10px rgba(255,122,0,0.2)}
 .leaflet-container a.leaflet-popup-close-button{
   color:var(--muted);
   font-weight:800;

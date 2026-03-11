@@ -69,6 +69,7 @@ return [
     'tree.submit_success' => 'Tree saved. It will appear on the map.',
     'tree.analyze_photo_btn' => 'Analyze photo (AI)',
     'tree.analyze_photo_analyzing' => 'Analyzing...',
+    'tree.analyze_no_result' => 'Recognition did not succeed.',
     'tree.trunk_label' => 'Trunk diameter (cm, optional)',
     'tree.canopy_label' => 'Canopy diameter (m, optional)',
     'cat.road' => 'Road defect',

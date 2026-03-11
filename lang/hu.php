@@ -69,6 +69,7 @@ return [
     'tree.submit_success' => 'Fa rögzítve. Megjelenik a térképen.',
     'tree.analyze_photo_btn' => 'Fotó elemzése (AI)',
     'tree.analyze_photo_analyzing' => 'Elemzés...',
+    'tree.analyze_no_result' => 'Nem sikerült a felismerés.',
     'tree.trunk_label' => 'Törzsméret (cm, opcionális)',
     'tree.canopy_label' => 'Koronaméret (m, opcionális)',
     'cat.road' => 'Úthiba',

@@ -73,18 +73,36 @@ try {
   $pdo = db();
   $pdo->beginTransaction();
 
-  $stmt = $pdo->prepare("
-    INSERT INTO trees (lat, lng, address, species, trunk_diameter, canopy_diameter, health_status, risk_level, public_visible, gov_validated, created_at)
-    VALUES (:lat, :lng, NULL, :species, :trunk, :canopy, NULL, NULL, 1, 0, NOW())
-  ");
-  $stmt->execute([
-    ':lat' => $lat,
-    ':lng' => $lng,
-    ':species' => $species ?: null,
-    ':trunk' => $trunkDiameter,
-    ':canopy' => $canopyDiameter,
-  ]);
-  $treeId = (int)$pdo->lastInsertId();
+  $treeId = 0;
+  try {
+    $stmt = $pdo->prepare("
+      INSERT INTO trees (lat, lng, address, species, trunk_diameter, canopy_diameter, health_status, risk_level, public_visible, gov_validated, created_at)
+      VALUES (:lat, :lng, NULL, :species, :trunk, :canopy, NULL, NULL, 1, 0, NOW())
+    ");
+    $stmt->execute([
+      ':lat' => $lat,
+      ':lng' => $lng,
+      ':species' => $species ?: null,
+      ':trunk' => $trunkDiameter,
+      ':canopy' => $canopyDiameter,
+    ]);
+    $treeId = (int)$pdo->lastInsertId();
+  } catch (PDOException $e) {
+    if (strpos($e->getMessage(), 'trunk_diameter') !== false || strpos($e->getMessage(), 'canopy_diameter') !== false) {
+      $stmt = $pdo->prepare("
+        INSERT INTO trees (lat, lng, address, species, health_status, risk_level, public_visible, gov_validated, created_at)
+        VALUES (:lat, :lng, NULL, :species, NULL, NULL, 1, 0, NOW())
+      ");
+      $stmt->execute([
+        ':lat' => $lat,
+        ':lng' => $lng,
+        ':species' => $species ?: null,
+      ]);
+      $treeId = (int)$pdo->lastInsertId();
+    } else {
+      throw $e;
+    }
+  }
   if ($treeId <= 0) {
     $pdo->rollBack();
     log_error('tree_create: lastInsertId failed');
