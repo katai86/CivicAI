@@ -575,6 +575,10 @@ async function loadTrees(){
         <div class="tree-meta-lines">
           <small>${adoptedText}</small><br>
           <small>${lastWateredText}</small>
+          <p class="tree-login-hint" style="margin-top:8px;font-size:12px">
+            ${(window.LANG && window.LANG['tree.login_to_adopt']) ? window.LANG['tree.login_to_adopt'] : 'Örökbe fogadáshoz és öntözéshez be kell jelentkezned.'}
+            <a href="${esc(BASE + '/user/login.php?redirect=' + encodeURIComponent(window.location.pathname || '/'))}">${(window.LANG && window.LANG['nav.login']) ? window.LANG['nav.login'] : 'Belépés'}</a>
+          </p>
         </div>
       `;
 

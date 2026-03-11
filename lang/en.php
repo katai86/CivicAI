@@ -47,6 +47,7 @@ return [
     'tree.adopted_by' => 'Adopted by: {name}',
     'tree.adopted_by_self' => 'You adopted this tree.',
     'tree.not_adopted' => 'Not adopted',
+    'tree.login_to_adopt' => 'You must be logged in to adopt or water trees.',
     'tree.unknown_species' => 'Unknown species',
     'tree.action_adopt' => 'Adopt tree',
     'tree.action_cancel' => 'Cancel adoption',
@@ -225,6 +226,8 @@ return [
 
     'user.my_reports' => 'My reports',
     'user.profile' => 'My profile',
+    'user.my_trees' => 'My trees (adopted)',
+    'user.my_trees_hint' => 'Trees you have adopted on the map.',
     'user.badges' => 'Badges',
     'user.no_badges' => 'No badges yet.',
     'user.level' => 'Level',

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS tree_adoptions (
   adopted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   status VARCHAR(16) NOT NULL DEFAULT 'active' COMMENT 'active|inactive',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_tree_user (tree_id, user_id),
   KEY idx_tree_adoptions_tree (tree_id),
   KEY idx_tree_adoptions_user (user_id),
   KEY idx_tree_adoptions_status (status)

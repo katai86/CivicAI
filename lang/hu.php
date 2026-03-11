@@ -47,6 +47,7 @@ return [
     'tree.adopted_by' => 'Örökbefogadta: {name}',
     'tree.adopted_by_self' => 'Örökbefogadtad ezt a fát.',
     'tree.not_adopted' => 'Nem örökbefogadott',
+    'tree.login_to_adopt' => 'Örökbe fogadáshoz és öntözéshez be kell jelentkezned.',
     'tree.unknown_species' => 'Ismeretlen faj',
     'tree.action_adopt' => 'Örökbefogadom',
     'tree.action_cancel' => 'Örökbefogadás lemondása',
@@ -231,6 +232,8 @@ return [
     // User: my, profile, friends, settings
     'user.my_reports' => 'Saját ügyeim',
     'user.profile' => 'Profilom',
+    'user.my_trees' => 'Fáim (örökbe fogadott)',
+    'user.my_trees_hint' => 'Ezeket a fákat örökbe fogadtad a térképen.',
     'user.badges' => 'Jelvenyek',
     'user.no_badges' => 'Meg nincs jelvenyed.',
     'user.level' => 'Szint',

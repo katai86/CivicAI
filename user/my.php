@@ -68,6 +68,21 @@ try {
   $badges = [];
 }
 
+$myTrees = [];
+try {
+  $stmt = db()->prepare("
+    SELECT id, lat, lng, address, species, last_watered
+    FROM trees
+    WHERE adopted_by_user_id = :uid
+    ORDER BY id DESC
+    LIMIT 100
+  ");
+  $stmt->execute([':uid' => $userId]);
+  $myTrees = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+} catch (Throwable $e) {
+  $myTrees = [];
+}
+
 $lbWeek = get_leaderboard('week', 10);
 $lbMonth = get_leaderboard('month', 10);
 $lbAll = get_leaderboard('all', 10);
@@ -163,6 +178,21 @@ $catLabel = [
       </div>
     </div>
   </div>
+
+  <?php if (!empty($myTrees)): ?>
+    <div class="card" style="margin-bottom:12px">
+      <div class="title"><?= h(t('user.my_trees') ?: 'Fáim (örökbe fogadott)') ?></div>
+      <div class="muted small"><?= h(t('user.my_trees_hint') ?: 'Ezeket a fákat örökbe fogadtad a térképen.') ?></div>
+      <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:8px">
+        <?php foreach ($myTrees as $tr): ?>
+          <a class="pill" href="<?= h(app_url('/?lat=' . (float)$tr['lat'] . '&lng=' . (float)$tr['lng'] . '&zoom=18')) ?>" style="display:inline-flex;align-items:center;gap:6px">
+            🌳 <?= h($tr['species'] ?: (t('tree.unknown_species') ?: 'Fa')) ?>
+            <?php if (!empty($tr['address'])): ?><span class="muted">– <?= h(mb_substr($tr['address'], 0, 40)) ?><?= mb_strlen($tr['address']) > 40 ? '…' : '' ?></span><?php endif; ?>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  <?php endif; ?>
 
   <?php if (!$rows): ?>
     <div class="card">

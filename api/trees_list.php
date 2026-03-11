@@ -18,6 +18,10 @@ $limit = (int)($_GET['limit'] ?? 500);
 if ($limit < 50 || $limit > 2000) $limit = 500;
 $filter = isset($_GET['filter']) ? trim((string)$_GET['filter']) : 'all';
 if (!in_array($filter, ['all', 'adopted', 'needs_water', 'dangerous'], true)) $filter = 'all';
+$myAdopted = !empty($_GET['my_adopted']);
+if ($myAdopted) {
+  start_secure_session();
+}
 
 $rows = [];
 try {
@@ -33,7 +37,15 @@ try {
   ";
   $params = [];
 
-  if ($filter === 'adopted') {
+  if ($myAdopted) {
+    if (!isset($_SESSION['user_id']) || (int)$_SESSION['user_id'] <= 0) {
+      json_response(['ok' => true, 'data' => []]);
+      exit;
+    }
+    $uid = (int)$_SESSION['user_id'];
+    $sql .= " AND t.adopted_by_user_id = ?";
+    $params[] = $uid;
+  } elseif ($filter === 'adopted') {
     $sql .= " AND t.adopted_by_user_id IS NOT NULL";
   } elseif ($filter === 'needs_water') {
     $sql .= " AND (t.last_watered IS NULL OR t.last_watered < DATE_SUB(CURDATE(), INTERVAL 7 DAY))";

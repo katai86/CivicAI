@@ -88,9 +88,9 @@ Ez a dokumentum a három prioritásos területet milestone-okra bontja. **Csak e
 - [x] **C2.3** Sikeres „fa feltöltés” után: visszajelzés (pl. „Fa rögzítve”), és a térképen megjelenik az új fa (refresh vagy push marker). (tree.submit_success; closeModal(); loadTrees().)
 
 ### Milestone C3 – Fa örökbe fogadás (adopt)
-- [ ] **C3.1** Térképen: fa markerre kattintva legyen lehetőség „Örökbe fogadom” – ha be van jelentkezve a user, tree_adopt API hívás; ha nincs, átirányítás loginra.
-- [ ] **C3.2** tree_adopt.php: ellenőrizni jogosultságot, dupla adopt elkerülése, és a trees tábla adopted_by_user_id (vagy kapcsolótábla) frissítése; sikeres válasz és frontend frissítés (pl. marker szín vagy felirat változik).
-- [ ] **C3.3** „Saját örökbe fogadott fák” megjelenítése valahol (pl. user/my vagy külön „Fáim” blokk) – opcionális, de ajánlott a teljes flowhoz.
+- [x] **C3.1** Térképen: fa markerre kattintva legyen lehetőség „Örökbe fogadom” – ha be van jelentkezve a user, tree_adopt API hívás; ha nincs, átirányítás loginra. (app.js: popup „Örökbe fogadom” / „Örökbefogadás lemondása”; nem bejelentkezettnek tree.login_to_adopt + Belépés link.)
+- [x] **C3.2** tree_adopt.php: ellenőrizni jogosultságot, dupla adopt elkerülése, és a trees tábla adopted_by_user_id (vagy kapcsolótábla) frissítése; sikeres válasz és frontend frissítés (pl. marker szín vagy felirat változik). (tree_adoptions UNIQUE(tree_id, user_id): 2026-14, 2026-18, 00_run_all; API adopt/cancel, popup szöveg frissül.)
+- [x] **C3.3** „Saját örökbe fogadott fák” megjelenítése valahol (pl. user/my vagy külön „Fáim” blokk) – opcionális, de ajánlott a teljes flowhoz. (user/my.php: „Fáim” kártya, link a térképre lat/lng-vel; trees_list.php?my_adopted=1 opció.)
 
 ### Milestone C4 – Fa öntözés (watering)
 - [ ] **C4.1** Térképen: örökbe fogadott fához (vagy bármely fához) „Öntözöm” gomb/űrlap – tree_watering API hívás; adatbázisban watering log (ha van ilyen tábla/mező).
