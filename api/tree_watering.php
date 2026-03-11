@@ -74,6 +74,17 @@ try {
     json_response(['ok' => false, 'error' => 'Tree not found'], 404);
   }
 
+  // Rate limit: max 5 öntözés/fa/nap/user (duplikátum és abuse ellen)
+  $stmt = $pdo->prepare("
+    SELECT COUNT(*) FROM tree_watering_logs
+    WHERE tree_id = :tid AND user_id = :uid AND DATE(created_at) = CURDATE()
+  ");
+  $stmt->execute([':tid' => $treeId, ':uid' => $uid]);
+  if ((int)$stmt->fetchColumn() >= 5) {
+    $pdo->rollBack();
+    json_response(['ok' => false, 'error' => 'Ma már elérted az öntözési limitet erre a fára (max 5/nap).'], 429);
+  }
+
   $stmt = $pdo->prepare("INSERT INTO tree_watering_logs (tree_id, user_id, photo, water_amount, note)
                          VALUES (:tid, :uid, :photo, :amount, :note)");
   $stmt->execute([

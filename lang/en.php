@@ -52,6 +52,8 @@ return [
     'tree.action_adopt' => 'Adopt tree',
     'tree.action_cancel' => 'Cancel adoption',
     'tree.action_water' => 'Log watering',
+    'tree.watered_success' => 'Watered. Thank you!',
+    'tree.water_error' => 'Watering failed.',
     'tree.water_amount_placeholder' => 'Litres',
     'tree.species_placeholder' => 'Species (optional)',
     'tree.note_placeholder' => 'Note (optional)',

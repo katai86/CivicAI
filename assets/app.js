@@ -491,7 +491,10 @@ map.on('popupopen', (e) => {
             body: fd
           });
           const j = await res.json().catch(() => null);
-          if (!res.ok || !j || !j.ok) return;
+          if (!res.ok || !j || !j.ok) {
+            alert((j && j.error) ? j.error : (window.LANG && window.LANG['tree.water_error']) ? window.LANG['tree.water_error'] : 'Öntözés sikertelen.');
+            return;
+          }
           const lastLine = el.querySelector('.tree-last-watered-line');
           if (lastLine && j.last_watered) {
             const tpl = window.LANG && window.LANG['tree.last_watered']
@@ -500,8 +503,11 @@ map.on('popupopen', (e) => {
             lastLine.textContent = tpl.replace('{date}', j.last_watered);
           }
           waterForm.reset();
+          const msg = (window.LANG && window.LANG['tree.watered_success']) ? window.LANG['tree.watered_success'] : 'Öntözve. Köszönjük!';
+          if (typeof alert === 'function') alert(msg);
         }catch(err){
           console.error(err);
+          alert((window.LANG && window.LANG['tree.water_error']) ? window.LANG['tree.water_error'] : 'Öntözés sikertelen.');
         }
       });
     }

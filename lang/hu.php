@@ -52,6 +52,8 @@ return [
     'tree.action_adopt' => 'Örökbefogadom',
     'tree.action_cancel' => 'Örökbefogadás lemondása',
     'tree.action_water' => 'Öntözés naplózása',
+    'tree.watered_success' => 'Öntözve. Köszönjük!',
+    'tree.water_error' => 'Öntözés sikertelen.',
     'tree.water_amount_placeholder' => 'Liter',
     'tree.species_placeholder' => 'Faj (opcionális)',
     'tree.note_placeholder' => 'Megjegyzés (opcionális)',

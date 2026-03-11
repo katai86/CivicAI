@@ -93,9 +93,9 @@ Ez a dokumentum a három prioritásos területet milestone-okra bontja. **Csak e
 - [x] **C3.3** „Saját örökbe fogadott fák” megjelenítése valahol (pl. user/my vagy külön „Fáim” blokk) – opcionális, de ajánlott a teljes flowhoz. (user/my.php: „Fáim” kártya, link a térképre lat/lng-vel; trees_list.php?my_adopted=1 opció.)
 
 ### Milestone C4 – Fa öntözés (watering)
-- [ ] **C4.1** Térképen: örökbe fogadott fához (vagy bármely fához) „Öntözöm” gomb/űrlap – tree_watering API hívás; adatbázisban watering log (ha van ilyen tábla/mező).
-- [ ] **C4.2** tree_watering.php: auth, rate limit (pl. naponta X öntözés/fa), és a frontend üzenet („Öntözve”) + opcionálisan szintén „Saját öntözések” lista.
-- [ ] **C4.3** Jelmagyarázat és mobil: ha a fa funkciók mobilra is kellenek, a Mobilekit layouton is legyen lehetőség fa feltöltésre / örökbe fogadásra (ugyanaz az API, más UI).
+- [x] **C4.1** Térképen: örökbe fogadott fához (vagy bármely fához) „Öntözöm” gomb/űrlap – tree_watering API hívás; adatbázisban watering log (ha van ilyen tábla/mező). (Már megvan: tree-water-form a fa popupban, tree_watering_logs + trees.last_watered.)
+- [x] **C4.2** tree_watering.php: auth, rate limit (pl. naponta X öntözés/fa), és a frontend üzenet („Öntözve”) + opcionálisan szintén „Saját öntözések” lista. (Rate limit: 5/fá/nap/user; tree.watered_success / tree.water_error; popup frissül.)
+- [x] **C4.3** Jelmagyarázat és mobil: ha a fa funkciók mobilra is kellenek, a Mobilekit layouton is legyen lehetőség fa feltöltésre / örökbe fogadásra (ugyanaz az API, más UI). (Térkép (index) ugyanaz desktop és mobilnál – fa réteg, legend, popup adopt/water; mobilnál use_mobile_layout() shell, de a térkép és app.js közös.)
 
 ### Milestone C5 – Klaszter térkép és teszt
 - [ ] **C5.1** Sok fa esetén: marker clustering (pl. Leaflet.markercluster) a trees rétegre, hogy a térkép olvasható maradjon.
