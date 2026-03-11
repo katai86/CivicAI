@@ -939,6 +939,11 @@ async function loadModules(){
           enabled = s.value === '1' || s.set;
           return '';
         }
+        if (s.type === 'select' && s.options && typeof s.options === 'object') {
+          const val = s.value || '';
+          const opts = Object.entries(s.options).map(([k, lbl]) => `<option value="${esc(k)}"${val === k ? ' selected' : ''}>${esc(lbl)}</option>`).join('');
+          return `<div class="mb-2"><label class="form-label small">${esc(s.label)}</label><select class="form-select form-select-sm" data-module-key="${esc(m.id)}" data-setting-key="${esc(s.key)}">${opts}</select></div>`;
+        }
         const type = (s.type === 'password' || s.mask) ? 'password' : (s.type === 'number' ? 'number' : 'text');
         const placeholder = s.mask && s.set ? '•••••••• (változatlan)' : (s.placeholder || '');
         const val = s.mask && s.set ? '' : (s.value || '');
@@ -946,6 +951,7 @@ async function loadModules(){
         return `<div class="mb-2"><label class="form-label small">${esc(s.label)}</label><input class="form-control form-control-sm" data-module-key="${esc(m.id)}" data-setting-key="${esc(s.key)}" type="${type}" value="${esc(val)}" placeholder="${esc(placeholder)}"${minAttr}></div>`;
       }).join('');
       const isMistral = (m.id === 'mistral');
+      const isOpenai = (m.id === 'openai');
       return `
         <div class="card mb-3" data-module-id="${esc(m.id)}">
           <div class="card-body">
@@ -959,8 +965,10 @@ async function loadModules(){
             <div class="d-flex gap-2 flex-wrap align-items-center">
               <button type="button" class="btn btn-sm btn-primary module-save" data-module-id="${esc(m.id)}">${t('admin.module_save')}</button>
               ${isMistral ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTestMistral">Teszt Mistral</button>' : ''}
+              ${isOpenai ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTestOpenai">Teszt OpenAI</button>' : ''}
             </div>
             ${isMistral ? '<div id="mistralTestResult" class="small mt-2 text-secondary"></div>' : ''}
+            ${isOpenai ? '<div id="openaiTestResult" class="small mt-2 text-secondary"></div>' : ''}
           </div>
         </div>
       `;
@@ -973,8 +981,12 @@ async function loadModules(){
         const enabled = card.querySelector('.module-enabled')?.checked ?? false;
         const settings = {};
         card.querySelectorAll('input[data-module-key][data-setting-key]').forEach(inp => {
-          if (inp.type === 'password' && inp.placeholder.includes('változatlan') && inp.value === '') return;
+          if (inp.type === 'password' && inp.placeholder && inp.placeholder.includes('változatlan') && inp.value === '') return;
           if (inp.value.trim() !== '') settings[inp.getAttribute('data-setting-key')] = inp.value.trim();
+        });
+        card.querySelectorAll('select[data-module-key][data-setting-key]').forEach(sel => {
+          const v = sel.value;
+          if (v !== null && v !== undefined) settings[sel.getAttribute('data-setting-key')] = v;
         });
         try {
           await fetchJson(API_MODULES, {
@@ -1014,6 +1026,32 @@ async function loadModules(){
           testResult.className = 'small mt-2 text-danger';
         }
         btnTest.disabled = false;
+      });
+    }
+    const btnTestOpenai = document.getElementById('btnTestOpenai');
+    const openaiTestResult = document.getElementById('openaiTestResult');
+    if (btnTestOpenai && openaiTestResult) {
+      btnTestOpenai.addEventListener('click', async () => {
+        openaiTestResult.textContent = 'Tesztelés...';
+        btnTestOpenai.disabled = true;
+        try {
+          const j = await fetchJson(API_MODULES, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'test_openai' })
+          });
+          if (j && j.ok) {
+            openaiTestResult.textContent = (j.message || 'OpenAI: OK');
+            openaiTestResult.className = 'small mt-2 text-success';
+          } else {
+            openaiTestResult.textContent = (j && j.error) ? j.error : 'Ismeretlen hiba';
+            openaiTestResult.className = 'small mt-2 text-danger';
+          }
+        } catch (e) {
+          openaiTestResult.textContent = 'Hiba: ' + (e.message || e);
+          openaiTestResult.className = 'small mt-2 text-danger';
+        }
+        btnTestOpenai.disabled = false;
       });
     }
   } catch (e) {

@@ -72,6 +72,8 @@ define('AI_PROVIDER_VISION', getenv('AI_PROVIDER_VISION') ?: 'mistral');
 
 define('MISTRAL_API_KEY', getenv('MISTRAL_API_KEY') ?: '');
 define('GEMINI_API_KEY', getenv('GEMINI_API_KEY') ?: '');
+define('OPENAI_API_KEY', getenv('OPENAI_API_KEY') ?: '');
+define('OPENAI_MODEL', getenv('OPENAI_MODEL') ?: 'gpt-4o-mini');
 
 define('AI_TEXT_MODEL', getenv('AI_TEXT_MODEL') ?: 'mistral-small-2506');
 define('AI_VISION_MODEL', getenv('AI_VISION_MODEL') ?: 'mistral-small-2506');

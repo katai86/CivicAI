@@ -25,6 +25,7 @@ $MODULE_DEFS = [
     'settings' => [
       ['key' => 'enabled', 'label' => 'Bekapcsolva', 'type' => 'checkbox'],
       ['key' => 'api_key', 'label' => 'API kulcs', 'type' => 'password', 'mask' => true],
+      ['key' => 'default_ai_provider', 'label' => 'Alapértelmezett AI provider (összefoglaló, gov)', 'type' => 'select', 'options' => ['mistral' => 'Mistral', 'openai' => 'OpenAI (ChatGPT)']],
       ['key' => 'ai_summary_limit', 'label' => 'Napi max AI összefoglaló hívás (gov/admin)', 'type' => 'number', 'placeholder' => '20'],
       ['key' => 'ai_max_reports_per_day', 'label' => 'Napi max bejelentés-kategorizálás (AI)', 'type' => 'number', 'placeholder' => '1000'],
       ['key' => 'ai_image_analysis_limit', 'label' => 'Napi max kép-elemzés (AI)', 'type' => 'number', 'placeholder' => '300'],
@@ -32,10 +33,11 @@ $MODULE_DEFS = [
   ],
   'openai' => [
     'name' => 'OpenAI / ChatGPT',
-    'description' => 'Opcionális AI provider (kategorizálás, összefoglaló). API kulcs: platform.openai.com',
+    'description' => 'Opcionális AI provider (kategorizálás, összefoglaló). Ugyanazok a limitek (napi összefoglaló stb.). API kulcs: platform.openai.com',
     'settings' => [
       ['key' => 'enabled', 'label' => 'Bekapcsolva', 'type' => 'checkbox'],
       ['key' => 'api_key', 'label' => 'API kulcs', 'type' => 'password', 'mask' => true],
+      ['key' => 'model', 'label' => 'Modell (pl. gpt-4o-mini)', 'type' => 'text', 'placeholder' => 'gpt-4o-mini'],
     ],
   ],
 ];
@@ -48,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       foreach ($def['settings'] as $s) {
         $v = get_module_setting($moduleKey, $s['key']);
         $masked = !empty($s['mask']) && $v !== null && $v !== '';
-        $settingsList[] = [
+        $setting = [
           'key' => $s['key'],
           'label' => $s['label'],
           'type' => $s['type'] ?? 'text',
@@ -57,6 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
           'set' => $v !== null && $v !== '',
           'placeholder' => !empty($s['placeholder']) ? $s['placeholder'] : '',
         ];
+        if (!empty($s['options']) && is_array($s['options'])) {
+          $setting['options'] = $s['options'];
+        }
+        $settingsList[] = $setting;
       }
       $list[] = [
         'id' => $moduleKey,
@@ -91,6 +97,23 @@ if ($action === 'test_mistral') {
     json_response(['ok' => true, 'message' => 'Mistral: kapcsolat rendben.']);
   }
   json_response(['ok' => false, 'error' => $resp['error'] ?? 'Mistral hiba (pl. érvénytelen kulcs vagy limit).']);
+}
+
+if ($action === 'test_openai') {
+  require_once __DIR__ . '/../services/OpenAIProvider.php';
+  $apiKey = (string)(get_module_setting('openai', 'api_key') ?? '');
+  if ($apiKey === '' && defined('OPENAI_API_KEY')) {
+    $apiKey = (string) OPENAI_API_KEY;
+  }
+  if ($apiKey === '') {
+    json_response(['ok' => false, 'error' => 'OpenAI API kulcs nincs megadva (admin vagy .env).']);
+  }
+  $provider = new \OpenAIProvider($apiKey, get_module_setting('openai', 'model') ?: null);
+  $resp = $provider->complete('', 'Reply with exactly: OK', ['max_tokens' => 10]);
+  if (!empty($resp['ok'])) {
+    json_response(['ok' => true, 'message' => 'OpenAI: kapcsolat rendben.']);
+  }
+  json_response(['ok' => false, 'error' => $resp['error'] ?? 'OpenAI hiba (pl. érvénytelen kulcs).']);
 }
 
 if ($action !== 'save_module') {

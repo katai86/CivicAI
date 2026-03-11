@@ -31,7 +31,7 @@ Ez a dokumentum a három prioritásos területet milestone-okra bontja. **Csak e
 
 ### Milestone A4 – Tisztítás és teszt
 - [x] **A4.1** Egy desktop topbar (inc_desktop_topbar.php), egy mobil shell (inc_mobile_header + inc_mobile_footer); duplikált topbar eltávolítva.
-- [ ] **A4.2** Böngészőben teszt: desktop + mobil minden felsorolt oldalon; téma és nyelv mindkét layouton (kézi ellenőrzés).
+- [ ] **A4.2** Böngészőben teszt: desktop + mobil minden felsorolt oldalon; téma és nyelv mindkét layouton (kézi ellenőrzés – fejlesztés kész).
 
 ---
 
@@ -62,9 +62,9 @@ Ez a dokumentum a három prioritásos területet milestone-okra bontja. **Csak e
 - [x] **B3.3** gov_modules.php: openai opció hozzáadva, gov felületen megjelenik (user_module_toggles).
 
 ### Milestone B4 – AI provider választás (Mistral vs ChatGPT)
-- [ ] **B4.1** Ha a ChatGPT modul be van kapcsolva és van kulcs, az AiRouter vagy a report_create választhasson providert (pl. config vagy module_settings: „default_ai_provider” = mistral | openai).
-- [ ] **B4.2** OpenAI/ChatGPT provider osztály (OpenAIProvider.php) – hasonló a MistralProvider-hez; a hívási limitek ugyanazokkal a mezőkkel (ai_summary_limit stb.) vonatkozzanak rá is.
-- [ ] **B4.3** Admin UI: AI limitek egy helyen, és „Mistral” / „OpenAI” külön modulként vagy egy „AI” modul alatt mindkét kulcs + limit megadható.
+- [x] **B4.1** Ha a ChatGPT modul be van kapcsolva és van kulcs, az AiRouter vagy a report_create választhasson providert (pl. config vagy module_settings: „default_ai_provider” = mistral | openai).
+- [x] **B4.2** OpenAI/ChatGPT provider osztály (OpenAIProvider.php) – hasonló a MistralProvider-hez; a hívási limitek ugyanazokkal a mezőkkel (ai_summary_limit stb.) vonatkozzanak rá is.
+- [x] **B4.3** Admin UI: AI limitek egy helyen, és „Mistral” / „OpenAI” külön modulként vagy egy „AI” modul alatt mindkét kulcs + limit megadható.
 
 ---
 
@@ -99,7 +99,7 @@ Ez a dokumentum a három prioritásos területet milestone-okra bontja. **Csak e
 
 ### Milestone C5 – Klaszter térkép és teszt
 - [x] **C5.1** Sok fa esetén: marker clustering (pl. Leaflet.markercluster) a trees rétegre, hogy a térkép olvasható maradjon. (Leaflet.markercluster@1.5.3 index + mobile; app.js: treeClusterGroup, loadTrees/clearTreeMarkers; fallback ha nincs cluster lib.)
-- [ ] **C5.2** Végteszt: desktop + mobil – fa réteg be, új fa felvitele, örökbe fogadás, öntözés; adatbázisban és a térképen minden konzisztens. (Kézi ellenőrzés.)
+- [ ] **C5.2** Végteszt: desktop + mobil – fa réteg be, új fa felvitele, örökbe fogadás, öntözés; adatbázisban és a térképen minden konzisztens. (Kézi ellenőrzés – fejlesztés kész.)
 
 ---
 
@@ -121,3 +121,9 @@ Ez a dokumentum a három prioritásos területet milestone-okra bontja. **Csak e
 | **C. Fa** | C1 réteg + legend → C2 „Fa feltöltés” a bejelentésnél → C3 örökbe fogadás → C4 öntözés → C5 klaszter + teszt | User bejelentéskor választhat fa feltöltést; örökbe fogadás és öntözés működik |
 
 Ezt a fájlt érdemes verziókezelni (git) és minden milestone-nál pipálni a kész feladatokat.
+
+---
+
+## Fejlesztés állapota (milestone-ok szerint)
+
+**Implementáció kész:** A1–A3, A4.1; B1–B4; C1–C5.1. Az egyetlen nyitott feladat a **kézi teszt**: A4.2 (desktop + mobil minden oldalon), C5.2 (fa réteg, feltöltés, örökbe fogadás, öntözés végteszt). A B4 (AI provider választás) befejeződött: adminban Mistral modulnál „Alapértelmezett AI provider” (Mistral / OpenAI), OpenAI modulnál modell mező, „Teszt OpenAI” gomb; AiRouter a kiválasztott providerrel és a megfelelő modellel hív.

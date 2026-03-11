@@ -3,10 +3,12 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../util.php';
 require_once __DIR__ . '/AiProviderInterface.php';
 require_once __DIR__ . '/MistralProvider.php';
+require_once __DIR__ . '/OpenAIProvider.php';
 require_once __DIR__ . '/GeminiProvider.php';
 
 /**
- * AiRouter – provider választás, retry, cost-control (alap).
+ * AiRouter – provider választás (Mistral / OpenAI / Gemini), retry, cost-control.
+ * default_ai_provider (module_settings mistral) = mistral | openai; ugyanazok a limitek mindkettőre.
  */
 class AiRouter
 {
@@ -14,17 +16,25 @@ class AiRouter
 
     public function __construct()
     {
-        $moduleMistral = function_exists('get_module_setting') && get_module_setting('mistral', 'enabled') === '1' && ((string)(get_module_setting('mistral', 'api_key') ?? '')) !== '';
+        $mistralOk = function_exists('get_module_setting') && get_module_setting('mistral', 'enabled') === '1' && ((string)(get_module_setting('mistral', 'api_key') ?? '')) !== '';
+        $openaiOk = function_exists('get_module_setting') && get_module_setting('openai', 'enabled') === '1' && ((string)(get_module_setting('openai', 'api_key') ?? '')) !== '';
         $envEnabled = defined('AI_ENABLED') && AI_ENABLED;
-        if (!$envEnabled && !$moduleMistral) {
-            $this->provider = null;
+        $default = (function_exists('get_module_setting') ? (get_module_setting('mistral', 'default_ai_provider') ?: '') : '') ?: (defined('AI_PROVIDER') ? (string)AI_PROVIDER : 'mistral');
+
+        if ($default === 'gemini' && (defined('GEMINI_API_KEY') && (string)GEMINI_API_KEY !== '')) {
+            $this->provider = new GeminiProvider();
             return;
         }
-        $prov = defined('AI_PROVIDER') ? (string)AI_PROVIDER : 'mistral';
-        if ($prov === 'gemini') {
-        $this->provider = new GeminiProvider();
-        } else {
+        if (($default === 'openai' || !$mistralOk) && $openaiOk) {
+            $this->provider = new OpenAIProvider(null, null);
+            return;
+        }
+        if ($mistralOk || ($envEnabled && defined('MISTRAL_API_KEY') && (string)MISTRAL_API_KEY !== '')) {
             $this->provider = new MistralProvider(function_exists('mistral_api_key') ? mistral_api_key() : null);
+            return;
+        }
+        if ($openaiOk) {
+            $this->provider = new OpenAIProvider(null, null);
         }
     }
 
@@ -51,11 +61,11 @@ class AiRouter
                 return false;
             }
         }
-        if (in_array($taskType, ['admin_summary','gov_summary'], true)) {
+        if (in_array($taskType, ['admin_summary','gov_summary','gov_esg'], true)) {
             $max = function_exists('get_ai_limit') ? get_ai_limit('summary') : (defined('AI_SUMMARY_LIMIT') ? (int) AI_SUMMARY_LIMIT : 0);
             if ($max <= 0) return false;
             try {
-                $stmt = db()->prepare("SELECT COUNT(*) FROM ai_results WHERE task_type IN ('admin_summary','gov_summary') AND created_at >= CURDATE()");
+                $stmt = db()->prepare("SELECT COUNT(*) FROM ai_results WHERE task_type IN ('admin_summary','gov_summary','gov_esg') AND created_at >= CURDATE()");
                 $stmt->execute();
                 $cnt = (int)$stmt->fetchColumn();
                 return $cnt < $max;
@@ -89,7 +99,20 @@ class AiRouter
             return ['ok' => false, 'error' => 'AI disabled or limit reached'];
         }
 
-        $model = $meta['model'] ?? (string)(defined('AI_TEXT_MODEL') ? AI_TEXT_MODEL : '');
+        if ($this->provider instanceof \OpenAIProvider) {
+            $model = (string)($meta['model'] ?? '');
+            if ($model === '' && function_exists('get_module_setting')) {
+                $model = (string)(get_module_setting('openai', 'model') ?: '');
+            }
+            if ($model === '' && defined('OPENAI_MODEL')) {
+                $model = (string) OPENAI_MODEL;
+            }
+            if ($model === '') {
+                $model = 'gpt-4o-mini';
+            }
+        } else {
+            $model = $meta['model'] ?? (string)(defined('AI_TEXT_MODEL') ? AI_TEXT_MODEL : '');
+        }
         if ($model === '') {
             return ['ok' => false, 'error' => 'AI model missing'];
         }

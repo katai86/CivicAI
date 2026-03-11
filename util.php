@@ -291,14 +291,19 @@ function fms_config_api_key(): string {
     return defined('FMS_OPEN311_API_KEY') ? (string)FMS_OPEN311_API_KEY : '';
 }
 
-/** AI (Mistral/Gemini) be van-e állítva – modul vagy env, kulcsot nem adja vissza. */
+/** AI (Mistral / OpenAI / Gemini) be van-e állítva – modul vagy env. */
 function ai_configured(): bool {
-    $fromModule = get_module_setting('mistral', 'enabled') === '1' && (get_module_setting('mistral', 'api_key') ?? '') !== '';
-    if ($fromModule) return true;
+    $mistralOk = get_module_setting('mistral', 'enabled') === '1' && (get_module_setting('mistral', 'api_key') ?? '') !== '';
+    if ($mistralOk) return true;
+    $openaiOk = get_module_setting('openai', 'enabled') === '1' && (get_module_setting('openai', 'api_key') ?? '') !== '';
+    if ($openaiOk) return true;
     if (!defined('AI_ENABLED') || !AI_ENABLED) return false;
     $provider = defined('AI_PROVIDER') ? (string)AI_PROVIDER : 'mistral';
     if ($provider === 'gemini') {
         return defined('GEMINI_API_KEY') && (string)GEMINI_API_KEY !== '';
+    }
+    if ($provider === 'openai') {
+        return defined('OPENAI_API_KEY') && (string)OPENAI_API_KEY !== '';
     }
     return defined('MISTRAL_API_KEY') && (string)MISTRAL_API_KEY !== '';
 }
@@ -308,6 +313,13 @@ function mistral_api_key(): string {
     $v = get_module_setting('mistral', 'api_key');
     if ($v !== null && $v !== '') return $v;
     return defined('MISTRAL_API_KEY') ? (string)MISTRAL_API_KEY : '';
+}
+
+/** OpenAI API kulcs – modul (admin) vagy env. */
+function openai_api_key(): string {
+    $v = get_module_setting('openai', 'api_key');
+    if ($v !== null && $v !== '') return $v;
+    return defined('OPENAI_API_KEY') ? (string)OPENAI_API_KEY : '';
 }
 
 /**
