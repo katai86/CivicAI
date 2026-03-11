@@ -98,8 +98,8 @@ Ez a dokumentum a három prioritásos területet milestone-okra bontja. **Csak e
 - [x] **C4.3** Jelmagyarázat és mobil: ha a fa funkciók mobilra is kellenek, a Mobilekit layouton is legyen lehetőség fa feltöltésre / örökbe fogadásra (ugyanaz az API, más UI). (Térkép (index) ugyanaz desktop és mobilnál – fa réteg, legend, popup adopt/water; mobilnál use_mobile_layout() shell, de a térkép és app.js közös.)
 
 ### Milestone C5 – Klaszter térkép és teszt
-- [ ] **C5.1** Sok fa esetén: marker clustering (pl. Leaflet.markercluster) a trees rétegre, hogy a térkép olvasható maradjon.
-- [ ] **C5.2** Végteszt: desktop + mobil – fa réteg be, új fa felvitele, örökbe fogadás, öntözés; adatbázisban és a térképen minden konzisztens.
+- [x] **C5.1** Sok fa esetén: marker clustering (pl. Leaflet.markercluster) a trees rétegre, hogy a térkép olvasható maradjon. (Leaflet.markercluster@1.5.3 index + mobile; app.js: treeClusterGroup, loadTrees/clearTreeMarkers; fallback ha nincs cluster lib.)
+- [ ] **C5.2** Végteszt: desktop + mobil – fa réteg be, új fa felvitele, örökbe fogadás, öntözés; adatbázisban és a térképen minden konzisztens. (Kézi ellenőrzés.)
 
 ---
 

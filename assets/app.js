@@ -53,6 +53,7 @@ let searchMarker = null;
 let searchMarkerTimeout = null;
 let layerMarkers = [];
 let treeMarkers = [];
+let treeClusterGroup = null; // Leaflet.markercluster: fa markerek csoportja
 let activeTreeFilter = 'all';
 let addTreeMode = false;
 let addTreeMarker = null;
@@ -530,7 +531,13 @@ function clearCivilEventMarkers(){
 }
 
 function clearTreeMarkers(){
-  treeMarkers.forEach(m => map.removeLayer(m));
+  if (treeClusterGroup) {
+    map.removeLayer(treeClusterGroup);
+    treeClusterGroup.clearLayers();
+    treeClusterGroup = null;
+  } else {
+    treeMarkers.forEach(m => { try { map.removeLayer(m); } catch (_) {} });
+  }
   treeMarkers = [];
 }
 
@@ -588,17 +595,22 @@ async function loadTrees(){
         </div>
       `;
 
-      const mk = L.marker([t.lat, t.lng], { icon: treeIcon(t) })
-        .addTo(map)
-        .bindPopup(
-          `<b>🌳 ${esc(t.species || (window.LANG && window.LANG['tree.unknown_species']) ? window.LANG['tree.unknown_species'] : 'Fa')}</b><br>` +
-          (t.address ? `<small>${esc(t.address)}</small><br>` : '') +
-          `<small><b>${(window.LANG && window.LANG['tree.health']) ? window.LANG['tree.health'] : 'Állapot'}:</b> ${treeHealthLabel(t.health_status)}</small><br>` +
-          `<small><b>${(window.LANG && window.LANG['tree.risk']) ? window.LANG['tree.risk'] : 'Kockázat'}:</b> ${treeRiskLabel(t.risk_level)}</small><br>` +
-          actionsHtml
-        );
+      const mk = L.marker([t.lat, t.lng], { icon: treeIcon(t) }).bindPopup(
+        `<b>🌳 ${esc(t.species || (window.LANG && window.LANG['tree.unknown_species']) ? window.LANG['tree.unknown_species'] : 'Fa')}</b><br>` +
+        (t.address ? `<small>${esc(t.address)}</small><br>` : '') +
+        `<small><b>${(window.LANG && window.LANG['tree.health']) ? window.LANG['tree.health'] : 'Állapot'}:</b> ${treeHealthLabel(t.health_status)}</small><br>` +
+        `<small><b>${(window.LANG && window.LANG['tree.risk']) ? window.LANG['tree.risk'] : 'Kockázat'}:</b> ${treeRiskLabel(t.risk_level)}</small><br>` +
+        actionsHtml
+      );
+      if (typeof L.markerClusterGroup === 'function') {
+        if (!treeClusterGroup) treeClusterGroup = L.markerClusterGroup({ chunkedLoading: true });
+        treeClusterGroup.addLayer(mk);
+      } else {
+        mk.addTo(map);
+      }
       treeMarkers.push(mk);
     }
+    if (treeClusterGroup && treeMarkers.length) map.addLayer(treeClusterGroup);
   }catch(e){
     console.warn('trees load failed', e);
   }
