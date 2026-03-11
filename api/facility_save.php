@@ -12,7 +12,7 @@ start_secure_session();
 $role = current_user_role() ?: '';
 // communityuser = közület (pl. háziorvos, fogorvos) – csak a saját profilját és egy „buborék” (facility) szerkesztheti
 if (!in_array($role, ['communityuser','admin','superadmin'], true)) {
-  json_response(['ok'=>false,'error'=>'Nincs jogosultság.'], 403);
+  json_response(['ok'=>false,'error'=>t('common.error_no_permission')], 403);
 }
 
 $body = read_json_body();

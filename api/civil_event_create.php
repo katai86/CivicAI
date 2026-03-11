@@ -12,7 +12,7 @@ start_secure_session();
 $role = current_user_role() ?: '';
 // civil = régi ENUM érték, civiluser = új (mindkettő civil szerepkör)
 if (!in_array($role, ['civil','civiluser','admin','superadmin'], true)) {
-  json_response(['ok'=>false,'error'=>'Nincs jogosultság.'], 403);
+  json_response(['ok'=>false,'error'=>t('common.error_no_permission')], 403);
 }
 
 $body = read_json_body();

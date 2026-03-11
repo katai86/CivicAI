@@ -196,7 +196,7 @@ if ($userId) {
 // Role-alapú jogosultságok
 if ($category === 'civil_event') {
   if (!$userId) {
-    json_response(['ok' => false, 'error' => 'Civil kategóriához bejelentkezés szükséges.'], 401);
+    json_response(['ok' => false, 'error' => t('auth.login_required')], 401);
   }
   $role = $userRole ?: (current_user_role() ?: '');
   if (!in_array($role, ['civil','civiluser','admin','superadmin'], true)) {
@@ -207,7 +207,7 @@ if ($category === 'civil_event') {
   if ($userId) {
     $role = $userRole ?: (current_user_role() ?: '');
     if (in_array($role, ['civil','civiluser','communityuser'], true)) {
-      json_response(['ok' => false, 'error' => 'Nincs jogosultság bejelentéshez ezzel a fiókkal.'], 403);
+      json_response(['ok' => false, 'error' => t('api.report_no_permission_account')], 403);
     }
   }
 }

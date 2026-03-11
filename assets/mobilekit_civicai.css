@@ -81,3 +81,39 @@ body.civicai-mobile .auth-page .card {
   margin: 16px;
 }
 
+/* Light/dark: boxok, inputok, szövegblokkok mindig olvashatók (mobil) */
+body.civicai-mobile .form-control,
+body.civicai-mobile .form-select,
+body.civicai-mobile input,
+body.civicai-mobile select,
+body.civicai-mobile textarea {
+  color: var(--text) !important;
+  background-color: var(--card) !important;
+  border-color: var(--border) !important;
+}
+body.civicai-mobile .card .card-title,
+body.civicai-mobile .card .card-text,
+body.civicai-mobile .section .item-title,
+body.civicai-mobile .section .item-subtitle {
+  color: var(--text) !important;
+}
+body.civicai-mobile .text-secondary { color: var(--muted, #64748b) !important; }
+/* Világos téma (ha data-theme=light a html-en) */
+html[data-theme="light"] body.civicai-mobile .form-control,
+html[data-theme="light"] body.civicai-mobile .form-select,
+html[data-theme="light"] body.civicai-mobile input,
+html[data-theme="light"] body.civicai-mobile select,
+html[data-theme="light"] body.civicai-mobile textarea {
+  background-color: #fff !important;
+  color: #0f172a !important;
+  border-color: rgba(0,0,0,.15) !important;
+}
+html[data-theme="light"] body.civicai-mobile .card,
+html[data-theme="light"] body.civicai-mobile .section {
+  background-color: #fff !important;
+  color: #0f172a !important;
+}
+html[data-theme="light"] body.civicai-mobile .card .card-title,
+html[data-theme="light"] body.civicai-mobile .section .item-title { color: #0f172a !important; }
+html[data-theme="light"] body.civicai-mobile .text-secondary { color: #64748b !important; }
+

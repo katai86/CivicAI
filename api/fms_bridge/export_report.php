@@ -40,14 +40,14 @@ if (!$isAdmin) {
     json_response(['ok' => false, 'error' => 'Az authority_users tábla hiányozhat.'], 503);
   }
   if (!$authorityIds) {
-    json_response(['ok' => false, 'error' => 'Nincs hatóság hozzárendelve ehhez a fiókhoz.'], 403);
+    json_response(['ok' => false, 'error' => t('gov.no_authority')], 403);
   }
 
   $stmt = $pdo->prepare("SELECT authority_id FROM reports WHERE id = :id LIMIT 1");
   $stmt->execute([':id' => $reportId]);
   $aid = (int)($stmt->fetchColumn() ?: 0);
   if ($aid <= 0 || !in_array($aid, $authorityIds, true)) {
-    json_response(['ok' => false, 'error' => 'Nincs jogosultság.'], 403);
+    json_response(['ok' => false, 'error' => t('common.error_no_permission')], 403);
   }
 }
 

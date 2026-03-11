@@ -15,12 +15,12 @@ start_secure_session();
 require_user();
 $uid = current_user_id();
 if (!$uid) {
-  json_response(['ok' => false, 'error' => 'Bejelentkezés szükséges.'], 401);
+  json_response(['ok' => false, 'error' => t('auth.login_required')], 401);
 }
 
 $treeId = isset($_POST['tree_id']) ? (int)$_POST['tree_id'] : 0;
 if ($treeId <= 0) {
-  json_response(['ok' => false, 'error' => 'Érvénytelen fa azonosító.'], 400);
+  json_response(['ok' => false, 'error' => t('api.tree_invalid_id')], 400);
 }
 
 $pdo = db();
@@ -46,7 +46,7 @@ if (!$canEdit) {
   $canEdit = $isAdopter;
 }
 if (!$canEdit) {
-  json_response(['ok' => false, 'error' => 'Nincs jogosultság a szerkesztéshez.'], 403);
+  json_response(['ok' => false, 'error' => t('api.tree_no_permission_edit')], 403);
 }
 
 $updates = [];
@@ -81,11 +81,11 @@ foreach ($fields as $key => $cfg) {
 }
 
 if (empty($updates)) {
-  json_response(['ok' => true, 'message' => 'Nincs változás.']);
+  json_response(['ok' => true, 'message' => t('api.tree_no_change')]);
 }
 
 $params[] = $treeId;
 $sql = "UPDATE trees SET " . implode(', ', $updates) . " WHERE id = ?";
 $pdo->prepare($sql)->execute($params);
 
-json_response(['ok' => true, 'message' => 'Mentve.']);
+json_response(['ok' => true, 'message' => t('common.saved')]);

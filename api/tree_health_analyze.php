@@ -15,21 +15,21 @@ start_secure_session();
 require_user();
 $uid = current_user_id();
 if (!$uid) {
-  json_response(['ok' => false, 'error' => 'Bejelentkezés szükséges.'], 401);
+  json_response(['ok' => false, 'error' => t('auth.login_required')], 401);
 }
 
 $treeId = isset($_POST['tree_id']) ? (int)$_POST['tree_id'] : 0;
 if ($treeId <= 0) {
-  json_response(['ok' => false, 'error' => 'Érvénytelen fa azonosító.'], 400);
+  json_response(['ok' => false, 'error' => t('api.tree_invalid_id')], 400);
 }
 
 if (empty($_FILES['photo']) || !is_array($_FILES['photo']) || $_FILES['photo']['error'] !== UPLOAD_ERR_OK || $_FILES['photo']['size'] <= 0) {
-  json_response(['ok' => false, 'error' => 'Tölts fel egy képet a fáról.'], 400);
+  json_response(['ok' => false, 'error' => t('tree.health_analyze_need_photo')], 400);
 }
 
 $f = $_FILES['photo'];
 if ($f['size'] > (defined('UPLOAD_MAX_BYTES') ? UPLOAD_MAX_BYTES : 6 * 1024 * 1024)) {
-  json_response(['ok' => false, 'error' => 'A fájl túl nagy.'], 400);
+  json_response(['ok' => false, 'error' => t('api.file_too_large')], 400);
 }
 $tmp = $f['tmp_name'];
 $mime = '';

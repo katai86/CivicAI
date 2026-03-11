@@ -6,20 +6,22 @@
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 
+start_secure_session();
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 
 require_user();
 $uid = current_user_id();
 if (!$uid) {
-  json_response(['ok' => false, 'error' => 'Bejelentkezés szükséges.'], 401);
+  json_response(['ok' => false, 'error' => t('auth.login_required')], 401);
 }
 
 $lat = isset($_POST['lat']) ? (float)$_POST['lat'] : null;
 $lng = isset($_POST['lng']) ? (float)$_POST['lng'] : null;
 if ($lat === null || $lng === null || !is_finite($lat) || !is_finite($lng)) {
-  json_response(['ok' => false, 'error' => 'Érvénytelen koordináta.'], 400);
+  json_response(['ok' => false, 'error' => t('api.tree_invalid_coords')], 400);
 }
 
 $species = isset($_POST['species']) ? mb_substr(trim((string)$_POST['species']), 0, 120) : null;
@@ -29,7 +31,7 @@ $photoFilename = null;
 if (!empty($_FILES['photo']) && is_array($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK && $_FILES['photo']['size'] > 0) {
   $f = $_FILES['photo'];
   if ($f['size'] > UPLOAD_MAX_BYTES) {
-    json_response(['ok' => false, 'error' => 'A fájl túl nagy.'], 400);
+    json_response(['ok' => false, 'error' => t('api.file_too_large')], 400);
   }
   $tmp = $f['tmp_name'];
   $mime = '';
@@ -45,17 +47,21 @@ if (!empty($_FILES['photo']) && is_array($_FILES['photo']) && $_FILES['photo']['
   }
   $allowed = UPLOAD_ALLOWED_MIME;
   if (!isset($allowed[$mime])) {
-    json_response(['ok' => false, 'error' => 'Csak képfájl (jpg, png, webp) tölthető fel.'], 400);
+    json_response(['ok' => false, 'error' => t('api.upload_images_only')], 400);
   }
   $ext = $allowed[$mime];
   $photoFilename = 'new_' . $uid . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
   $dir = rtrim(UPLOAD_DIR, '/\\') . DIRECTORY_SEPARATOR . 'trees';
   if (!is_dir($dir)) {
-    @mkdir($dir, 0775, true);
+    if (!@mkdir($dir, 0775, true)) {
+      log_error('tree_create: cannot create upload dir ' . $dir);
+      json_response(['ok' => false, 'error' => t('common.error_save_failed')], 500);
+    }
   }
   $dest = $dir . DIRECTORY_SEPARATOR . $photoFilename;
   if (!@move_uploaded_file($tmp, $dest)) {
-    json_response(['ok' => false, 'error' => 'Feltöltés sikertelen.'], 500);
+    log_error('tree_create: move_uploaded_file failed for ' . $dest);
+    json_response(['ok' => false, 'error' => t('common.error_save_failed')], 500);
   }
 }
 
@@ -75,10 +81,12 @@ try {
   $treeId = (int)$pdo->lastInsertId();
   if ($treeId <= 0) {
     $pdo->rollBack();
-    json_response(['ok' => false, 'error' => 'Mentés sikertelen.'], 500);
+    log_error('tree_create: lastInsertId failed');
+    json_response(['ok' => false, 'error' => t('common.error_save_failed')], 500);
   }
 
-  if ($photoFilename !== null || $note !== null) {
+  $imgPath = ($photoFilename !== null && $photoFilename !== '') ? $photoFilename : null;
+  if ($imgPath !== null || ($note !== null && $note !== '')) {
     $stmtLog = $pdo->prepare("
       INSERT INTO tree_logs (tree_id, user_id, log_type, note, image_path, created_at)
       VALUES (:tid, :uid, 'inspection', :note, :img, NOW())
@@ -87,7 +95,7 @@ try {
       ':tid' => $treeId,
       ':uid' => $uid,
       ':note' => $note ?: null,
-      ':img' => $photoFilename,
+      ':img' => $imgPath,
     ]);
   }
 
@@ -105,6 +113,6 @@ try {
   ]);
 } catch (Throwable $e) {
   if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
-  log_error('tree_create: ' . $e->getMessage());
-  json_response(['ok' => false, 'error' => 'Szerver hiba.'], 500);
+  log_error('tree_create: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+  json_response(['ok' => false, 'error' => t('common.error_server')], 500);
 }

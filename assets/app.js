@@ -963,15 +963,18 @@ function openModal(latlng){
         </select>
         <p id="mCategorySuggestion" class="muted small" style="display:none; margin-top:4px"></p>
 
-        <label>${esc(t('modal.category'))} – rövid cím</label>
+        <div id="mTreeHint" class="modal-note box" style="display:none"></div>
+
+        <label id="mTitleLabel">${esc(t('modal.category'))} – rövid cím</label>
         <input id="mTitle" maxlength="120" placeholder="${esc(t('modal.title_placeholder'))}">
 
-        <label>Leírás</label>
+        <label id="mDescLabel">Leírás</label>
         <textarea id="mDesc" rows="4" maxlength="5000" placeholder="${esc(t('modal.desc_placeholder'))}"></textarea>
 
         <label>${esc(t('modal.image_optional'))}</label>
         <input id="mImage" type="file" accept="image/*" class="modal-file">
 
+        <div id="mReportFields">
         <div id="mEventFields" style="display:none">
           <h3>Esemény időpont</h3>
           <label>Kezdete</label>
@@ -1056,6 +1059,7 @@ function openModal(latlng){
         <div class="modal-note">
           A bejelentés ellenőrzés után jelenik meg.
         </div>
+        </div>
         <div id="mNearby200" class="modal-note" style="display:none"></div>
 
         <div class="modal-actions">
@@ -1139,8 +1143,32 @@ function openModal(latlng){
   };
 
   const syncCategory = () => {
-    const isCivil = elCategory && elCategory.value === 'civil_event';
+    const cat = elCategory ? elCategory.value : '';
+    const isCivil = cat === 'civil_event';
+    const isTree = cat === 'tree_upload';
     if (elEventFields) elEventFields.style.display = isCivil ? '' : 'none';
+    const mReportFields = modal.querySelector('#mReportFields');
+    const mTreeHint = modal.querySelector('#mTreeHint');
+    const mTitleLabel = modal.querySelector('#mTitleLabel');
+    const mDescLabel = modal.querySelector('#mDescLabel');
+    const mTitleInput = modal.querySelector('#mTitle');
+    const mDescInput = modal.querySelector('#mDesc');
+    if (mReportFields) mReportFields.style.display = isTree ? 'none' : '';
+    if (mTreeHint) {
+      mTreeHint.style.display = isTree ? 'block' : 'none';
+      mTreeHint.textContent = t('modal.tree_hint') || 'A fa helye: a térképen kattintott pont.';
+    }
+    if (isTree) {
+      if (mTitleLabel) mTitleLabel.textContent = t('modal.tree_species_label') || t('tree.species_placeholder') || 'Fajta';
+      if (mDescLabel) mDescLabel.textContent = t('modal.tree_note_label') || t('tree.note_placeholder') || 'Megjegyzés';
+      if (mTitleInput) mTitleInput.placeholder = t('tree.species_placeholder') || 'pl. kőris, tölgy';
+      if (mDescInput) mDescInput.placeholder = t('tree.note_placeholder') || 'pl. becsült életkor, állapot';
+    } else {
+      if (mTitleLabel) mTitleLabel.textContent = t('modal.category') + ' – rövid cím';
+      if (mDescLabel) mDescLabel.textContent = 'Leírás';
+      if (mTitleInput) mTitleInput.placeholder = t('modal.title_placeholder') || 'pl. Kátyú a kereszteződésnél';
+      if (mDescInput) mDescInput.placeholder = t('modal.desc_placeholder') || 'Írd le röviden a problémát';
+    }
   };
 
   elNotify.addEventListener('change', syncContact);

@@ -79,7 +79,7 @@ $showReportList = $isAdmin || !empty($authorityIds);
 // Status update: csak admin
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'set_status') {
   if (!$isAdmin) {
-    $err = 'Nincs jogosultság.';
+    $err = t('common.error_no_permission');
   } else {
   $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
   $new = isset($_POST['status']) ? trim((string)$_POST['status']) : '';
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
   $allowed = ['pending','approved','rejected','new','needs_info','forwarded','waiting_reply','in_progress','solved','closed'];
 
   if ($id <= 0 || !in_array($new, $allowed, true)) {
-    $err = 'Érvénytelen adatok.';
+    $err = t('common.error_invalid_data');
   } else {
     try {
       $pdo = db();
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
       $r = $stmt->fetch(PDO::FETCH_ASSOC);
       if (!$r) {
         $pdo->rollBack();
-        $err = 'Bejelentés nem található.';
+        $err = t('gov.report_not_found');
       } else {
         $aid = (int)($r['authority_id'] ?? 0);
         $rCity = trim((string)($r['city'] ?? ''));
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
           || ($aid <= 0 && $rCity !== '' && in_array($rCity, $authorityCities, true));
         if (!$allowed) {
           $pdo->rollBack();
-          $err = 'Nincs jogosultság.';
+          $err = t('common.error_no_permission');
         } else {
           $old = (string)$r['status'];
           if ($old !== $new) {
@@ -174,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             send_mail($to, $subject, $bodyText);
           }
 
-          $ok = 'Státusz frissítve.';
+          $ok = t('gov.status_updated');
           $redirectFilter = isset($_POST['status_filter']) ? trim((string)$_POST['status_filter']) : '';
           if ($redirectFilter !== '' && in_array($redirectFilter, $allowedStatuses, true)) {
             header('Location: ' . app_url('/gov/index.php?status_filter=' . rawurlencode($redirectFilter)));
@@ -184,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
       }
     } catch (Throwable $e) {
       if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
-      $err = 'Hiba történt mentés közben.';
+      $err = t('common.error_save_failed');
     }
   }
   }
@@ -511,19 +511,20 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
         <?php else: ?>
 
         <div class="admin-tab-body" id="tab-dashboard">
-          <!-- M9 Dashboard UI panelek: 5 panel -->
+          <!-- M9 Dashboard UI panelek: 5 panel + magyarázat -->
+          <p class="text-secondary small mb-2"><?= h(t('gov.panels_intro')) ?></p>
           <div class="row g-2 mb-3">
-            <div class="col-6 col-md"><div class="card border-primary"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_city_health')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.stats_title')) ?></p></div></div></div>
-            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_engagement')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.analytics_title')) ?></p></div></div></div>
-            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_urban_issues')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.reports_list')) ?></p></div></div></div>
-            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_tree_registry')) ?></h6><p class="text-secondary small mb-0"><?= (int)($stats['environment']['trees_total'] ?? 0) ?> <?= h(t('gov.esg_trees_total')) ?></p></div></div></div>
-            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_esg')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.esg_dashboard_title')) ?></p></div></div></div>
+            <div class="col-6 col-md"><div class="card border-primary"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_city_health')) ?></h6><br><p class="text-secondary small mb-0"><?= h(t('gov.stats_title')) ?></p></div></div></div>
+            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_engagement')) ?></h6><br><p class="text-secondary small mb-0"><?= h(t('gov.analytics_title')) ?></p></div></div></div>
+            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_urban_issues')) ?></h6><br><p class="text-secondary small mb-0"><?= h(t('gov.reports_list')) ?></p></div></div></div>
+            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_tree_registry')) ?></h6><br><p class="text-secondary small mb-0"><?= (int)($stats['environment']['trees_total'] ?? 0) ?> <?= h(t('gov.esg_trees_total')) ?></p></div></div></div>
+            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_esg')) ?></h6><br><p class="text-secondary small mb-0"><?= h(t('gov.esg_dashboard_title')) ?></p></div></div></div>
           </div>
           <div class="row g-3 mb-3">
             <div class="col-12">
               <div class="card">
                 <div class="card-body">
-                  <h6 class="card-title mb-2"><?= h(t('gov.panel_city_health')) ?> – <?= h(t('gov.stats_title')) ?></h6>
+                  <h6 class="card-title mb-2"><?= h(t('gov.panel_city_health')) ?> – <?= h(t('gov.stats_title')) ?></h6><br>
                   <div class="row g-2">
                     <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_today')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_1d'] ?></span></div></div>
                     <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_7d')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_7d'] ?></span></div></div>
@@ -590,7 +591,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             <div class="col-12">
               <div class="card">
                 <div class="card-body">
-                  <h6 class="card-title mb-1"><?= h(t('gov.analytics_title')) ?></h6>
+                  <h6 class="card-title mb-1"><?= h(t('gov.analytics_title')) ?></h6><br>
                   <p class="text-secondary small mb-3"><?= h(t('gov.analytics_desc')) ?></p>
                   <a href="<?= h(app_url('/api/analytics.php?format=json')) ?>" class="btn btn-outline-primary btn-sm me-2" target="_blank" rel="noopener"><?= h(t('gov.analytics_export_json')) ?></a>
                   <a href="<?= h(app_url('/api/analytics.php?format=csv')) ?>" class="btn btn-outline-secondary btn-sm" download><?= h(t('gov.analytics_export_csv')) ?></a>
@@ -603,7 +604,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             <div class="col-12">
               <div class="card">
                 <div class="card-body">
-                  <h6 class="card-title mb-1"><?= h(t('gov.esg_dashboard_title')) ?></h6>
+                  <h6 class="card-title mb-1"><?= h(t('gov.esg_dashboard_title')) ?></h6><br>
                   <p class="text-secondary small mb-3"><?= h(t('gov.esg_dashboard_desc')) ?></p>
                   <div class="row g-2 mb-3">
                     <div class="col-md-4">
@@ -657,7 +658,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             <div class="col-12">
               <div class="card">
                 <div class="card-body">
-                  <h6 class="card-title mb-1"><?= h(t('gov.trees_needing_water_title')) ?></h6>
+                  <h6 class="card-title mb-1"><?= h(t('gov.trees_needing_water_title')) ?></h6><br>
                   <p class="text-secondary small mb-2"><?= h(t('gov.trees_needing_water_desc')) ?></p>
                   <p class="mb-2"><strong><?= (int)($stats['environment']['trees_needing_water'] ?? 0) ?></strong> <?= h(t('gov.esg_trees_water')) ?></p>
                   <button type="button" class="btn btn-outline-primary btn-sm" id="btnTreesNeedingWater"><?= h(t('gov.trees_needing_water_list')) ?></button>
@@ -668,11 +669,12 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
           </div>
 
           <?php if ($govAiUiEnabled): ?>
+          <p class="text-secondary small mb-2 mt-3"><?= h(t('gov.ai_summaries_intro')) ?></p>
           <div class="row g-3">
             <div class="col-md-6">
               <div class="card h-100">
                 <div class="card-body">
-                  <h6 class="card-title mb-1"><?= h(t('gov.ai_panel')) ?></h6>
+                  <h6 class="card-title mb-1"><?= h(t('gov.ai_panel')) ?></h6><br>
                   <p class="text-secondary small mb-3"><?= h(t('gov.ai_desc')) ?></p>
                   <button type="button" class="btn btn-primary btn-sm mb-3" id="btnGovAiSummary" <?= ai_configured() ? '' : 'disabled' ?>><?= h(t('gov.ai_request_summary')) ?></button>
                   <div id="govAiOutSummary" class="gov-ai-result border rounded p-3 bg-light small mt-2" style="min-height:80px;white-space:pre-wrap;"></div>
@@ -696,7 +698,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             <div class="col-12">
               <div class="card">
                 <div class="card-body">
-                  <h6 class="card-title mb-1"><?= h(t('gov.ai_report_title')) ?></h6>
+                  <h6 class="card-title mb-1"><?= h(t('gov.ai_report_title')) ?></h6><br>
                   <p class="text-secondary small mb-3"><?= h(t('gov.ai_report_desc')) ?></p>
                   <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
                     <label class="small mb-0"><?= h(t('gov.ai_report_type')) ?></label>
@@ -726,7 +728,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
         <div class="admin-tab-body" id="tab-reports" hidden>
           <div class="card">
             <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('gov.reports_list')) ?></h6>
+              <h6 class="card-title mb-2"><?= h(t('gov.reports_list')) ?></h6><br>
               <form method="get" class="d-flex flex-wrap gap-2 align-items-center mb-2">
                 <label for="govStatusFilter" class="text-secondary small"><?= h(t('gov.filter_status')) ?></label>
                 <select id="govStatusFilter" name="status_filter" onchange="this.form.submit()" class="form-select form-select-sm" style="max-width:240px">
@@ -803,17 +805,17 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
       btnTreesNeedingWater.disabled = true;
       fetch(url, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
         btnTreesNeedingWater.disabled = false;
-        if (!j.ok || !Array.isArray(j.data)) { treesNeedingWaterList.textContent = 'Nincs adat.'; treesNeedingWaterList.hidden = false; return; }
-        if (j.data.length === 0) { treesNeedingWaterList.textContent = 'Nincs öntözést igénylő fa.'; treesNeedingWaterList.hidden = false; return; }
+        if (!j.ok || !Array.isArray(j.data)) { treesNeedingWaterList.textContent = <?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>; treesNeedingWaterList.hidden = false; return; }
+        if (j.data.length === 0) { treesNeedingWaterList.textContent = <?= json_encode(t('gov.trees_water_empty'), JSON_UNESCAPED_UNICODE) ?>; treesNeedingWaterList.hidden = false; return; }
         var html = '<ul class="list-unstyled mb-0">';
         j.data.forEach(function(t){
-          var rec = (t.watering_volume_liters != null ? t.watering_volume_liters + ' L ajánlott' : '');
+          var rec = (t.watering_volume_liters != null ? t.watering_volume_liters + <?= json_encode(' ' . t('gov.liters_recommended'), JSON_UNESCAPED_UNICODE) ?> : '');
           html += '<li class="border-bottom py-1">#' + (t.id || '') + ' ' + (t.species || '') + ' – utoljára: ' + (t.last_watered || '—') + (rec ? ' · ' + rec : '') + '</li>';
         });
         html += '</ul>';
         treesNeedingWaterList.innerHTML = html;
         treesNeedingWaterList.hidden = false;
-      }).catch(function(){ btnTreesNeedingWater.disabled = false; treesNeedingWaterList.textContent = 'Hiba.'; treesNeedingWaterList.hidden = false; });
+      }).catch(function(){ btnTreesNeedingWater.disabled = false; treesNeedingWaterList.textContent = <?= json_encode(t('common.error_generic'), JSON_UNESCAPED_UNICODE) ?>; treesNeedingWaterList.hidden = false; });
     });
   }
 
@@ -873,17 +875,17 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   function downloadPdf(btnId){
     var block = btnId === 'btnPdfSummary' ? document.getElementById('govAiOutSummary') : document.getElementById('govAiOutEsg');
     if (!block || !block.getAttribute('data-pdf-content')) return;
-    var title = block.getAttribute('data-pdf-title') || 'Összefoglaló';
+    var title = block.getAttribute('data-pdf-title') || <?= json_encode(t('gov.ai_summary_title'), JSON_UNESCAPED_UNICODE) ?>;
     var content = block.getAttribute('data-pdf-content');
     var JsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-    if (!JsPDF) { alert('PDF könyvtár nem elérhető.'); return; }
+    if (!JsPDF) { alert(<?= json_encode(t('gov.pdf_lib_missing'), JSON_UNESCAPED_UNICODE) ?>); return; }
     var doc = new JsPDF();
     var y = 20;
     function addContent(){
       doc.setFontSize(12);
       doc.text(title, 14, y); y += 8;
       doc.setFontSize(9);
-      doc.text('Készült: ' + new Date().toLocaleString('hu-HU'), 14, y); y += 12;
+      doc.text(<?= json_encode(t('gov.pdf_created'), JSON_UNESCAPED_UNICODE) ?> + ' ' + new Date().toLocaleString(), 14, y); y += 12;
       var lines = doc.splitTextToSize(content, 180);
       doc.setFontSize(10);
       doc.text(lines, 14, y);
@@ -945,25 +947,25 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   }
   btnSum && btnSum.addEventListener('click', function(){
     if (!outSum) return;
-    outSum.textContent = 'Generálás...';
+    outSum.textContent = <?= json_encode(t('gov.generating'), JSON_UNESCAPED_UNICODE) ?>;
     document.getElementById('btnPdfSummary').classList.add('d-none');
     setBusy(true);
     postJson(aiUrl, { action:'generate', type:'summary' }).then(function(x){
       setBusy(false);
-      if (x.ok && x.j && x.j.ok) renderResult(outSum, document.getElementById('btnPdfSummary'), 'AI összefoglaló', x.j.data);
-      else outSum.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : ('Hiba: ' + (x.t || 'Ismeretlen'));
-    }).catch(function(){ setBusy(false); if(outSum) outSum.textContent='Hiba.'; });
+      if (x.ok && x.j && x.j.ok) renderResult(outSum, document.getElementById('btnPdfSummary'), <?= json_encode(t('gov.ai_summary_title'), JSON_UNESCAPED_UNICODE) ?>, x.j.data);
+      else outSum.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : (<?= json_encode(t('common.error_generic') . ': ', JSON_UNESCAPED_UNICODE) ?> + (x.t || <?= json_encode(t('common.error_unknown'), JSON_UNESCAPED_UNICODE) ?>));
+    }).catch(function(){ setBusy(false); if(outSum) outSum.textContent=<?= json_encode(t('common.error_generic'), JSON_UNESCAPED_UNICODE) ?>; });
   });
   btnEsg && btnEsg.addEventListener('click', function(){
     if (!outEsg) return;
-    outEsg.textContent = 'Generálás...';
+    outEsg.textContent = <?= json_encode(t('gov.generating'), JSON_UNESCAPED_UNICODE) ?>;
     document.getElementById('btnPdfEsg').classList.add('d-none');
     setBusy(true);
     postJson(aiUrl, { action:'generate', type:'esg' }).then(function(x){
       setBusy(false);
-      if (x.ok && x.j && x.j.ok) renderResult(outEsg, document.getElementById('btnPdfEsg'), 'ESG / fenntarthatóság', x.j.data);
-      else outEsg.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : ('Hiba: ' + (x.t || 'Ismeretlen'));
-    }).catch(function(){ setBusy(false); if(outEsg) outEsg.textContent='Hiba.'; });
+      if (x.ok && x.j && x.j.ok) renderResult(outEsg, document.getElementById('btnPdfEsg'), <?= json_encode(t('gov.esg_title'), JSON_UNESCAPED_UNICODE) ?>, x.j.data);
+      else outEsg.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : (<?= json_encode(t('common.error_generic') . ': ', JSON_UNESCAPED_UNICODE) ?> + (x.t || <?= json_encode(t('common.error_unknown'), JSON_UNESCAPED_UNICODE) ?>));
+    }).catch(function(){ setBusy(false); if(outEsg) outEsg.textContent=<?= json_encode(t('common.error_generic'), JSON_UNESCAPED_UNICODE) ?>; });
   });
   document.getElementById('btnPdfSummary') && document.getElementById('btnPdfSummary').addEventListener('click', function(){ downloadPdf('btnPdfSummary'); });
   document.getElementById('btnPdfEsg') && document.getElementById('btnPdfEsg').addEventListener('click', function(){ downloadPdf('btnPdfEsg'); });
@@ -972,13 +974,13 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
     btnReport.addEventListener('click', function(){
       var reportType = (document.getElementById('govReportType') && document.getElementById('govReportType').value) || 'summary';
       var timeframe = (document.getElementById('govReportTimeframe') && document.getElementById('govReportTimeframe').value) || 'last_90_days';
-      outReport.textContent = 'Generálás...';
+      outReport.textContent = <?= json_encode(t('gov.generating'), JSON_UNESCAPED_UNICODE) ?>;
       setBusy(true);
       postJson(aiUrl, { action:'generate', type: reportType, timeframe: timeframe }).then(function(x){
         setBusy(false);
-        if (x.ok && x.j && x.j.ok) renderResult(outReport, null, 'Jelentés', x.j.data);
-        else outReport.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : ('Hiba: ' + (x.t || 'Ismeretlen'));
-      }).catch(function(){ setBusy(false); if(outReport) outReport.textContent='Hiba.'; });
+        if (x.ok && x.j && x.j.ok) renderResult(outReport, null, <?= json_encode(t('gov.report_title'), JSON_UNESCAPED_UNICODE) ?>, x.j.data);
+        else outReport.textContent = (x.j && (x.j.error || x.j.message)) ? (x.j.error || x.j.message) : (<?= json_encode(t('common.error_generic') . ': ', JSON_UNESCAPED_UNICODE) ?> + (x.t || <?= json_encode(t('common.error_unknown'), JSON_UNESCAPED_UNICODE) ?>));
+      }).catch(function(){ setBusy(false); if(outReport) outReport.textContent=<?= json_encode(t('common.error_generic'), JSON_UNESCAPED_UNICODE) ?>; });
     });
   }
 
@@ -986,11 +988,11 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   function loadGovModules(){
     var list = document.getElementById('govModuleList');
     if (!list) return;
-    list.textContent = 'Betöltés...';
+    list.textContent = <?= json_encode(t('gov.loading'), JSON_UNESCAPED_UNICODE) ?>;
     fetch(modulesUrl, { credentials:'include' })
       .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
       .then(function(x){
-        if (!x.ok || !x.j || !x.j.ok) { list.textContent = 'Hiba a betöltésnél.'; return; }
+        if (!x.ok || !x.j || !x.j.ok) { list.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; return; }
         var mods = x.j.modules || [];
         list.innerHTML = mods.map(function(m){
           return '<div class="d-flex align-items-center justify-content-between border rounded p-2 mb-2">' +
@@ -1008,7 +1010,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
           });
         });
       })
-      .catch(function(){ list.textContent='Hiba a betöltésnél.'; });
+      .catch(function(){ list.textContent=<?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; });
   }
 })();
 </script>

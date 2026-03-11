@@ -15,6 +15,29 @@
 [data-theme="light"] .app-wrapper .btn:hover{background:#e2e8f0}
 [data-theme="light"] .bg-body-tertiary{background:#f1f5f9!important}
 
+/* Light: card és szöveges blokkok mindig olvashatók */
+[data-theme="light"] .card,[data-theme="light"] .card .card-body{
+  background-color:#fff!important;color:#0f172a!important;
+}
+[data-theme="light"] .card .card-title,[data-theme="light"] .card .text-secondary,[data-theme="light"] .card .small{
+  color:#334155!important;
+}
+[data-theme="light"] .card .text-secondary{color:#64748b!important}
+/* AI eredmény dobozok és bg-light blokkok – világos téma */
+[data-theme="light"] .gov-ai-result,[data-theme="light"] .app-wrapper .bg-light{
+  background-color:#f1f5f9!important;color:#0f172a!important;border-color:rgba(0,0,0,.1)!important;
+}
+/* Sötét téma: AI doboz és bg-light is olvasható maradjon */
+.app-wrapper .gov-ai-result{
+  color:var(--bs-body-color);
+  background-color:var(--bs-secondary-bg);
+}
+.app-wrapper .gov-ai-result.bg-light{background-color:var(--bs-secondary-bg)!important}
+.app-wrapper .card .card-body,.app-wrapper .card .card-title{color:var(--bs-body-color)}
+.app-wrapper .admin-chart-bar .label,.app-wrapper .admin-chart-bar .val{color:var(--bs-body-color)}
+.app-wrapper .border.rounded.p-2.bg-light{background-color:var(--bs-secondary-bg)!important;color:var(--bs-body-color)!important;border-color:var(--bs-border-color)!important}
+.app-wrapper .border.rounded.p-2.bg-light .small,.app-wrapper .border.rounded.p-2.bg-light ul{color:var(--bs-body-color)!important}
+
 .admin-map{height:calc(100vh - 260px);min-height:420px}
 .admin-list{max-height:52vh;overflow:auto;display:grid;gap:10px}
 .admin-item{overflow:hidden}

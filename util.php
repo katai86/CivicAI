@@ -41,7 +41,7 @@ set_error_handler(function(int $severity, string $message, string $file, int $li
     log_error($msg);
 
     if (is_api_request()) {
-        json_response(['ok' => false, 'error' => 'Szerver hiba (PHP).'], 500);
+        json_response(['ok' => false, 'error' => t('common.error_server_php')], 500);
     }
     return false; // let PHP handle for HTML
 });
@@ -50,12 +50,12 @@ set_exception_handler(function(Throwable $e) {
     log_error('Uncaught exception: ' . $e->getMessage() . " in " . $e->getFile() . ':' . $e->getLine());
 
     if (is_api_request()) {
-        json_response(['ok' => false, 'error' => 'Szerver hiba.'], 500);
+        json_response(['ok' => false, 'error' => t('common.error_server')], 500);
     }
 
     http_response_code(500);
-    echo "<h1>500 - Szerver hiba</h1>";
-    echo "<p>Hiba történt. Kérlek próbáld újra később.</p>";
+    echo "<h1>500 - " . htmlspecialchars(t('common.error_server'), ENT_QUOTES, 'UTF-8') . "</h1>";
+    echo "<p>" . htmlspecialchars(t('common.error_try_later'), ENT_QUOTES, 'UTF-8') . "</p>";
     exit;
 });
 
@@ -147,7 +147,7 @@ function require_admin(): void {
 function require_user(): void {
     start_secure_session();
     if (!empty($_SESSION['user_id'])) return;
-    json_response(['ok' => false, 'error' => 'Bejelentkezés szükséges.'], 401);
+    json_response(['ok' => false, 'error' => t('auth.login_required')], 401);
 }
 
 function current_user_id(): ?int {

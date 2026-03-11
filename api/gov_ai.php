@@ -82,7 +82,7 @@ if ($isAdmin) {
   $stmt->execute([':uid' => $uid]);
   $authority = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
   if (!$authority) {
-    json_response(['ok' => false, 'error' => 'Nincs hatóság hozzárendelve.'], 403);
+    json_response(['ok' => false, 'error' => t('gov.no_authority_assigned')], 403);
   }
   $authorityId = (int)$authority['id'];
   $city = trim((string)($authority['city'] ?? ''));

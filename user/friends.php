@@ -80,10 +80,10 @@ document.addEventListener('DOMContentLoaded', function(){
       .then(function(r){ return r.json(); })
       .then(function(j){
         if (j && j.ok) location.reload();
-        else alert(j && j.error ? j.error : 'Hiba történt.');
+        else alert(j && j.error ? j.error : <?= json_encode(t('user.error_generic'), JSON_UNESCAPED_UNICODE) ?>);
       })
       .catch(function(err){
-        alert('Hiba: ' + (err.message || 'Ismeretlen hiba'));
+        alert(<?= json_encode(t('common.error_generic') . ': ', JSON_UNESCAPED_UNICODE) ?> + (err.message || <?= json_encode(t('common.error_unknown'), JSON_UNESCAPED_UNICODE) ?>));
       })
       .finally(function(){
         if (btn) { btn.disabled = false; btn.textContent = origText; }
