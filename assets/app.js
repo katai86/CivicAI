@@ -949,9 +949,10 @@ function openModal(latlng){
 
   tempMarker = L.marker(latlng).addTo(map);
 
+  const isMobileFullscreen = document.body.classList.contains('civicai-mobile');
   const modal = document.createElement('div');
   modal.id = 'reportModal';
-  modal.className = 'modal-overlay';
+  modal.className = 'modal-overlay' + (isMobileFullscreen ? ' modal-fullscreen-mobile' : '');
   modal.innerHTML = `
     <div class="modal">
       <button class="modal-x" type="button" aria-label="${esc(t('modal.close'))}">×</button>
@@ -1070,6 +1071,18 @@ function openModal(latlng){
     </div>
   `;
   document.body.appendChild(modal);
+
+  if (isMobileFullscreen) {
+    const modalBox = modal.querySelector('.modal');
+    const mobileHeader = document.createElement('div');
+    mobileHeader.className = 'modal-header-mobile';
+    mobileHeader.innerHTML = `
+      <span class="modal-header-mobile-title">${esc(t('fab.report') || 'Bejelentés')}</span>
+      <button type="button" class="modal-header-mobile-close" aria-label="${esc(t('modal.close'))}">×</button>
+    `;
+    modalBox.insertBefore(mobileHeader, modalBox.firstChild);
+    mobileHeader.querySelector('.modal-header-mobile-close').addEventListener('click', closeModal);
+  }
 
   modal.querySelector('.modal-x').addEventListener('click', closeModal);
   modal.querySelector('#mCancel').addEventListener('click', closeModal);

@@ -117,3 +117,74 @@ html[data-theme="light"] body.civicai-mobile .card .card-title,
 html[data-theme="light"] body.civicai-mobile .section .item-title { color: #0f172a !important; }
 html[data-theme="light"] body.civicai-mobile .text-secondary { color: #64748b !important; }
 
+/* ===== Bejelentés: teljes képernyős nézet mobilra (nem popup) ===== */
+body.civicai-mobile .modal-overlay.modal-fullscreen-mobile {
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  background: var(--bg, #0f1721);
+}
+
+body.civicai-mobile .modal-fullscreen-mobile .modal {
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  height: 100%;
+  min-height: 100dvh;
+  border-radius: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  box-shadow: none;
+}
+
+body.civicai-mobile .modal-fullscreen-mobile .modal-header-mobile {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  background: var(--card, rgba(22,33,45,0.98));
+  border-bottom: 1px solid var(--border);
+  min-height: 48px;
+}
+
+body.civicai-mobile .modal-fullscreen-mobile .modal-header-mobile-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+body.civicai-mobile .modal-fullscreen-mobile .modal-header-mobile-close {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  color: var(--text);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+body.civicai-mobile .modal-fullscreen-mobile .modal-x {
+  display: none;
+}
+
+body.civicai-mobile .modal-fullscreen-mobile .modal-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+
+body.civicai-mobile .modal-fullscreen-mobile .modal-actions {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
