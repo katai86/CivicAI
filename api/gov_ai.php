@@ -211,6 +211,8 @@ $inputHash = hash('sha256', $taskType . '|' . $scopeTitle . '|' . $type . '|' . 
 $resp = $router->callJson($taskType, $prompt, [
   'max_tokens' => 900,
   'temperature' => 0.2,
+  'timeout' => 45,
+  'response_format' => 'json_object',
 ]);
 if (empty($resp['ok'])) {
   json_response(['ok' => false, 'error' => $resp['error'] ?? 'AI failed'], 502);

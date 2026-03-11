@@ -1,7 +1,10 @@
 -- =============================================================================
--- Összevont migráció – minden lépés feltételes (ha már létezik, kihagyás)
--- Futtatás: egy alkalommal, pl. mysql -u user -p db < 00_run_all_migrations_safe.sql
--- Migrációk sorrendje: 2026-03 … 2026-16 (demo_seed* nincs benne).
+-- OSSZES SQL MIGRACIO – egy lekérdezésben (phpMyAdmin: másold be, futtasd az egészet)
+-- Összevont migráció – minden lépés feltételes (ha már létezik, kihagyás).
+-- Tartalmazza: 2026-03 … 2026-21, report_status_log, report_attachments,
+--   map_layers, authorities, trees, ai_results, module_settings, stb.
+-- Futtatás: phpMyAdmin → válaszd az adatbázist → SQL fül → beillesztés → Indítás.
+-- Vagy parancssor: mysql -u user -p db < sql/00_run_all_migrations_safe.sql
 -- =============================================================================
 
 DELIMITER //
@@ -43,6 +46,32 @@ BEGIN
 END//
 
 DELIMITER ;
+
+-- ========== Alap táblák (ha nincs exportból: report_status_log, report_attachments) ==========
+CREATE TABLE IF NOT EXISTS report_status_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  report_id INT NOT NULL,
+  old_status VARCHAR(32) NULL,
+  new_status VARCHAR(32) NOT NULL,
+  note TEXT NULL,
+  changed_by VARCHAR(64) NULL,
+  changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_status_log_report (report_id),
+  KEY idx_status_log_report_changed (report_id, changed_at)
+);
+
+CREATE TABLE IF NOT EXISTS report_attachments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  report_id INT NOT NULL,
+  user_id INT NULL,
+  filename VARCHAR(255) NOT NULL,
+  stored_name VARCHAR(255) NOT NULL,
+  mime VARCHAR(120) NOT NULL,
+  size_bytes INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_att_report (report_id),
+  KEY idx_att_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ========== 2026-03 Admin dashboard ==========
 CALL add_column_if_not_exists('users', 'is_active', 'TINYINT(1) NOT NULL DEFAULT 1');

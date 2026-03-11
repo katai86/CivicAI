@@ -19,7 +19,8 @@ class MistralProvider implements AiProviderInterface
         }
 
         $endpoint = 'https://api.mistral.ai/v1/chat/completions';
-        $timeout = isset($options['timeout']) ? (int)$options['timeout'] : 6;
+        $timeout = isset($options['timeout']) ? max(10, (int)$options['timeout']) : 30;
+        $connectTimeout = min(15, (int)($options['connect_timeout'] ?? 15));
         $temperature = isset($options['temperature']) ? (float)$options['temperature'] : 0.2;
 
         $userContent = $prompt;
@@ -34,12 +35,15 @@ class MistralProvider implements AiProviderInterface
         $payload = [
             'model' => $model,
             'temperature' => $temperature,
-            'max_tokens' => $options['max_tokens'] ?? 512,
+            'max_tokens' => (int)($options['max_tokens'] ?? 512),
             'messages' => [
                 ['role' => 'system', 'content' => $options['system'] ?? 'You are a helpful assistant for a civic issue reporting platform. Return strictly JSON.'],
                 ['role' => 'user', 'content' => $userContent],
             ],
         ];
+        if (!empty($options['response_format']) && $options['response_format'] === 'json_object') {
+            $payload['response_format'] = ['type' => 'json_object'];
+        }
 
         $ch = curl_init($endpoint);
         curl_setopt_array($ch, [
@@ -50,16 +54,24 @@ class MistralProvider implements AiProviderInterface
             ],
             CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
             CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => $connectTimeout,
             CURLOPT_TIMEOUT => $timeout,
         ]);
 
         $res = curl_exec($ch);
         $err = curl_error($ch);
+        $errno = curl_errno($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         if ($res === false) {
-            return ['ok' => false, 'error' => $err ?: 'Mistral request failed'];
+            $msg = $err ?: 'Mistral request failed';
+            if ($errno === CURLE_OPERATION_TIMEDOUT) {
+                $msg = 'Az AI válasz túl sokáig tartott (időtúllépés). Próbáld újra, vagy növeld a timeout-ot.';
+            } elseif ($errno === CURLE_COULDNT_CONNECT) {
+                $msg = 'Nem sikerült csatlakozni a Mistral API-hoz. Ellenőrizd a hálózatot és a tűzfalat.';
+            }
+            return ['ok' => false, 'error' => $msg];
         }
 
         $json = json_decode($res, true);

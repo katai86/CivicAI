@@ -48,6 +48,32 @@ END//
 
 DELIMITER ;
 
+-- ========== Alap táblák (ha nincs exportból: report_status_log, report_attachments) ==========
+CREATE TABLE IF NOT EXISTS report_status_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  report_id INT NOT NULL,
+  old_status VARCHAR(32) NULL,
+  new_status VARCHAR(32) NOT NULL,
+  note TEXT NULL,
+  changed_by VARCHAR(64) NULL,
+  changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_status_log_report (report_id),
+  KEY idx_status_log_report_changed (report_id, changed_at)
+);
+
+CREATE TABLE IF NOT EXISTS report_attachments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  report_id INT NOT NULL,
+  user_id INT NULL,
+  filename VARCHAR(255) NOT NULL,
+  stored_name VARCHAR(255) NOT NULL,
+  mime VARCHAR(120) NOT NULL,
+  size_bytes INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_att_report (report_id),
+  KEY idx_att_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ========== 2026-03 Admin dashboard ==========
 CALL add_column_if_not_exists('users', 'is_active', 'TINYINT(1) NOT NULL DEFAULT 1');
 CALL add_index_if_not_exists('users', 'idx_users_is_active', '(is_active)');
