@@ -578,6 +578,19 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             </div>
           </div>
 
+          <div class="row g-3 mt-1">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h6 class="card-title mb-1"><?= h(t('gov.analytics_title')) ?></h6>
+                  <p class="text-secondary small mb-3"><?= h(t('gov.analytics_desc')) ?></p>
+                  <a href="<?= h(app_url('/api/analytics.php?format=json')) ?>" class="btn btn-outline-primary btn-sm me-2" target="_blank" rel="noopener"><?= h(t('gov.analytics_export_json')) ?></a>
+                  <a href="<?= h(app_url('/api/analytics.php?format=csv')) ?>" class="btn btn-outline-secondary btn-sm" download><?= h(t('gov.analytics_export_csv')) ?></a>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <?php if ($govAiUiEnabled): ?>
           <div class="row g-3">
             <div class="col-md-6">
