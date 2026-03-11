@@ -30,6 +30,14 @@ $MODULE_DEFS = [
       ['key' => 'ai_image_analysis_limit', 'label' => 'Napi max kép-elemzés (AI)', 'type' => 'number', 'placeholder' => '300'],
     ],
   ],
+  'openai' => [
+    'name' => 'OpenAI / ChatGPT',
+    'description' => 'Opcionális AI provider (kategorizálás, összefoglaló). API kulcs: platform.openai.com',
+    'settings' => [
+      ['key' => 'enabled', 'label' => 'Bekapcsolva', 'type' => 'checkbox'],
+      ['key' => 'api_key', 'label' => 'API kulcs', 'type' => 'password', 'mask' => true],
+    ],
+  ],
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

@@ -17,7 +17,8 @@ if (!$uid) {
 
 $defs = [
   ['key' => 'mistral', 'label' => 'AI (Mistral)', 'description' => 'AI panel a közig dashboardon (összefoglaló, ESG).'],
-  ['key' => 'fms', 'label' => 'FixMyStreet (FMS)', 'description' => 'Külső Open311 / FixMyStreet integráció UI elemei.'],
+  ['key' => 'openai', 'label' => 'AI (OpenAI/ChatGPT)', 'description' => 'AI panel – OpenAI provider (ha be van kapcsolva az adminban).'],
+  ['key' => 'fms', 'label' => 'FixMyStreet / Open311', 'description' => 'Külső Open311 / FixMyStreet integráció UI elemei.'],
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

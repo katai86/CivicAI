@@ -57,9 +57,9 @@ Ez a dokumentum a három prioritásos területet milestone-okra bontja. **Csak e
 - [x] **B2.3** docs/AI_SETUP.md: API kulcs (admin vs .env), limitek, teszt gomb.
 
 ### Milestone B3 – ChatGPT és FMS/Open311 modul definíció
-- [ ] **B3.1** admin_modules.php MODULE_DEFS: **chatgpt** (vagy openai) modul hozzáadása – enabled, api_key (opcionális: base_url ha más endpoint); backendben még nem kell hívni, csak a beállítási felület.
-- [ ] **B3.2** FMS/Open311: már van fms modul – ellenőrizni, hogy a gov és admin oldalakon a ki/be kapcsolók és a szinkron/export megfeleljenek ennek; ha kell, egy rövid „Open311” felirat vagy leírás a modul nevében (FixMyStreet / Open311 maradhat).
-- [ ] **B3.3** Gov oldal: a gov_modules lista (user_module_toggles) legyen összehangolva az admin MODULE_DEFS-szel – pl. ha adminban van „chatgpt”, a gov felületen is megjelenjen opcióként (bekapcsolható a felhasználónak).
+- [x] **B3.1** admin_modules.php: **openai** modul (OpenAI/ChatGPT) – enabled, api_key; csak beállítási felület.
+- [x] **B3.2** FMS: gov_modules felirat „FixMyStreet / Open311”; admin már FixMyStreet / Open311.
+- [x] **B3.3** gov_modules.php: openai opció hozzáadva, gov felületen megjelenik (user_module_toggles).
 
 ### Milestone B4 – AI provider választás (Mistral vs ChatGPT)
 - [ ] **B4.1** Ha a ChatGPT modul be van kapcsolva és van kulcs, az AiRouter vagy a report_create választhasson providert (pl. config vagy module_settings: „default_ai_provider” = mistral | openai).
@@ -78,14 +78,14 @@ Ez a dokumentum a három prioritásos területet milestone-okra bontja. **Csak e
 - **Jelmagyarázat:** adatbázisban/langban van fa réteg; a bejelentési flow-ban (report_create, kategóriák) nincs külön „fa feltöltés” vagy „fa bejelentés” típus, amit a user kiválaszthat.
 
 ### Milestone C1 – Fa réteg és adatmodell
-- [ ] **C1.1** Rögzíteni: trees tábla mezői, layer_key = 'trees' (vagy layer_type) – admin_layers és layers_public konzisztencia; a térképen a fa réteg látható és betöltődik.
-- [ ] **C1.2** Jelmagyarázat (legend): „Fa örökbe fogadás” / „Fa feltöltés” / „Fa öntözés” szövegek a lang fájlokban és a frontend legendában egyértelműen; link a fa réteghez.
-- [ ] **C1.3** Ha hiányzik: migráció vagy default layer a trees réteghez (aktív/inaktív), hogy minden környezetben legyen fa réteg.
+- [x] **C1.1** Rögzíteni: trees tábla mezői, layer_key = 'trees' (vagy layer_type) – admin_layers és layers_public konzisztencia; a térképen a fa réteg látható és betöltődik. (→ docs/TREE_LAYER.md)
+- [x] **C1.2** Jelmagyarázat (legend): „Fa örökbe fogadás” / „Fa feltöltés” / „Fa öntözés” szövegek a lang fájlokban és a frontend legendában egyértelműen; link a fa réteghez. (legend.tree_section, legend.tree_adopt_title, legend.tree_upload_title, legend.tree_water_title)
+- [x] **C1.3** Ha hiányzik: migráció vagy default layer a trees réteghez (aktív/inaktív), hogy minden környezetben legyen fa réteg. (sql/2026-17-trees-layer-default.sql; 00_run_all_migrations_safe.sql már tartalmazza.)
 
 ### Milestone C2 – „Fa feltöltés” a bejelentési flow-ban
-- [ ] **C2.1** Kategória vagy „típus” bővítés: a felhasználó a térképen / bejelentési űrlapon tudjon választani egy „Fa feltöltés” (vagy „Új fa”, „Fa bejelentés”) opciót – akár új kategória (pl. `tree_upload`), akár a meglévő „green” alatti speciális típus.
-- [ ] **C2.2** Ha „Fa feltöltés” van kiválasztva: a submit ne a klasszikus report_create legyen, hanem a tree_create API hívása (ugyanazzal a helyszínnel + opcionális adatokkal), vagy a report_create kapjon egy flag-et (report_type = tree) és a backend a trees táblába is írjon – egyértelmű spec kell.
-- [ ] **C2.3** Sikeres „fa feltöltés” után: visszajelzés (pl. „Fa rögzítve”), és a térképen megjelenik az új fa (refresh vagy push marker).
+- [x] **C2.1** Kategória vagy „típus” bővítés: a felhasználó a térképen / bejelentési űrlapon tudjon választani egy „Fa feltöltés” (vagy „Új fa”, „Fa bejelentés”) opciót – akár új kategória (pl. `tree_upload`), akár a meglévő „green” alatti speciális típus. (app.js: CAT_LABEL + buildCategoryOptions tree_upload; lang: modal.tree_upload.)
+- [x] **C2.2** Ha „Fa feltöltés” van kiválasztva: a submit ne a klasszikus report_create legyen, hanem a tree_create API hívása (ugyanazzal a helyszínnel + opcionális adatokkal), vagy a report_create kapjon egy flag-et (report_type = tree) és a backend a trees táblába is írjon – egyértelmű spec kell. (Frontend: category === 'tree_upload' → FormData POST api/tree_create.php; bejelentkezés kötelező.)
+- [x] **C2.3** Sikeres „fa feltöltés” után: visszajelzés (pl. „Fa rögzítve”), és a térképen megjelenik az új fa (refresh vagy push marker). (tree.submit_success; closeModal(); loadTrees().)
 
 ### Milestone C3 – Fa örökbe fogadás (adopt)
 - [ ] **C3.1** Térképen: fa markerre kattintva legyen lehetőség „Örökbe fogadom” – ha be van jelentkezve a user, tree_adopt API hívás; ha nincs, átirányítás loginra.

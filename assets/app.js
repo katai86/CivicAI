@@ -110,7 +110,8 @@ const CAT_LABEL = {
   green:'Zöldterület / veszélyes fa',
   traffic:'Közlekedés / tábla',
   idea:'Ötlet / javaslat',
-  civil_event:'Civil esemény'
+  civil_event:'Civil esemény',
+  tree_upload:'Fa feltöltés'
 };
 
 const ICON = {
@@ -121,7 +122,8 @@ const ICON = {
   green:    { tw: '1f333', color:'#27ae60' }, // 🌳
   traffic:  { tw: '1f6a6', color:'#9b59b6' }, // 🚦
   idea:     { tw: '2757',  color:'#ff7a00' }, // ❗
-  civil_event: { tw: '1f91d', color:'#0ea5e9' } // 🤝
+  civil_event: { tw: '1f91d', color:'#0ea5e9' }, // 🤝
+  tree_upload: { tw: '1f333', color:'#27ae60' }  // 🌳
 };
 
 function catLabel(cat){ return CAT_LABEL[cat] || cat; }
@@ -154,7 +156,8 @@ function buildCategoryOptions(){
       { id:'trash', label:'Szemét / illegális' },
       { id:'green', label:'Zöldterület / veszélyes fa' },
       { id:'traffic', label:'Közlekedés / tábla' },
-      { id:'idea', label:'Ötlet / javaslat' }
+      { id:'idea', label:'Ötlet / javaslat' },
+      { id:'tree_upload', label:'Fa feltöltés' }
     );
   }
   if (canUseCivil()) {
@@ -1142,9 +1145,16 @@ function openModal(latlng){
       consent_marketing = 0;
     }
     
-    if (!description){
+    if (!description && category !== 'tree_upload'){
       alert('Kérlek írj leírást!');
       return;
+    }
+
+    if (category === 'tree_upload') {
+      if (!IS_LOGGED_IN) {
+        alert(t('modal.tree_upload_login') || 'Fa feltöltéshez be kell jelentkezned.');
+        return;
+      }
     }
 
     // nem anonim -> név kell
@@ -1177,7 +1187,7 @@ function openModal(latlng){
       elNearby200.style.display = 'none';
       elNearby200.textContent = '';
     }
-    if (category !== 'civil_event') {
+    if (category !== 'civil_event' && category !== 'tree_upload') {
       try {
         const near200 = await fetchJson(
           `${API_NEARBY}?lat=${encodeURIComponent(latlng.lat)}&lng=${encodeURIComponent(latlng.lng)}&category=${encodeURIComponent(category)}&radius=200`
@@ -1189,9 +1199,9 @@ function openModal(latlng){
       } catch (e) { console.warn('nearby 200m check failed', e); }
     }
 
-    // Duplikáció ellenőrzés (50m) – civil eseménynél nem fut
+    // Duplikáció ellenőrzés (50m) – civil esemény és fa feltöltésnél nem fut
     let force = false;
-    if (category !== 'civil_event') {
+    if (category !== 'civil_event' && category !== 'tree_upload') {
       try{
         const near = await fetchJson(
           `${API_NEARBY}?lat=${encodeURIComponent(latlng.lat)}&lng=${encodeURIComponent(latlng.lng)}&category=${encodeURIComponent(category)}&radius=50`
@@ -1215,6 +1225,28 @@ function openModal(latlng){
     btn.textContent = 'Beküldés...';
 
     try{
+      if (category === 'tree_upload') {
+        const formData = new FormData();
+        formData.append('lat', String(latlng.lat));
+        formData.append('lng', String(latlng.lng));
+        formData.append('species', title || '');
+        formData.append('note', description || '');
+        const fileInput = modal.querySelector('#mImage');
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+          formData.append('photo', fileInput.files[0]);
+        }
+        const res = await fetch(API_TREE_CREATE, { method: 'POST', body: formData, credentials: 'same-origin' });
+        const j = await res.json();
+        if (!j || !j.ok) {
+          throw new Error(j && j.error ? j.error : 'Fa feltöltés sikertelen.');
+        }
+        alert(t('tree.submit_success') || 'Fa rögzítve. Megjelenik a térképen.');
+        closeModal();
+        loadTrees().catch(e => console.warn('loadTrees after tree_create', e));
+        btn.disabled = false;
+        btn.textContent = t('modal.submit') || 'Beküldés';
+        return;
+      }
       if (category === 'civil_event') {
         if (!event_start || !event_end) {
           alert('Az esemény kezdetét és végét add meg.');

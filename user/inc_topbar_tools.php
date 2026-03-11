@@ -6,8 +6,7 @@ $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $path = ($path !== null && $path !== '') ? $path : '/';
 $langBase = function_exists('app_url') ? app_url($path) : ($path . '?');
 ?>
-<div class="topbar-right">
-  <div class="topbar-tools">
+<div class="topbar-tools">
     <button type="button" id="themeToggle" class="topbtn topbtn-icon" aria-label="<?= htmlspecialchars(function_exists('t') ? t('theme.aria') : 'Téma', ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(function_exists('t') ? t('theme.dark') : 'Sötét', ENT_QUOTES, 'UTF-8') ?>" data-title-light="<?= htmlspecialchars(function_exists('t') ? t('theme.light') : 'Világos', ENT_QUOTES, 'UTF-8') ?>" data-title-dark="<?= htmlspecialchars(function_exists('t') ? t('theme.dark') : 'Sötét', ENT_QUOTES, 'UTF-8') ?>">
       <span class="theme-icon theme-sun" aria-hidden="true">☀️</span>
       <span class="theme-icon theme-moon" aria-hidden="true">🌙</span>
@@ -23,4 +22,3 @@ $langBase = function_exists('app_url') ? app_url($path) : ($path . '?');
       </div>
     </div>
   </div>
-</div>
