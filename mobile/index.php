@@ -48,6 +48,9 @@ $LANG_JS = lang_array_for_js();
       <?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?>
     </div>
     <div class="right">
+      <a href="<?= htmlspecialchars(app_url('/faq.php'), ENT_QUOTES, 'UTF-8') ?>" class="headerButton" aria-label="<?= htmlspecialchars(t('nav.faq'), ENT_QUOTES, 'UTF-8') ?>">
+        <i class="bi bi-question-circle"></i>
+      </a>
       <a href="#" class="headerButton toggle-searchbox" aria-label="<?= htmlspecialchars(t('search.aria'), ENT_QUOTES, 'UTF-8') ?>">
         <i class="bi bi-search"></i>
       </a>

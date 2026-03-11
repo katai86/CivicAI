@@ -26,6 +26,10 @@ if ($lat === null || $lng === null || !is_finite($lat) || !is_finite($lng)) {
 
 $species = isset($_POST['species']) ? mb_substr(trim((string)$_POST['species']), 0, 120) : null;
 $note = isset($_POST['note']) ? mb_substr(trim((string)$_POST['note']), 0, 500) : null;
+$trunkDiameter = isset($_POST['trunk_diameter_cm']) && is_numeric($_POST['trunk_diameter_cm']) ? (float)$_POST['trunk_diameter_cm'] : null;
+$canopyDiameter = isset($_POST['canopy_diameter_m']) && is_numeric($_POST['canopy_diameter_m']) ? (float)$_POST['canopy_diameter_m'] : null;
+if ($trunkDiameter !== null && ($trunkDiameter < 0 || $trunkDiameter > 500)) $trunkDiameter = null;
+if ($canopyDiameter !== null && ($canopyDiameter < 0 || $canopyDiameter > 50)) $canopyDiameter = null;
 
 $photoFilename = null;
 if (!empty($_FILES['photo']) && is_array($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK && $_FILES['photo']['size'] > 0) {
@@ -70,13 +74,15 @@ try {
   $pdo->beginTransaction();
 
   $stmt = $pdo->prepare("
-    INSERT INTO trees (lat, lng, address, species, health_status, risk_level, public_visible, gov_validated, created_at)
-    VALUES (:lat, :lng, NULL, :species, NULL, NULL, 1, 0, NOW())
+    INSERT INTO trees (lat, lng, address, species, trunk_diameter, canopy_diameter, health_status, risk_level, public_visible, gov_validated, created_at)
+    VALUES (:lat, :lng, NULL, :species, :trunk, :canopy, NULL, NULL, 1, 0, NOW())
   ");
   $stmt->execute([
     ':lat' => $lat,
     ':lng' => $lng,
     ':species' => $species ?: null,
+    ':trunk' => $trunkDiameter,
+    ':canopy' => $canopyDiameter,
   ]);
   $treeId = (int)$pdo->lastInsertId();
   if ($treeId <= 0) {

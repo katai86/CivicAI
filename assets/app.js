@@ -13,6 +13,7 @@ const API_TREES = `${BASE}/api/trees_list.php`;
 const API_TREE_ADOPT = `${BASE}/api/tree_adopt.php`;
 const API_TREE_WATER = `${BASE}/api/tree_watering.php`;
 const API_TREE_CREATE = `${BASE}/api/tree_create.php`;
+const API_TREE_ANALYZE_PHOTO = `${BASE}/api/tree_analyze_photo.php`;
 const API_TREE_HEALTH_ANALYZE = `${BASE}/api/tree_health_analyze.php`;
 const API_CIVIL_EVENT_CREATE = `${BASE}/api/civil_event_create.php`;
 const API_REPORT_LIKE = `${BASE}/api/report_like.php`;
@@ -966,14 +967,24 @@ function openModal(latlng){
 
         <div id="mTreeHint" class="modal-note box" style="display:none"></div>
 
+        <div id="mImageBlock">
+          <label>${esc(t('modal.image_optional'))}</label>
+          <input id="mImage" type="file" accept="image/*" class="modal-file">
+          <button type="button" id="mAnalyzePhotoBtn" class="btn-soft" style="display:none; margin-top:8px">${esc(t('tree.analyze_photo_btn') || 'Fotó elemzése (AI)')}</button>
+        </div>
+
         <label id="mTitleLabel">${esc(t('modal.category'))} – rövid cím</label>
         <input id="mTitle" maxlength="120" placeholder="${esc(t('modal.title_placeholder'))}">
 
         <label id="mDescLabel">Leírás</label>
         <textarea id="mDesc" rows="4" maxlength="5000" placeholder="${esc(t('modal.desc_placeholder'))}"></textarea>
 
-        <label>${esc(t('modal.image_optional'))}</label>
-        <input id="mImage" type="file" accept="image/*" class="modal-file">
+        <div id="mTreeSizes" style="display:none">
+          <label>${esc(t('tree.trunk_label') || 'Törzsméret (cm, opcionális)')}</label>
+          <input id="mTrunkDiameter" type="number" min="0" max="500" step="0.1" placeholder="pl. 45">
+          <label>${esc(t('tree.canopy_label') || 'Koronaméret (m, opcionális)')}</label>
+          <input id="mCanopyDiameter" type="number" min="0" max="50" step="0.1" placeholder="pl. 8">
+        </div>
 
         <div id="mReportFields">
         <div id="mEventFields" style="display:none">
@@ -1171,6 +1182,16 @@ function openModal(latlng){
       mTreeHint.style.display = isTree ? 'block' : 'none';
       mTreeHint.textContent = t('modal.tree_hint') || 'A fa helye: a térképen kattintott pont.';
     }
+    const mImageBlock = modal.querySelector('#mImageBlock');
+    const mTreeSizes = modal.querySelector('#mTreeSizes');
+    const mAnalyzePhotoBtn = modal.querySelector('#mAnalyzePhotoBtn');
+    if (mTreeSizes) mTreeSizes.style.display = isTree ? 'block' : 'none';
+    if (mAnalyzePhotoBtn) mAnalyzePhotoBtn.style.display = isTree ? 'block' : 'none';
+    if (mImageBlock) {
+      const scroll = modal.querySelector('.modal-scroll');
+      const target = isTree ? mTitleLabel : (modal.querySelector('#mTreeSizes') || mReportFields);
+      if (scroll && target) scroll.insertBefore(mImageBlock, target);
+    }
     if (isTree) {
       if (mTitleLabel) mTitleLabel.textContent = t('modal.tree_species_label') || t('tree.species_placeholder') || 'Fajta';
       if (mDescLabel) mDescLabel.textContent = t('modal.tree_note_label') || t('tree.note_placeholder') || 'Megjegyzés';
@@ -1190,6 +1211,36 @@ function openModal(latlng){
   if (elCategory) elCategory.addEventListener('change', syncCategory);
 
   syncCategory();
+
+  modal.querySelector('#mAnalyzePhotoBtn')?.addEventListener('click', async () => {
+    const fileInput = modal.querySelector('#mImage');
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+      alert(t('tree.health_analyze_need_photo') || 'Válassz egy képet a fáról.');
+      return;
+    }
+    const btn = modal.querySelector('#mAnalyzePhotoBtn');
+    const origText = btn?.textContent;
+    if (btn) { btn.disabled = true; btn.textContent = t('tree.analyze_photo_analyzing') || 'Elemzés...'; }
+    try {
+      const fd = new FormData();
+      fd.append('photo', fileInput.files[0]);
+      const res = await fetch(API_TREE_ANALYZE_PHOTO, { method: 'POST', body: fd, credentials: 'same-origin' });
+      const j = await res.json().catch(() => null);
+      if (j && j.ok) {
+        const mTitle = modal.querySelector('#mTitle');
+        if (j.species && mTitle) mTitle.value = j.species;
+        const mTrunk = modal.querySelector('#mTrunkDiameter');
+        if (j.trunk_diameter_cm != null && mTrunk) mTrunk.value = String(j.trunk_diameter_cm);
+        const mCanopy = modal.querySelector('#mCanopyDiameter');
+        if (j.canopy_diameter_m != null && mCanopy) mCanopy.value = String(j.canopy_diameter_m);
+      } else {
+        alert(j && j.error ? j.error : (t('common.error_server') || 'Elemzés sikertelen.'));
+      }
+    } catch (e) {
+      alert(t('common.error_server') || 'Elemzés sikertelen.');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = origText || (t('tree.analyze_photo_btn') || 'Fotó elemzése (AI)'); }
+  });
 
   // Kategória javaslat a leírás alapján (Phase 4 – szabályalapú javaslat)
   let suggestTmo = null;
@@ -1343,6 +1394,10 @@ function openModal(latlng){
         formData.append('lng', String(latlng.lng));
         formData.append('species', title || '');
         formData.append('note', description || '');
+        const trunkVal = modal.querySelector('#mTrunkDiameter')?.value;
+        const canopyVal = modal.querySelector('#mCanopyDiameter')?.value;
+        if (trunkVal != null && trunkVal !== '') formData.append('trunk_diameter_cm', trunkVal);
+        if (canopyVal != null && canopyVal !== '') formData.append('canopy_diameter_m', canopyVal);
         const fileInput = modal.querySelector('#mImage');
         if (fileInput && fileInput.files && fileInput.files[0]) {
           formData.append('photo', fileInput.files[0]);

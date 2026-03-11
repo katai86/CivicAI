@@ -155,7 +155,10 @@ class AiRouter
      * @param string $mimeType  image/jpeg, image/png, image/webp
      * @return array ['ok'=>bool, 'data'=>array|null, 'error'=>string]
      */
-    public function callWithImage(string $taskType, string $prompt, string $imagePath, string $mimeType = 'image/jpeg'): array
+    /**
+     * @param string|null $systemOverride Optional system message (e.g. for tree species/size analysis instead of health).
+     */
+    public function callWithImage(string $taskType, string $prompt, string $imagePath, string $mimeType = 'image/jpeg', ?string $systemOverride = null): array
     {
         if (!$this->isEnabled() || !$this->withinLimit('image_classification')) {
             return ['ok' => false, 'error' => 'AI disabled or image analysis limit reached'];
@@ -187,11 +190,12 @@ class AiRouter
             }
         }
 
+        $system = $systemOverride ?? 'You are a tree health analyst. Reply with a JSON object only. Use keys: status (exactly one of: healthy, dry, disease_suspected), confidence (0-1), suggestion (short string).';
         $options = [
             'timeout' => 15,
             'temperature' => 0.2,
             'max_tokens' => 256,
-            'system' => 'You are a tree health analyst. Reply with a JSON object only. Use keys: status (exactly one of: healthy, dry, disease_suspected), confidence (0-1), suggestion (short string).',
+            'system' => $system,
             'image_base64' => $base64,
             'image_mime' => $mimeType,
         ];
