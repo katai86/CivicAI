@@ -98,9 +98,11 @@ A cél: **minimal change**, **moduláris bővítés**, és hogy minden épüljö
 
 ---
 
-### M4 — Tree cadastre kiegészítés (Smart Tree Registry)
+### M4 — Tree cadastre kiegészítés (Smart Tree Registry) ✅
 
 **Cél:** Fa nyilvántartás teljesebb és szerkeszthető.
+
+**Megvalósítva:** trees.notes (2026-20), api/tree_edit.php (admin/gov/adopter), tree_logs image_path.
 
 - **Mezők:** tree_id, lat, lng, species, planting_date (vagy planting_year), age (vagy estimated_age), health_status, caretaker_user_id (vagy adopted_by_user_id), last_watering, notes. Ahol hiányzik (pl. notes), bővítés.
 - **Műveletek:** térképről új fa (van), fa adat szerkesztése (admin/gov vagy tulajdonos), fotó feltöltés fához (tree_logs vagy tree_attachments).
@@ -118,9 +120,11 @@ A cél: **minimal change**, **moduláris bővítés**, és hogy minden épüljö
 
 ---
 
-### M6 — AI tree monitoring (fotó → egészség)
+### M6 — AI tree monitoring (fotó → egészség) ✅
 
 **Cél:** Fotó feltöltés → AI elemzés → egyszerű egészségi javaslat.
+
+**Megvalósítva:** api/tree_health_analyze.php, OpenAI vision, AiRouter::callWithImage, fa popup „Egészség elemzés”.
 
 - **Bemenet:** fa fotó (feltöltés).
 - **AI elemzés:** levél szín, szárazság, látható betegség jelek (prompt + vision API, ahol van).

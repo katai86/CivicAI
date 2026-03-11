@@ -146,5 +146,71 @@ class AiRouter
         }
         return ['ok' => false, 'error' => $last['error'] ?? 'AI failed'];
     }
+
+    /**
+     * Kép alapú elemzés (pl. fa egészség) – image_classification limit.
+     * Támogatott: OpenAI (vision) és Mistral (Pixtral / mistral-small stb. vision modellek).
+     *
+     * @param string $imagePath teljes fájlút a feltöltött képhez
+     * @param string $mimeType  image/jpeg, image/png, image/webp
+     * @return array ['ok'=>bool, 'data'=>array|null, 'error'=>string]
+     */
+    public function callWithImage(string $taskType, string $prompt, string $imagePath, string $mimeType = 'image/jpeg'): array
+    {
+        if (!$this->isEnabled() || !$this->withinLimit('image_classification')) {
+            return ['ok' => false, 'error' => 'AI disabled or image analysis limit reached'];
+        }
+        if (!($this->provider instanceof \OpenAIProvider) && !($this->provider instanceof \MistralProvider)) {
+            return ['ok' => false, 'error' => 'Tree health analysis requires OpenAI or Mistral (vision).'];
+        }
+        if (!is_file($imagePath) || !is_readable($imagePath)) {
+            return ['ok' => false, 'error' => 'Image file not found or not readable'];
+        }
+        $imageData = @file_get_contents($imagePath);
+        if ($imageData === false) {
+            return ['ok' => false, 'error' => 'Failed to read image'];
+        }
+        $base64 = base64_encode($imageData);
+
+        if ($this->provider instanceof \OpenAIProvider) {
+            $model = (string)(function_exists('get_module_setting') ? (get_module_setting('openai', 'model') ?: '') : '');
+            if ($model === '' && defined('OPENAI_MODEL')) {
+                $model = (string) OPENAI_MODEL;
+            }
+            if ($model === '') {
+                $model = 'gpt-4o-mini';
+            }
+        } else {
+            $model = (string)(defined('AI_VISION_MODEL') ? AI_VISION_MODEL : (defined('AI_TEXT_MODEL') ? AI_TEXT_MODEL : ''));
+            if ($model === '') {
+                $model = 'mistral-small-latest';
+            }
+        }
+
+        $options = [
+            'timeout' => 15,
+            'temperature' => 0.2,
+            'max_tokens' => 256,
+            'system' => 'You are a tree health analyst. Reply with a JSON object only. Use keys: status (exactly one of: healthy, dry, disease_suspected), confidence (0-1), suggestion (short string).',
+            'image_base64' => $base64,
+            'image_mime' => $mimeType,
+        ];
+
+        $resp = $this->provider->complete($model, $prompt, $options);
+        if (empty($resp['ok'])) {
+            return ['ok' => false, 'error' => $resp['error'] ?? 'Vision API failed'];
+        }
+        $content = (string)($resp['content'] ?? '');
+        $parsed = json_decode($content, true);
+        if (!is_array($parsed)) {
+            $parsed = null;
+        }
+        return [
+            'ok' => true,
+            'data' => $parsed,
+            'raw' => $resp['raw'] ?? null,
+            'model' => $resp['model'] ?? $model,
+        ];
+    }
 }
 

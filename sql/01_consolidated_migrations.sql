@@ -366,6 +366,9 @@ CREATE TABLE IF NOT EXISTS ai_results (
   KEY idx_ai_results_input (input_hash)
 );
 
+-- ========== 2026-20 M4 trees.notes ==========
+CALL add_column_if_not_exists('trees', 'notes', 'TEXT NULL');
+
 -- ========== Segéd procedure-ök eltávolítása ==========
 DROP PROCEDURE IF EXISTS add_column_if_not_exists;
 DROP PROCEDURE IF EXISTS add_index_if_not_exists;

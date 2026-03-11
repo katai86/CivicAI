@@ -13,6 +13,7 @@ const API_TREES = `${BASE}/api/trees_list.php`;
 const API_TREE_ADOPT = `${BASE}/api/tree_adopt.php`;
 const API_TREE_WATER = `${BASE}/api/tree_watering.php`;
 const API_TREE_CREATE = `${BASE}/api/tree_create.php`;
+const API_TREE_HEALTH_ANALYZE = `${BASE}/api/tree_health_analyze.php`;
 const API_CIVIL_EVENT_CREATE = `${BASE}/api/civil_event_create.php`;
 const API_REPORT_LIKE = `${BASE}/api/report_like.php`;
 const GEO_SEARCH = 'https://nominatim.openstreetmap.org/search';
@@ -523,6 +524,36 @@ map.on('popupopen', (e) => {
         }
       });
     }
+
+    const healthForm = treeActions.querySelector('.tree-health-form');
+    if (healthForm && treeId > 0) {
+      healthForm.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const photoInput = healthForm.querySelector('.tree-health-photo');
+        if (!photoInput || !photoInput.files || !photoInput.files[0]) {
+          alert((window.LANG && window.LANG['tree.health_analyze_need_photo']) ? window.LANG['tree.health_analyze_need_photo'] : 'Válassz egy képet a fáról.');
+          return;
+        }
+        const fd = new FormData();
+        fd.append('tree_id', String(treeId));
+        fd.append('photo', photoInput.files[0]);
+        const resultEl = healthForm.querySelector('.tree-health-result');
+        if (resultEl) resultEl.textContent = (window.LANG && window.LANG['tree.health_analyzing']) ? window.LANG['tree.health_analyzing'] : 'Elemzés...';
+        try {
+          const res = await fetch(API_TREE_HEALTH_ANALYZE, { method: 'POST', body: fd });
+          const j = await res.json().catch(() => null);
+          if (!res.ok || !j || !j.ok) {
+            if (resultEl) resultEl.textContent = (j && j.error) ? j.error : 'Hiba';
+            return;
+          }
+          const statusLabel = (window.LANG && window.LANG['tree.health_status_' + j.status]) ? window.LANG['tree.health_status_' + j.status] : j.status;
+          if (resultEl) resultEl.textContent = statusLabel + (j.suggestion ? ': ' + j.suggestion : '');
+          healthForm.reset();
+        } catch (err) {
+          if (resultEl) resultEl.textContent = (window.LANG && window.LANG['tree.water_error']) ? window.LANG['tree.water_error'] : 'Hiba';
+        }
+      });
+    }
   }
 });
 
@@ -592,6 +623,11 @@ async function loadTrees(){
               <input type="number" name="water_amount" min="0" step="0.5" placeholder="${window.LANG && window.LANG['tree.water_amount_placeholder'] ? window.LANG['tree.water_amount_placeholder'] : 'Liter'}" style="max-width:90px">
               <input type="file" name="photo" accept="image/*" style="max-width:150px">
               <button type="submit" class="btn-soft">${esc(window.LANG && window.LANG['tree.action_water'] ? window.LANG['tree.action_water'] : 'Öntözés naplózása')}</button>
+            </form>
+            <form class="tree-health-form" enctype="multipart/form-data" style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-top:4px">
+              <input type="file" name="photo" accept="image/*" class="tree-health-photo" style="max-width:140px">
+              <button type="submit" class="btn-soft btn-tree-health">${esc(window.LANG && window.LANG['tree.health_analyze'] ? window.LANG['tree.health_analyze'] : 'Egészség elemzés')}</button>
+              <span class="tree-health-result small text-secondary"></span>
             </form>
           </div>
         </div>

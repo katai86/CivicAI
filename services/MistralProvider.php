@@ -22,13 +22,22 @@ class MistralProvider implements AiProviderInterface
         $timeout = isset($options['timeout']) ? (int)$options['timeout'] : 6;
         $temperature = isset($options['temperature']) ? (float)$options['temperature'] : 0.2;
 
+        $userContent = $prompt;
+        if (!empty($options['image_base64']) && is_string($options['image_base64'])) {
+            $mime = isset($options['image_mime']) ? (string)$options['image_mime'] : 'image/jpeg';
+            $userContent = [
+                ['type' => 'text', 'text' => $prompt],
+                ['type' => 'image_url', 'image_url' => 'data:' . $mime . ';base64,' . $options['image_base64']],
+            ];
+        }
+
         $payload = [
             'model' => $model,
             'temperature' => $temperature,
             'max_tokens' => $options['max_tokens'] ?? 512,
             'messages' => [
                 ['role' => 'system', 'content' => $options['system'] ?? 'You are a helpful assistant for a civic issue reporting platform. Return strictly JSON.'],
-                ['role' => 'user', 'content' => $prompt],
+                ['role' => 'user', 'content' => $userContent],
             ],
         ];
 
