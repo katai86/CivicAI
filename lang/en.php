@@ -34,6 +34,7 @@ return [
     'legend.tree_upload_title' => 'Add tree',
     'legend.tree_water_title' => 'Water tree',
     'tree.health' => 'Status',
+    'tree.age' => 'Age',
     'tree.risk' => 'Risk',
     'tree.health_good' => 'Good',
     'tree.health_fair' => 'Fair',

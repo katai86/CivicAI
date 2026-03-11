@@ -110,16 +110,11 @@ A cél: **minimal change**, **moduláris bővítés**, és hogy minden épüljö
 
 ---
 
-### M5 — Tree map layer színkód (health)
+### M5 — Tree map layer színkód (health) ✅
 
 **Cél:** Térképen a fa réteg szín szerint jelzi az állapotot.
 
-- **Zöld:** healthy / good  
-- **Sárga:** needs attention / fair  
-- **Piros:** unhealthy / poor, critical  
-- **Popup:** species, age, health, last watering, caretaker (meglévő adatból).
-
-**Kimenet:** app.js (vagy trees réteg kód) – marker szín `health_status` alapján; popup tartalma egységes.
+**Megvalósítva:** `treeIcon()`: health_status poor/critical/unhealthy vagy risk_level high/medium → piros; fair/needs_attention vagy öntözés késő → sárga; egyébként zöld (healthy). Popup: species, cím, életkor (estimated_age vagy év planting_year alapján), állapot, kockázat, öntözés/gondozó (meglévő actionsHtml). Lang: tree.age.
 
 ---
 

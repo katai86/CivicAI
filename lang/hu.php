@@ -34,6 +34,7 @@ return [
     'legend.tree_upload_title' => 'Fa feltöltés',
     'legend.tree_water_title' => 'Fa öntözés',
     'tree.health' => 'Állapot',
+    'tree.age' => 'Életkor',
     'tree.risk' => 'Kockázat',
     'tree.health_good' => 'Jó',
     'tree.health_fair' => 'Kielégítő',

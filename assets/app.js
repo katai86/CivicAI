@@ -275,17 +275,28 @@ function greenActionIcon(){
 }
 
 function treeIcon(tree){
+  // M5: green = healthy/good, yellow = needs attention/fair, red = unhealthy/poor/critical
   const colors = {
+    healthy: '#22c55e',
+    needs_attention: '#eab308',
+    unhealthy: '#dc2626',
     adopted: '#3b82f6',
-    needs_water: '#eab308',
-    dangerous: '#dc2626',
     default: '#22c55e'
   };
   let ring = colors.default;
   if (tree) {
-    if (tree.risk_level === 'high' || tree.risk_level === 'medium') ring = colors.dangerous;
-    else if (tree.adopted_by_user_id) ring = colors.adopted;
-    else if (tree.last_watered === null || (tree.last_watered && isOlderThanDays(tree.last_watered, 7))) ring = colors.needs_water;
+    const hs = (tree.health_status || '').toLowerCase();
+    const unhealthyStatus = ['poor', 'critical', 'unhealthy'];
+    const needsAttentionStatus = ['fair', 'needs_attention'];
+    if (unhealthyStatus.includes(hs) || tree.risk_level === 'high' || tree.risk_level === 'medium') {
+      ring = colors.unhealthy;
+    } else if (needsAttentionStatus.includes(hs) || tree.last_watered === null || (tree.last_watered && isOlderThanDays(tree.last_watered, 7))) {
+      ring = colors.needs_attention;
+    } else if (tree.adopted_by_user_id) {
+      ring = colors.adopted;
+    } else {
+      ring = colors.healthy;
+    }
   }
   const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f333.svg`;
   const html = `
@@ -595,9 +606,11 @@ async function loadTrees(){
         </div>
       `;
 
+      const ageText = t.estimated_age ? (t.estimated_age + ' év') : (t.planting_year ? (new Date().getFullYear() - parseInt(t.planting_year, 10)) + ' év' : '–');
       const mk = L.marker([t.lat, t.lng], { icon: treeIcon(t) }).bindPopup(
         `<b>🌳 ${esc(t.species || (window.LANG && window.LANG['tree.unknown_species']) ? window.LANG['tree.unknown_species'] : 'Fa')}</b><br>` +
         (t.address ? `<small>${esc(t.address)}</small><br>` : '') +
+        `<small><b>${(window.LANG && window.LANG['tree.age']) ? window.LANG['tree.age'] : 'Életkor'}:</b> ${ageText}</small><br>` +
         `<small><b>${(window.LANG && window.LANG['tree.health']) ? window.LANG['tree.health'] : 'Állapot'}:</b> ${treeHealthLabel(t.health_status)}</small><br>` +
         `<small><b>${(window.LANG && window.LANG['tree.risk']) ? window.LANG['tree.risk'] : 'Kockázat'}:</b> ${treeRiskLabel(t.risk_level)}</small><br>` +
         actionsHtml
