@@ -31,6 +31,18 @@ body.civicai-mobile .appBottomMenu .item .name {
   color: var(--text) !important;
 }
 
+/* Alsó menü: inaktív pontok fehér szín, hogy látszódjanak a sötét háttéren */
+body.civicai-mobile .appBottomMenu .item:not(.active) .name,
+body.civicai-mobile .appBottomMenu .item:not(.active) i.bi,
+body.civicai-mobile .appBottomMenu .item:not(.active) ion-icon {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+body.civicai-mobile .appBottomMenu .item.active .name,
+body.civicai-mobile .appBottomMenu .item.active i.bi,
+body.civicai-mobile .appBottomMenu .item.active ion-icon {
+  color: var(--primary, #22c55e) !important;
+}
+
 /* Capsule background */
 body.civicai-mobile #appCapsule {
   background: transparent !important;
@@ -60,6 +72,23 @@ body.civicai-mobile .form-control::placeholder {
 body.civicai-mobile #mapWrap {
   position: relative;
   height: calc(100vh - 112px);
+}
+
+/* Térkép overlay: jelmagyarázat fent, Bejelentés gomb közvetlenül alatta (jobb felső) */
+body.civicai-mobile .map-overlay-actions {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  z-index: 800;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+body.civicai-mobile .map-overlay-actions .fab-report {
+  position: static;
+  left: auto;
+  top: auto;
 }
 
 body.civicai-mobile #map {

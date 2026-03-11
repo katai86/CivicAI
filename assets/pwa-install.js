@@ -191,6 +191,16 @@
       showIOSCard();
     }
     // Android/Chrome: banner is shown when beforeinstallprompt fires (already wired above)
+
+    // Mobil: késleltetett megjelenés (2 s), hogy biztosan látszódjon a prompt
+    setTimeout(function () {
+      if (!shouldShowInstallUI()) return;
+      if (isIOS()) {
+        showIOSCard();
+      } else if (deferredPrompt) {
+        showBanner();
+      }
+    }, 2000);
   }
 
   if (document.readyState === 'loading') {
