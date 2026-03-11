@@ -511,11 +511,19 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
         <?php else: ?>
 
         <div class="admin-tab-body" id="tab-dashboard">
+          <!-- M9 Dashboard UI panelek: 5 panel -->
+          <div class="row g-2 mb-3">
+            <div class="col-6 col-md"><div class="card border-primary"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_city_health')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.stats_title')) ?></p></div></div></div>
+            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_engagement')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.analytics_title')) ?></p></div></div></div>
+            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_urban_issues')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.reports_list')) ?></p></div></div></div>
+            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_tree_registry')) ?></h6><p class="text-secondary small mb-0"><?= (int)($stats['environment']['trees_total'] ?? 0) ?> <?= h(t('gov.esg_trees_total')) ?></p></div></div></div>
+            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_esg')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.esg_dashboard_title')) ?></p></div></div></div>
+          </div>
           <div class="row g-3 mb-3">
             <div class="col-12">
               <div class="card">
                 <div class="card-body">
-                  <h6 class="card-title mb-2"><?= h(t('gov.stats_title')) ?></h6>
+                  <h6 class="card-title mb-2"><?= h(t('gov.panel_city_health')) ?> – <?= h(t('gov.stats_title')) ?></h6>
                   <div class="row g-2">
                     <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_today')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_1d'] ?></span></div></div>
                     <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_7d')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_7d'] ?></span></div></div>
@@ -639,6 +647,21 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
                     <a href="#" id="linkEsgJson" class="btn btn-outline-primary btn-sm">JSON</a>
                     <a href="#" id="linkEsgCsv" class="btn btn-outline-secondary btn-sm" download>CSV (Excel)</a>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- M7 Öntözendő fák -->
+          <div class="row g-3 mt-1">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h6 class="card-title mb-1"><?= h(t('gov.trees_needing_water_title')) ?></h6>
+                  <p class="text-secondary small mb-2"><?= h(t('gov.trees_needing_water_desc')) ?></p>
+                  <p class="mb-2"><strong><?= (int)($stats['environment']['trees_needing_water'] ?? 0) ?></strong> <?= h(t('gov.esg_trees_water')) ?></p>
+                  <button type="button" class="btn btn-outline-primary btn-sm" id="btnTreesNeedingWater"><?= h(t('gov.trees_needing_water_list')) ?></button>
+                  <div id="treesNeedingWaterList" class="mt-2 small" style="max-height:240px;overflow:auto;" hidden></div>
                 </div>
               </div>
             </div>
@@ -771,6 +794,28 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   }
   if (govEsgYear) govEsgYear.addEventListener('change', updateEsgExportLinks);
   updateEsgExportLinks();
+
+  var btnTreesNeedingWater = document.getElementById('btnTreesNeedingWater');
+  var treesNeedingWaterList = document.getElementById('treesNeedingWaterList');
+  if (btnTreesNeedingWater && treesNeedingWaterList) {
+    btnTreesNeedingWater.addEventListener('click', function(){
+      var url = <?= json_encode(app_url('/api/trees_needing_water.php?limit=50'), JSON_UNESCAPED_SLASHES) ?>;
+      btnTreesNeedingWater.disabled = true;
+      fetch(url, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+        btnTreesNeedingWater.disabled = false;
+        if (!j.ok || !Array.isArray(j.data)) { treesNeedingWaterList.textContent = 'Nincs adat.'; treesNeedingWaterList.hidden = false; return; }
+        if (j.data.length === 0) { treesNeedingWaterList.textContent = 'Nincs öntözést igénylő fa.'; treesNeedingWaterList.hidden = false; return; }
+        var html = '<ul class="list-unstyled mb-0">';
+        j.data.forEach(function(t){
+          var rec = (t.watering_volume_liters != null ? t.watering_volume_liters + ' L ajánlott' : '');
+          html += '<li class="border-bottom py-1">#' + (t.id || '') + ' ' + (t.species || '') + ' – utoljára: ' + (t.last_watered || '—') + (rec ? ' · ' + rec : '') + '</li>';
+        });
+        html += '</ul>';
+        treesNeedingWaterList.innerHTML = html;
+        treesNeedingWaterList.hidden = false;
+      }).catch(function(){ btnTreesNeedingWater.disabled = false; treesNeedingWaterList.textContent = 'Hiba.'; treesNeedingWaterList.hidden = false; });
+    });
+  }
 
   function postJson(url, body){
     return fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify(body) })

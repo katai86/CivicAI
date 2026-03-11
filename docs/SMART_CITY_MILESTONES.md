@@ -135,9 +135,11 @@ A cél: **minimal change**, **moduláris bővítés**, és hogy minden épüljö
 
 ---
 
-### M7 — Tree watering ajánlás és értesítés
+### M7 — Tree watering ajánlás és értesítés ✅
 
 **Cél:** Fajtánkénti öntözési ajánlás és gondozó értesítés.
+
+**Megvalósítva:** `tree_species_care` tábla (species_name, watering_interval_days, watering_volume_liters, notes) – migráció 2026-21; `api/trees_needing_water.php` (GET, admin/gov user) – öntözendő fák listája fajta ajánlás alapján; Gov dashboard „Öntözendő fák (M7)” kártya: szám + „Lista megtekintése” gomb (API-ból tölti a listát). Értesítés: dashboard blokk (cron/e-mail opcionális később).
 
 - **Adatmodell:** pl. `tree_species_care`: species (név vagy referencia), watering_interval_days, watering_volume_liters, megjegyzés.
 - **Logika:** fa `last_watered` + fajta ajánlás → „öntözendő” lista; gondozó (adopted_by_user_id) számára értesítés.
@@ -147,9 +149,11 @@ A cél: **minimal change**, **moduláris bővítés**, és hogy minden épüljö
 
 ---
 
-### M8 — Export & Open Data
+### M8 — Export & Open Data ✅
 
 **Cél:** Központosított export több adathalmazra és formátumra.
+
+**Megvalósítva:** `api/export.php` – GET paraméterek: `dataset=reports|trees|esg`, `format=csv|geojson|json`; opcionálisan year, authority_id, city, date_from, date_to. Reports és trees: CSV, GeoJSON (Point geometry), JSON; ESG átirányítja a meglévő `esg_export.php`-ra. Jog: admin vagy gov user (reports/esg: authority scope; trees: minden nyilvános).
 
 - **Formátumok:** CSV, GeoJSON, Excel, JSON API.
 - **Adathalmazok:** bejelentések (reports + opcionális geom), fa nyilvántartás (trees), ESG statisztika (M3).
@@ -159,9 +163,11 @@ A cél: **minimal change**, **moduláris bővítés**, és hogy minden épüljö
 
 ---
 
-### M9 — Dashboard UI panelek
+### M9 — Dashboard UI panelek ✅
 
 **Cél:** Admin/Gov dashboard egyértelmű panelekben.
+
+**Megvalósítva:** Gov dashboard (tab-dashboard) tetején 5 panel kártya: City Health Overview, Citizen Engagement, Urban Issues, Tree Registry, ESG Impact; a meglévő blokkok (statisztika, Analytics, Bejelentések, Öntözendő fák, ESG) ezek alá rendezve; első kártya címe „City Health Overview – [stats]”.
 
 - **Panelek:** City Health Overview, Citizen Engagement, Urban Issues, Tree Registry, ESG Impact.
 - **Megvalósítás:** meglévő AdminLTE + Bootstrap; minden panel egy blokk (kártya), adat forrása M1/M3 és meglévő API-k.
@@ -171,9 +177,11 @@ A cél: **minimal change**, **moduláris bővítés**, és hogy minden épüljö
 
 ---
 
-### M10 — Jövőbeli AI funkciók (placeholder)
+### M10 — Jövőbeli AI funkciók (placeholder) ✅
 
 **Cél:** Későbbi bővítés lehetővé tétele anélkül, hogy most megvalósítanánk.
+
+**Megvalósítva:** `docs/FUTURE_AI_FEATURES.md` – lehetséges témák (karbantartási predikció, hősziget, árvíz kockázat, zöldfedettség, digitális iker), adatigény, javasolt API/interface (prediction service, rate limit, cache), illeszkedés AiRouter és statisztika modulhoz. Nincs új tábla vagy production kód.
 
 - **Lehetséges témák:** karbantartási tervezés predikció, hősziget érzékelés, árvíz kockázat, zöldfedettség elemzés, digitális iker.
 - **Teendő:** rövid architektúra doc (pl. `docs/FUTURE_AI_FEATURES.md`) – milyen adat kellene, milyen API/interface (pl. „prediction service”), hogyan illeszkedne a jelenlegi AiRouter és a statisztika modulhoz. Nincs új tábla vagy production kód, csak terv.
@@ -192,10 +200,12 @@ A cél: **minimal change**, **moduláris bővítés**, és hogy minden épüljö
 | M4 | Tree cadastre bővítés | Szerkesztés, notes, fotó fához | Meglévő trees |
 | M5 | Tree layer szín | Zöld/sárga/piros health alapján | Meglévő réteg |
 | M6 | AI tree monitoring | Fotó → health javaslat | Meglévő AI vision |
-| M7 | Tree watering ajánlás + értesítés | Fajta ajánlás, értesítés gondozónak | M4 (species care) |
-| M8 | Export & Open Data | CSV, GeoJSON, Excel, JSON API | M1, M3, trees API |
-| M9 | Dashboard UI panelek | 5 panel (City Health, Engagement, Issues, Trees, ESG) | M1, M3 |
-| M10 | Jövőbeli AI | Doc + interface tervezet | - |
+| M7 | Tree watering ajánlás + értesítés ✅ | Fajta ajánlás, értesítés gondozónak | M4 (species care) |
+| M8 | Export & Open Data ✅ | CSV, GeoJSON, Excel, JSON API | M1, M3, trees API |
+| M9 | Dashboard UI panelek ✅ | 5 panel (City Health, Engagement, Issues, Trees, ESG) | M1, M3 |
+| M10 | Jövőbeli AI ✅ | Doc + interface tervezet | - |
+
+**Smart City milestone fejlesztés kész (M1–M10).** Opcionális továbbiak: kézi teszt, cron értesítés (M7), nyilvános Open Data rate limit (M8), FUTURE_AI_FEATURES megvalósítás.
 
 ---
 
@@ -207,4 +217,4 @@ A cél: **minimal change**, **moduláris bővítés**, és hogy minden épüljö
 
 ---
 
-Ezt a milestone sort használhatod a fejlesztés lépésről-lépésre történő vezetéséhez. Ha kész vagy az első deliverable-lal (pl. M1), jelezd, és onnan folytatjuk a következővel.
+Ezt a milestone sort használhatod a fejlesztés lépésről-lépésre történő vezetéséhez. **M1–M10 mind megvalósítva.** A további fejlesztés opcionális (pl. FUTURE_AI_FEATURES implementáció, M7 e-mail értesítés).

@@ -369,6 +369,17 @@ CREATE TABLE IF NOT EXISTS ai_results (
 -- ========== 2026-20 M4 trees.notes ==========
 CALL add_column_if_not_exists('trees', 'notes', 'TEXT NULL');
 
+-- ========== 2026-21 M7 tree_species_care ==========
+CREATE TABLE IF NOT EXISTS tree_species_care (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  species_name VARCHAR(120) NOT NULL,
+  watering_interval_days INT NOT NULL DEFAULT 7,
+  watering_volume_liters DECIMAL(6,2) NULL,
+  notes VARCHAR(255) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_species_name (species_name(60))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ========== Segéd procedure-ök eltávolítása ==========
 DROP PROCEDURE IF EXISTS add_column_if_not_exists;
 DROP PROCEDURE IF EXISTS add_index_if_not_exists;
