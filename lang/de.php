@@ -288,6 +288,7 @@ return [
     'gov.report_not_found' => 'Meldung nicht gefunden.',
     'gov.status_updated' => 'Status aktualisiert.',
     'gov.trees_water_empty' => 'Keine Bäume brauchen Wasser.',
+    'gov.trees_last_watered' => 'Zuletzt gegossen',
     'gov.no_authority_assigned' => 'Keine Behörde zugewiesen.',
     'gov.format_failed' => 'Formatierung fehlgeschlagen.',
     'gov.generating' => 'Wird erstellt...',

@@ -266,6 +266,7 @@ return [
     'gov.trees_needing_water_title' => 'Trees needing water (M7)',
     'gov.trees_needing_water_desc' => 'List of trees needing water by species care recommendation. Use for caretaker notification.',
     'gov.trees_needing_water_list' => 'View list',
+    'gov.trees_last_watered' => 'Last watered',
     'gov.panel_city_health' => 'City Health Overview',
     'gov.panel_engagement' => 'Citizen Engagement',
     'gov.panel_urban_issues' => 'Urban Issues',

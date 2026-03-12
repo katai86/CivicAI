@@ -288,6 +288,7 @@ return [
     'gov.report_not_found' => 'Prijava ni bila najdena.',
     'gov.status_updated' => 'Status posodobljen.',
     'gov.trees_water_empty' => 'Ni dreves za zalivanje.',
+    'gov.trees_last_watered' => 'Zadnje zalivanje',
     'gov.no_authority_assigned' => 'Ni dodeljene pristojnosti.',
     'gov.format_failed' => 'Oblikovanje ni uspelo.',
     'gov.generating' => 'Generiranje...',

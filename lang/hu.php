@@ -269,6 +269,7 @@ return [
     'gov.trees_needing_water_title' => 'Öntözendő fák (M7)',
     'gov.trees_needing_water_desc' => 'Fajta ajánlás alapján öntözést igénylő fák listája. Gondozó értesítéshez használható.',
     'gov.trees_needing_water_list' => 'Lista megtekintése',
+    'gov.trees_last_watered' => 'Utoljára öntözve',
     'gov.panel_city_health' => 'City Health Overview',
     'gov.panel_engagement' => 'Citizen Engagement',
     'gov.panel_urban_issues' => 'Urban Issues',

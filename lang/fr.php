@@ -288,6 +288,7 @@ return [
     'gov.report_not_found' => 'Signalement introuvable.',
     'gov.status_updated' => 'Statut mis à jour.',
     'gov.trees_water_empty' => 'Aucun arbre à arroser.',
+    'gov.trees_last_watered' => 'Dernier arrosage',
     'gov.no_authority_assigned' => 'Aucune autorité assignée.',
     'gov.format_failed' => 'Échec du formatage.',
     'gov.generating' => 'Génération...',

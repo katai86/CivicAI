@@ -288,6 +288,7 @@ return [
     'gov.report_not_found' => 'Reporte no encontrado.',
     'gov.status_updated' => 'Estado actualizado.',
     'gov.trees_water_empty' => 'Ningún árbol necesita riego.',
+    'gov.trees_last_watered' => 'Último riego',
     'gov.no_authority_assigned' => 'Sin autoridad asignada.',
     'gov.format_failed' => 'Error de formato.',
     'gov.generating' => 'Generando...',

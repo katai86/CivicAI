@@ -808,9 +808,10 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
         if (!j.ok || !Array.isArray(j.data)) { treesNeedingWaterList.textContent = <?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>; treesNeedingWaterList.hidden = false; return; }
         if (j.data.length === 0) { treesNeedingWaterList.textContent = <?= json_encode(t('gov.trees_water_empty'), JSON_UNESCAPED_UNICODE) ?>; treesNeedingWaterList.hidden = false; return; }
         var html = '<ul class="list-unstyled mb-0">';
+        var lastWateredLabel = <?= json_encode(t('gov.trees_last_watered'), JSON_UNESCAPED_UNICODE) ?>;
         j.data.forEach(function(t){
           var rec = (t.watering_volume_liters != null ? t.watering_volume_liters + <?= json_encode(' ' . t('gov.liters_recommended'), JSON_UNESCAPED_UNICODE) ?> : '');
-          html += '<li class="border-bottom py-1">#' + (t.id || '') + ' ' + (t.species || '') + ' – utoljára: ' + (t.last_watered || '—') + (rec ? ' · ' + rec : '') + '</li>';
+          html += '<li class="border-bottom py-1">#' + (t.id || '') + ' ' + (t.species || '') + ' – ' + lastWateredLabel + ': ' + (t.last_watered || '—') + (rec ? ' · ' + rec : '') + '</li>';
         });
         html += '</ul>';
         treesNeedingWaterList.innerHTML = html;
@@ -830,7 +831,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
     if (text) {
       var jsonStart = text.indexOf('{');
       if (jsonStart !== -1) {
-        var maybeJson = text.slice(jsonStart).replace(/^\s*```\w*\n?|\n?```\s*$/g, '').trim();
+        var maybeJson = text.slice(jsonStart).replace(/^\s*```\s*\w*\s*\n?|\n?\s*```\s*$/g, '').trim();
         try {
           var parsed = JSON.parse(maybeJson);
           if (parsed.text) text = parsed.text;
@@ -839,26 +840,35 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
         } catch(_) {}
       }
     }
-    if (text) return text;
-    var raw = data.raw;
-    if (raw && typeof raw === 'object') {
-      if (raw.text) return raw.text;
-      var parts = [];
+    var raw = data.raw && typeof data.raw === 'object' ? data.raw : null;
+    var parts = [];
+    if (text) parts.push(text);
+    if (raw && raw.top_problems && Array.isArray(raw.top_problems) && raw.top_problems.length > 0) {
+      parts.push('');
+      parts.push('Fő problémák:');
+      raw.top_problems.forEach(function(p){
+        parts.push('• ' + (p.category || p.category_name || '') + (p.why_now ? ': ' + p.why_now : ''));
+      });
+    }
+    if (raw && !text && raw.text) parts.unshift(raw.text);
+    if (raw && (raw.esg_metrics || raw.citizen_engagement)) {
       if (raw.esg_metrics && Array.isArray(raw.esg_metrics)) {
+        if (parts.length) parts.push('');
         parts.push('Fenntarthatósági mutatók:');
         raw.esg_metrics.forEach(function(m){
           parts.push('• ' + (m.metric || m.name || '') + ': ' + (m.current_signal != null ? m.current_signal : '') + (m.next_step ? ' – Következő lépés: ' + m.next_step : ''));
         });
       }
       if (raw.citizen_engagement && Array.isArray(raw.citizen_engagement)) {
-        parts.push('\nPolgári részvétel:');
+        parts.push('');
+        parts.push('Polgári részvétel:');
         raw.citizen_engagement.forEach(function(c){
           parts.push('• ' + (c.idea || c.title || '') + (c.how_to_measure ? ' – Mérés: ' + c.how_to_measure : ''));
         });
       }
-      if (raw.text) parts.unshift(raw.text);
-      return parts.join('\n');
     }
+    if (parts.length) return parts.join('\n');
+    if (raw && raw.text) return raw.text;
     return '';
   }
 

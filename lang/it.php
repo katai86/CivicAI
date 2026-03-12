@@ -288,6 +288,7 @@ return [
     'gov.report_not_found' => 'Segnalazione non trovata.',
     'gov.status_updated' => 'Stato aggiornato.',
     'gov.trees_water_empty' => 'Nessun albero da annaffiare.',
+    'gov.trees_last_watered' => 'Ultima annaffiatura',
     'gov.no_authority_assigned' => 'Nessuna autorità assegnata.',
     'gov.format_failed' => 'Formattazione non riuscita.',
     'gov.generating' => 'Generazione...',

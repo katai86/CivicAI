@@ -226,13 +226,28 @@ try {
   ai_store_result('gov', $authorityId ? (int)$authorityId : null, $taskType, $modelName, $inputHash, $data, null);
 } catch (Throwable $e) { /* ignore */ }
 
-// UI-hoz egyszerű szöveg mező: JSON-ból text/summary, vagy nyers válasz (ha nem JSON / nincs text)
+// UI-hoz: mindig tisztított szöveg + raw objektum (JSON soha ne legyen nyersan megjelenítve)
 $text = '';
 if (is_array($data)) {
   $text = (string)($data['text'] ?? $data['summary'] ?? '');
 }
 if ($text === '' && !empty($resp['raw']['choices'][0]['message']['content'])) {
-  $text = trim((string)$resp['raw']['choices'][0]['message']['content']);
+  $rawContent = trim((string)$resp['raw']['choices'][0]['message']['content']);
+  // Modell néha ```json ... ```-ot ad vissza: kinyerjük a JSON-t
+  if (preg_match('/^\s*```\s*\w*\s*\n?(.*?)\n?\s*```\s*$/s', $rawContent, $m)) {
+    $rawContent = trim($m[1]);
+  }
+  if (($jsonStart = strpos($rawContent, '{')) !== false) {
+    $maybe = json_decode(substr($rawContent, $jsonStart), true);
+    if (is_array($maybe)) {
+      $data = $maybe;
+      $text = (string)($maybe['text'] ?? $maybe['summary'] ?? '');
+    } else {
+      $text = $rawContent;
+    }
+  } else {
+    $text = $rawContent;
+  }
 }
 json_response(['ok' => true, 'data' => ['text' => $text, 'raw' => $data]]);
 
