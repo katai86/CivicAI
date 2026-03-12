@@ -32,9 +32,10 @@ if ($trunkDiameter !== null && ($trunkDiameter < 0 || $trunkDiameter > 500)) $tr
 if ($canopyDiameter !== null && ($canopyDiameter < 0 || $canopyDiameter > 50)) $canopyDiameter = null;
 
 $photoFilename = null;
+$uploadMaxBytes = defined('UPLOAD_MAX_BYTES') ? (int)UPLOAD_MAX_BYTES : (6 * 1024 * 1024);
 if (!empty($_FILES['photo']) && is_array($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK && $_FILES['photo']['size'] > 0) {
   $f = $_FILES['photo'];
-  if ($f['size'] > UPLOAD_MAX_BYTES) {
+  if ($f['size'] > $uploadMaxBytes) {
     json_response(['ok' => false, 'error' => t('api.file_too_large')], 400);
   }
   $tmp = $f['tmp_name'];
@@ -49,7 +50,7 @@ if (!empty($_FILES['photo']) && is_array($_FILES['photo']) && $_FILES['photo']['
   if ($mime === '' && function_exists('mime_content_type')) {
     $mime = (string)mime_content_type($tmp);
   }
-  $allowed = UPLOAD_ALLOWED_MIME;
+  $allowed = defined('UPLOAD_ALLOWED_MIME') && is_array(UPLOAD_ALLOWED_MIME) ? UPLOAD_ALLOWED_MIME : ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
   if (!isset($allowed[$mime])) {
     json_response(['ok' => false, 'error' => t('api.upload_images_only')], 400);
   }
@@ -92,7 +93,8 @@ try {
     ]);
     $treeId = (int)$pdo->lastInsertId();
   } catch (PDOException $e) {
-    if (strpos($e->getMessage(), 'trunk_diameter') !== false || strpos($e->getMessage(), 'canopy_diameter') !== false) {
+    $msg = $e->getMessage();
+    if (strpos($msg, 'trunk_diameter') !== false || strpos($msg, 'canopy_diameter') !== false) {
       $stmt = $pdo->prepare("
         INSERT INTO trees (lat, lng, address, species, health_status, risk_level, public_visible, gov_validated, created_at)
         VALUES (:lat, :lng, NULL, :species, NULL, NULL, 1, 0, NOW())
@@ -103,6 +105,22 @@ try {
         ':species' => $species ?: null,
       ]);
       $treeId = (int)$pdo->lastInsertId();
+    } elseif (strpos($msg, 'Unknown column') !== false || strpos($msg, 'Table') !== false) {
+      try {
+        $stmt = $pdo->prepare("
+          INSERT INTO trees (lat, lng, address, species, public_visible, gov_validated, created_at)
+          VALUES (:lat, :lng, NULL, :species, 1, 0, NOW())
+        ");
+        $stmt->execute([
+          ':lat' => $lat,
+          ':lng' => $lng,
+          ':species' => $species ?: null,
+        ]);
+        $treeId = (int)$pdo->lastInsertId();
+      } catch (Throwable $e2) {
+        log_error('tree_create: minimal insert failed - ' . $e2->getMessage());
+        throw $e;
+      }
     } else {
       throw $e;
     }
@@ -115,16 +133,20 @@ try {
 
   $imgPath = ($photoFilename !== null && $photoFilename !== '') ? $photoFilename : null;
   if ($imgPath !== null || ($note !== null && $note !== '')) {
-    $stmtLog = $pdo->prepare("
-      INSERT INTO tree_logs (tree_id, user_id, log_type, note, image_path, created_at)
-      VALUES (:tid, :uid, 'inspection', :note, :img, NOW())
-    ");
-    $stmtLog->execute([
-      ':tid' => $treeId,
-      ':uid' => $uid,
-      ':note' => $note ?: null,
-      ':img' => $imgPath,
-    ]);
+    try {
+      $stmtLog = $pdo->prepare("
+        INSERT INTO tree_logs (tree_id, user_id, log_type, note, image_path, created_at)
+        VALUES (:tid, :uid, 'inspection', :note, :img, NOW())
+      ");
+      $stmtLog->execute([
+        ':tid' => $treeId,
+        ':uid' => $uid,
+        ':note' => $note ?: null,
+        ':img' => $imgPath,
+      ]);
+    } catch (Throwable $logEx) {
+      log_error('tree_create: tree_logs insert failed - ' . $logEx->getMessage());
+    }
   }
 
   $pdo->commit();

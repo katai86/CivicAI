@@ -333,6 +333,18 @@ function isOlderThanDays(ymdStr, days){
   btn.addEventListener('click', () => setExpanded(!legend.classList.contains('open')));
 })();
 
+// ====== PC: Jelmagyarázat menüpont – panel megnyitása/bezárása ======
+(function initLegendMenuPanel(){
+  const menuBtn = document.getElementById('legendMenuBtn');
+  const panel = document.getElementById('legendPanel');
+  if(!menuBtn || !panel) return;
+  const open = () => { panel.hidden = false; menuBtn.setAttribute('aria-expanded', 'true'); };
+  const close = () => { panel.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); };
+  menuBtn.addEventListener('click', (e) => { e.stopPropagation(); panel.hidden ? open() : close(); });
+  document.addEventListener('click', () => { if(!panel.hidden) close(); });
+  panel.addEventListener('click', (e) => e.stopPropagation());
+})();
+
 function setLegendCount(n){
   const el = document.getElementById('legendCount');
   if (el) el.textContent = String(n ?? 0);

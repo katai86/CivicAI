@@ -33,6 +33,7 @@ $rankAll = isset($rankAll) ? $rankAll : null;
     <div class="topbar-right">
       <?php include __DIR__ . '/user/inc_topbar_tools.php'; ?>
       <div class="topbar-links">
+        <button type="button" class="topbtn" id="legendMenuBtn" aria-expanded="false" aria-haspopup="true"><?= htmlspecialchars(t('legend.title'), ENT_QUOTES, 'UTF-8') ?></button>
         <a class="topbtn" href="<?= htmlspecialchars(app_url('/faq.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.faq'), ENT_QUOTES, 'UTF-8') ?></a>
         <?php if ($role === 'govuser'): ?>
           <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>

@@ -57,20 +57,14 @@ if (isset($_SESSION['flash'])) unset($_SESSION['flash']);
 
 <?php $desktop_topbar_show_search = true; require __DIR__ . '/inc_desktop_topbar.php'; ?>
 
-<div id="mapWrap">
-  <?php if (!empty($flash)): ?>
-  <div class="map-flash" id="mapFlash" role="status"><?= htmlspecialchars($flash, ENT_QUOTES, 'UTF-8') ?></div>
-  <?php endif; ?>
-  <div id="map"></div>
-  <button type="button" id="btnNewReport" class="fab-report" aria-label="<?= htmlspecialchars(t('fab.new_report'), ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(t('fab.new_report'), ENT_QUOTES, 'UTF-8') ?>">+ <?= htmlspecialchars(t('fab.report'), ENT_QUOTES, 'UTF-8') ?></button>
-
-  <div class="legend" id="legend" aria-label="<?= htmlspecialchars(t('legend.title'), ENT_QUOTES, 'UTF-8') ?>">
+<!-- PC: jelmagyarázat a menüből lenyíló panelban -->
+<div id="legendPanel" class="legend-panel-desktop" hidden>
+  <div class="legend legend-in-menu" id="legend" aria-label="<?= htmlspecialchars(t('legend.title'), ENT_QUOTES, 'UTF-8') ?>">
     <button type="button" class="legend-toggle" id="legendToggle" aria-expanded="false">
       <span class="legend-toggle-text"><?= htmlspecialchars(t('legend.title'), ENT_QUOTES, 'UTF-8') ?></span>
       <span class="legend-chevron" aria-hidden="true">▼</span>
       <span class="legend-count" id="legendCount">0</span>
     </button>
-
     <div class="legend-body" id="legendBody">
       <div class="legend-filters-single">
         <button class="legend-filter active" data-cat="all" type="button"><?= htmlspecialchars(t('legend.all'), ENT_QUOTES, 'UTF-8') ?></button>
@@ -85,7 +79,6 @@ if (isset($_SESSION['flash'])) unset($_SESSION['flash']);
         <button type="button" class="legend-item legend-item-btn" data-cat="idea"><span class="legend-badge b-idea">❗</span><span><?= htmlspecialchars(t('cat.idea_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
         <button type="button" class="legend-item legend-item-btn" data-cat="civil_event"><span class="legend-badge b-civil">🤝</span><span><?= htmlspecialchars(t('cat.civil_event_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
       </div>
-
       <div class="legend-tree-section">
         <div class="legend-list">
           <button type="button" class="legend-item legend-item-btn legend-tree-filter active" data-tree-filter="all"><span class="legend-badge b-green">🌳</span><span><?= htmlspecialchars(t('legend.trees_all') ?? 'Összes', ENT_QUOTES, 'UTF-8') ?></span></button>
@@ -97,13 +90,19 @@ if (isset($_SESSION['flash'])) unset($_SESSION['flash']);
           </div>
         </div>
       </div>
-
-      <div class="legend-foot muted">
-        <?= htmlspecialchars(t('legend.foot'), ENT_QUOTES, 'UTF-8') ?>
-      </div>
+      <div class="legend-foot muted"><?= htmlspecialchars(t('legend.foot'), ENT_QUOTES, 'UTF-8') ?></div>
     </div>
   </div>
+</div>
 
+<div id="mapWrap">
+  <?php if (!empty($flash)): ?>
+  <div class="map-flash" id="mapFlash" role="status"><?= htmlspecialchars($flash, ENT_QUOTES, 'UTF-8') ?></div>
+  <?php endif; ?>
+  <div id="map"></div>
+  <div class="desktop-map-actions">
+    <button type="button" id="btnNewReport" class="fab-report fab-report-desktop" aria-label="<?= htmlspecialchars(t('fab.new_report'), ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(t('fab.new_report'), ENT_QUOTES, 'UTF-8') ?>">+ <?= htmlspecialchars(t('fab.report'), ENT_QUOTES, 'UTF-8') ?></button>
+  </div>
 </div>
 
 <script>window.LANG = <?= json_encode($LANG_JS, JSON_UNESCAPED_UNICODE); ?>;</script>
