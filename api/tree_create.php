@@ -55,12 +55,16 @@ if (!empty($_FILES['photo']) && is_array($_FILES['photo']) && $_FILES['photo']['
   }
   $ext = $allowed[$mime];
   $photoFilename = 'new_' . $uid . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
-  $dir = rtrim(UPLOAD_DIR, '/\\') . DIRECTORY_SEPARATOR . 'trees';
+  $dir = rtrim(defined('UPLOAD_DIR') ? UPLOAD_DIR : __DIR__ . '/../uploads', '/\\') . DIRECTORY_SEPARATOR . 'trees';
   if (!is_dir($dir)) {
     if (!@mkdir($dir, 0775, true)) {
       log_error('tree_create: cannot create upload dir ' . $dir);
       json_response(['ok' => false, 'error' => t('common.error_save_failed')], 500);
     }
+  }
+  if (!is_writable($dir)) {
+    log_error('tree_create: upload dir not writable ' . $dir);
+    json_response(['ok' => false, 'error' => t('common.error_save_failed')], 500);
   }
   $dest = $dir . DIRECTORY_SEPARATOR . $photoFilename;
   if (!@move_uploaded_file($tmp, $dest)) {
@@ -138,5 +142,9 @@ try {
 } catch (Throwable $e) {
   if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
   log_error('tree_create: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-  json_response(['ok' => false, 'error' => t('common.error_server')], 500);
+  $msg = t('common.error_server');
+  if (defined('APP_DEBUG') && APP_DEBUG && $e->getMessage()) {
+    $msg = $msg . ' (' . preg_replace('/\s+/', ' ', trim($e->getMessage())) . ')';
+  }
+  json_response(['ok' => false, 'error' => $msg], 500);
 }

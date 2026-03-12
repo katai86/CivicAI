@@ -1423,12 +1423,12 @@ function openModal(latlng){
           formData.append('photo', fileInput.files[0]);
         }
         const res = await fetch(API_TREE_CREATE, { method: 'POST', body: formData, credentials: 'same-origin' });
+        const rawText = await res.text();
         let j = null;
         try {
-          j = await res.json();
-        } catch (e) {
-          if (res.status >= 400) throw new Error(t('common.error_server') || 'Szerver hiba.');
-          throw e;
+          j = rawText ? JSON.parse(rawText) : null;
+        } catch (_) {
+          if (res.status >= 400) throw new Error((t('common.error_server') || 'Szerver hiba.') + ' (HTTP ' + res.status + ')');
         }
         if (!j || !j.ok) {
           modal._treeSubmitting = false;

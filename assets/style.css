@@ -127,9 +127,9 @@ body{
 }
 .fab-report:hover{background:var(--primary);color:#0f1721;border-color:var(--primary)}
 
-/* ===== Legend (60% méret, beleférjen a képernyőbe) ===== */
+/* ===== Legend (72% méret, 20%-kal nagyobb) ===== */
 .legend{position:absolute;right:14px;top:14px;z-index:800;width:260px;max-width:85vw;
-  transform:scale(0.6);transform-origin:top right}
+  transform:scale(0.72);transform-origin:top right}
 .legend-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;
   border:1px solid var(--border);background:var(--card);border-radius:14px;padding:10px 12px;
   cursor:pointer;box-shadow:var(--shadow);backdrop-filter:blur(10px);font:inherit;color:var(--text);text-align:left
