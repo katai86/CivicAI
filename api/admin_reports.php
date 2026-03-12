@@ -67,13 +67,14 @@ $sql = "
   LIMIT $limit OFFSET $offset
 ";
 
+$rows = [];
 try {
   $stmt = db()->prepare($sql);
   $stmt->execute($params);
   $rows = $stmt->fetchAll();
 } catch (Throwable $e) {
-  // Régi schema: nincs authorities vagy reports.authority_id – fallback JOIN nélkül, authority_id szűrés nélkül
-  $wherePartsFallback = array_filter($whereParts, fn($w) => strpos($w, 'authority_id') === false);
+  // Fallback 1: nincs authority / reports.authority_id
+  $wherePartsFallback = array_filter($whereParts, function ($w) { return strpos($w, 'authority_id') === false; });
   $paramsFallback = $params;
   unset($paramsFallback[':aid']);
   $whereFallback = $wherePartsFallback ? "WHERE " . implode(" AND ", $wherePartsFallback) : "";
@@ -92,14 +93,53 @@ try {
     ORDER BY r.created_at DESC
     LIMIT $limit OFFSET $offset
   ";
-  $stmt = db()->prepare($sqlFallback);
-  $stmt->execute($paramsFallback);
-  $rows = $stmt->fetchAll();
-  foreach ($rows as &$row) {
-    $row['authority_id'] = null;
-    $row['authority_name'] = null;
+  try {
+    $stmt = db()->prepare($sqlFallback);
+    $stmt->execute($paramsFallback);
+    $rows = $stmt->fetchAll();
+    foreach ($rows as &$row) {
+      $row['authority_id'] = null;
+      $row['authority_name'] = null;
+    }
+    unset($row);
+  } catch (Throwable $e2) {
+    // Fallback 2: minimális oszlopok (régi schema: nincs reporter_name, profile_public, level, stb.)
+    if ($status !== 'all') {
+      $whereMinimal = "WHERE r.status = :st";
+      $paramsMinimal = [':st' => $status];
+    } else {
+      $whereMinimal = "";
+      $paramsMinimal = [];
+    }
+    $sqlMinimal = "
+      SELECT r.id, r.category, r.title, r.description, r.lat, r.lng, r.address_approx,
+             r.status, r.created_at, r.user_id,
+             u.id AS reporter_user_id, u.display_name AS reporter_display_name
+      FROM reports r
+      LEFT JOIN users u ON u.id = r.user_id
+      $whereMinimal
+      ORDER BY r.created_at DESC
+      LIMIT $limit OFFSET $offset
+    ";
+    try {
+      $stmt = db()->prepare($sqlMinimal);
+      $stmt->execute($paramsMinimal);
+      $rows = $stmt->fetchAll();
+      foreach ($rows as &$row) {
+        $row['authority_id'] = null;
+        $row['authority_name'] = null;
+        $row['reporter_name'] = null;
+        $row['reporter_is_anonymous'] = null;
+        $row['reporter_profile_public'] = null;
+        $row['reporter_level'] = null;
+        $row['house_number_approx'] = $row['road'] = $row['suburb'] = $row['city'] = $row['postcode'] = null;
+      }
+      unset($row);
+    } catch (Throwable $e3) {
+      log_error('admin_reports: ' . $e3->getMessage() . ' in ' . $e3->getFile() . ':' . $e3->getLine());
+      json_response(['ok' => true, 'data' => [], 'warning' => 'Betöltési hiba (ellenőrizd az adatbázis séma megfelelőségét).']);
+    }
   }
-  unset($row);
 }
 
 // Ügyszám hozzáadása (DB változtatás nélkül)

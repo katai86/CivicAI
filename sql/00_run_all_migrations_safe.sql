@@ -1,10 +1,29 @@
 -- =============================================================================
--- OSSZES SQL MIGRACIO – egy lekérdezésben (phpMyAdmin: másold be, futtasd az egészet)
--- Összevont migráció – minden lépés feltételes (ha már létezik, kihagyás).
--- Tartalmazza: 2026-03 … 2026-21, report_status_log, report_attachments,
---   map_layers, authorities, trees, ai_results, module_settings, stb.
--- Futtatás: phpMyAdmin → válaszd az adatbázist → SQL fül → beillesztés → Indítás.
--- Vagy parancssor: mysql -u user -p db < sql/00_run_all_migrations_safe.sql
+-- ÖSSZES SQL MÓDOSULÁS / FEJLESZTÉS – EGY LEKÉRDEZÉSBEN
+-- =============================================================================
+-- Futtatás: phpMyAdmin → válaszd az adatbázist → SQL fül → másold be az egészet → Indítás.
+-- Vagy parancssor: mysql -u user -p adatbazis < sql/00_run_all_migrations_safe.sql
+--
+-- Tartalom (minden lépés feltételes – ha már létezik, kihagyja):
+--   • report_status_log, report_attachments
+--   • 2026-03: users.is_active, map_layers, map_layer_points, indexek
+--   • 2026-04: FMS bridge (fms_reports, fms_sync_log), authorities, facilities, civil_events, reports bővítés
+--   • 2026-05: report_likes, friend_requests, friends
+--   • 2026-07: authorities bbox (min_lat, max_lat, min_lng, max_lng)
+--   • 2026-08–09: users.role (ENUM: superadmin, admin, user, civil, govuser, stb.)
+--   • 2026-10: authorities contact_email, contact_phone, website, country, region, is_active
+--   • 2026-12: users.preferred_lang, preferred_theme
+--   • 2026-13: trees, tree_logs, reports (related_tree_id, ai_category, ai_priority, report_gov_validated, impact_type)
+--   • 2026-14: tree_adoptions, tree_watering_logs
+--   • 2026-15: civil_events (event_type, participants_count)
+--   • 2026-16: ai_results
+--   • 2026-17: map_layers (authority_id, layer_type), trees layer
+--   • 2026-18–19: module_settings, user_module_toggles; tree_adoptions uniq_tree_user
+--   • 2026-20: trees.notes
+--   • 2026-21: tree_species_care
+--   • Reports bővítés: reporter_name, reporter_is_anonymous, house_number_approx, road, suburb, postcode, address_approx, city
+--   • Users bővítés: profile_public, level, total_xp, streak_days, avatar_filename
+--   • user_xp_log (XP napló)
 -- =============================================================================
 
 DELIMITER //
@@ -407,6 +426,42 @@ CREATE TABLE IF NOT EXISTS tree_species_care (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_species_name (species_name(60))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ========== Reports bővítés (cím, bejelentő) – ha exportból/régi sémából hiányzik ==========
+CALL add_column_if_not_exists('reports', 'reporter_name', 'VARCHAR(80) NULL');
+CALL add_column_if_not_exists('reports', 'reporter_is_anonymous', 'TINYINT(1) NOT NULL DEFAULT 1');
+CALL add_column_if_not_exists('reports', 'house_number_approx', 'VARCHAR(32) NULL');
+CALL add_column_if_not_exists('reports', 'road', 'VARCHAR(128) NULL');
+CALL add_column_if_not_exists('reports', 'suburb', 'VARCHAR(128) NULL');
+CALL add_column_if_not_exists('reports', 'postcode', 'VARCHAR(32) NULL');
+CALL add_column_if_not_exists('reports', 'address_approx', 'VARCHAR(255) NULL');
+CALL add_column_if_not_exists('reports', 'city', 'VARCHAR(80) NULL');
+
+-- ========== Users bővítés (profil, XP, szint) – ha exportból/régi sémából hiányzik ==========
+CALL add_column_if_not_exists('users', 'profile_public', 'TINYINT(1) NOT NULL DEFAULT 1');
+CALL add_column_if_not_exists('users', 'level', 'VARCHAR(32) NULL');
+CALL add_column_if_not_exists('users', 'total_xp', 'INT NOT NULL DEFAULT 0');
+CALL add_column_if_not_exists('users', 'streak_days', 'INT NOT NULL DEFAULT 0');
+CALL add_column_if_not_exists('users', 'avatar_filename', 'VARCHAR(255) NULL');
+
+-- ========== user_xp_log (XP napló) – ha nincs exportból ==========
+CREATE TABLE IF NOT EXISTS user_xp_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  points INT NOT NULL DEFAULT 0,
+  reason VARCHAR(64) NULL,
+  report_id INT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_user_xp_log_user (user_id),
+  KEY idx_user_xp_log_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ========== 2026-18 tree_adoptions: uniq_tree_user (ha a tábla már létezett index nélkül) ==========
+SET @idx_exists = (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tree_adoptions' AND INDEX_NAME = 'uniq_tree_user');
+SET @sql = IF(@idx_exists = 0, 'ALTER TABLE tree_adoptions ADD UNIQUE KEY uniq_tree_user (tree_id, user_id)', 'SELECT 1 AS noop');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- ========== Eltávolítjuk a segéd procedure-öket ==========
 DROP PROCEDURE IF EXISTS add_column_if_not_exists;

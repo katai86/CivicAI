@@ -9,40 +9,59 @@ $err = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $email = mb_strtolower(trim($_POST['email'] ?? ''));
   $pass  = (string)($_POST['pass'] ?? '');
+  $u = null;
 
   try {
-    $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role, is_active, preferred_lang FROM users WHERE email=:e LIMIT 1");
-    $stmt->execute([':e'=>$email]);
-    $u = $stmt->fetch();
-  } catch (Throwable $e) {
-    $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role FROM users WHERE email=:e LIMIT 1");
-    $stmt->execute([':e'=>$email]);
-    $u = $stmt->fetch();
-    if ($u) { $u['is_active'] = 1; $u['preferred_lang'] = null; }
-  }
+    try {
+      $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role, is_active, preferred_lang FROM users WHERE email=:e LIMIT 1");
+      $stmt->execute([':e' => $email]);
+      $u = $stmt->fetch();
+    } catch (Throwable $e) {
+      try {
+        $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role FROM users WHERE email=:e LIMIT 1");
+        $stmt->execute([':e' => $email]);
+        $u = $stmt->fetch();
+        if ($u) {
+          $u['is_active'] = 1;
+          $u['preferred_lang'] = null;
+        }
+      } catch (Throwable $e2) {
+        log_error('login: DB query failed - ' . $e2->getMessage() . ' in ' . $e2->getFile() . ':' . $e2->getLine());
+        $err = 'auth.login_error';
+        $u = null;
+      }
+    }
 
-  if (!$u || !password_verify($pass, $u['pass_hash'])) {
-    $err = 'auth.login_error';
-  } elseif (isset($u['is_active']) && (int)$u['is_active'] === 0) {
-    $err = 'auth.account_disabled';
-  } else {
-    session_regenerate_id(true);
-    $_SESSION['user_id'] = (int)$u['id'];
-    $_SESSION['user_role'] = $u['role'] ? (string)$u['role'] : 'user';
-    if (!empty($u['preferred_lang']) && in_array($u['preferred_lang'], LANG_ALLOWED, true)) {
-      set_lang($u['preferred_lang']);
+    if ($u === null && $err === null) {
+      $err = 'auth.login_error';
     }
-    // Admin/superadmin egy belépéssel mindkét felületet használhatja (production: egy fiók, egy rendszer)
-    if (in_array($_SESSION['user_role'], ['admin', 'superadmin'], true)) {
-      $_SESSION['admin_logged_in'] = true;
-    }
-    $redirect = trim((string)($_GET['redirect'] ?? ''));
-    if ($redirect !== '' && strpos($redirect, 'admin') !== false && in_array($_SESSION['user_role'], ['admin', 'superadmin'], true)) {
-      header('Location: ' . app_url('/admin/index.php'));
+    if ($err !== null) {
+      // already set above
+    } elseif (!$u || !password_verify($pass, $u['pass_hash'] ?? '')) {
+      $err = 'auth.login_error';
+    } elseif (isset($u['is_active']) && (int)$u['is_active'] === 0) {
+      $err = 'auth.account_disabled';
     } else {
-      header('Location: ' . app_url('/'));
+      session_regenerate_id(true);
+      $_SESSION['user_id'] = (int)$u['id'];
+      $_SESSION['user_role'] = $u['role'] ? (string)$u['role'] : 'user';
+      if (!empty($u['preferred_lang']) && defined('LANG_ALLOWED') && is_array(LANG_ALLOWED) && in_array($u['preferred_lang'], LANG_ALLOWED, true)) {
+        set_lang($u['preferred_lang']);
+      }
+      if (in_array($_SESSION['user_role'], ['admin', 'superadmin'], true)) {
+        $_SESSION['admin_logged_in'] = true;
+      }
+      $redirect = trim((string)($_GET['redirect'] ?? ''));
+      if ($redirect !== '' && strpos($redirect, 'admin') !== false && in_array($_SESSION['user_role'], ['admin', 'superadmin'], true)) {
+        header('Location: ' . app_url('/admin/index.php'));
+      } else {
+        header('Location: ' . app_url('/'));
+      }
+      exit;
     }
-    exit;
+  } catch (Throwable $e) {
+    log_error('login: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    $err = 'auth.login_error';
   }
 }
 $currentLang = current_lang();
