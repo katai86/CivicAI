@@ -52,6 +52,11 @@
     return true;
   }
 
+  /** Keskeny viewport / mobil: felugró megjelenéshez */
+  function isMobileView() {
+    return typeof window !== 'undefined' && window.innerWidth <= 768;
+  }
+
   // ----- Install prompt (Android / Chrome / Edge) -----
 
   let deferredPrompt = null;
@@ -155,11 +160,14 @@
   // ----- Bootstrap: create banner and iOS card if not in DOM -----
 
   function ensureBannerInDOM() {
-    if (getBanner()) return;
-    var appBase = document.body && document.body.dataset && document.body.dataset.appBase ? document.body.dataset.appBase : '';
+    var el = getBanner();
+    if (el) {
+      if (isMobileView()) el.classList.add('civicai-pwa-banner--mobile');
+      return;
+    }
     var root = document.createElement('div');
     root.id = BANNER_ID;
-    root.className = 'civicai-pwa-banner';
+    root.className = 'civicai-pwa-banner' + (isMobileView() ? ' civicai-pwa-banner--mobile' : '');
     root.setAttribute('aria-hidden', 'true');
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-labelledby', 'civicai-pwa-banner-title');

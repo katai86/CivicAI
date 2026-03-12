@@ -15,6 +15,7 @@
   justify-content: center;
   pointer-events: none;
   opacity: 0;
+  visibility: hidden;
   transform: translateY(100%);
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
@@ -22,31 +23,73 @@
 .civicai-pwa-banner--visible {
   pointer-events: auto;
   opacity: 1;
+  visibility: visible;
   transform: translateY(0);
 }
 
-/* Mobil: felugró push/értesítés szerű – felülről csúszik be, kis kártya (nem teljes képernyő) */
-body.civicai-mobile .civicai-pwa-banner {
-  top: 0;
-  bottom: auto;
-  left: 0;
-  right: 0;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 12px;
-  padding-top: calc(12px + env(safe-area-inset-top, 0));
-  background: transparent;
+/* Mobil / keskeny: felugró push/értesítés – felülről csúszik be, NEM az oldal alja */
+@media (max-width: 768px) {
+  .civicai-pwa-banner {
+    top: 0 !important;
+    bottom: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    padding: 12px !important;
+    padding-top: calc(12px + env(safe-area-inset-top, 0)) !important;
+    padding-bottom: 12px !important;
+    background: transparent !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    transform: translateY(-100%) !important;
+    visibility: hidden;
+    min-height: 0;
+    height: auto;
+  }
+  .civicai-pwa-banner--visible {
+    transform: translateY(0) !important;
+    visibility: visible;
+  }
+  .civicai-pwa-banner .civicai-pwa-banner__inner {
+    max-width: calc(100% - 24px);
+    width: 100%;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    animation: civicai-pwa-slidedown 0.35s ease-out;
+  }
+}
+
+body.civicai-mobile .civicai-pwa-banner,
+body.civicai-mobile .civicai-pwa-banner--visible {
+  top: 0 !important;
+  bottom: auto !important;
+  padding-top: calc(12px + env(safe-area-inset-top, 0)) !important;
+  padding-bottom: 12px !important;
+  background: transparent !important;
   transform: translateY(-100%);
 }
 body.civicai-mobile .civicai-pwa-banner--visible {
   transform: translateY(0);
 }
-body.civicai-mobile .civicai-pwa-banner .civicai-pwa-banner__inner {
-  max-width: 100%;
-  width: 100%;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  animation: civicai-pwa-slidedown 0.3s ease;
+body.civicai-mobile .civicai-pwa-banner .civicai-pwa-banner__inner,
+.civicai-pwa-banner--mobile .civicai-pwa-banner__inner {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
+
+/* JS hozzáadja --mobile osztályt: így is felülről jelenik meg */
+.civicai-pwa-banner--mobile {
+  top: 0 !important;
+  bottom: auto !important;
+  padding: 12px !important;
+  padding-top: calc(12px + env(safe-area-inset-top, 0)) !important;
+  padding-bottom: 12px !important;
+  background: transparent !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  transform: translateY(-100%) !important;
+}
+.civicai-pwa-banner--mobile.civicai-pwa-banner--visible {
+  transform: translateY(0) !important;
+}
+
 @keyframes civicai-pwa-slidedown {
   from { opacity: 0; transform: translateY(-100%); }
   to { opacity: 1; transform: translateY(0); }
@@ -117,7 +160,7 @@ body.civicai-mobile .civicai-pwa-banner .civicai-pwa-banner__inner {
   color: #f1f5f9;
 }
 
-/* ----- iOS: mobil = felugró push szerű, felülről ----- */
+/* ----- iOS: mindig felugró push szerű, felülről (nem az oldal alja) ----- */
 .civicai-pwa-ios-card {
   position: fixed;
   left: 0;
@@ -133,6 +176,7 @@ body.civicai-mobile .civicai-pwa-banner .civicai-pwa-banner__inner {
   background: transparent;
   pointer-events: none;
   opacity: 0;
+  visibility: hidden;
   transform: translateY(-100%);
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
@@ -140,10 +184,18 @@ body.civicai-mobile .civicai-pwa-banner .civicai-pwa-banner__inner {
 .civicai-pwa-ios-card--visible {
   pointer-events: auto;
   opacity: 1;
+  visibility: visible;
   transform: translateY(0);
 }
 .civicai-pwa-ios-card--visible .civicai-pwa-ios-card__inner {
-  animation: civicai-pwa-slidedown 0.3s ease;
+  animation: civicai-pwa-slidedown 0.35s ease-out;
+}
+
+@media (max-width: 768px) {
+  .civicai-pwa-ios-card .civicai-pwa-ios-card__inner {
+    max-width: calc(100% - 24px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  }
 }
 
 .civicai-pwa-ios-card__inner {
