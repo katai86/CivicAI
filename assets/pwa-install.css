@@ -47,7 +47,8 @@
   }
   .civicai-pwa-banner--visible {
     transform: translateY(0) !important;
-    visibility: visible;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   .civicai-pwa-banner .civicai-pwa-banner__inner {
     max-width: calc(100% - 24px);
@@ -67,7 +68,9 @@ body.civicai-mobile .civicai-pwa-banner--visible {
   transform: translateY(-100%);
 }
 body.civicai-mobile .civicai-pwa-banner--visible {
-  transform: translateY(0);
+  transform: translateY(0) !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 body.civicai-mobile .civicai-pwa-banner .civicai-pwa-banner__inner,
 .civicai-pwa-banner--mobile .civicai-pwa-banner__inner {
@@ -88,6 +91,8 @@ body.civicai-mobile .civicai-pwa-banner .civicai-pwa-banner__inner,
 }
 .civicai-pwa-banner--mobile.civicai-pwa-banner--visible {
   transform: translateY(0) !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 @keyframes civicai-pwa-slidedown {

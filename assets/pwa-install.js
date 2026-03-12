@@ -216,11 +216,13 @@
     }
     // Android/Chrome: banner is shown when beforeinstallprompt fires (already wired above)
 
-    // Mobil: késleltetett megjelenés (2 s), hogy biztosan látszódjon a prompt
+    // Mobil: késleltetett megjelenés (2 s), felugróként – mindig mutassuk mobilon, ne csak ha már van deferredPrompt
     setTimeout(function () {
       if (!shouldShowInstallUI()) return;
       if (isIOS()) {
         showIOSCard();
+      } else if (isMobileView()) {
+        showBanner();
       } else if (deferredPrompt) {
         showBanner();
       }
