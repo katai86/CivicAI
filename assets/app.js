@@ -809,7 +809,12 @@ loadCivilEvents().catch(err => console.error(err));
     if (addTreeMode) {
       addTreeMapClick = (e) => {
         const { lat, lng } = e.latlng;
-        if (addTreeMarker) map.removeLayer(addTreeMarker);
+        if (addTreeMarker) {
+          const prevLat = addTreeMarker.getLatLng().lat;
+          const prevLng = addTreeMarker.getLatLng().lng;
+          if (Math.abs(prevLat - lat) < 1e-5 && Math.abs(prevLng - lng) < 1e-5) return;
+          map.removeLayer(addTreeMarker);
+        }
         addTreeMarker = L.marker([lat, lng], { icon: treeIcon(null) }).addTo(map);
         const addLabel = (window.LANG && window.LANG['legend.tree_add']) ? window.LANG['legend.tree_add'] : 'Új fa felvitele';
         const speciesPh = (window.LANG && window.LANG['tree.species_placeholder']) ? window.LANG['tree.species_placeholder'] : 'Faj (opcionális)';
@@ -830,6 +835,10 @@ loadCivilEvents().catch(err => console.error(err));
           if (formEl) {
             formEl.addEventListener('submit', async (ev) => {
               ev.preventDefault();
+              if (formEl._treeSubmitDone) return;
+              formEl._treeSubmitDone = true;
+              const submitBtn = formEl.querySelector('button[type="submit"]');
+              if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = (window.LANG && window.LANG['gov.generating']) ? window.LANG['gov.generating'] : 'Mentés...'; }
               const fd = new FormData(formEl);
               fd.append('lat', String(lat));
               fd.append('lng', String(lng));
@@ -837,12 +846,16 @@ loadCivilEvents().catch(err => console.error(err));
                 const res = await fetch(API_TREE_CREATE, { method: 'POST', body: fd });
                 const j = await res.json().catch(() => null);
                 if (!res.ok || !j || !j.ok) {
+                  formEl._treeSubmitDone = false;
+                  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = (window.LANG && window.LANG['tree.submit_add']) ? window.LANG['tree.submit_add'] : 'Fa mentése'; }
                   alert(j && j.error ? j.error : 'Hiba történt.');
                   return;
                 }
                 exitAddTreeMode();
                 await loadTrees();
               } catch (err) {
+                formEl._treeSubmitDone = false;
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = (window.LANG && window.LANG['tree.submit_add']) ? window.LANG['tree.submit_add'] : 'Fa mentése'; }
                 console.error(err);
                 alert('Hiba történt.');
               }
