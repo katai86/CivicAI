@@ -333,12 +333,17 @@ function isOlderThanDays(ymdStr, days){
   btn.addEventListener('click', () => setExpanded(!legend.classList.contains('open')));
 })();
 
-// ====== PC: Jelmagyarázat menüpont – panel megnyitása/bezárása ======
+// ====== PC: Jelmagyarázat menüpont – panel megnyitása/bezárása (lenyíló a gomb alatt) ======
 (function initLegendMenuPanel(){
   const menuBtn = document.getElementById('legendMenuBtn');
   const panel = document.getElementById('legendPanel');
+  const legend = document.getElementById('legend');
   if(!menuBtn || !panel) return;
-  const open = () => { panel.hidden = false; menuBtn.setAttribute('aria-expanded', 'true'); };
+  const open = () => {
+    panel.hidden = false;
+    menuBtn.setAttribute('aria-expanded', 'true');
+    if (legend) { legend.classList.add('open'); legend.querySelector('#legendToggle')?.setAttribute('aria-expanded', 'true'); }
+  };
   const close = () => { panel.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); };
   menuBtn.addEventListener('click', (e) => { e.stopPropagation(); panel.hidden ? open() : close(); });
   document.addEventListener('click', () => { if(!panel.hidden) close(); });
@@ -385,6 +390,7 @@ async function loadApprovedMarkers(){
   const rows = j.data || [];
 
   for(const r of rows){
+    if (r.category === 'green' || r.category === 'tree_upload') continue;
     const mk = L.marker([r.lat, r.lng], { icon: badgeIcon(r.category) })
       .addTo(map)
       .bindPopup(
@@ -400,7 +406,7 @@ async function loadApprovedMarkers(){
     markerLayers.push({ marker: mk, data: r });
   }
 
-  setLegendCount(rows.length);
+  setLegendCount(markerLayers.length);
 }
 
 function scheduleReload(){
@@ -656,8 +662,11 @@ async function loadTrees(){
       `;
 
       const ageText = t.estimated_age ? (t.estimated_age + ' év') : (t.planting_year ? (new Date().getFullYear() - parseInt(t.planting_year, 10)) + ' év' : '–');
+      const treeSerial = 'T' + String(Number(t.id)).padStart(4, '0');
+      const speciesLabel = (window.LANG && window.LANG['tree.species_label']) ? window.LANG['tree.species_label'] : 'Fajta';
+      const speciesText = (t.species && String(t.species).trim()) ? esc(t.species) : ((window.LANG && window.LANG['tree.unknown_species']) ? window.LANG['tree.unknown_species'] : '–');
       const mk = L.marker([t.lat, t.lng], { icon: treeIcon(t) }).bindPopup(
-        `<b>🌳 ${esc(t.species || (window.LANG && window.LANG['tree.unknown_species']) ? window.LANG['tree.unknown_species'] : 'Fa')}</b><br>` +
+        `<b>🌳 ${esc(treeSerial)}</b> · <b>${speciesLabel}:</b> ${speciesText}<br>` +
         (t.address ? `<small>${esc(t.address)}</small><br>` : '') +
         `<small><b>${(window.LANG && window.LANG['tree.age']) ? window.LANG['tree.age'] : 'Életkor'}:</b> ${ageText}</small><br>` +
         `<small><b>${(window.LANG && window.LANG['tree.health']) ? window.LANG['tree.health'] : 'Állapot'}:</b> ${treeHealthLabel(t.health_status)}</small><br>` +
@@ -820,60 +829,8 @@ loadCivilEvents().catch(err => console.error(err));
     map.getContainer().style.cursor = addTreeMode ? 'crosshair' : '';
     if (addTreeMode) {
       addTreeMapClick = (e) => {
-        const { lat, lng } = e.latlng;
-        if (addTreeMarker) {
-          const prevLat = addTreeMarker.getLatLng().lat;
-          const prevLng = addTreeMarker.getLatLng().lng;
-          if (Math.abs(prevLat - lat) < 1e-5 && Math.abs(prevLng - lng) < 1e-5) return;
-          map.removeLayer(addTreeMarker);
-        }
-        addTreeMarker = L.marker([lat, lng], { icon: treeIcon(null) }).addTo(map);
-        const addLabel = (window.LANG && window.LANG['legend.tree_add']) ? window.LANG['legend.tree_add'] : 'Új fa felvitele';
-        const speciesPh = (window.LANG && window.LANG['tree.species_placeholder']) ? window.LANG['tree.species_placeholder'] : 'Faj (opcionális)';
-        const notePh = (window.LANG && window.LANG['tree.note_placeholder']) ? window.LANG['tree.note_placeholder'] : 'Megjegyzés (opcionális)';
-        const submitLabel = (window.LANG && window.LANG['tree.submit_add']) ? window.LANG['tree.submit_add'] : 'Fa mentése';
-        const popupContent = `
-          <form class="tree-create-form" data-lat="${lat}" data-lng="${lng}">
-            <input type="text" name="species" placeholder="${esc(speciesPh)}" maxlength="120">
-            <textarea name="note" placeholder="${esc(notePh)}" rows="2" maxlength="500"></textarea>
-            <input type="file" name="photo" accept="image/*">
-            <button type="submit" class="btn-soft">${esc(submitLabel)}</button>
-          </form>
-        `;
-        addTreeMarker.bindPopup(popupContent, { maxWidth: 320 }).openPopup();
-        setTimeout(() => {
-          const popupEl = addTreeMarker && addTreeMarker.getPopup().getElement();
-          const formEl = popupEl?.querySelector('.tree-create-form');
-          if (formEl) {
-            formEl.addEventListener('submit', async (ev) => {
-              ev.preventDefault();
-              if (formEl._treeSubmitDone) return;
-              formEl._treeSubmitDone = true;
-              const submitBtn = formEl.querySelector('button[type="submit"]');
-              if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = (window.LANG && window.LANG['gov.generating']) ? window.LANG['gov.generating'] : 'Mentés...'; }
-              const fd = new FormData(formEl);
-              fd.append('lat', String(lat));
-              fd.append('lng', String(lng));
-              try {
-                const res = await fetch(API_TREE_CREATE, { method: 'POST', body: fd });
-                const j = await res.json().catch(() => null);
-                if (!res.ok || !j || !j.ok) {
-                  formEl._treeSubmitDone = false;
-                  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = (window.LANG && window.LANG['tree.submit_add']) ? window.LANG['tree.submit_add'] : 'Fa mentése'; }
-                  alert(j && j.error ? j.error : 'Hiba történt.');
-                  return;
-                }
-                exitAddTreeMode();
-                await loadTrees();
-              } catch (err) {
-                formEl._treeSubmitDone = false;
-                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = (window.LANG && window.LANG['tree.submit_add']) ? window.LANG['tree.submit_add'] : 'Fa mentése'; }
-                console.error(err);
-                alert('Hiba történt.');
-              }
-            });
-          }
-        }, 50);
+        exitAddTreeMode();
+        openModal(e.latlng, { category: 'tree_upload' });
       };
       map.on('click', addTreeMapClick);
     } else {
@@ -970,8 +927,9 @@ function closeModal(){
   }
 }
 
-function openModal(latlng){
+function openModal(latlng, options){
   closeModal();
+  window._openModalOptions = options || {};
 
   tempMarker = L.marker(latlng).addTo(map);
 
@@ -1237,6 +1195,11 @@ function openModal(latlng){
   if (elCategory) elCategory.addEventListener('change', syncCategory);
 
   syncCategory();
+  if (window._openModalOptions && window._openModalOptions.category === 'tree_upload' && elCategory) {
+    elCategory.value = 'tree_upload';
+    syncCategory();
+  }
+  window._openModalOptions = null;
 
   modal.querySelector('#mAnalyzePhotoBtn')?.addEventListener('click', async () => {
     const fileInput = modal.querySelector('#mImage');
@@ -1314,8 +1277,15 @@ function openModal(latlng){
   }
 
   modal.querySelector('#mSubmit').addEventListener('click', async () => {
-    if (modal._treeSubmitting) return;
     const category = modal.querySelector('#mCategory').value;
+    if (category === 'tree_upload') {
+      if (modal._treeSubmitting) return;
+      if (!IS_LOGGED_IN) {
+        alert(t('modal.tree_upload_login') || 'Fa feltöltéshez be kell jelentkezned.');
+        return;
+      }
+      modal._treeSubmitting = true;
+    }
     const title = modal.querySelector('#mTitle').value.trim();
     const description = modal.querySelector('#mDesc').value.trim();
     const address_zip = modal.querySelector('#mZip')?.value.trim() || '';
@@ -1355,13 +1325,6 @@ function openModal(latlng){
     if (!description && category !== 'tree_upload'){
       alert('Kérlek írj leírást!');
       return;
-    }
-
-    if (category === 'tree_upload') {
-      if (!IS_LOGGED_IN) {
-        alert(t('modal.tree_upload_login') || 'Fa feltöltéshez be kell jelentkezned.');
-        return;
-      }
     }
 
     // nem anonim -> név kell
@@ -1433,7 +1396,6 @@ function openModal(latlng){
 
     try{
       if (category === 'tree_upload') {
-        modal._treeSubmitting = true;
         const formData = new FormData();
         formData.append('lat', String(latlng.lat));
         formData.append('lng', String(latlng.lng));

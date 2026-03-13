@@ -131,11 +131,20 @@ body{
 .desktop-map-actions{position:absolute;right:14px;top:14px;z-index:800}
 .fab-report-desktop{position:relative;right:auto;bottom:auto;left:auto;top:auto}
 
-/* PC: Jelmagyarázat a menüből lenyíló panel */
-.legend-panel-desktop{position:fixed;top:52px;right:14px;z-index:1000;display:none}
-.legend-panel-desktop:not([hidden]){display:block}
-.legend-in-menu{position:relative;right:auto;top:auto;width:260px;max-width:90vw;
-  transform:scale(0.72);transform-origin:top right}
+/* PC: Jelmagyarázat a menüsorban – lenyíló a gomb alatt, méret harmonizál a menüvel */
+.topbar-legend-wrap{position:relative;display:inline-block}
+.topbar-legend-dropdown{position:absolute;top:100%;right:0;margin-top:6px;z-index:1001;
+  min-width:280px;max-width:320px;display:none;
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  box-shadow:var(--shadow);backdrop-filter:blur(10px)}
+.topbar-legend-dropdown:not([hidden]){display:block}
+.topbar-legend-dropdown .legend-in-menu{position:relative;right:auto;top:auto;width:100%;
+  transform:none;font-size:14px}
+.topbar-legend-dropdown .legend-toggle{font-size:14px;padding:8px 10px}
+.topbar-legend-dropdown .legend-body{padding:8px 10px;font-size:14px}
+.topbar-legend-dropdown .legend-item{padding:6px 8px;font-size:14px}
+.topbar-legend-dropdown .legend-filter{font-size:13px;padding:6px 10px}
+.topbar-legend-dropdown .legend-foot{font-size:12px;margin-top:8px}
 
 /* ===== Legend (72% méret, 20%-kal nagyobb) ===== */
 .legend{position:absolute;right:14px;top:14px;z-index:800;width:260px;max-width:85vw;

@@ -78,6 +78,22 @@ try {
   $pdo = db();
   $pdo->beginTransaction();
 
+  // Duplikátum: ~2 m-en belül már van fa?
+  $delta = 0.00002; // ~2 m
+  $stmtCheck = $pdo->prepare("
+    SELECT id FROM trees
+    WHERE lat BETWEEN :lat1 AND :lat2 AND lng BETWEEN :lng1 AND :lng2 AND public_visible = 1
+    LIMIT 1
+  ");
+  $stmtCheck->execute([
+    ':lat1' => $lat - $delta, ':lat2' => $lat + $delta,
+    ':lng1' => $lng - $delta, ':lng2' => $lng + $delta,
+  ]);
+  if ($stmtCheck->fetchColumn()) {
+    $pdo->rollBack();
+    json_response(['ok' => false, 'error' => (function_exists('t') ? t('api.tree_duplicate_location') : null) ?: 'Ezen a helyen már van fa.'], 409);
+  }
+
   $treeId = 0;
   try {
     $stmt = $pdo->prepare("

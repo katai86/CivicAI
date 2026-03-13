@@ -24,13 +24,22 @@ if ($waterAmount !== '' && !is_numeric($waterAmount)) {
   json_response(['ok' => false, 'error' => 'Invalid water amount'], 400);
 }
 
+// Fallback konstansok, ha nincs config (öntözési kép feltöltés ne fusson hibára)
+if (!defined('UPLOAD_MAX_BYTES')) {
+  define('UPLOAD_MAX_BYTES', 6 * 1024 * 1024);
+}
+if (!defined('UPLOAD_DIR')) {
+  define('UPLOAD_DIR', __DIR__ . '/../uploads');
+}
+
 $photoFilename = null;
 
 // Optional photo upload
 if (!empty($_FILES['photo']) && is_array($_FILES['photo'])) {
   $f = $_FILES['photo'];
   if ($f['error'] === UPLOAD_ERR_OK && $f['size'] > 0) {
-    if ($f['size'] > UPLOAD_MAX_BYTES) {
+    $uploadMax = defined('UPLOAD_MAX_BYTES') ? (int)UPLOAD_MAX_BYTES : (6 * 1024 * 1024);
+    if ($f['size'] > $uploadMax) {
       json_response(['ok' => false, 'error' => 'File too large'], 400);
     }
     $tmp = $f['tmp_name'];
@@ -46,7 +55,7 @@ if (!empty($_FILES['photo']) && is_array($_FILES['photo'])) {
       $mime = (string)mime_content_type($tmp);
     }
     $mime = $mime ?: '';
-    $allowed = UPLOAD_ALLOWED_MIME;
+    $allowed = defined('UPLOAD_ALLOWED_MIME') && is_array(UPLOAD_ALLOWED_MIME) ? UPLOAD_ALLOWED_MIME : ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
     if (!isset($allowed[$mime])) {
       json_response(['ok'=>false,'error'=>'Invalid file type'], 400);
     }
@@ -54,11 +63,19 @@ if (!empty($_FILES['photo']) && is_array($_FILES['photo'])) {
     $photoFilename = 't'.$treeId.'_u'.$uid.'_'.bin2hex(random_bytes(8)).'.'.$ext;
     $dir = rtrim(UPLOAD_DIR, '/\\') . DIRECTORY_SEPARATOR . 'trees';
     if (!is_dir($dir)) {
-      @mkdir($dir, 0775, true);
+      if (!@mkdir($dir, 0775, true)) {
+        log_error('tree_watering: cannot create upload dir ' . $dir);
+        json_response(['ok'=>false,'error'=>'Upload failed'], 500);
+      }
+    }
+    if (!is_writable($dir)) {
+      log_error('tree_watering: upload dir not writable ' . $dir);
+      json_response(['ok'=>false,'error'=>'Upload failed'], 500);
     }
     $dest = $dir . DIRECTORY_SEPARATOR . $photoFilename;
     if (!@move_uploaded_file($tmp, $dest)) {
-      json_response(['ok'=>false,'error'=>'Cannot move file'], 500);
+      log_error('tree_watering: move_uploaded_file failed ' . $dest);
+      json_response(['ok'=>false,'error'=>'Cannot save file'], 500);
     }
   }
 }
