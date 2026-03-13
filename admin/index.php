@@ -1,7 +1,18 @@
 <?php
-require_once __DIR__ . '/../util.php';
-require_admin();
-start_secure_session();
+try {
+  require_once __DIR__ . '/../util.php';
+  require_admin();
+  start_secure_session();
+} catch (Throwable $e) {
+  if (function_exists('log_error')) log_error('Admin bootstrap: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+  header('Content-Type: text/html; charset=utf-8');
+  http_response_code(500);
+  echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Admin hiba</title></head><body style="font-family:sans-serif;padding:2rem;max-width:600px;">';
+  echo '<h1>Admin betöltési hiba</h1><p><strong>' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</strong></p>';
+  echo '<p>Fájl: ' . htmlspecialchars($e->getFile(), ENT_QUOTES, 'UTF-8') . ' (sor ' . (int)$e->getLine() . ')</p>';
+  echo '<p>Ellenőrizd a szerver <code>error.log</code> vagy a projekt gyökérben <code>error.log</code> fájlt.</p></body></html>';
+  exit;
+}
 if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
   set_lang($_GET['lang']);
   header('Location: ' . (isset($_SERVER['REQUEST_URI']) ? strtok($_SERVER['REQUEST_URI'], '?') : app_url('/admin/index.php')));
@@ -21,7 +32,7 @@ $LANG_JS = lang_array_for_js();
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/dashboard/dist/css/adminlte.min.css'), ENT_QUOTES, 'UTF-8') ?>">
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/admin.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
-<body class="layout-fixed sidebar-expand-lg bg-body-tertiary" data-app-base="<?= htmlspecialchars(APP_BASE, ENT_QUOTES, 'UTF-8') ?>" data-map-lat="<?= htmlspecialchars((string)(defined('MAP_CENTER_LAT') ? MAP_CENTER_LAT : 46.565), ENT_QUOTES, 'UTF-8') ?>" data-map-lng="<?= htmlspecialchars((string)(defined('MAP_CENTER_LNG') ? MAP_CENTER_LNG : 20.667), ENT_QUOTES, 'UTF-8') ?>" data-map-zoom="<?= htmlspecialchars((string)(defined('MAP_ZOOM') ? MAP_ZOOM : 13), ENT_QUOTES, 'UTF-8') ?>">
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary" data-app-base="<?= htmlspecialchars(defined('APP_BASE') ? APP_BASE : (defined('APP_BASE_URL') ? rtrim(parse_url(APP_BASE_URL, PHP_URL_PATH) ?: '/terkep', '/') : '/terkep'), ENT_QUOTES, 'UTF-8') ?>" data-map-lat="<?= htmlspecialchars((string)(defined('MAP_CENTER_LAT') ? MAP_CENTER_LAT : 46.565), ENT_QUOTES, 'UTF-8') ?>" data-map-lng="<?= htmlspecialchars((string)(defined('MAP_CENTER_LNG') ? MAP_CENTER_LNG : 20.667), ENT_QUOTES, 'UTF-8') ?>" data-map-zoom="<?= htmlspecialchars((string)(defined('MAP_ZOOM') ? MAP_ZOOM : 13), ENT_QUOTES, 'UTF-8') ?>">
 <div class="app-wrapper">
   <nav class="app-header navbar navbar-expand bg-body">
     <div class="container-fluid">

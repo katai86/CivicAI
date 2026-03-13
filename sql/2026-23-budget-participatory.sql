@@ -12,8 +12,7 @@ CREATE TABLE IF NOT EXISTS budget_projects (
   updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_budget_projects_authority (authority_id),
   KEY idx_budget_projects_status (status),
-  KEY idx_budget_projects_created (created_at),
-  CONSTRAINT fk_budget_projects_authority FOREIGN KEY (authority_id) REFERENCES authorities (id) ON DELETE SET NULL
+  KEY idx_budget_projects_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS budget_votes (
