@@ -17,6 +17,9 @@ const API_TREE_ANALYZE_PHOTO = `${BASE}/api/tree_analyze_photo.php`;
 const API_TREE_HEALTH_ANALYZE = `${BASE}/api/tree_health_analyze.php`;
 const API_CIVIL_EVENT_CREATE = `${BASE}/api/civil_event_create.php`;
 const API_REPORT_LIKE = `${BASE}/api/report_like.php`;
+const API_IDEAS = `${BASE}/api/ideas_list.php`;
+const API_IDEA_CREATE = `${BASE}/api/idea_create.php`;
+const API_IDEA_VOTE = `${BASE}/api/idea_vote.php`;
 const GEO_SEARCH = 'https://nominatim.openstreetmap.org/search';
 
 // ====== Map init ======
@@ -62,6 +65,7 @@ let addTreeMarker = null;
 let addTreeMapClick = null;
 let facilityMarkers = [];
 let civilEventMarkers = [];
+let ideaMarkers = [];
 let reloadTimer = null;
 let activeCategory = 'all';
 
@@ -276,6 +280,16 @@ function greenActionIcon(){
   return L.divIcon({ className:'', html, iconSize:[34,34], iconAnchor:[17,17], popupAnchor:[0,-14] });
 }
 
+function ideaIcon(){
+  const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f4a1.svg`;
+  const html = `
+    <div class="badge-marker" style="--ring:#eab308">
+      <img src="${url}" alt="" />
+    </div>
+  `;
+  return L.divIcon({ className:'', html, iconSize:[34,34], iconAnchor:[17,17], popupAnchor:[0,-14] });
+}
+
 function treeIcon(tree){
   // M5: green = healthy/good, yellow = needs attention/fair, red = unhealthy/poor/critical
   const colors = {
@@ -416,6 +430,7 @@ function scheduleReload(){
     loadLayerMarkers().catch(err => console.error(err));
     loadFacilities().catch(err => console.error(err));
     loadCivilEvents().catch(err => console.error(err));
+    loadIdeas().catch(err => console.error(err));
   }, 250);
 }
 
@@ -782,6 +797,66 @@ async function loadCivilEvents(){
   }
 }
 
+async function loadIdeas(){
+  ideaMarkers.forEach(m => map.removeLayer(m));
+  ideaMarkers = [];
+  try{
+    const params = new URLSearchParams();
+    const b = getBoundsParams();
+    params.set('minLat', b.minLat);
+    params.set('maxLat', b.maxLat);
+    params.set('minLng', b.minLng);
+    params.set('maxLng', b.maxLng);
+    params.set('limit', '500');
+    const j = await fetchJson(`${API_IDEAS}?${params.toString()}`);
+    const rows = j.data || [];
+    for (const idea of rows){
+      const mk = L.marker([idea.lat, idea.lng], { icon: ideaIcon() })
+        .addTo(map)
+        .bindPopup(
+          `<b>${esc(idea.title || '')}</b><br>` +
+          (idea.description ? `<small>${esc(idea.description)}</small><br>` : '') +
+          (idea.author_name ? `<small>${esc(idea.author_name)}</small><br>` : '') +
+          `<div class="idea-vote-row" data-idea-id="${idea.id}">
+            <button type="button" class="like-btn ${idea.voted_by_me ? 'liked' : ''}" data-idea-id="${idea.id}" aria-label="${esc(t('idea.vote'))}">👍</button>
+            <span class="idea-vote-count">${Number(idea.vote_count || 0)}</span> <span>${esc(t('idea.votes'))}</span>
+          </div>`
+        );
+      mk._ideaData = idea;
+      ideaMarkers.push(mk);
+    }
+    map.on('popupopen', (e) => {
+      const popup = e.popup;
+      const el = popup.getElement && popup.getElement();
+      if (!el) return;
+      const voteBtn = el.querySelector('.like-btn[data-idea-id]');
+      if (voteBtn) {
+        voteBtn.onclick = () => handleIdeaVote(Number(voteBtn.getAttribute('data-idea-id')), el);
+      }
+    });
+  }catch(e){
+    console.warn('ideas load failed', e);
+  }
+}
+
+async function handleIdeaVote(ideaId, popupEl){
+  if (!IS_LOGGED_IN) {
+    if (popupEl) popupEl.querySelector('.idea-vote-count') && (popupEl.querySelector('.idea-vote-count').textContent += ' – ' + t('idea.login_to_vote'));
+    return;
+  }
+  try {
+    const j = await fetchJson(API_IDEA_VOTE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: ideaId }) });
+    if (j.ok && popupEl) {
+      const cnt = popupEl.querySelector('.idea-vote-count');
+      const btn = popupEl.querySelector('.like-btn[data-idea-id]');
+      if (cnt) cnt.textContent = j.count;
+      if (btn) btn.classList.toggle('liked', !!j.voted);
+    }
+  } catch (err) {
+    console.warn('idea vote failed', err);
+  }
+}
+
 map.on('moveend zoomend', () => {
   scheduleReload();
 });
@@ -789,6 +864,7 @@ map.on('moveend zoomend', () => {
 loadLayerMarkers().catch(err => console.error(err));
 loadFacilities().catch(err => console.error(err));
 loadCivilEvents().catch(err => console.error(err));
+loadIdeas().catch(err => console.error(err));
 
 // ====== Tree layer filter (legend) ======
 (function initTreeLayerFilter(){
@@ -800,6 +876,31 @@ loadCivilEvents().catch(err => console.error(err));
       btns.forEach(b => b.classList.toggle('active', (b.getAttribute('data-tree-filter') || '') === filter));
       loadTrees().catch(err => console.error(err));
     });
+  });
+})();
+
+// ====== Új ötlet (térképre kattintás + űrlap) ======
+(function initAddIdea(){
+  const btn = document.getElementById('btnAddIdea');
+  if (!btn || !IS_LOGGED_IN) return;
+  let addIdeaMode = false;
+  let addIdeaMapClick = null;
+  btn.addEventListener('click', () => {
+    addIdeaMode = !addIdeaMode;
+    btn.classList.toggle('active', addIdeaMode);
+    map.getContainer().style.cursor = addIdeaMode ? 'crosshair' : '';
+    if (addIdeaMode) {
+      addIdeaMapClick = (e) => {
+        addIdeaMode = false;
+        btn.classList.remove('active');
+        map.getContainer().style.cursor = '';
+        map.off('click', addIdeaMapClick);
+        openModal(e.latlng, { category: 'idea' });
+      };
+      map.on('click', addIdeaMapClick);
+    } else {
+      if (addIdeaMapClick) map.off('click', addIdeaMapClick);
+    }
   });
 })();
 
@@ -926,7 +1027,56 @@ function closeModal(){
   }
 }
 
+function openIdeaModal(latlng){
+  closeModal();
+  const lat = typeof latlng.lat === 'function' ? latlng.lat() : latlng.lat;
+  const lng = typeof latlng.lng === 'function' ? latlng.lng() : latlng.lng;
+  tempMarker = L.marker([lat, lng]).addTo(map);
+  const modal = document.createElement('div');
+  modal.id = 'reportModal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="modal-x" type="button" aria-label="${esc(t('modal.close'))}">×</button>
+      <div class="modal-scroll">
+        <h3>${esc(t('legend.idea_add') || 'Új ötlet')}</h3>
+        <label>${esc(t('idea.title_placeholder') || 'Ötlet címe')}</label>
+        <input id="mIdeaTitle" maxlength="200" placeholder="${esc(t('idea.title_placeholder') || '')}">
+        <label>${esc(t('idea.desc_placeholder') || 'Leírás (opcionális)')}</label>
+        <textarea id="mIdeaDesc" rows="3" maxlength="5000" placeholder="${esc(t('idea.desc_placeholder') || '')}"></textarea>
+        <button type="button" class="btn primary" id="mIdeaSubmit">${esc(t('idea.submit') || 'Beküldés')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector('.modal-x').onclick = () => { closeModal(); };
+  modal.querySelector('#mIdeaSubmit').onclick = async () => {
+    const title = modal.querySelector('#mIdeaTitle').value.trim();
+    if (!title) { alert(t('api.facility_name_required') || 'Cím megadása kötelező.'); return; }
+    const description = modal.querySelector('#mIdeaDesc').value.trim();
+    try {
+      const j = await fetchJson(API_IDEA_CREATE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description, lat, lng })
+      });
+      if (j.ok) {
+        closeModal();
+        loadIdeas().catch(() => {});
+        alert(t('modal.thanks') || 'Köszönjük!');
+      } else {
+        alert(j.error || t('common.error_generic'));
+      }
+    } catch (e) {
+      alert(e.message || t('common.error_server'));
+    }
+  };
+}
+
 function openModal(latlng, options){
+  if (options && options.category === 'idea') {
+    openIdeaModal(latlng);
+    return;
+  }
   closeModal();
   window._openModalOptions = options || {};
 

@@ -406,6 +406,62 @@ CREATE TABLE IF NOT EXISTS tree_species_care (
   KEY idx_species_name (species_name(60))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ========== 2026-22 M3 Citizen Ideation (ideas + idea_votes) ==========
+CREATE TABLE IF NOT EXISTS ideas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  description TEXT NULL,
+  lat DECIMAL(10,7) NOT NULL,
+  lng DECIMAL(10,7) NOT NULL,
+  address VARCHAR(255) NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'submitted',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_ideas_geo (lat, lng),
+  KEY idx_ideas_status (status),
+  KEY idx_ideas_user (user_id),
+  KEY idx_ideas_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS idea_votes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  idea_id INT NOT NULL,
+  user_id INT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_idea_vote (idea_id, user_id),
+  KEY idx_idea_votes_idea (idea_id),
+  KEY idx_idea_votes_user (user_id),
+  CONSTRAINT fk_idea_votes_idea FOREIGN KEY (idea_id) REFERENCES ideas (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ========== 2026-23 M4 Participatory Budgeting (budget_projects + budget_votes) ==========
+CREATE TABLE IF NOT EXISTS budget_projects (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  budget DECIMAL(12,2) NOT NULL DEFAULT 0,
+  status VARCHAR(32) NOT NULL DEFAULT 'draft',
+  authority_id INT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_budget_projects_authority (authority_id),
+  KEY idx_budget_projects_status (status),
+  KEY idx_budget_projects_created (created_at),
+  CONSTRAINT fk_budget_projects_authority FOREIGN KEY (authority_id) REFERENCES authorities (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS budget_votes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  user_id INT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_budget_vote (project_id, user_id),
+  KEY idx_budget_votes_project (project_id),
+  KEY idx_budget_votes_user (user_id),
+  CONSTRAINT fk_budget_votes_project FOREIGN KEY (project_id) REFERENCES budget_projects (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ========== Segéd procedure-ök eltávolítása ==========
 DROP PROCEDURE IF EXISTS add_column_if_not_exists;
 DROP PROCEDURE IF EXISTS add_index_if_not_exists;

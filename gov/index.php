@@ -190,6 +190,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
   }
 }
 
+// M3 Ideation: ötlet státusz módosítás (admin vagy gov user)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'idea_set_status') {
+  if (!$isAdmin && $role !== 'govuser') {
+    $err = t('common.error_no_permission');
+  } else {
+    $ideaId = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    $ideaStatus = isset($_POST['status']) ? trim((string)$_POST['status']) : '';
+    $ideaAllowed = ['submitted', 'under_review', 'planned', 'in_progress', 'completed'];
+    if ($ideaId <= 0 || !in_array($ideaStatus, $ideaAllowed, true)) {
+      $err = t('common.error_invalid_data');
+    } else {
+      try {
+        $stmt = db()->prepare("UPDATE ideas SET status = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$ideaStatus, $ideaId]);
+        if ($stmt->rowCount() > 0) {
+          $ok = t('gov.status_updated');
+        }
+      } catch (Throwable $e) {
+        $err = t('common.error_save_failed');
+      }
+    }
+  }
+}
+
+$ideasList = [];
+try {
+  $stmt = db()->prepare("
+    SELECT i.id, i.user_id, i.title, i.description, i.lat, i.lng, i.status, i.created_at,
+           u.display_name AS author_name,
+           (SELECT COUNT(*) FROM idea_votes v WHERE v.idea_id = i.id) AS vote_count
+    FROM ideas i
+    LEFT JOIN users u ON u.id = i.user_id
+    ORDER BY i.created_at DESC
+    LIMIT 200
+  ");
+  $stmt->execute();
+  $ideasList = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+} catch (Throwable $e) {
+  $ideasList = [];
+}
+
 $reports = [];
 $stats = [
   'reports_1d' => 0,
@@ -485,6 +526,12 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             <a href="#" class="nav-link tab" data-tab="reports">
               <i class="nav-icon bi bi-flag-fill"></i>
               <p><?= h(t('gov.tab_reports')) ?></p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="ideas">
+              <i class="nav-icon bi bi-lightbulb"></i>
+              <p><?= h(t('legend.ideas_section') ?: 'Ötletek') ?></p>
             </a>
           </li>
           <li class="nav-item">
@@ -801,6 +848,66 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
           </div>
         </div>
 
+        <div class="admin-tab-body" id="tab-ideas" hidden>
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('legend.ideas_section') ?: 'Ötletek') ?></h6>
+              <p class="text-secondary small mb-3"><?= h(t('gov.ideas_intro') ?: 'Ötletek listája, státusz módosítása.') ?></p>
+              <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th><?= h(t('idea.title_placeholder') ?: 'Cím') ?></th>
+                      <th><?= h(t('idea.votes') ?: 'Szavazat') ?></th>
+                      <th><?= h(t('common.status') ?: 'Státusz') ?></th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php
+                    $ideaStatusLabels = [
+                      'submitted' => t('gov.idea_status_submitted') ?: 'Beküldve',
+                      'under_review' => t('gov.idea_status_review') ?: 'Átnézés alatt',
+                      'planned' => t('gov.idea_status_planned') ?: 'Tervezett',
+                      'in_progress' => t('gov.idea_status_in_progress') ?: 'Folyamatban',
+                      'completed' => t('gov.idea_status_completed') ?: 'Kész',
+                    ];
+                    foreach ($ideasList as $idea): ?>
+                    <tr>
+                      <td><?= (int)$idea['id'] ?></td>
+                      <td>
+                        <span class="fw-semibold"><?= h($idea['title'] ?: '—') ?></span>
+                        <?php if (!empty($idea['description'])): ?>
+                          <br><span class="text-secondary small"><?= h(mb_strimwidth($idea['description'], 0, 80, '…')) ?></span>
+                        <?php endif; ?>
+                        <br><span class="text-muted small"><?= h($idea['author_name'] ?: t('common.anonymous')) ?> · <?= date('Y-m-d H:i', strtotime($idea['created_at'])) ?></span>
+                      </td>
+                      <td><?= (int)($idea['vote_count'] ?? 0) ?></td>
+                      <td>
+                        <form method="post" class="d-inline" onchange="this.submit()">
+                          <input type="hidden" name="action" value="idea_set_status">
+                          <input type="hidden" name="id" value="<?= (int)$idea['id'] ?>">
+                          <select name="status" class="form-select form-select-sm" style="min-width:140px">
+                            <?php foreach (array_keys($ideaStatusLabels) as $st): ?>
+                              <option value="<?= h($st) ?>"<?= ($idea['status'] ?? '') === $st ? ' selected' : '' ?>><?= h($ideaStatusLabels[$st]) ?></option>
+                            <?php endforeach; ?>
+                          </select>
+                        </form>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+              <?php if (empty($ideasList)): ?>
+                <p class="text-secondary small mb-0"><?= h(t('gov.no_data')) ?></p>
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
+
         <?php if (!$isAdmin): ?>
         <div class="admin-tab-body" id="tab-modules" hidden>
           <div class="card">
@@ -981,7 +1088,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
       e.preventDefault();
       var key = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
-      ['dashboard','reports','trees','modules'].forEach(function(k){
+      ['dashboard','reports','ideas','trees','modules'].forEach(function(k){
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
       });

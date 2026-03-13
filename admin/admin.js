@@ -12,6 +12,7 @@ const API_USERS       = `${BASE}/api/admin_users.php`;
 const API_LAYERS      = `${BASE}/api/admin_layers.php`;
 const API_AUTHORITIES = `${BASE}/api/admin_authorities.php`;
 const API_MODULES     = `${BASE}/api/admin_modules.php`;
+const API_BUDGET      = `${BASE}/api/admin_budget_projects.php`;
 const LOGOUT_URL      = `${BASE}/admin/logout.php`;
 // ========================================================
 
@@ -1068,6 +1069,7 @@ function initTabs(){
     users: document.getElementById('tab-users'),
     layers: document.getElementById('tab-layers'),
     authorities: document.getElementById('tab-authorities'),
+    budget: document.getElementById('tab-budget'),
     modules: document.getElementById('tab-modules')
   };
   tabs.forEach(btn => {
@@ -1094,9 +1096,152 @@ function initTabs(){
         clearLayerMarkers();
         loadAuthorities();
       }
+      if (key === 'budget') loadBudgetProjects();
       if (key === 'modules') loadModules();
     });
   });
+}
+
+const BUDGET_STATUS_LABEL = { draft: 'Piszkozat', published: 'Közzétéve', closed: 'Lezárva' };
+
+async function loadBudgetProjects() {
+  const list = document.getElementById('budgetProjectList');
+  if (!list) return;
+  list.textContent = (typeof t === 'function' ? t('admin.load') : 'Betöltés') + '...';
+  try {
+    const j = await fetchJson(API_BUDGET);
+    const projects = j.projects || [];
+    const authorities = j.authorities || [];
+    const authOptions = authorities.map(a => `<option value="${a.id}">${esc(a.name || a.city || '')}</option>`).join('');
+    list.innerHTML = `
+      <div id="budgetAddForm" class="border rounded p-3 mb-3 bg-light" style="display:none">
+        <h6 class="mb-2">${esc(typeof t === 'function' ? t('admin.budget_add') : 'Új projekt')}</h6>
+        <div class="row g-2">
+          <div class="col-12"><label class="form-label small">${esc(typeof t === 'function' ? t('idea.title_placeholder') : 'Cím')}</label><input class="form-control form-control-sm" id="budgetNewTitle" placeholder="Projekt címe"></div>
+          <div class="col-12"><label class="form-label small">Leírás</label><textarea class="form-control form-control-sm" id="budgetNewDesc" rows="2"></textarea></div>
+          <div class="col-6"><label class="form-label small">Költségvetés (Ft)</label><input type="number" class="form-control form-control-sm" id="budgetNewBudget" value="0" min="0" step="0.01"></div>
+          <div class="col-6"><label class="form-label small">Státusz</label><select class="form-select form-select-sm" id="budgetNewStatus"><option value="draft">Piszkozat</option><option value="published">Közzétéve</option><option value="closed">Lezárva</option></select></div>
+          <div class="col-12"><label class="form-label small">Hatóság</label><select class="form-select form-select-sm" id="budgetNewAuthority"><option value="">—</option>${authOptions}</select></div>
+          <div class="col-12"><button type="button" class="btn btn-sm btn-primary" id="budgetSaveNew">Mentés</button> <button type="button" class="btn btn-sm btn-outline-secondary" id="budgetCancelNew">Mégse</button></div>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead><tr><th>#</th><th>Cím</th><th>Költségvetés</th><th>Szavazat</th><th>Státusz</th><th>Hatóság</th><th></th></tr></thead>
+          <tbody id="budgetTableBody">${projects.length ? projects.map(p => budgetRow(p, authOptions)) : '<tr><td colspan="7" class="text-secondary">Nincs projekt.</td></tr>'}</tbody>
+        </table>
+      </div>
+    `;
+    document.getElementById('btnBudgetAdd')?.addEventListener('click', () => {
+      const f = document.getElementById('budgetAddForm');
+      if (f) f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    });
+    document.getElementById('budgetCancelNew')?.addEventListener('click', () => {
+      const f = document.getElementById('budgetAddForm');
+      if (f) f.style.display = 'none';
+    });
+    document.getElementById('budgetSaveNew')?.addEventListener('click', async () => {
+      const title = document.getElementById('budgetNewTitle')?.value?.trim();
+      if (!title) { alert('Cím kötelező.'); return; }
+      try {
+        await fetchJson(API_BUDGET, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'create',
+            title,
+            description: document.getElementById('budgetNewDesc')?.value?.trim() || '',
+            budget: parseFloat(document.getElementById('budgetNewBudget')?.value || '0') || 0,
+            status: document.getElementById('budgetNewStatus')?.value || 'draft',
+            authority_id: document.getElementById('budgetNewAuthority')?.value ? parseInt(document.getElementById('budgetNewAuthority').value, 10) : null
+          })
+        });
+        document.getElementById('budgetAddForm').style.display = 'none';
+        document.getElementById('budgetNewTitle').value = '';
+        document.getElementById('budgetNewDesc').value = '';
+        loadBudgetProjects();
+      } catch (e) {
+        alert('Hiba: ' + (e.message || e));
+      }
+    });
+    list.querySelectorAll('[data-budget-edit]').forEach(btn => {
+      const id = parseInt(btn.getAttribute('data-budget-edit'), 10);
+      const proj = projects.find(p => p.id === id);
+      if (!proj) return;
+      btn.addEventListener('click', () => budgetEditRow(id, proj, authorities, list));
+    });
+    list.querySelectorAll('[data-budget-delete]').forEach(btn => {
+      const id = parseInt(btn.getAttribute('data-budget-delete'), 10);
+      btn.addEventListener('click', async () => {
+        if (!confirm('Törlöd ezt a projektet?')) return;
+        try {
+          await fetchJson(API_BUDGET, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id }) });
+          loadBudgetProjects();
+        } catch (e) {
+          alert('Hiba: ' + (e.message || e));
+        }
+      });
+    });
+  } catch (e) {
+    console.error(e);
+    list.innerHTML = '<div class="text-secondary">' + esc((e && e.message) || 'Hiba a betöltésnél.') + '</div>';
+  }
+}
+
+function budgetRow(p, authOptions) {
+  const statusLabel = BUDGET_STATUS_LABEL[p.status] || p.status;
+  const descStr = p.description || '';
+  const descShort = descStr.slice(0, 60);
+  return `<tr data-project-id="${p.id}">
+    <td>${p.id}</td>
+    <td><strong>${esc(p.title)}</strong>${descShort ? '<br><span class="text-secondary small">' + esc(descShort) + (descStr.length > 60 ? '…' : '') + '</span>' : ''}</td>
+    <td>${Number(p.budget).toLocaleString('hu-HU')} Ft</td>
+    <td>${p.vote_count || 0}</td>
+    <td>${esc(statusLabel)}</td>
+    <td>${esc(p.authority_name || '—')}</td>
+    <td><button type="button" class="btn btn-sm btn-outline-secondary" data-budget-edit="${p.id}">Szerkesztés</button> <button type="button" class="btn btn-sm btn-outline-danger" data-budget-delete="${p.id}">Törlés</button></td>
+  </tr>`;
+}
+
+function budgetEditRow(id, proj, authorities, listEl) {
+  const tr = listEl.querySelector(`tr[data-project-id="${id}"]`);
+  if (!tr) return;
+  const authOpts = (authorities || []).map(a => `<option value="${a.id}"${a.id == proj.authority_id ? ' selected' : ''}>${esc(a.name || a.city || '')}</option>`).join('');
+  tr.innerHTML = `
+    <td colspan="7" class="align-top bg-light p-2">
+      <div class="row g-2">
+        <div class="col-12"><input class="form-control form-control-sm" id="budgetEditTitle" value="${esc(proj.title)}" placeholder="Cím"></div>
+        <div class="col-12"><textarea class="form-control form-control-sm" id="budgetEditDesc" rows="2">${esc(proj.description || '')}</textarea></div>
+        <div class="col-4"><input type="number" class="form-control form-control-sm" id="budgetEditBudget" value="${Number(proj.budget)}" min="0" step="0.01"></div>
+        <div class="col-4"><select class="form-select form-select-sm" id="budgetEditStatus"><option value="draft"${proj.status==='draft'?' selected':''}>Piszkozat</option><option value="published"${proj.status==='published'?' selected':''}>Közzétéve</option><option value="closed"${proj.status==='closed'?' selected':''}>Lezárva</option></select></div>
+        <div class="col-4"><select class="form-select form-select-sm" id="budgetEditAuthority"><option value="">—</option>${authOpts}</select></div>
+        <div class="col-12"><button type="button" class="btn btn-sm btn-primary" id="budgetSaveEdit">Mentés</button> <button type="button" class="btn btn-sm btn-outline-secondary" id="budgetCancelEdit">Mégse</button></div>
+      </div>
+    </td>
+  `;
+  document.getElementById('budgetSaveEdit')?.addEventListener('click', async () => {
+    const title = document.getElementById('budgetEditTitle')?.value?.trim();
+    if (!title) { alert('Cím kötelező.'); return; }
+    try {
+      await fetchJson(API_BUDGET, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          id,
+          title,
+          description: document.getElementById('budgetEditDesc')?.value?.trim() || '',
+          budget: parseFloat(document.getElementById('budgetEditBudget')?.value || '0') || 0,
+          status: document.getElementById('budgetEditStatus')?.value || 'draft',
+          authority_id: document.getElementById('budgetEditAuthority')?.value ? parseInt(document.getElementById('budgetEditAuthority').value, 10) : null
+        })
+      });
+      loadBudgetProjects();
+    } catch (e) {
+      alert('Hiba: ' + (e.message || e));
+    }
+  });
+  document.getElementById('budgetCancelEdit')?.addEventListener('click', () => loadBudgetProjects());
 }
 
 document.getElementById('loadReports')?.addEventListener('click', loadReports);

@@ -56,6 +56,14 @@ $rankAll = isset($rankAll) ? $rankAll : null;
                   <button type="button" class="legend-item legend-item-btn" data-cat="idea"><span class="legend-badge b-idea">❗</span><span><?= htmlspecialchars(t('cat.idea_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
                   <button type="button" class="legend-item legend-item-btn" data-cat="civil_event"><span class="legend-badge b-civil">🤝</span><span><?= htmlspecialchars(t('cat.civil_event_desc'), ENT_QUOTES, 'UTF-8') ?></span></button>
                 </div>
+                <div class="legend-ideas-section">
+                  <div class="legend-list">
+                    <span class="legend-label"><?= htmlspecialchars(t('legend.ideas_section') ?? 'Ötletek', ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php if ($uid > 0): ?>
+                    <button type="button" class="legend-item legend-item-btn legend-add-idea" id="btnAddIdea"><span class="legend-badge b-idea">💡</span><span><?= htmlspecialchars(t('legend.idea_add') ?? 'Új ötlet', ENT_QUOTES, 'UTF-8') ?></span></button>
+                    <?php endif; ?>
+                  </div>
+                </div>
                 <div class="legend-tree-section">
                   <div class="legend-list">
                     <button type="button" class="legend-item legend-item-btn legend-tree-filter active" data-tree-filter="all"><span class="legend-badge b-green">🌳</span><span><?= htmlspecialchars(t('legend.trees_all') ?? 'Összes', ENT_QUOTES, 'UTF-8') ?></span></button>
@@ -72,6 +80,7 @@ $rankAll = isset($rankAll) ? $rankAll : null;
             </div>
           </div>
         </div>
+        <a class="topbtn" href="<?= htmlspecialchars(app_url('/budget.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.budget') ?: 'Költségvetés', ENT_QUOTES, 'UTF-8') ?></a>
         <a class="topbtn" href="<?= htmlspecialchars(app_url('/faq.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.faq'), ENT_QUOTES, 'UTF-8') ?></a>
         <?php if ($role === 'govuser'): ?>
           <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>

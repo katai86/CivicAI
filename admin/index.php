@@ -94,6 +94,12 @@ $LANG_JS = lang_array_for_js();
             </a>
           </li>
           <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="budget">
+              <i class="nav-icon bi bi-cash-stack"></i>
+              <p><?= htmlspecialchars(t('admin.budget_projects') ?: 'Költségvetési projektek'), ENT_QUOTES, 'UTF-8') ?></p>
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="modules">
               <i class="nav-icon bi bi-puzzle"></i>
               <p><?= htmlspecialchars(t('admin.modules'), ENT_QUOTES, 'UTF-8') ?></p>
@@ -270,6 +276,13 @@ $LANG_JS = lang_array_for_js();
                   <div class="admin-list mt-2" id="assignList">Nincs adat.</div>
                 </div>
 
+                <div class="admin-tab-body" id="tab-budget" hidden>
+                  <p class="text-secondary small mb-3"><?= htmlspecialchars(t('admin.budget_intro') ?: 'Közös költségvetés: projektek létrehozása, szerkesztése, közzététele. A polgárok a nyilvános oldalon szavazhatnak.'), ENT_QUOTES, 'UTF-8') ?></p>
+                  <div class="mb-3">
+                    <button type="button" class="btn btn-sm btn-primary" id="btnBudgetAdd"><?= htmlspecialchars(t('admin.budget_add') ?: 'Új projekt'), ENT_QUOTES, 'UTF-8') ?></button>
+                  </div>
+                  <div id="budgetProjectList"><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?>...</div>
+                </div>
                 <div class="admin-tab-body" id="tab-modules" hidden>
                   <p class="text-secondary small mb-3"><?= htmlspecialchars(t('admin.modules_intro'), ENT_QUOTES, 'UTF-8') ?></p>
                   <div id="moduleList"><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?>...</div>
