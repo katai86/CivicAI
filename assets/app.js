@@ -416,7 +416,6 @@ function scheduleReload(){
     loadLayerMarkers().catch(err => console.error(err));
     loadFacilities().catch(err => console.error(err));
     loadCivilEvents().catch(err => console.error(err));
-    loadTrees().catch(err => console.error(err));
   }, 250);
 }
 
