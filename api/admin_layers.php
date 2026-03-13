@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 
@@ -53,12 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $points = $stmt->fetchAll() ?: [];
     json_response(['ok'=>true,'data'=>['layers'=>$rows,'points'=>$points]]);
   } catch (Throwable $e) {
-    json_response(['ok'=>false,'error'=>'Layer táblák hiányoznak. Futtasd az SQL-t.'], 500);
+    json_response(['ok'=>false,'error'=>t('api.layer_tables_missing')], 500);
   }
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  json_response(['ok'=>false,'error'=>'Method not allowed'], 405);
+  json_response(['ok'=>false,'error'=>t('api.method_not_allowed')], 405);
 }
 
 $body = read_json_body();
@@ -74,14 +74,14 @@ if ($action === 'create_layer') {
   $to = safe_str($body['visible_to'] ?? null, 10);
   $authorityId = isset($body['authority_id']) ? (int)$body['authority_id'] : null;
   $layerType = safe_str($body['layer_type'] ?? null, 32);
-  if (!$category) json_response(['ok'=>false,'error'=>'Missing category'], 400);
+  if (!$category) json_response(['ok'=>false,'error'=>t('api.missing_category')], 400);
   if ($category === 'trees') {
     $key = 'trees';
-    $name = $name ?: 'Fák (fakataszter)';
+    $name = $name ?: 'F?k (fakataszter)';
     $layerType = 'trees';
   }
-  if (!$key || !$name) json_response(['ok'=>false,'error'=>'Missing fields'], 400);
-  if (!preg_match('/^[a-z0-9_\\-]+$/i', $key)) json_response(['ok'=>false,'error'=>'Invalid key'], 400);
+  if (!$key || !$name) json_response(['ok'=>false,'error'=>t('api.missing_fields')], 400);
+  if (!preg_match('/^[a-z0-9_\\-]+$/i', $key)) json_response(['ok'=>false,'error'=>t('api.invalid_key')], 400);
   if ($authorityId !== null && $authorityId <= 0) $authorityId = null;
   try {
     $stmt = db()->prepare("
@@ -94,14 +94,14 @@ if ($action === 'create_layer') {
     ]);
     json_response(['ok'=>true]);
   } catch (Throwable $e) {
-    if (strpos($e->getMessage(), 'Duplicate') !== false) json_response(['ok'=>false,'error'=>'A layer kulcs már létezik.'], 400);
-    json_response(['ok'=>false,'error'=>'Layer táblák hiányoznak. Futtasd az SQL-t.'], 500);
+    if (strpos($e->getMessage(), 'Duplicate') !== false) json_response(['ok'=>false,'error'=>t('api.layer_key_exists')], 400);
+    json_response(['ok'=>false,'error'=>t('api.layer_tables_missing')], 500);
   }
 }
 
 if ($action === 'update_layer') {
   $id = (int)($body['id'] ?? 0);
-  if ($id <= 0) json_response(['ok'=>false,'error'=>'Invalid id'], 400);
+  if ($id <= 0) json_response(['ok'=>false,'error'=>t('api.invalid_id')], 400);
   $name = safe_str($body['name'] ?? null, 120);
   $category = safe_str($body['category'] ?? null, 32);
   $isActive = !empty($body['is_active']) ? 1 : 0;
@@ -131,7 +131,7 @@ if ($action === 'update_layer') {
       ]);
       json_response(['ok'=>true]);
     } else {
-      json_response(['ok'=>false,'error'=>'Layer táblák hiányoznak. Futtasd az SQL-t.'], 500);
+      json_response(['ok'=>false,'error'=>t('api.layer_tables_missing')], 500);
     }
   }
 }
@@ -139,24 +139,24 @@ if ($action === 'update_layer') {
 if ($action === 'toggle_layer') {
   $id = (int)($body['id'] ?? 0);
   $isActive = !empty($body['is_active']) ? 1 : 0;
-  if ($id <= 0) json_response(['ok'=>false,'error'=>'Invalid id'], 400);
+  if ($id <= 0) json_response(['ok'=>false,'error'=>t('api.invalid_id')], 400);
   try {
     db()->prepare("UPDATE map_layers SET is_active=:a WHERE id=:id")->execute([':a'=>$isActive,':id'=>$id]);
     json_response(['ok'=>true]);
   } catch (Throwable $e) {
-    json_response(['ok'=>false,'error'=>'Layer táblák hiányoznak. Futtasd az SQL-t.'], 500);
+    json_response(['ok'=>false,'error'=>t('api.layer_tables_missing')], 500);
   }
 }
 
 if ($action === 'delete_layer') {
   $id = (int)($body['id'] ?? 0);
-  if ($id <= 0) json_response(['ok'=>false,'error'=>'Invalid id'], 400);
+  if ($id <= 0) json_response(['ok'=>false,'error'=>t('api.invalid_id')], 400);
   try {
     db()->prepare("DELETE FROM map_layer_points WHERE layer_id=:id")->execute([':id'=>$id]);
     db()->prepare("DELETE FROM map_layers WHERE id=:id")->execute([':id'=>$id]);
     json_response(['ok'=>true]);
   } catch (Throwable $e) {
-    json_response(['ok'=>false,'error'=>'Layer táblák hiányoznak. Futtasd az SQL-t.'], 500);
+    json_response(['ok'=>false,'error'=>t('api.layer_tables_missing')], 500);
   }
 }
 
@@ -168,13 +168,13 @@ if ($action === 'create_point') {
   $address = safe_str($body['address'] ?? null, 255);
   $meta = $body['meta_json'] ?? null;
 
-  if ($layerId <= 0) json_response(['ok'=>false,'error'=>'Missing fields'], 400);
+  if ($layerId <= 0) json_response(['ok'=>false,'error'=>t('api.missing_fields')], 400);
   try {
     $layerRow = db()->prepare("SELECT layer_type FROM map_layers WHERE id = :id LIMIT 1");
     $layerRow->execute([':id' => $layerId]);
     $layer = $layerRow->fetch(PDO::FETCH_ASSOC);
     if ($layer && (string)($layer['layer_type'] ?? '') === 'trees') {
-      json_response(['ok'=>false,'error'=>'A fakataszter (trees) layerhez nem adhatsz pontot; a fák a Fa felvitelből jönnek.'], 400);
+      json_response(['ok'=>false,'error'=>t('api.trees_no_point')], 400);
     }
   } catch (Throwable $e) { /* no layer_type column */ }
 
@@ -188,7 +188,7 @@ if ($action === 'create_point') {
     }
   }
   if (!is_numeric($lat) || !is_numeric($lng)) {
-    json_response(['ok'=>false,'error'=>'Add meg a lat/lng koordinátákat vagy egy címet (pl. Orosháza, Balassa Pál utca 25)'], 400);
+    json_response(['ok'=>false,'error'=>t('api.add_lat_lng_or_address')], 400);
   }
 
   try {
@@ -200,19 +200,19 @@ if ($action === 'create_point') {
     ]);
     json_response(['ok'=>true]);
   } catch (Throwable $e) {
-    json_response(['ok'=>false,'error'=>'Layer táblák hiányoznak. Futtasd az SQL-t.'], 500);
+    json_response(['ok'=>false,'error'=>t('api.layer_tables_missing')], 500);
   }
 }
 
 if ($action === 'delete_point') {
   $id = (int)($body['id'] ?? 0);
-  if ($id <= 0) json_response(['ok'=>false,'error'=>'Invalid id'], 400);
+  if ($id <= 0) json_response(['ok'=>false,'error'=>t('api.invalid_id')], 400);
   try {
     db()->prepare("DELETE FROM map_layer_points WHERE id=:id")->execute([':id'=>$id]);
     json_response(['ok'=>true]);
   } catch (Throwable $e) {
-    json_response(['ok'=>false,'error'=>'Layer táblák hiányoznak. Futtasd az SQL-t.'], 500);
+    json_response(['ok'=>false,'error'=>t('api.layer_tables_missing')], 500);
   }
 }
 
-json_response(['ok'=>false,'error'=>'Invalid action'], 400);
+json_response(['ok'=>false,'error'=>t('api.invalid_action')], 400);

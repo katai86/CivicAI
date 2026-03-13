@@ -6,7 +6,7 @@ start_secure_session();
 
 $userId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
 if ($userId <= 0) {
-  json_response(['ok' => false, 'error' => 'Unauthorized'], 401);
+  json_response(['ok' => false, 'error' => t('api.unauthorized')], 401);
 }
 
 $stmt = db()->prepare("

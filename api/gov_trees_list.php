@@ -7,14 +7,14 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-  json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 
 start_secure_session();
 $uid = current_user_id();
 $role = current_user_role() ?: '';
 if ($uid <= 0 || !in_array($role, ['admin', 'superadmin', 'govuser'], true)) {
-  json_response(['ok' => false, 'error' => 'Unauthorized'], 401);
+  json_response(['ok' => false, 'error' => t('api.unauthorized')], 401);
 }
 
 $limit = (int)($_GET['limit'] ?? 100);

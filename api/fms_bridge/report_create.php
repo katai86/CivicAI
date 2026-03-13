@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../util.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  json_response(['ok'=>false,'error'=>'Method not allowed'], 405);
+  json_response(['ok'=>false,'error'=>t('api.method_not_allowed')], 405);
 }
 
 require_user();
@@ -22,8 +22,8 @@ $address = safe_str($body['address'] ?? null, 255);
 $email = safe_str($body['email'] ?? null, 190);
 $name = safe_str($body['name'] ?? null, 80);
 
-if (!$category || !$description) json_response(['ok'=>false,'error'=>'Missing fields'], 400);
-if (!is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>'Invalid coordinates'], 400);
+if (!$category || !$description) json_response(['ok'=>false,'error'=>t('api.missing_fields')], 400);
+if (!is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>t('api.invalid_coordinates')], 400);
 
 $payload = [
   'api_key' => fms_config_api_key(),

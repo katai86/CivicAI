@@ -73,13 +73,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     json_response(['ok' => true, 'modules' => $list]);
   } catch (Throwable $e) {
-    json_response(['ok' => false, 'error' => 'Modullista betöltése sikertelen: ' . $e->getMessage(), 'modules' => []], 500);
+    json_response(['ok' => false, 'error' => t('admin.modules_load_failed') . ': ' . $e->getMessage(), 'modules' => []], 500);
   }
   exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 
 $body = read_json_body();

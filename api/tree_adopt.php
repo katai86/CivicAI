@@ -3,13 +3,13 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 
 require_user();
 $uid = current_user_id();
 if (!$uid) {
-  json_response(['ok' => false, 'error' => 'Unauthorized'], 401);
+  json_response(['ok' => false, 'error' => t('api.unauthorized')], 401);
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -28,7 +28,7 @@ try {
   $tree = $stmt->fetch(PDO::FETCH_ASSOC);
   if (!$tree) {
     $pdo->rollBack();
-    json_response(['ok' => false, 'error' => 'Tree not found'], 404);
+    json_response(['ok' => false, 'error' => t('api.tree_not_found')], 404);
   }
 
   $currentAdopter = $tree['adopted_by_user_id'] !== null ? (int)$tree['adopted_by_user_id'] : null;
@@ -36,7 +36,7 @@ try {
   if ($action === 'adopt') {
     if ($currentAdopter !== null && $currentAdopter !== $uid) {
       $pdo->rollBack();
-      json_response(['ok' => false, 'error' => 'Tree already adopted'], 409);
+      json_response(['ok' => false, 'error' => t('api.tree_already_adopted')], 409);
     }
     $pdo->prepare("INSERT INTO tree_adoptions (tree_id, user_id, status) VALUES (:tid, :uid, 'active')
                    ON DUPLICATE KEY UPDATE status = 'active', adopted_at = CURRENT_TIMESTAMP")
@@ -70,6 +70,6 @@ try {
 } catch (Throwable $e) {
   if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
   log_error('tree_adopt error: ' . $e->getMessage());
-  json_response(['ok' => false, 'error' => 'Server error'], 500);
+  json_response(['ok' => false, 'error' => t('api.server_error')], 500);
 }
 

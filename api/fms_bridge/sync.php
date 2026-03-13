@@ -9,12 +9,12 @@ if (!empty($_SESSION['user_role']) && in_array((string)$_SESSION['user_role'], [
   // ok
 } else {
   if (!defined('ADMIN_TOKEN') || !ADMIN_TOKEN || !isset($_GET['token']) || !hash_equals((string)ADMIN_TOKEN, (string)$_GET['token'])) {
-    json_response(['ok'=>false,'error'=>'Unauthorized'], 401);
+    json_response(['ok'=>false,'error'=>t('api.unauthorized')], 401);
   }
 }
 
 if (!fms_enabled()) {
-  json_response(['ok'=>false,'error'=>'FMS not configured'], 400);
+  json_response(['ok'=>false,'error'=>t('api.fms_not_configured')], 400);
 }
 
 $now = gmdate('c');

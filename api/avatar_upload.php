@@ -3,22 +3,22 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 
 start_secure_session();
 require_user();
 
 $uid = current_user_id();
-if (!$uid) json_response(['ok'=>false,'error'=>'Unauthorized'], 401);
+if (!$uid) json_response(['ok'=>false,'error'=>t('api.unauthorized')], 401);
 
-if (!isset($_FILES['file'])) json_response(['ok'=>false,'error'=>'No file'], 400);
+if (!isset($_FILES['file'])) json_response(['ok'=>false,'error'=>t('api.no_file')], 400);
 $f = $_FILES['file'];
-if ($f['error'] !== UPLOAD_ERR_OK) json_response(['ok'=>false,'error'=>'Upload error'], 400);
+if ($f['error'] !== UPLOAD_ERR_OK) json_response(['ok'=>false,'error'=>t('api.upload_error')], 400);
 
 $size = (int)$f['size'];
-if ($size <= 0) json_response(['ok'=>false,'error'=>'Empty file'], 400);
-if ($size > 2 * 1024 * 1024) json_response(['ok'=>false,'error'=>'File too large'], 400);
+if ($size <= 0) json_response(['ok'=>false,'error'=>t('api.empty_file')], 400);
+if ($size > 2 * 1024 * 1024) json_response(['ok'=>false,'error'=>t('api.file_too_large')], 400);
 
 $tmp = $f['tmp_name'];
 $mime = '';
@@ -40,7 +40,7 @@ $allowed = [
   'image/webp' => 'webp',
 ];
 if (!isset($allowed[$mime])) {
-  json_response(['ok'=>false,'error'=>'Invalid file type'], 400);
+  json_response(['ok'=>false,'error'=>t('api.invalid_file_type')], 400);
 }
 
 $ext = $allowed[$mime];
@@ -53,7 +53,7 @@ if (!is_dir($dir)) {
 $dest = $dir . DIRECTORY_SEPARATOR . $stored;
 
 if (!@move_uploaded_file($tmp, $dest)) {
-  json_response(['ok'=>false,'error'=>'Cannot move file'], 500);
+  json_response(['ok'=>false,'error'=>t('api.cannot_move_file')], 500);
 }
 
 // delete old avatar

@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 
 $body = read_json_body();
@@ -66,7 +66,7 @@ if ($action === 'create_authority') {
   }
   $isActive = !empty($body['is_active']) ? 1 : 0;
 
-  if (!$name) json_response(['ok' => false, 'error' => 'Name required'], 400);
+  if (!$name) json_response(['ok' => false, 'error' => t('api.name_required')], 400);
 
   $pdo = db();
   $inserted = false;
@@ -127,7 +127,7 @@ if ($action === 'create_authority') {
         $inserted = true;
       } catch (Throwable $e3) {
         log_error('admin_authorities create (legacy): ' . $e3->getMessage());
-        json_response(['ok' => false, 'error' => 'Hatóság mentés sikertelen. Ellenőrizd az authorities tábla szerkezetét (email, active, category oszlopok).'], 500);
+        json_response(['ok' => false, 'error' => t('api.authority_save_failed')], 500);
       }
     }
   }
@@ -138,7 +138,7 @@ if ($action === 'create_authority') {
 
 if ($action === 'delete_authority') {
   $id = (int)($body['id'] ?? 0);
-  if ($id <= 0) json_response(['ok' => false, 'error' => 'Invalid id'], 400);
+  if ($id <= 0) json_response(['ok' => false, 'error' => t('api.invalid_id')], 400);
   try {
     db()->prepare("DELETE FROM authority_contacts WHERE authority_id=:id")->execute([':id' => $id]);
   } catch (Throwable $e) { /* tábla hiányozhat */ }
@@ -156,7 +156,7 @@ if ($action === 'create_contact') {
   $description = safe_str($body['description'] ?? null, 2000);
   $isActive = !empty($body['is_active']) ? 1 : 0;
   if ($authorityId <= 0 || !$serviceCode || !$name) {
-    json_response(['ok' => false, 'error' => 'Invalid data'], 400);
+    json_response(['ok' => false, 'error' => t('api.invalid_data')], 400);
   }
   try {
     db()->prepare("
@@ -172,18 +172,18 @@ if ($action === 'create_contact') {
     json_response(['ok' => true, 'id' => (int)db()->lastInsertId()]);
   } catch (Throwable $e) {
     log_error('admin_authorities create_contact: ' . $e->getMessage());
-    json_response(['ok' => false, 'error' => 'Az authority_contacts tábla hiányozhat. Futtasd a megfelelő SQL migrációt.'], 503);
+    json_response(['ok' => false, 'error' => t('api.authority_contacts_missing')], 503);
   }
 }
 
 if ($action === 'delete_contact') {
   $id = (int)($body['id'] ?? 0);
-  if ($id <= 0) json_response(['ok' => false, 'error' => 'Invalid id'], 400);
+  if ($id <= 0) json_response(['ok' => false, 'error' => t('api.invalid_id')], 400);
   try {
     db()->prepare("DELETE FROM authority_contacts WHERE id=:id")->execute([':id' => $id]);
     json_response(['ok' => true]);
   } catch (Throwable $e) {
-    json_response(['ok' => false, 'error' => 'Az authority_contacts tábla hiányozhat.'], 503);
+    json_response(['ok' => false, 'error' => t('api.authority_contacts_missing')], 503);
   }
 }
 
@@ -191,12 +191,12 @@ if ($action === 'assign_user') {
   $authorityId = (int)($body['authority_id'] ?? 0);
   $email = safe_str($body['email'] ?? null, 190);
   if ($authorityId <= 0 || !$email) {
-    json_response(['ok' => false, 'error' => 'Invalid data'], 400);
+    json_response(['ok' => false, 'error' => t('api.invalid_data')], 400);
   }
   $stmt = db()->prepare("SELECT id FROM users WHERE email = :email LIMIT 1");
   $stmt->execute([':email' => $email]);
   $uid = (int)$stmt->fetchColumn();
-  if ($uid <= 0) json_response(['ok' => false, 'error' => 'User not found'], 404);
+  if ($uid <= 0) json_response(['ok' => false, 'error' => t('api.user_not_found')], 404);
 
   try {
     db()->prepare("
@@ -210,13 +210,13 @@ if ($action === 'assign_user') {
     json_response(['ok' => true]);
   } catch (Throwable $e) {
     log_error('admin_authorities assign_user: ' . $e->getMessage());
-    json_response(['ok' => false, 'error' => 'Az authority_users tábla hiányozhat. Futtasd a megfelelő SQL migrációt.'], 503);
+    json_response(['ok' => false, 'error' => t('api.authority_users_missing')], 503);
   }
 }
 
 if ($action === 'remove_user') {
   $id = (int)($body['id'] ?? 0);
-  if ($id <= 0) json_response(['ok' => false, 'error' => 'Invalid id'], 400);
+  if ($id <= 0) json_response(['ok' => false, 'error' => t('api.invalid_id')], 400);
   try {
     db()->prepare("DELETE FROM authority_users WHERE id=:id")->execute([':id' => $id]);
     json_response(['ok' => true]);

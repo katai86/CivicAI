@@ -28,8 +28,8 @@ if (!in_array($eventType, ['civil','green_action'], true)) {
   $eventType = 'civil';
 }
 
-if (!$title || !$start || !$end) json_response(['ok'=>false,'error'=>'Hiányzó mezők.'], 400);
-if (!is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>'Lat/Lng kötelező.'], 400);
+if (!$title || !$start || !$end) json_response(['ok'=>false,'error'=>t('api.civil_event_fields_missing')], 400);
+if (!is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>t('api.facility_lat_lng_required')], 400);
 
 $userId = current_user_id();
 
@@ -51,7 +51,7 @@ try {
 } catch (Throwable $e) {
   $msg = $e->getMessage();
   if (strpos($msg, 'civil_events') !== false || strpos($msg, 'doesn\'t exist') !== false) {
-    json_response(['ok'=>false,'error'=>'A civil események tábla hiányzik. Futtasd a megfelelő SQL migrációt.'], 503);
+    json_response(['ok'=>false,'error'=>t('api.civil_events_table_missing')], 503);
   }
   throw $e;
 }

@@ -7,12 +7,12 @@ require_user();
 
 $role = current_user_role() ?: '';
 if ($role !== 'govuser') {
-  json_response(['ok' => false, 'error' => 'Unauthorized'], 401);
+  json_response(['ok' => false, 'error' => t('api.unauthorized')], 401);
 }
 
 $uid = current_user_id();
 if (!$uid) {
-  json_response(['ok' => false, 'error' => 'Unauthorized'], 401);
+  json_response(['ok' => false, 'error' => t('api.unauthorized')], 401);
 }
 
 $defs = [
@@ -36,18 +36,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 
 $body = read_json_body();
 if ((string)($body['action'] ?? '') !== 'save') {
-  json_response(['ok' => false, 'error' => 'Invalid action'], 400);
+  json_response(['ok' => false, 'error' => t('api.invalid_action')], 400);
 }
 $key = safe_str($body['module_key'] ?? null, 64);
 $enabled = !empty($body['enabled']) ? 1 : 0;
-if (!$key) json_response(['ok' => false, 'error' => 'Missing module_key'], 400);
+if (!$key) json_response(['ok' => false, 'error' => t('api.missing_module_key')], 400);
 if (!in_array($key, array_column($defs, 'key'), true)) {
-  json_response(['ok' => false, 'error' => 'Unknown module'], 400);
+  json_response(['ok' => false, 'error' => t('api.unknown_module')], 400);
 }
 
 db()->prepare("

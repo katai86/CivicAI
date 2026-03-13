@@ -90,7 +90,7 @@ if ($action === 'update_role') {
     if (stripos($msg, 'Data truncated') !== false || stripos($msg, 'enum') !== false) {
       json_response(['ok'=>false,'error'=>'A role érték nem megengedett. A különböző felhasználótípusokhoz futtasd: sql/2026-09-users-role-enum.sql'], 400);
     }
-    json_response(['ok'=>false,'error'=>'Role frissítés sikertelen'], 500);
+    json_response(['ok'=>false,'error'=>t('admin.role_update_failed')], 500);
   }
 }
 

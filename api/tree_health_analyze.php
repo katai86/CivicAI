@@ -9,7 +9,7 @@ require_once __DIR__ . '/../services/AiRouter.php';
 require_once __DIR__ . '/../services/AiPromptBuilder.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 
 start_secure_session();
@@ -46,7 +46,7 @@ if ($mime === '' && function_exists('mime_content_type')) {
 }
 $allowed = defined('UPLOAD_ALLOWED_MIME') ? UPLOAD_ALLOWED_MIME : ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
 if (!isset($allowed[$mime])) {
-  json_response(['ok' => false, 'error' => 'Csak képfájl (jpg, png, webp) tölthető fel.'], 400);
+  json_response(['ok' => false, 'error' => t('api.upload_images_only')], 400);
 }
 $ext = $allowed[$mime];
 $dir = rtrim(UPLOAD_DIR, '/\\') . DIRECTORY_SEPARATOR . 'trees';
@@ -65,7 +65,7 @@ $stmt->execute([$treeId]);
 $tree = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$tree) {
   @unlink($dest);
-  json_response(['ok' => false, 'error' => 'Fa nem található.'], 404);
+  json_response(['ok' => false, 'error' => t('api.tree_not_found')], 404);
 }
 
 $outputLang = function_exists('current_lang') ? current_lang() : 'hu';
@@ -76,7 +76,7 @@ $router = new \AiRouter();
 $resp = $router->callWithImage('image_classification', $prompt, $dest, $mime);
 
 if (empty($resp['ok'])) {
-  json_response(['ok' => false, 'error' => $resp['error'] ?? 'Elemzés sikertelen.'], 502);
+  json_response(['ok' => false, 'error' => $resp['error'] ?? t('api.health_analyze_failed')], 502);
 }
 
 $data = is_array($resp['data']) ? $resp['data'] : [];

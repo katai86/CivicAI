@@ -5,7 +5,7 @@ require_once __DIR__ . '/../util.php';
 require_admin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  json_response(['ok'=>false,'error'=>'Method not allowed'], 405);
+  json_response(['ok'=>false,'error'=>t('api.method_not_allowed')], 405);
 }
 
 $body = read_json_body();
@@ -20,7 +20,7 @@ $allowed = [
   'new', 'needs_info', 'forwarded', 'waiting_reply', 'in_progress', 'solved', 'closed'
 ];
 if (!in_array($new, $allowed, true)) {
-  json_response(['ok'=>false,'error'=>'Invalid status'], 400);
+  json_response(['ok'=>false,'error'=>t('api.invalid_status')], 400);
 }
 
 $statusLabel = [
@@ -86,8 +86,8 @@ function build_status_email(
   } else {
     $city = defined('APP_CITY_PUBLIC_NAME') && APP_CITY_PUBLIC_NAME ? (string)APP_CITY_PUBLIC_NAME : null;
     $lines[] = $city
-      ? ("Köszönjük, hogy segítesz jobbá tenni " . $city . " városát!")
-      : "Köszönjük, hogy segítesz jobbá tenni a várost!";
+      ? str_replace('{city}', $city, t('case.thanks_improve_city_name'))
+      : t('case.thanks_improve_city');
   }
 
   $lines[] = "";
@@ -122,7 +122,7 @@ try {
 
   if (!$r) {
     $pdo->rollBack();
-    json_response(['ok'=>false,'error'=>'Report not found'], 404);
+    json_response(['ok'=>false,'error'=>t('api.report_not_found')], 404);
   }
 
   $oldStr = (string)$r['status'];
@@ -197,5 +197,5 @@ try {
 
 } catch (Throwable $e) {
   if ($pdo->inTransaction()) $pdo->rollBack();
-  json_response(['ok'=>false,'error'=>'DB error'], 500);
+  json_response(['ok'=>false,'error'=>t('api.db_error')], 500);
 }

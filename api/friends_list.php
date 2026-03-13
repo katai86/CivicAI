@@ -6,7 +6,7 @@ require_user();
 start_secure_session();
 
 $uid = (int)current_user_id();
-if ($uid <= 0) json_response(['ok' => false, 'error' => 'Auth required'], 401);
+if ($uid <= 0) json_response(['ok' => false, 'error' => t('api.auth_required')], 401);
 
 $friends = [];
 $incoming = [];
@@ -45,5 +45,5 @@ try {
 
   json_response(['ok' => true, 'friends' => $friends, 'incoming' => $incoming, 'outgoing' => $outgoing]);
 } catch (Throwable $e) {
-  json_response(['ok' => false, 'error' => 'DB error'], 500);
+  json_response(['ok' => false, 'error' => t('api.db_error')], 500);
 }

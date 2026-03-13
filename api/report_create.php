@@ -3,7 +3,7 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 
 start_secure_session();
@@ -71,13 +71,13 @@ if ($sessionUserId) {
 // Validációk – kategória, leírás, koordináta
 $allowedCats = ['road','sidewalk','lighting','trash','green','traffic','idea','civil_event'];
 if (!$category || !in_array($category, $allowedCats, true)) {
-  json_response(['ok' => false, 'error' => 'Invalid category'], 400);
+  json_response(['ok' => false, 'error' => t('api.invalid_category')], 400);
 }
 if (!$desc) {
-  json_response(['ok' => false, 'error' => 'Description required'], 400);
+  json_response(['ok' => false, 'error' => t('api.description_required')], 400);
 }
 if (!is_numeric($lat) || !is_numeric($lng)) {
-  json_response(['ok' => false, 'error' => 'Invalid coordinates'], 400);
+  json_response(['ok' => false, 'error' => t('api.invalid_coordinates')], 400);
 }
 
 $lat = (float)$lat;
@@ -90,7 +90,7 @@ $GLOBALS['__REPORT_LNG'] = $lng;
 
 // Ha nem anonim -> legyen név (vendégnél kötelező; belépett usernél később a profilból töltjük)
 if (!$sessionUserId && $reporterIsAnonymous === 0 && !$reporterName) {
-  json_response(['ok' => false, 'error' => 'Name required if not anonymous'], 400);
+  json_response(['ok' => false, 'error' => t('api.name_required_not_anon')], 400);
 }
 
 // GDPR kötelező, ha vendég személyes adatot ad meg:
@@ -99,13 +99,13 @@ if (!$sessionUserId && $reporterIsAnonymous === 0 && !$reporterName) {
 // - nem anonim (név publikus)
 $needsPersonal = ($wantsNotify === 1) || ($createAccount === 1) || ($reporterIsAnonymous === 0);
 if (!$sessionUserId && $needsPersonal && $consentData !== 1) {
-  json_response(['ok' => false, 'error' => 'GDPR consent required'], 400);
+  json_response(['ok' => false, 'error' => t('api.gdpr_consent_required')], 400);
 }
 
 // Email validáció, ha kell (értesítés vagy regisztráció) – vendégnél
 if (!$sessionUserId && (($wantsNotify === 1) || ($createAccount === 1))) {
   if (!$reporterEmail || !filter_var($reporterEmail, FILTER_VALIDATE_EMAIL)) {
-    json_response(['ok' => false, 'error' => 'Valid email required for notifications/registration'], 400);
+    json_response(['ok' => false, 'error' => t('api.valid_email_required')], 400);
   }
 }
 
@@ -117,7 +117,7 @@ $prevReportCount = 0;
 // ha regisztrálni akar a beküldéskor és nincs session
 if ($createAccount === 1 && !$userId) {
   if (strlen($password) < 8) {
-    json_response(['ok' => false, 'error' => 'Password must be at least 8 characters'], 400);
+    json_response(['ok' => false, 'error' => t('api.password_min_8')], 400);
   }
 
   $emailLc = mb_strtolower($reporterEmail);
@@ -132,7 +132,7 @@ if ($createAccount === 1 && !$userId) {
     if (!password_verify($password, (string)$u['pass_hash'])) {
       json_response([
         'ok' => false,
-        'error' => 'Ezzel az e-maillel már van fiók, de a jelszó nem egyezik. Inkább lépj be.'
+        'error' => t('api.email_exists_wrong_password')
       ], 400);
     }
     $userId = (int)$u['id'];
@@ -151,7 +151,7 @@ if ($createAccount === 1 && !$userId) {
       ]);
       $userId = (int)db()->lastInsertId();
     } catch (Throwable $e) {
-      json_response(['ok' => false, 'error' => 'User create failed'], 500);
+      json_response(['ok' => false, 'error' => t('api.user_create_failed')], 500);
     }
   }
 
@@ -186,10 +186,10 @@ if ($userId) {
   }
 
   if ($reporterIsAnonymous === 0 && !$reporterName) {
-    json_response(['ok' => false, 'error' => 'Name missing in profile (set display name)'], 400);
+    json_response(['ok' => false, 'error' => t('api.name_missing_profile')], 400);
   }
   if ($wantsNotify === 1 && (!$reporterEmail || !filter_var($reporterEmail, FILTER_VALIDATE_EMAIL))) {
-    json_response(['ok' => false, 'error' => 'Valid email missing in profile'], 400);
+    json_response(['ok' => false, 'error' => t('api.valid_email_missing')], 400);
   }
 }
 
@@ -200,7 +200,7 @@ if ($category === 'civil_event') {
   }
   $role = $userRole ?: (current_user_role() ?: '');
   if (!in_array($role, ['civil','civiluser','admin','superadmin'], true)) {
-    json_response(['ok' => false, 'error' => 'Nincs jogosultság a civil kategóriához.'], 403);
+    json_response(['ok' => false, 'error' => t('api.report_no_permission_civil')], 403);
   }
 } else {
   // Normál bejelentés (út, szemét stb.): civil és community user nem jogosult – csak profil / civil esemény / közület buborék.
@@ -261,7 +261,7 @@ if ($ipHash) {
   if ($c10 >= 5) {
     json_response([
       'ok' => false,
-      'error' => 'Túl sok bejelentés rövid idő alatt. Kérlek várj pár percet, majd próbáld újra.'
+      'error' => t('api.rate_limit_wait')
     ], 429);
   }
 
@@ -278,7 +278,7 @@ if ($ipHash) {
   if ($c24 >= 20) {
     json_response([
       'ok' => false,
-      'error' => 'Elérted a napi limitet. Kérlek próbáld holnap.'
+      'error' => t('api.daily_limit_reached')
     ], 429);
   }
 }
@@ -471,7 +471,7 @@ try {
         ]);
       } catch (Throwable $e4) {
         log_error('report_create INSERT (minimal): ' . $e4->getMessage());
-        json_response(['ok' => false, 'error' => 'Szerver hiba a mentéskor. Ellenőrizd a reports tábla szerkezetét és az error.log-ot.'], 500);
+        json_response(['ok' => false, 'error' => t('api.report_save_failed')], 500);
       }
     }
   }
@@ -571,6 +571,6 @@ if ($userId) {
 
 json_response([
   'ok' => true,
-  'message' => 'Köszönjük! A bejelentés ellenőrzés után fog megjelenni a térképen.',
+  'message' => t('modal.thanks'),
   'id' => $id
 ]);

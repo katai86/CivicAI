@@ -26,8 +26,8 @@ $email = safe_str($body['email'] ?? null, 190);
 $hoursJson = isset($body['hours_json']) ? json_encode($body['hours_json'], JSON_UNESCAPED_UNICODE) : null;
 $replacementJson = isset($body['replacement_json']) ? json_encode($body['replacement_json'], JSON_UNESCAPED_UNICODE) : null;
 
-if (!$name) json_response(['ok'=>false,'error'=>'Név kötelező.'], 400);
-if (!is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>'Lat/Lng kötelező.'], 400);
+if (!$name) json_response(['ok'=>false,'error'=>t('api.facility_name_required')], 400);
+if (!is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>t('api.facility_lat_lng_required')], 400);
 
 $userId = current_user_id();
 
@@ -58,7 +58,7 @@ try {
 } catch (Throwable $e) {
   $msg = $e->getMessage();
   if (strpos($msg, 'facilities') !== false || strpos($msg, 'doesn\'t exist') !== false) {
-    json_response(['ok'=>false,'error'=>'A közületi létesítmények (facilities) tábla hiányzik. Futtasd a megfelelő SQL migrációt.'], 503);
+    json_response(['ok'=>false,'error'=>t('api.facilities_table_missing')], 503);
     return;
   }
   throw $e;

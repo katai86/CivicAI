@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../util.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-  json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 
 $period = isset($_GET['period']) ? (string)$_GET['period'] : 'all';

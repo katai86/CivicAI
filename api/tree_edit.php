@@ -28,7 +28,7 @@ $stmt = $pdo->prepare("SELECT id, adopted_by_user_id FROM trees WHERE id = ? LIM
 $stmt->execute([$treeId]);
 $tree = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$tree) {
-  json_response(['ok' => false, 'error' => 'Fa nem található.'], 404);
+  json_response(['ok' => false, 'error' => t('api.tree_not_found')], 404);
 }
 
 $role = current_user_role() ?: '';

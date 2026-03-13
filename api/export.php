@@ -8,7 +8,7 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-  json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 
 start_secure_session();
@@ -16,7 +16,7 @@ $uid = current_user_id();
 $role = current_user_role() ?: '';
 $isAdmin = in_array($role, ['admin', 'superadmin'], true);
 if ($uid <= 0 || (!$isAdmin && $role !== 'govuser')) {
-  json_response(['ok' => false, 'error' => 'Unauthorized'], 401);
+  json_response(['ok' => false, 'error' => t('api.unauthorized')], 401);
 }
 
 $dataset = isset($_GET['dataset']) ? strtolower(trim((string)$_GET['dataset'])) : '';
@@ -25,7 +25,7 @@ if (!in_array($dataset, ['reports', 'trees', 'esg'], true)) {
   json_response(['ok' => false, 'error' => 'Invalid dataset. Use dataset=reports|trees|esg'], 400);
 }
 if (!in_array($format, ['csv', 'geojson', 'json'], true)) {
-  json_response(['ok' => false, 'error' => 'Invalid format. Use format=csv|geojson|json'], 400);
+  json_response(['ok' => false, 'error' => t('api.invalid_format')], 400);
 }
 
 $authorityId = isset($_GET['authority_id']) ? (int)$_GET['authority_id'] : null;

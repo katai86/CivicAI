@@ -14,7 +14,7 @@ $role = current_user_role() ?: '';
 $isAdmin = in_array($role, ['admin', 'superadmin'], true);
 if ($uid <= 0 || (!$isAdmin && $role !== 'govuser')) {
   if (isset($_GET['format']) && in_array($_GET['format'], ['json', 'csv'], true)) {
-    json_response(['ok' => false, 'error' => 'Unauthorized'], 401);
+    json_response(['ok' => false, 'error' => t('api.unauthorized')], 401);
   }
   header('Location: ' . app_url('/user/login.php'));
   exit;

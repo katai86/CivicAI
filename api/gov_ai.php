@@ -15,27 +15,27 @@ require_user();
 $role = current_user_role() ?: '';
 $isAdmin = in_array($role, ['admin','superadmin'], true);
 if (!$isAdmin && $role !== 'govuser') {
-  json_response(['ok' => false, 'error' => 'Unauthorized'], 401);
+  json_response(['ok' => false, 'error' => t('api.unauthorized')], 401);
 }
 if (!$isAdmin) {
   $uid = current_user_id();
   if (!user_module_enabled($uid, 'mistral')) {
-    json_response(['ok' => false, 'error' => 'AI disabled for this user'], 403);
+    json_response(['ok' => false, 'error' => t('api.ai_disabled_user')], 403);
   }
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 
 $body = read_json_body();
 if ((string)($body['action'] ?? '') !== 'generate') {
-  json_response(['ok' => false, 'error' => 'Invalid action'], 400);
+  json_response(['ok' => false, 'error' => t('api.invalid_action')], 400);
 }
 $type = (string)($body['type'] ?? 'summary');
 $allowedTypes = ['summary', 'esg', 'maintenance', 'engagement', 'sustainability'];
 if (!in_array($type, $allowedTypes, true)) {
-  json_response(['ok' => false, 'error' => 'Invalid type'], 400);
+  json_response(['ok' => false, 'error' => t('api.invalid_type')], 400);
 }
 $timeframe = (string)($body['timeframe'] ?? 'last_90_days');
 $allowedTimeframes = ['last_30_days', 'last_90_days', 'last_year'];
@@ -188,7 +188,7 @@ try {
 
 $router = new AiRouter();
 if (!$router->isEnabled()) {
-  json_response(['ok' => false, 'error' => 'AI disabled or not configured'], 400);
+  json_response(['ok' => false, 'error' => t('api.ai_disabled')], 400);
 }
 
 $scopeTitle = $city ?: ($authority ? (string)$authority['name'] : 'Terület');
@@ -216,7 +216,7 @@ $resp = $router->callJson($taskType, $prompt, [
   'response_format' => 'json_object',
 ]);
 if (empty($resp['ok'])) {
-  json_response(['ok' => false, 'error' => $resp['error'] ?? 'AI failed'], 502);
+  json_response(['ok' => false, 'error' => $resp['error'] ?? t('api.ai_failed')], 502);
 }
 
 $modelName = (string)($resp['model'] ?? (defined('AI_TEXT_MODEL') ? AI_TEXT_MODEL : ''));
