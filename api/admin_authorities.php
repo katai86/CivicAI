@@ -16,10 +16,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       if (!array_key_exists('is_active', $a) && array_key_exists('active', $a)) $a['is_active'] = $a['active'];
     }
     unset($a);
-  } catch (Throwable $e) { log_error('admin_authorities auth: ' . $e->getMessage()); }
+  } catch (Throwable $e) {
+    log_error('admin_authorities auth: ' . $e->getMessage());
+    $auth = [];
+  }
   try {
     $contacts = db()->query("SELECT * FROM authority_contacts ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
-  } catch (Throwable $e) { log_error('admin_authorities contacts: ' . $e->getMessage()); }
+  } catch (Throwable $e) {
+    log_error('admin_authorities contacts: ' . $e->getMessage());
+    $contacts = [];
+  }
   try {
     $assign = db()->query("
       SELECT au.id, au.authority_id, a.name AS authority_name, au.user_id, u.email,
@@ -31,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     ")->fetchAll(PDO::FETCH_ASSOC);
   } catch (Throwable $e) {
     log_error('admin_authorities assign: ' . $e->getMessage());
+    $assign = [];
   }
   json_response(['ok' => true, 'authorities' => $auth, 'contacts' => $contacts, 'assignments' => $assign]);
 }

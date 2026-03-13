@@ -2,9 +2,12 @@
 -- ÖSSZEVONT MIGRÁCIÓ – egy fájlban az összes eddigi SQL bővítés és módosítás
 -- Futtatás: mysql -u user -p adatbazis < sql/01_consolidated_migrations.sql
 -- Minden lépés feltételes: ha a tábla/oszlop/index már létezik, kihagyja.
--- Tartalom: 2026-03 (admin, map_layers) … 2026-19 (user_module_toggles),
---           trees, tree_logs, tree_adoptions, tree_watering_logs, ai_results,
---           FMS, authorities, facilities, civil_events, report_likes, friends, stb.
+--
+-- FONTOS: A users és reports tábláknak már létezniük kell (export/baseline).
+-- Ha üres az adatbázis, előbb hozd létre őket (pl. alap schema vagy export).
+--
+-- Tartalom: 2026-03 … 2026-23 (authorities, authority_contacts, authority_users,
+--           facilities, civil_events, module_settings, trees, ideas, budget_* stb.)
 -- Demo seed fájlok (demo_seed*.sql) nincsenek benne.
 -- =============================================================================
 
@@ -84,6 +87,7 @@ CALL add_index_if_not_exists('reports', 'idx_reports_category_created', '(catego
 CALL add_index_if_not_exists('reports', 'idx_reports_user', '(user_id)');
 CALL add_index_if_not_exists('reports', 'idx_reports_geo', '(category, lat, lng)');
 CALL add_index_if_not_exists('report_status_log', 'idx_status_log_report_changed', '(report_id, changed_at)');
+CALL add_column_if_not_exists('users', 'created_at', 'TIMESTAMP NULL DEFAULT NULL');
 
 CREATE TABLE IF NOT EXISTS map_layers (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -227,6 +231,8 @@ CALL add_index_if_not_exists('facilities', 'idx_facilities_geo', '(lat, lng)');
 CALL add_index_if_not_exists('civil_events', 'idx_civil_events_geo', '(lat, lng)');
 CALL add_index_if_not_exists('authorities', 'idx_authority_city', '(city)');
 CALL add_index_if_not_exists('authority_contacts', 'idx_authority_contacts_code', '(service_code)');
+CALL add_index_if_not_exists('authority_contacts', 'idx_authority_contacts_authority', '(authority_id)');
+CALL add_index_if_not_exists('authority_users', 'idx_authority_users_authority', '(authority_id)');
 
 CALL add_column_if_not_exists('reports', 'authority_id', 'INT NULL');
 CALL add_column_if_not_exists('reports', 'service_code', 'VARCHAR(64) NULL');
@@ -435,6 +441,9 @@ CREATE TABLE IF NOT EXISTS idea_votes (
   CONSTRAINT fk_idea_votes_idea FOREIGN KEY (idea_id) REFERENCES ideas (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CALL add_column_if_not_exists('ideas', 'authority_id', 'INT NULL');
+CALL add_index_if_not_exists('ideas', 'idx_ideas_authority', '(authority_id)');
+
 -- ========== 2026-23 M4 Participatory Budgeting (budget_projects + budget_votes) ==========
 CREATE TABLE IF NOT EXISTS budget_projects (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -460,6 +469,42 @@ CREATE TABLE IF NOT EXISTS budget_votes (
   KEY idx_budget_votes_user (user_id),
   CONSTRAINT fk_budget_votes_project FOREIGN KEY (project_id) REFERENCES budget_projects (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ========== Reports bővítés (cím, bejelentő) – ha exportból/régi sémából hiányzik ==========
+CALL add_column_if_not_exists('reports', 'reporter_name', 'VARCHAR(80) NULL');
+CALL add_column_if_not_exists('reports', 'reporter_is_anonymous', 'TINYINT(1) NOT NULL DEFAULT 1');
+CALL add_column_if_not_exists('reports', 'house_number_approx', 'VARCHAR(32) NULL');
+CALL add_column_if_not_exists('reports', 'road', 'VARCHAR(128) NULL');
+CALL add_column_if_not_exists('reports', 'suburb', 'VARCHAR(128) NULL');
+CALL add_column_if_not_exists('reports', 'postcode', 'VARCHAR(32) NULL');
+CALL add_column_if_not_exists('reports', 'address_approx', 'VARCHAR(255) NULL');
+CALL add_column_if_not_exists('reports', 'city', 'VARCHAR(80) NULL');
+
+-- ========== Users bővítés (profil, XP, szint) – ha exportból/régi sémából hiányzik ==========
+CALL add_column_if_not_exists('users', 'profile_public', 'TINYINT(1) NOT NULL DEFAULT 1');
+CALL add_column_if_not_exists('users', 'level', 'VARCHAR(32) NULL');
+CALL add_column_if_not_exists('users', 'total_xp', 'INT NOT NULL DEFAULT 0');
+CALL add_column_if_not_exists('users', 'streak_days', 'INT NOT NULL DEFAULT 0');
+CALL add_column_if_not_exists('users', 'avatar_filename', 'VARCHAR(255) NULL');
+
+-- ========== user_xp_log (XP napló) – ha nincs exportból ==========
+CREATE TABLE IF NOT EXISTS user_xp_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  points INT NOT NULL DEFAULT 0,
+  reason VARCHAR(64) NULL,
+  report_id INT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_user_xp_log_user (user_id),
+  KEY idx_user_xp_log_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ========== 2026-18 tree_adoptions: uniq_tree_user (ha a tábla már létezett index nélkül) ==========
+SET @idx_exists = (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tree_adoptions' AND INDEX_NAME = 'uniq_tree_user');
+SET @sql = IF(@idx_exists = 0, 'ALTER TABLE tree_adoptions ADD UNIQUE KEY uniq_tree_user (tree_id, user_id)', 'SELECT 1 AS noop');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- ========== Segéd procedure-ök eltávolítása ==========
 DROP PROCEDURE IF EXISTS add_column_if_not_exists;

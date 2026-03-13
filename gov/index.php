@@ -215,20 +215,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 $ideasList = [];
-try {
-  $stmt = db()->prepare("
-    SELECT i.id, i.user_id, i.title, i.description, i.lat, i.lng, i.status, i.created_at,
-           u.display_name AS author_name,
-           (SELECT COUNT(*) FROM idea_votes v WHERE v.idea_id = i.id) AS vote_count
-    FROM ideas i
-    LEFT JOIN users u ON u.id = i.user_id
-    ORDER BY i.created_at DESC
-    LIMIT 200
-  ");
-  $stmt->execute();
-  $ideasList = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-} catch (Throwable $e) {
-  $ideasList = [];
+if ($isAdmin || !empty($authorityIds)) {
+  try {
+    $sql = "
+      SELECT i.id, i.user_id, i.title, i.description, i.lat, i.lng, i.status, i.created_at, i.authority_id,
+             u.display_name AS author_name,
+             (SELECT COUNT(*) FROM idea_votes v WHERE v.idea_id = i.id) AS vote_count
+      FROM ideas i
+      LEFT JOIN users u ON u.id = i.user_id
+    ";
+    $params = [];
+    if (!$isAdmin && !empty($authorityIds)) {
+      $placeholders = implode(',', array_fill(0, count($authorityIds), '?'));
+      $sql .= " WHERE i.authority_id IN ($placeholders)";
+      $params = array_values($authorityIds);
+    }
+    $sql .= " ORDER BY i.created_at DESC LIMIT 200";
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+    $ideasList = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+  } catch (Throwable $e) {
+    $ideasList = [];
+  }
 }
 
 $reports = [];

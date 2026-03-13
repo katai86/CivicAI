@@ -17,7 +17,8 @@ if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
 $currentLang = current_lang();
 $LANG_JS = lang_array_for_js();
 
-$pageTitle = t('budget.page_title') ?: 'Közös költségvetés';
+$budgetActive = function_exists('participatory_budget_enabled') && participatory_budget_enabled();
+$pageTitle = t('budget.page_title');
 ?><!doctype html>
 <html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>">
 <head>
@@ -40,17 +41,21 @@ $pageTitle = t('budget.page_title') ?: 'Közös költségvetés';
     .budget-back { display: inline-block; margin-top: 24px; color: var(--primary); }
   </style>
 </head>
-<body data-logged-in="<?= $uid > 0 ? '1' : '0' ?>" data-role="<?= htmlspecialchars($role, ENT_QUOTES, 'UTF-8') ?>" data-lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>" data-app-base="<?= htmlspecialchars(defined('APP_BASE') ? APP_BASE : '/terkep', ENT_QUOTES, 'UTF-8') ?>">
+<body data-logged-in="<?= $uid > 0 ? '1' : '0' ?>" data-role="<?= htmlspecialchars($role, ENT_QUOTES, 'UTF-8') ?>" data-lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>" data-app-base="<?= htmlspecialchars(defined('APP_BASE') ? APP_BASE : '/terkep', ENT_QUOTES, 'UTF-8') ?>" data-budget-active="<?= $budgetActive ? '1' : '0' ?>">
 
 <?php $desktop_topbar_show_search = false; require __DIR__ . '/inc_desktop_topbar.php'; ?>
 
 <main class="budget-page">
   <h1><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></h1>
-  <p class="intro"><?= htmlspecialchars(t('budget.intro') ?: 'Szavazz a kedvenc projektedre. Egy felhasználó egy szavazatot adhat egy projektre.', ENT_QUOTES, 'UTF-8') ?></p>
+  <?php if (!$budgetActive): ?>
+  <p class="intro"><?= htmlspecialchars(t('budget.not_active'), ENT_QUOTES, 'UTF-8') ?></p>
+  <div id="budgetList"></div>
+  <?php else: ?>
+  <p class="intro"><?= htmlspecialchars(t('budget.intro'), ENT_QUOTES, 'UTF-8') ?></p>
+  <div id="budgetList"><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?>...</div>
+  <?php endif; ?>
 
-  <div id="budgetList"><?= htmlspecialchars(t('admin.load') ?: 'Betöltés', ENT_QUOTES, 'UTF-8') ?>...</div>
-
-  <a class="budget-back" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">← <?= htmlspecialchars(t('nav.map') ?: 'Térkép', ENT_QUOTES, 'UTF-8') ?></a>
+  <a class="budget-back" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">← <?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
 </main>
 
 <script>window.LANG = <?= json_encode($LANG_JS, JSON_UNESCAPED_UNICODE); ?>;</script>
@@ -122,7 +127,7 @@ $pageTitle = t('budget.page_title') ?: 'Közös költségvetés';
     }
   }
 
-  load();
+  if (document.body.dataset.budgetActive === '1') load();
 })();
 </script>
 </body>

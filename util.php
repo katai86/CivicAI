@@ -266,6 +266,12 @@ function get_module_setting(string $moduleKey, string $settingKey): ?string {
     }
 }
 
+/** Részvételi költségvetés – modul ki/be (időszakos szavazás). Alapértelmezett: be. */
+function participatory_budget_enabled(): bool {
+    $v = get_module_setting('participatory_budget', 'enabled');
+    return $v !== '0' && $v !== 'false';
+}
+
 /** FMS: először modul (admin), majd env. */
 function fms_enabled(): bool {
     $fromModule = get_module_setting('fms', 'enabled') === '1' && (get_module_setting('fms', 'base_url') ?? '') !== '';

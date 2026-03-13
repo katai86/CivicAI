@@ -47,6 +47,20 @@ try {
     ':addr' => $address ?: null,
   ]);
   $id = (int)$pdo->lastInsertId();
+  // Hatóság hozzárendelése a koordináta alapján (bbox), hogy a gov oldal város szerint szűrhasson
+  try {
+    $st = $pdo->prepare("
+      SELECT id FROM authorities
+      WHERE min_lat IS NOT NULL AND max_lat IS NOT NULL AND min_lng IS NOT NULL AND max_lng IS NOT NULL
+        AND ? BETWEEN min_lat AND max_lat AND ? BETWEEN min_lng AND max_lng
+      ORDER BY id LIMIT 1
+    ");
+    $st->execute([$lat, $lng]);
+    $auth = $st->fetch(PDO::FETCH_ASSOC);
+    if ($auth && !empty($auth['id'])) {
+      $pdo->prepare("UPDATE ideas SET authority_id = ? WHERE id = ?")->execute([(int)$auth['id'], $id]);
+    }
+  } catch (Throwable $ignored) { /* authorities tábla vagy oszlopok hiányozhatnak */ }
   json_response(['ok' => true, 'id' => $id]);
 } catch (Throwable $e) {
   $msg = $e->getMessage();

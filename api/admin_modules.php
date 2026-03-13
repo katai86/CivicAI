@@ -40,6 +40,13 @@ $MODULE_DEFS = [
       ['key' => 'model', 'label' => 'Modell (pl. gpt-4o-mini)', 'type' => 'text', 'placeholder' => 'gpt-4o-mini'],
     ],
   ],
+  'participatory_budget' => [
+    'name' => 'Részvételi költségvetés',
+    'description' => 'Időszakos szavazás a projektekre. Ha kikapcsolt, a menüben és a nyilvános oldalon nem aktív.',
+    'settings' => [
+      ['key' => 'enabled', 'label' => 'Szavazás aktív (menü és oldal látható)', 'type' => 'checkbox'],
+    ],
+  ],
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -73,7 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     json_response(['ok' => true, 'modules' => $list]);
   } catch (Throwable $e) {
-    json_response(['ok' => false, 'error' => t('admin.modules_load_failed') . ': ' . $e->getMessage(), 'modules' => []], 500);
+    if (function_exists('log_error')) log_error('admin_modules GET: ' . $e->getMessage());
+    json_response(['ok' => true, 'modules' => $list ?? []]);
   }
   exit;
 }

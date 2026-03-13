@@ -1,32 +1,7 @@
 <?php
-// Fatal error megjelenítése a lehető legelején (még redirect előtt is)
-register_shutdown_function(function () {
-  $err = error_get_last();
-  if ($err === null || !in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) return;
-  if (headers_sent()) return;
-  header('Content-Type: text/html; charset=utf-8');
-  http_response_code(500);
-  echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Admin 500</title></head><body style="font-family:sans-serif;padding:2rem;max-width:640px;">';
-  echo '<h1>Admin – PHP hiba</h1><p><strong>' . htmlspecialchars($err['message'], ENT_QUOTES, 'UTF-8') . '</strong></p>';
-  echo '<p>Fájl: ' . htmlspecialchars($err['file'], ENT_QUOTES, 'UTF-8') . ' (sor ' . (int)$err['line'] . ')</p>';
-  echo '<p><a href="check.php">check.php</a> · <a href="login.php">login.php</a></p></body></html>';
-});
-
-try {
-  require_once __DIR__ . '/../util.php';
-  require_admin();
-  start_secure_session();
-} catch (Throwable $e) {
-  if (function_exists('log_error')) log_error('Admin bootstrap: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-  header('Content-Type: text/html; charset=utf-8');
-  http_response_code(500);
-  echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Admin hiba</title></head><body style="font-family:sans-serif;padding:2rem;max-width:600px;">';
-  echo '<h1>Admin betöltési hiba</h1><p><strong>' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</strong></p>';
-  echo '<p>Fájl: ' . htmlspecialchars($e->getFile(), ENT_QUOTES, 'UTF-8') . ' (sor ' . (int)$e->getLine() . ')</p>';
-  echo '<p>Ellenőrizd a szerver <code>error.log</code> vagy a projekt gyökérben <code>error.log</code> fájlt.</p></body></html>';
-  exit;
-}
-
+require_once __DIR__ . '/../util.php';
+require_admin();
+start_secure_session();
 if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
   set_lang($_GET['lang']);
   header('Location: ' . (isset($_SERVER['REQUEST_URI']) ? strtok($_SERVER['REQUEST_URI'], '?') : app_url('/admin/index.php')));
@@ -46,7 +21,7 @@ $LANG_JS = lang_array_for_js();
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/dashboard/dist/css/adminlte.min.css'), ENT_QUOTES, 'UTF-8') ?>">
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/admin.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
-<body class="layout-fixed sidebar-expand-lg bg-body-tertiary" data-app-base="<?= htmlspecialchars(defined('APP_BASE') ? APP_BASE : (defined('APP_BASE_URL') ? rtrim(parse_url(APP_BASE_URL, PHP_URL_PATH) ?: '/terkep', '/') : '/terkep'), ENT_QUOTES, 'UTF-8') ?>" data-map-lat="<?= htmlspecialchars((string)(defined('MAP_CENTER_LAT') ? MAP_CENTER_LAT : 46.565), ENT_QUOTES, 'UTF-8') ?>" data-map-lng="<?= htmlspecialchars((string)(defined('MAP_CENTER_LNG') ? MAP_CENTER_LNG : 20.667), ENT_QUOTES, 'UTF-8') ?>" data-map-zoom="<?= htmlspecialchars((string)(defined('MAP_ZOOM') ? MAP_ZOOM : 13), ENT_QUOTES, 'UTF-8') ?>">
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary" data-app-base="<?= htmlspecialchars(APP_BASE, ENT_QUOTES, 'UTF-8') ?>" data-map-lat="<?= htmlspecialchars((string)(defined('MAP_CENTER_LAT') ? MAP_CENTER_LAT : 46.565), ENT_QUOTES, 'UTF-8') ?>" data-map-lng="<?= htmlspecialchars((string)(defined('MAP_CENTER_LNG') ? MAP_CENTER_LNG : 20.667), ENT_QUOTES, 'UTF-8') ?>" data-map-zoom="<?= htmlspecialchars((string)(defined('MAP_ZOOM') ? MAP_ZOOM : 13), ENT_QUOTES, 'UTF-8') ?>">
 <div class="app-wrapper">
   <nav class="app-header navbar navbar-expand bg-body">
     <div class="container-fluid">
@@ -121,7 +96,7 @@ $LANG_JS = lang_array_for_js();
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="budget">
               <i class="nav-icon bi bi-cash-stack"></i>
-              <p><?= htmlspecialchars(t('admin.budget_projects') ?: 'Költségvetési projektek'), ENT_QUOTES, 'UTF-8') ?></p>
+              <p><?= htmlspecialchars(t('admin.budget_projects'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
           </li>
           <li class="nav-item">
@@ -163,7 +138,8 @@ $LANG_JS = lang_array_for_js();
                     <div id="chartCategory" class="admin-chart"></div>
                   </div>
                 </div>
-                <p class="text-secondary small mt-2 mb-0"><?= htmlspecialchars(t('admin.integration_status'), ENT_QUOTES, 'UTF-8') ?> FixMyStreet: <?= fms_enabled() ? htmlspecialchars(t('admin.fms_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.fms_not_configured'), ENT_QUOTES, 'UTF-8') ?> | AI (Mistral): <?= ai_configured() ? htmlspecialchars(t('admin.ai_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.ai_not_configured'), ENT_QUOTES, 'UTF-8') ?></p>
+                <?php $fmsOk = false; $aiOk = false; try { $fmsOk = fms_enabled(); } catch (Throwable $e) { /* module_settings hiányzik esetén */ } try { $aiOk = ai_configured(); } catch (Throwable $e) { /* module_settings hiányzik esetén */ } ?>
+                <p class="text-secondary small mt-2 mb-0"><?= htmlspecialchars(t('admin.integration_status'), ENT_QUOTES, 'UTF-8') ?> FixMyStreet: <?= $fmsOk ? htmlspecialchars(t('admin.fms_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.fms_not_configured'), ENT_QUOTES, 'UTF-8') ?> | AI (Mistral): <?= $aiOk ? htmlspecialchars(t('admin.ai_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.ai_not_configured'), ENT_QUOTES, 'UTF-8') ?></p>
                 <p class="text-secondary small mt-1 mb-0"><strong>CivicAI Analytics:</strong> <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a> &nbsp;|&nbsp; <strong>ESG:</strong> <a href="<?= htmlspecialchars(app_url('/api/esg_export.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/esg_export.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a></p>
               </div>
             </div>
@@ -302,12 +278,13 @@ $LANG_JS = lang_array_for_js();
                 </div>
 
                 <div class="admin-tab-body" id="tab-budget" hidden>
-                  <p class="text-secondary small mb-3"><?= htmlspecialchars(t('admin.budget_intro') ?: 'Közös költségvetés: projektek létrehozása, szerkesztése, közzététele. A polgárok a nyilvános oldalon szavazhatnak.'), ENT_QUOTES, 'UTF-8') ?></p>
+                  <p class="text-secondary small mb-3"><?= htmlspecialchars(t('admin.budget_intro'), ENT_QUOTES, 'UTF-8') ?></p>
                   <div class="mb-3">
-                    <button type="button" class="btn btn-sm btn-primary" id="btnBudgetAdd"><?= htmlspecialchars(t('admin.budget_add') ?: 'Új projekt'), ENT_QUOTES, 'UTF-8') ?></button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnBudgetAdd"><?= htmlspecialchars(t('admin.budget_add'), ENT_QUOTES, 'UTF-8') ?></button>
                   </div>
                   <div id="budgetProjectList"><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?>...</div>
                 </div>
+
                 <div class="admin-tab-body" id="tab-modules" hidden>
                   <p class="text-secondary small mb-3"><?= htmlspecialchars(t('admin.modules_intro'), ENT_QUOTES, 'UTF-8') ?></p>
                   <div id="moduleList"><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?>...</div>
