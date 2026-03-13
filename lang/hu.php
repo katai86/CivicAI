@@ -280,7 +280,11 @@ return [
     'gov.ai_summaries_intro' => 'Gyors AI összefoglalók: a bal oldali gombbal a terület bejelentései alapján kérhetsz rövid összefoglalót, a jobb oldalival ESG/fenntarthatósági javaslatot.',
     'gov.tab_dashboard' => 'Dashboard',
     'gov.tab_reports' => 'Bejelentések',
+    'gov.tab_trees' => 'Fák',
     'gov.tab_modules' => 'Beépülő modulok',
+    'gov.trees_intro' => 'Faállomány szerkesztése: fajta, cím, méretek, állapot, öntözés, láthatóság.',
+    'gov.tree_edit' => 'Szerkesztés',
+    'gov.tree_save' => 'Mentés',
     'gov.modules_intro' => 'Saját fiók szintjén ki/be kapcsolók. Ezek csak a közig felület elemeit érintik (nem globális beállítások).',
     'gov.module_saved' => 'Mentve.',
 

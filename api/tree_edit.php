@@ -24,7 +24,7 @@ if ($treeId <= 0) {
 }
 
 $pdo = db();
-$stmt = $pdo->prepare("SELECT id, adopted_by_user_id FROM trees WHERE id = ? AND public_visible = 1 LIMIT 1");
+$stmt = $pdo->prepare("SELECT id, adopted_by_user_id FROM trees WHERE id = ? LIMIT 1");
 $stmt->execute([$treeId]);
 $tree = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$tree) {
@@ -51,19 +51,23 @@ if (!$canEdit) {
 
 $updates = [];
 $params = [];
+$canEditGov = $isAdmin || $isGov;
 
 $fields = [
   'species' => ['varchar', 120],
+  'address' => ['varchar', 255],
   'estimated_age' => ['int', null],
   'planting_year' => ['int', null],
+  'trunk_diameter' => ['decimal', null],
+  'canopy_diameter' => ['decimal', null],
   'health_status' => ['varchar', 32],
   'risk_level' => ['varchar', 32],
   'notes' => ['text', null],
 ];
+$govOnlyFields = ['last_watered' => 'date', 'last_inspection' => 'date', 'public_visible' => 'int', 'gov_validated' => 'int'];
+
 foreach ($fields as $key => $cfg) {
-  if (!array_key_exists($key, $_POST)) {
-    continue;
-  }
+  if (!array_key_exists($key, $_POST)) continue;
   $v = $_POST[$key];
   if ($cfg[0] === 'varchar' && $cfg[1]) {
     $v = mb_substr(trim((string)$v), 0, $cfg[1]);
@@ -77,6 +81,25 @@ foreach ($fields as $key => $cfg) {
     $v = trim((string)$v);
     $updates[] = "`$key` = ?";
     $params[] = $v === '' ? null : $v;
+  } elseif ($cfg[0] === 'decimal') {
+    $v = ($v === '' || $v === null) ? null : (float)$v;
+    $updates[] = "`$key` = ?";
+    $params[] = $v;
+  }
+}
+
+foreach ($govOnlyFields as $key => $type) {
+  if (!array_key_exists($key, $_POST) || !$canEditGov) continue;
+  $v = $_POST[$key];
+  if ($type === 'date') {
+    $v = trim((string)$v);
+    if ($v !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) continue;
+    $updates[] = "`$key` = ?";
+    $params[] = $v === '' ? null : $v;
+  } elseif ($type === 'int') {
+    $v = $v === '' || $v === null ? 0 : (int)$v;
+    $updates[] = "`$key` = ?";
+    $params[] = $v ? 1 : 0;
   }
 }
 

@@ -277,7 +277,11 @@ return [
     'gov.ai_summaries_intro' => 'Quick AI summaries: use the left button for a short summary based on area reports, the right one for ESG/sustainability recommendations.',
     'gov.tab_dashboard' => 'Dashboard',
     'gov.tab_reports' => 'Reports',
+    'gov.tab_trees' => 'Trees',
     'gov.tab_modules' => 'Plug-in modules',
+    'gov.trees_intro' => 'Edit tree registry: species, address, dimensions, status, watering, visibility.',
+    'gov.tree_edit' => 'Edit',
+    'gov.tree_save' => 'Save',
     'gov.modules_intro' => 'Per-account toggles for the government UI (not global settings).',
     'gov.module_saved' => 'Saved.',
 

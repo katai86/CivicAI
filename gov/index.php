@@ -487,6 +487,12 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
               <p><?= h(t('gov.tab_reports')) ?></p>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="trees">
+              <i class="nav-icon bi bi-tree-fill"></i>
+              <p><?= h(t('gov.tab_trees')) ?></p>
+            </a>
+          </li>
           <?php if (!$isAdmin): ?>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="modules">
@@ -725,6 +731,45 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
           <?php endif; ?>
         </div>
 
+        <div class="admin-tab-body" id="tab-trees" hidden>
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title"><?= h(t('gov.tab_trees')) ?></h6>
+              <p class="text-secondary small mb-3"><?= h(t('gov.trees_intro')) ?></p>
+              <div id="govTreesListWrap">
+                <div id="govTreesList" class="admin-list" style="max-height:55vh;overflow:auto"></div>
+                <p id="govTreesTotal" class="small text-secondary mt-2 mb-0"></p>
+              </div>
+            </div>
+          </div>
+          <div class="modal fade" id="govTreeEditModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+              <div class="modal-content">
+                <div class="modal-header"><h6 class="modal-title"><?= h(t('gov.tree_edit')) ?> – <span id="govTreeEditTitle">T0000</span></h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                  <input type="hidden" id="govTreeEditId" value="">
+                  <div class="row g-2">
+                    <div class="col-md-6"><label class="form-label small"><?= h(t('tree.species_label') ?: 'Fajta') ?></label><input type="text" id="govTreeSpecies" class="form-control form-control-sm" maxlength="120" placeholder="pl. kőris"></div>
+                    <div class="col-md-6"><label class="form-label small"><?= h(t('gov.tree_address') ?: 'Cím') ?></label><input type="text" id="govTreeAddress" class="form-control form-control-sm" maxlength="255"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.age') ?: 'Életkor (év)') ?></label><input type="number" id="govTreeEstimatedAge" class="form-control form-control-sm" min="0" max="500" placeholder="–"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_planting_year') ?: 'Ültetés éve') ?></label><input type="number" id="govTreePlantingYear" class="form-control form-control-sm" min="1900" max="2100" placeholder="–"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.trunk_label') ?: 'Törzsméret (cm)') ?></label><input type="number" id="govTreeTrunkDiameter" class="form-control form-control-sm" min="0" max="500" step="0.1" placeholder="–"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.canopy_label') ?: 'Koronaméret (m)') ?></label><input type="number" id="govTreeCanopyDiameter" class="form-control form-control-sm" min="0" max="50" step="0.1" placeholder="–"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.health') ?: 'Állapot') ?></label><select id="govTreeHealthStatus" class="form-select form-select-sm"><option value="">–</option><option value="good"><?= h(t('tree.health_good') ?: 'Jó') ?></option><option value="fair"><?= h(t('tree.health_fair') ?: 'Közepes') ?></option><option value="poor"><?= h(t('tree.health_poor') ?: 'Gyenge') ?></option><option value="critical"><?= h(t('tree.health_critical') ?: 'Kritikus') ?></option></select></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.risk') ?: 'Kockázat') ?></label><select id="govTreeRiskLevel" class="form-select form-select-sm"><option value="">–</option><option value="low"><?= h(t('tree.risk_low') ?: 'Alacsony') ?></option><option value="medium"><?= h(t('tree.risk_medium') ?: 'Közepes') ?></option><option value="high"><?= h(t('tree.risk_high') ?: 'Magas') ?></option></select></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.trees_last_watered')) ?></label><input type="date" id="govTreeLastWatered" class="form-control form-control-sm"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_last_inspection') ?: 'Utolsó ellenőrzés') ?></label><input type="date" id="govTreeLastInspection" class="form-control form-control-sm"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_visible') ?: 'Látható') ?></label><select id="govTreePublicVisible" class="form-select form-select-sm"><option value="1"><?= h(t('common.yes') ?: 'Igen') ?></option><option value="0"><?= h(t('common.no') ?: 'Nem') ?></option></select></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_validated') ?: 'Közig jóváhagyva') ?></label><select id="govTreeGovValidated" class="form-select form-select-sm"><option value="0"><?= h(t('common.no') ?: 'Nem') ?></option><option value="1"><?= h(t('common.yes') ?: 'Igen') ?></option></select></div>
+                    <div class="col-12"><label class="form-label small"><?= h(t('tree.note_placeholder') ?: 'Megjegyzés') ?></label><textarea id="govTreeNotes" class="form-control form-control-sm" rows="2" maxlength="2000"></textarea></div>
+                  </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= h(t('modal.cancel') ?: 'Mégse') ?></button><button type="button" class="btn btn-primary btn-sm" id="govTreeSaveBtn"><?= h(t('gov.tree_save')) ?></button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="admin-tab-body" id="tab-reports" hidden>
           <div class="card">
             <div class="card-body">
@@ -936,12 +981,91 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
       e.preventDefault();
       var key = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
-      ['dashboard','reports','modules'].forEach(function(k){
+      ['dashboard','reports','trees','modules'].forEach(function(k){
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
       });
       if (key === 'modules') loadGovModules();
+      if (key === 'trees') loadGovTrees();
     });
+  });
+
+  var govTreesListUrl = <?= json_encode(app_url('/api/gov_trees_list.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var treeEditUrl = <?= json_encode(app_url('/api/tree_edit.php'), JSON_UNESCAPED_SLASHES) ?>;
+  function escStr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function loadGovTrees(){
+    var wrap = document.getElementById('govTreesList');
+    var totalEl = document.getElementById('govTreesTotal');
+    if (!wrap) return;
+    wrap.textContent = <?= json_encode(t('gov.loading') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?>;
+    fetch(govTreesListUrl + '?limit=200&offset=0', { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !Array.isArray(j.data)) { wrap.textContent = <?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>; if (totalEl) totalEl.textContent = ''; return; }
+      var total = j.total || j.data.length;
+      if (totalEl) totalEl.textContent = total + ' fa';
+      var editLabel = <?= json_encode(t('gov.tree_edit'), JSON_UNESCAPED_UNICODE) ?>;
+      wrap.innerHTML = j.data.map(function(t){
+        var serial = 'T' + String(Number(t.id)).padStart(4, '0');
+        var sp = escStr((t.species || '').trim() || '–');
+        var addr = (t.address || '').trim(); addr = addr ? escStr(addr.substring(0, 40) + (addr.length > 40 ? '…' : '')) : '';
+        var lastW = escStr(t.last_watered || '–');
+        var health = escStr(t.health_status || '–');
+        return '<div class="admin-item d-flex justify-content-between align-items-center flex-wrap gap-1">' +
+          '<div><b>' + serial + '</b> ' + sp + (addr ? ' <span class="text-secondary small">' + addr + '</span>' : '') + '<br><small class="text-secondary">' + lastW + ' | ' + health + '</small></div>' +
+          '<button type="button" class="btn btn-outline-primary btn-sm gov-tree-edit-btn" data-id="' + t.id + '">' + editLabel + '</button>' +
+        '</div>';
+      }).join('');
+      wrap.querySelectorAll('.gov-tree-edit-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){ openGovTreeEdit(Number(btn.getAttribute('data-id')), j.data.find(function(x){ return Number(x.id) === Number(btn.getAttribute('data-id')); })); });
+      });
+    }).catch(function(){ wrap.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; if (totalEl) totalEl.textContent = ''; });
+  }
+  function openGovTreeEdit(id, t){
+    if (!t) return;
+    document.getElementById('govTreeEditId').value = id;
+    document.getElementById('govTreeEditTitle').textContent = 'T' + String(id).padStart(4, '0');
+    document.getElementById('govTreeSpecies').value = t.species || '';
+    document.getElementById('govTreeAddress').value = t.address || '';
+    document.getElementById('govTreeEstimatedAge').value = (t.estimated_age != null && t.estimated_age !== '') ? t.estimated_age : '';
+    document.getElementById('govTreePlantingYear').value = (t.planting_year != null && t.planting_year !== '') ? t.planting_year : '';
+    document.getElementById('govTreeTrunkDiameter').value = (t.trunk_diameter != null && t.trunk_diameter !== '') ? t.trunk_diameter : '';
+    document.getElementById('govTreeCanopyDiameter').value = (t.canopy_diameter != null && t.canopy_diameter !== '') ? t.canopy_diameter : '';
+    document.getElementById('govTreeHealthStatus').value = t.health_status || '';
+    document.getElementById('govTreeRiskLevel').value = t.risk_level || '';
+    document.getElementById('govTreeLastWatered').value = t.last_watered || '';
+    document.getElementById('govTreeLastInspection').value = t.last_inspection || '';
+    document.getElementById('govTreePublicVisible').value = (t.public_visible == 1 || t.public_visible === true) ? '1' : '0';
+    document.getElementById('govTreeGovValidated').value = (t.gov_validated == 1 || t.gov_validated === true) ? '1' : '0';
+    document.getElementById('govTreeNotes').value = t.notes || '';
+    var modal = new bootstrap.Modal(document.getElementById('govTreeEditModal'));
+    modal.show();
+  }
+  document.getElementById('govTreeSaveBtn') && document.getElementById('govTreeSaveBtn').addEventListener('click', function(){
+    var id = document.getElementById('govTreeEditId').value;
+    if (!id) return;
+    var btn = document.getElementById('govTreeSaveBtn');
+    btn.disabled = true;
+    var fd = new FormData();
+    fd.append('tree_id', id);
+    fd.append('species', document.getElementById('govTreeSpecies').value);
+    fd.append('address', document.getElementById('govTreeAddress').value);
+    fd.append('estimated_age', document.getElementById('govTreeEstimatedAge').value);
+    fd.append('planting_year', document.getElementById('govTreePlantingYear').value);
+    fd.append('trunk_diameter', document.getElementById('govTreeTrunkDiameter').value);
+    fd.append('canopy_diameter', document.getElementById('govTreeCanopyDiameter').value);
+    fd.append('health_status', document.getElementById('govTreeHealthStatus').value);
+    fd.append('risk_level', document.getElementById('govTreeRiskLevel').value);
+    fd.append('last_watered', document.getElementById('govTreeLastWatered').value);
+    fd.append('last_inspection', document.getElementById('govTreeLastInspection').value);
+    fd.append('public_visible', document.getElementById('govTreePublicVisible').value);
+    fd.append('gov_validated', document.getElementById('govTreeGovValidated').value);
+    fd.append('notes', document.getElementById('govTreeNotes').value);
+    fetch(treeEditUrl, { method: 'POST', body: fd, credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      btn.disabled = false;
+      if (j && j.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('govTreeEditModal')).hide();
+        loadGovTrees();
+      } else { alert(j && j.error ? j.error : <?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>); }
+    }).catch(function(){ btn.disabled = false; alert(<?= json_encode(t('common.error_generic'), JSON_UNESCAPED_UNICODE) ?>); });
   });
 
   var outSum = document.getElementById('govAiOutSummary');
