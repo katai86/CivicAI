@@ -6,6 +6,7 @@
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 require_once __DIR__ . '/../services/AiRouter.php';
+require_once __DIR__ . '/../services/AiPromptBuilder.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
   json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -67,7 +68,9 @@ if (!$tree) {
   json_response(['ok' => false, 'error' => 'Fa nem található.'], 404);
 }
 
-$prompt = "Analyze this tree photo. Assess: leaf color, dryness, visible disease or damage. Return JSON with: status (exactly one of: healthy, dry, disease_suspected), confidence (0-1), suggestion (one short sentence). Tree species if known: " . (trim($tree['species'] ?? '') ?: 'unknown') . ".";
+$outputLang = function_exists('current_lang') ? current_lang() : 'hu';
+$langName = \AiPromptBuilder::languageNameForCode($outputLang);
+$prompt = "Analyze this tree photo. Assess: leaf color, dryness, visible disease or damage. Return JSON with: status (exactly one of: healthy, dry, disease_suspected), confidence (0-1), suggestion (one short sentence, in " . $langName . " only). Tree species if known: " . (trim($tree['species'] ?? '') ?: 'unknown') . ".";
 
 $router = new \AiRouter();
 $resp = $router->callWithImage('image_classification', $prompt, $dest, $mime);

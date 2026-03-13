@@ -6,6 +6,7 @@
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 require_once __DIR__ . '/../services/AiRouter.php';
+require_once __DIR__ . '/../services/AiPromptBuilder.php';
 
 start_secure_session();
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -51,8 +52,10 @@ if (!@move_uploaded_file($tmp, $dest)) {
   json_response(['ok' => false, 'error' => t('common.error_save_failed')], 500);
 }
 
-$system = 'You are a tree identification and measurement assistant. Reply with a JSON object only. Use keys: species (string, common name of the tree e.g. oak, ash, or null if unknown), trunk_diameter_cm (number or null, estimated trunk diameter in cm), canopy_diameter_m (number or null, estimated canopy/crown diameter in metres). If not visible or uncertain, use null.';
-$prompt = 'Analyze this tree photo. Estimate: 1) Tree species (common name, e.g. oak, ash, lime). 2) Trunk diameter in cm (at breast height if visible). 3) Canopy/crown diameter in metres. Return JSON with keys: species, trunk_diameter_cm, canopy_diameter_m. Use null for any value you cannot estimate.';
+$outputLang = function_exists('current_lang') ? current_lang() : 'hu';
+$langName = \AiPromptBuilder::languageNameForCode($outputLang);
+$system = 'You are a tree identification and measurement assistant. Reply with a JSON object only. Use keys: species (string, common name of the tree in ' . $langName . ', e.g. oak/ash in English or tölgy/kőris in Hungarian, or null if unknown), trunk_diameter_cm (number or null), canopy_diameter_m (number or null). If not visible or uncertain, use null. Write all text in ' . $langName . '.';
+$prompt = 'Analyze this tree photo. Estimate: 1) Tree species (common name in ' . $langName . '). 2) Trunk diameter in cm (at breast height if visible). 3) Canopy/crown diameter in metres. Return JSON with keys: species, trunk_diameter_cm, canopy_diameter_m. Use null for any value you cannot estimate. Respond in ' . $langName . '.';
 
 $router = new \AiRouter();
 $resp = $router->callWithImage('image_classification', $prompt, $dest, $mime, $system);

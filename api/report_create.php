@@ -485,7 +485,8 @@ if ($id > 0 && defined('AI_ENABLED') && AI_ENABLED) {
   try {
     $router = new AiRouter();
     if ($router->isEnabled()) {
-      $prompt = AiPromptBuilder::reportUnderstanding((string)$title, (string)$desc, (string)$category);
+      $outputLang = function_exists('current_lang') ? current_lang() : 'hu';
+      $prompt = AiPromptBuilder::reportUnderstanding((string)$title, (string)$desc, (string)$category, $outputLang);
       $inputHash = hash('sha256', $category . '|' . (string)$title . '|' . (string)$desc);
       $res = $router->callJson('report_classification', $prompt, []);
       if (!empty($res['ok']) && isset($res['data']) && is_array($res['data'])) {

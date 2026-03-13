@@ -192,17 +192,18 @@ if (!$router->isEnabled()) {
 }
 
 $scopeTitle = $city ?: ($authority ? (string)$authority['name'] : 'Terület');
+$outputLang = function_exists('current_lang') ? current_lang() : 'hu';
 
 if ($type === 'maintenance') {
-  $prompt = AiPromptBuilder::reportMaintenance($scopeTitle, $timeframeLabel, $stats, $recent);
+  $prompt = AiPromptBuilder::reportMaintenance($scopeTitle, $timeframeLabel, $stats, $recent, $outputLang);
 } elseif ($type === 'engagement') {
-  $prompt = AiPromptBuilder::reportEngagement($scopeTitle, $timeframeLabel, $stats, $recent);
+  $prompt = AiPromptBuilder::reportEngagement($scopeTitle, $timeframeLabel, $stats, $recent, $outputLang);
 } elseif ($type === 'sustainability') {
-  $prompt = AiPromptBuilder::reportSustainability($scopeTitle, $timeframeLabel, $stats, $recent);
+  $prompt = AiPromptBuilder::reportSustainability($scopeTitle, $timeframeLabel, $stats, $recent, $outputLang);
 } elseif ($type === 'esg') {
-  $prompt = AiPromptBuilder::govEsg($scopeTitle, $stats, $recent);
+  $prompt = AiPromptBuilder::govEsg($scopeTitle, $stats, $recent, $outputLang);
 } else {
-  $prompt = AiPromptBuilder::govSummary($scopeTitle, $stats, $recent);
+  $prompt = AiPromptBuilder::govSummary($scopeTitle, $stats, $recent, $outputLang);
 }
 
 $taskType = ($type === 'esg') ? 'gov_esg' : 'gov_summary';
