@@ -13,6 +13,17 @@ try {
   exit;
 }
 
+register_shutdown_function(function () {
+  $err = error_get_last();
+  if ($err === null || !in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) return;
+  if (headers_sent()) return;
+  header('Content-Type: text/html; charset=utf-8');
+  http_response_code(500);
+  echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Login 500</title></head><body style="font-family:sans-serif;padding:2rem;max-width:640px;">';
+  echo '<h1>Admin belépés – PHP hiba</h1><p><strong>' . htmlspecialchars($err['message'], ENT_QUOTES, 'UTF-8') . '</strong></p>';
+  echo '<p>' . htmlspecialchars($err['file'], ENT_QUOTES, 'UTF-8') . ' (sor ' . (int)$err['line'] . ')</p></body></html>';
+});
+
 $error = null;
 
 // Ha már beléptél, irány az admin

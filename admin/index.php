@@ -1,4 +1,17 @@
 <?php
+// Fatal error megjelenítése a lehető legelején (még redirect előtt is)
+register_shutdown_function(function () {
+  $err = error_get_last();
+  if ($err === null || !in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) return;
+  if (headers_sent()) return;
+  header('Content-Type: text/html; charset=utf-8');
+  http_response_code(500);
+  echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Admin 500</title></head><body style="font-family:sans-serif;padding:2rem;max-width:640px;">';
+  echo '<h1>Admin – PHP hiba</h1><p><strong>' . htmlspecialchars($err['message'], ENT_QUOTES, 'UTF-8') . '</strong></p>';
+  echo '<p>Fájl: ' . htmlspecialchars($err['file'], ENT_QUOTES, 'UTF-8') . ' (sor ' . (int)$err['line'] . ')</p>';
+  echo '<p><a href="check.php">check.php</a> · <a href="login.php">login.php</a></p></body></html>';
+});
+
 try {
   require_once __DIR__ . '/../util.php';
   require_admin();
@@ -13,6 +26,7 @@ try {
   echo '<p>Ellenőrizd a szerver <code>error.log</code> vagy a projekt gyökérben <code>error.log</code> fájlt.</p></body></html>';
   exit;
 }
+
 if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
   set_lang($_GET['lang']);
   header('Location: ' . (isset($_SERVER['REQUEST_URI']) ? strtok($_SERVER['REQUEST_URI'], '?') : app_url('/admin/index.php')));
