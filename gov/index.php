@@ -473,6 +473,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   <title><?= h(t('site.name')) ?> – <?= h(t('gov.title')) ?></title>
   <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');document.documentElement.setAttribute('data-bs-theme','dark');}</script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/dashboard/dist/css/adminlte.min.css'), ENT_QUOTES, 'UTF-8') ?>">
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/admin.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
@@ -546,6 +547,12 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             <a href="#" class="nav-link tab" data-tab="trees">
               <i class="nav-icon bi bi-tree-fill"></i>
               <p><?= h(t('gov.tab_trees')) ?></p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="analytics">
+              <i class="nav-icon bi bi-graph-up"></i>
+              <p><?= h(t('gov.tab_analytics')) ?></p>
             </a>
           </li>
           <?php if (!$isAdmin): ?>
@@ -825,6 +832,43 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
           </div>
         </div>
 
+        <div class="admin-tab-body" id="tab-analytics" hidden>
+          <p class="text-secondary small mb-2"><?= h(t('gov.tab_analytics') ?: 'Elemzés') ?> – <?= h(t('gov.heatmap_widget_title')) ?>, <?= h(t('gov.statistics_tab_title')) ?></p>
+          <div class="card mb-3">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.heatmap_widget_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('heatmap.title')) ?></p>
+              <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                <label class="small mb-0"><?= h(t('heatmap.type_label')) ?>:</label>
+                <select id="govHeatmapType" class="form-select form-select-sm" style="max-width:220px">
+                  <option value="issue_density"><?= h(t('heatmap.type_issue_density')) ?></option>
+                  <option value="unresolved_issues"><?= h(t('heatmap.type_unresolved_issues')) ?></option>
+                  <option value="citizen_activity"><?= h(t('heatmap.type_citizen_activity')) ?></option>
+                  <option value="tree_health_risk"><?= h(t('heatmap.type_tree_health_risk')) ?></option>
+                  <option value="esg_risk"><?= h(t('heatmap.type_esg_risk')) ?></option>
+                </select>
+                <button type="button" id="govHeatmapRefresh" class="btn btn-sm btn-outline-primary"><?= h(t('admin.refresh')) ?></button>
+              </div>
+              <div id="govHeatmapMap" style="height:500px;width:100%;border:1px solid #dee2e6;border-radius:0.375rem;"></div>
+            </div>
+          </div>
+          <div class="card mb-3">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.statistics_tab_title')) ?></h6>
+              <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                <label class="small mb-0"><?= h(t('gov.statistics_date_range') ?: 'Időszak') ?>:</label>
+                <input type="date" id="govStatsDateFrom" class="form-control form-control-sm" style="max-width:140px">
+                <span class="small">–</span>
+                <input type="date" id="govStatsDateTo" class="form-control form-control-sm" style="max-width:140px">
+                <button type="button" id="govStatisticsRefresh" class="btn btn-sm btn-outline-primary"><?= h(t('gov.statistics_refresh')) ?></button>
+              </div>
+              <div id="govStatisticsContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="admin-tab-body" id="tab-reports" hidden>
           <div class="card">
             <div class="card-body">
@@ -936,6 +980,8 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="<?= htmlspecialchars(app_url('/dashboard/dist/js/adminlte.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script>
@@ -943,8 +989,41 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   var aiUrl = <?= json_encode(app_url('/api/gov_ai.php'), JSON_UNESCAPED_SLASHES) ?>;
   var modulesUrl = <?= json_encode(app_url('/api/gov_modules.php'), JSON_UNESCAPED_SLASHES) ?>;
   var esgExportUrl = <?= json_encode(app_url('/api/esg_export.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var heatmapUrl = <?= json_encode(app_url('/api/heatmap_data.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var authorityIdForHeatmap = <?= !empty($authorityIds) ? (int)$authorityIds[0] : '0' ?>;
+  var govStatisticsUrl = <?= json_encode(app_url('/api/gov_statistics.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govStatisticsLabels = <?= json_encode([
+    'issue_trend' => t('gov.statistics_issue_trend'),
+    'resolution_time' => t('gov.statistics_resolution_time'),
+    'engagement' => t('gov.statistics_engagement'),
+    'districts' => t('gov.statistics_districts'),
+    'resolution_rate' => t('gov.statistics_resolution_rate'),
+    'backlog' => t('gov.statistics_backlog'),
+    'participation' => t('gov.statistics_participation'),
+    'trees' => t('gov.statistics_trees'),
+    'avg_hours' => t('gov.statistics_avg_hours'),
+    'median_hours' => t('gov.statistics_median_hours'),
+    'open_issues' => t('gov.statistics_open_issues'),
+    'trend_up' => t('gov.statistics_trend_up'),
+    'trend_down' => t('gov.statistics_trend_down'),
+    'trend_stable' => t('gov.statistics_trend_stable'),
+    'resolved' => t('gov.statistics_resolved'),
+    'total_issues' => t('gov.statistics_total_issues'),
+    'active_users_7d' => t('gov.statistics_active_users_7d'),
+    'reports_7d' => t('gov.statistics_reports_7d'),
+    'trees_total' => t('gov.statistics_trees_total'),
+    'trees_watered' => t('gov.statistics_trees_watered'),
+    'trees_adopted' => t('gov.statistics_trees_adopted'),
+    'trees_risk' => t('gov.statistics_trees_risk'),
+    'new_users_7d' => t('gov.statistics_new_users_7d'),
+    'no_data' => t('gov.no_data'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var mapCenterLat = <?= json_encode(defined('MAP_CENTER_LAT') ? (float)MAP_CENTER_LAT : 47.1625) ?>;
+  var mapCenterLng = <?= json_encode(defined('MAP_CENTER_LNG') ? (float)MAP_CENTER_LNG : 19.5033) ?>;
   var appName = <?= json_encode(t('site.name'), JSON_UNESCAPED_UNICODE) ?>;
   var logoUrl = <?= json_encode(app_url('/assets/logo.png'), JSON_UNESCAPED_SLASHES) ?>;
+  var govHeatmapMap = null;
+  var govHeatmapLayer = null;
 
   var govEsgYear = document.getElementById('govEsgYear');
   var linkEsgJson = document.getElementById('linkEsgJson');
@@ -1096,14 +1175,102 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
       e.preventDefault();
       var key = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
-      ['dashboard','reports','ideas','trees','modules'].forEach(function(k){
+      ['dashboard','reports','ideas','trees','analytics','modules'].forEach(function(k){
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
       });
       if (key === 'modules') loadGovModules();
       if (key === 'trees') loadGovTrees();
+      if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); }
     });
   });
+
+  function initGovHeatmapTab(){
+    var container = document.getElementById('govHeatmapMap');
+    if (!container || typeof L === 'undefined') return;
+    if (!govHeatmapMap) {
+      govHeatmapMap = L.map('govHeatmapMap').setView([mapCenterLat, mapCenterLng], 11);
+      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OSM' }).addTo(govHeatmapMap);
+    }
+    loadGovHeatmap();
+  }
+  function loadGovHeatmap(){
+    if (!govHeatmapMap || !heatmapUrl || typeof L === 'undefined') return;
+    var typeSel = document.getElementById('govHeatmapType');
+    var type = typeSel ? typeSel.value : 'issue_density';
+    var from = new Date();
+    from.setDate(from.getDate() - 30);
+    var to = new Date();
+    var params = 'type=' + encodeURIComponent(type) + '&date_from=' + from.toISOString().slice(0, 10) + '&date_to=' + to.toISOString().slice(0, 10);
+    if (authorityIdForHeatmap > 0) params += '&authority_id=' + authorityIdForHeatmap;
+    fetch(heatmapUrl + '?' + params, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (govHeatmapLayer) { govHeatmapMap.removeLayer(govHeatmapLayer); govHeatmapLayer = null; }
+      if (!j.ok || !Array.isArray(j.data) || j.data.length === 0) return;
+      var points = j.data.map(function(p){ return [Number(p.lat), Number(p.lng), Number(p.weight) || 1]; });
+      if (typeof L.heatLayer !== 'undefined') {
+        govHeatmapLayer = L.heatLayer(points, { radius: 25, blur: 15, maxZoom: 17, max: 1, gradient: { 0.2: 'blue', 0.5: 'lime', 0.8: 'red' } }).addTo(govHeatmapMap);
+      }
+    }).catch(function(){});
+  }
+  document.getElementById('govHeatmapRefresh') && document.getElementById('govHeatmapRefresh').addEventListener('click', loadGovHeatmap);
+  document.getElementById('govHeatmapType') && document.getElementById('govHeatmapType').addEventListener('change', loadGovHeatmap);
+
+  function initGovStatisticsTab(){
+    var fromEl = document.getElementById('govStatsDateFrom');
+    var toEl = document.getElementById('govStatsDateTo');
+    if (fromEl && !fromEl.value) {
+      var from = new Date();
+      from.setDate(from.getDate() - 30);
+      fromEl.value = from.toISOString().slice(0, 10);
+    }
+    if (toEl && !toEl.value) toEl.value = new Date().toISOString().slice(0, 10);
+    loadGovStatistics();
+  }
+  function loadGovStatistics(){
+    var container = document.getElementById('govStatisticsContent');
+    if (!container || !govStatisticsUrl) return;
+    var fromEl = document.getElementById('govStatsDateFrom');
+    var toEl = document.getElementById('govStatsDateTo');
+    var dateFrom = (fromEl && fromEl.value) ? fromEl.value : new Date(Date.now() - 30*24*60*60*1000).toISOString().slice(0, 10);
+    var dateTo = (toEl && toEl.value) ? toEl.value : new Date().toISOString().slice(0, 10);
+    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('gov.loading') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?></p>';
+    var params = 'date_from=' + encodeURIComponent(dateFrom) + '&date_to=' + encodeURIComponent(dateTo);
+    fetch(govStatisticsUrl + '?' + params, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var L = govStatisticsLabels || {};
+      if (!j.ok || !j.data) {
+        container.innerHTML = '<p class="text-secondary small mb-0">' + (L.no_data || 'Nincs adat') + '</p>';
+        return;
+      }
+      var d = j.data;
+      var html = '';
+      html += '<div class="row g-3 mb-3">';
+      html += '<div class="col-md-6"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.resolution_rate || 'Resolution rate') + '</h6><p class="mb-0 small">' + (L.resolved || 'Resolved') + ': <b>' + (d.resolution_rate && d.resolution_rate.resolved) + '</b> / ' + (d.resolution_rate && d.resolution_rate.total) + ' (' + (d.resolution_rate && (d.resolution_rate.rate * 100).toFixed(0) + '%)') + '</p></div></div></div>';
+      html += '<div class="col-md-6"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.resolution_time || 'Resolution time') + '</h6><p class="mb-0 small">' + (L.avg_hours || 'Avg') + ': <b>' + (d.response_times && d.response_times.avg_hours) + ' h</b> · ' + (L.median_hours || 'Median') + ': ' + (d.response_times && d.response_times.median_hours) + ' h</p></div></div></div>';
+      html += '</div>';
+      html += '<div class="row g-3 mb-3">';
+      var trendLabel = (d.backlog_growth && d.backlog_growth.trend === 'up') ? (L.trend_up || 'up') : (d.backlog_growth && d.backlog_growth.trend === 'down') ? (L.trend_down || 'down') : (L.trend_stable || 'stable');
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.backlog || 'Backlog') + '</h6><p class="mb-0 small">' + (L.open_issues || 'Open') + ': <b>' + (d.backlog_growth && d.backlog_growth.current_open) + '</b> (' + trendLabel + ')</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.participation || 'Participation') + '</h6><p class="mb-0 small">' + (L.active_users_7d || 'Active 7d') + ': <b>' + (d.citizen_participation_rate && d.citizen_participation_rate.active_users_7d) + '</b> · ' + (L.reports_7d || 'Reports 7d') + ': ' + (d.citizen_participation_rate && d.citizen_participation_rate.reports_7d) + '</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.trees || 'Trees') + '</h6><p class="mb-0 small">' + (L.trees_total || 'Total') + ': ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.total_trees) + ' · ' + (L.trees_watered || 'Watered 7d') + ': ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.watered_7d) + ' · ' + (L.trees_adopted || 'Adopted') + ': ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.adopted) + '</p></div></div></div>';
+      html += '</div>';
+      if (d.issue_trend_per_district && d.issue_trend_per_district.length > 0) {
+        html += '<h6 class="small mt-2">' + (L.districts || 'Districts') + '</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Hatóság</th><th>Ügyek</th></tr></thead><tbody>';
+        d.issue_trend_per_district.forEach(function(row){ html += '<tr><td>' + (row.name || row.authority_id) + '</td><td>' + row.count + '</td></tr>'; });
+        html += '</tbody></table></div>';
+      }
+      if (d.issue_trends && d.issue_trends.length > 0) {
+        var byDate = {};
+        d.issue_trends.forEach(function(x){ byDate[x.date] = (byDate[x.date] || 0) + x.count; });
+        var dates = Object.keys(byDate).sort();
+        var maxTr = Math.max.apply(null, dates.map(function(k){ return byDate[k]; })) || 1;
+        html += '<h6 class="small mt-2">' + (L.issue_trend || 'Issue trend') + '</h6><div class="admin-chart">';
+        dates.slice(-14).forEach(function(date){ var cnt = byDate[date]; html += '<div class="admin-chart-bar"><span class="label">' + date + '</span><div class="bar-wrap"><div class="bar" style="width:' + Math.round(100 * cnt / maxTr) + '%;background:#0d6efd"></div></div><span class="val">' + cnt + '</span></div>'; });
+        html += '</div>';
+      }
+      container.innerHTML = html;
+    }).catch(function(){ var container = document.getElementById('govStatisticsContent'); if (container) container.innerHTML = '<p class="text-danger small">Hiba a betöltéskor.</p>'; });
+  }
+  document.getElementById('govStatisticsRefresh') && document.getElementById('govStatisticsRefresh').addEventListener('click', loadGovStatistics);
 
   var govTreesListUrl = <?= json_encode(app_url('/api/gov_trees_list.php'), JSON_UNESCAPED_SLASHES) ?>;
   var treeEditUrl = <?= json_encode(app_url('/api/tree_edit.php'), JSON_UNESCAPED_SLASHES) ?>;

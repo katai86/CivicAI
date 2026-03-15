@@ -144,6 +144,19 @@ function require_admin(): void {
     exit;
 }
 
+/** Gov dashboard és gov-specifikus API-k (heatmap, statisztika stb.): csak govuser / admin / superadmin. */
+function require_gov_or_admin(): void {
+    start_secure_session();
+    $role = $_SESSION['user_role'] ?? '';
+    if (in_array($role, ['admin', 'superadmin', 'govuser'], true)) return;
+    if (is_api_request()) {
+        json_response(['ok' => false, 'error' => t('common.error_no_permission')], 403);
+        exit;
+    }
+    header('Location: ' . app_url('user/login.php'));
+    exit;
+}
+
 function require_user(): void {
     start_secure_session();
     if (!empty($_SESSION['user_id'])) return;

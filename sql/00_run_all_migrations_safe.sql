@@ -1,5 +1,5 @@
 -- =============================================================================
--- ÖSSZES SQL MÓDOSULÁS / FEJLESZTÉS – EGY LEKÉRDEZÉSBEN
+-- CIVICAI – EGYSÉGESÍTETT SÉMA (phpMyAdmin-ban futtatható egyben)
 -- =============================================================================
 -- Futtatás: phpMyAdmin → válaszd az adatbázist → SQL fül → másold be az egészet → Indítás.
 -- Vagy parancssor: mysql -u user -p adatbazis < sql/00_run_all_migrations_safe.sql
@@ -7,7 +7,7 @@
 -- Tartalom (minden lépés feltételes – ha már létezik, kihagyja):
 --   • report_status_log, report_attachments
 --   • 2026-03: users.is_active, map_layers, map_layer_points, indexek
---   • 2026-04: FMS bridge (fms_reports, fms_sync_log), authorities, facilities, civil_events, reports bővítés
+--   • 2026-04: FMS bridge (fms_reports, fms_sync_log), authorities, authority_users, facilities, civil_events, reports bővítés
 --   • 2026-05: report_likes, friend_requests, friends
 --   • 2026-07: authorities bbox (min_lat, max_lat, min_lng, max_lng)
 --   • 2026-08–09: users.role (ENUM: superadmin, admin, user, civil, govuser, stb.)
@@ -21,7 +21,10 @@
 --   • 2026-18–19: module_settings, user_module_toggles; tree_adoptions uniq_tree_user
 --   • 2026-20: trees.notes
 --   • 2026-21: tree_species_care
---   • Reports bővítés: reporter_name, reporter_is_anonymous, house_number_approx, road, suburb, postcode, address_approx, city
+--   • 2026-22: ideas, idea_votes (ötletek + szavazás)
+--   • 2026-23: budget_projects, budget_votes (részvételi költségvetés)
+--   • 2026-24: ideas.authority_id
+--   • Reports bővítés: reporter_name, address_approx, city, stb.
 --   • Users bővítés: profile_public, level, total_xp, streak_days, avatar_filename
 --   • user_xp_log (XP napló)
 -- =============================================================================
@@ -462,6 +465,65 @@ SET @sql = IF(@idx_exists = 0, 'ALTER TABLE tree_adoptions ADD UNIQUE KEY uniq_t
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- ========== 2026-22 Ötletek (ideas) + szavazás ==========
+CREATE TABLE IF NOT EXISTS ideas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  description TEXT NULL,
+  lat DECIMAL(10,7) NOT NULL,
+  lng DECIMAL(10,7) NOT NULL,
+  address VARCHAR(255) NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'submitted',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_ideas_geo (lat, lng),
+  KEY idx_ideas_status (status),
+  KEY idx_ideas_user (user_id),
+  KEY idx_ideas_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS idea_votes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  idea_id INT NOT NULL,
+  user_id INT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_idea_vote (idea_id, user_id),
+  KEY idx_idea_votes_idea (idea_id),
+  KEY idx_idea_votes_user (user_id),
+  CONSTRAINT fk_idea_votes_idea FOREIGN KEY (idea_id) REFERENCES ideas (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ========== 2026-24 Ötletek – hatóság (ideas.authority_id) ==========
+CALL add_column_if_not_exists('ideas', 'authority_id', 'INT NULL');
+CALL add_index_if_not_exists('ideas', 'idx_ideas_authority', '(authority_id)');
+
+-- ========== 2026-23 Részvételi költségvetés (budget_projects, budget_votes) ==========
+CREATE TABLE IF NOT EXISTS budget_projects (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  budget DECIMAL(12,2) NOT NULL DEFAULT 0,
+  status VARCHAR(32) NOT NULL DEFAULT 'draft',
+  authority_id INT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_budget_projects_authority (authority_id),
+  KEY idx_budget_projects_status (status),
+  KEY idx_budget_projects_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS budget_votes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  project_id INT NOT NULL,
+  user_id INT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_budget_vote (project_id, user_id),
+  KEY idx_budget_votes_project (project_id),
+  KEY idx_budget_votes_user (user_id),
+  CONSTRAINT fk_budget_votes_project FOREIGN KEY (project_id) REFERENCES budget_projects (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ========== Eltávolítjuk a segéd procedure-öket ==========
 DROP PROCEDURE IF EXISTS add_column_if_not_exists;
