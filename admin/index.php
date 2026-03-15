@@ -15,7 +15,7 @@ $LANG_JS = lang_array_for_js();
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?> – Admin</title>
+  <title><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?> – <?= htmlspecialchars(t('admin.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
   <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');document.documentElement.setAttribute('data-bs-theme','dark');}</script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/dashboard/dist/css/adminlte.min.css'), ENT_QUOTES, 'UTF-8') ?>">
@@ -32,7 +32,7 @@ $LANG_JS = lang_array_for_js();
           </a>
         </li>
         <li class="nav-item d-none d-md-block">
-          <span class="nav-link fw-semibold"><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?> Admin</span>
+          <span class="nav-link fw-semibold"><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars(t('admin.page_title'), ENT_QUOTES, 'UTF-8') ?></span>
         </li>
       </ul>
       <ul class="navbar-nav ms-auto align-items-center">
@@ -140,7 +140,7 @@ $LANG_JS = lang_array_for_js();
                 </div>
                 <?php $fmsOk = false; $aiOk = false; try { $fmsOk = fms_enabled(); } catch (Throwable $e) { /* module_settings hiányzik esetén */ } try { $aiOk = ai_configured(); } catch (Throwable $e) { /* module_settings hiányzik esetén */ } ?>
                 <p class="text-secondary small mt-2 mb-0"><?= htmlspecialchars(t('admin.integration_status'), ENT_QUOTES, 'UTF-8') ?> FixMyStreet: <?= $fmsOk ? htmlspecialchars(t('admin.fms_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.fms_not_configured'), ENT_QUOTES, 'UTF-8') ?> | AI (Mistral): <?= $aiOk ? htmlspecialchars(t('admin.ai_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.ai_not_configured'), ENT_QUOTES, 'UTF-8') ?></p>
-                <p class="text-secondary small mt-1 mb-0"><strong>CivicAI Analytics:</strong> <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a> &nbsp;|&nbsp; <strong>ESG:</strong> <a href="<?= htmlspecialchars(app_url('/api/esg_export.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/esg_export.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a></p>
+                <p class="text-secondary small mt-1 mb-0"><strong><?= htmlspecialchars(t('admin.analytics_label'), ENT_QUOTES, 'UTF-8') ?>:</strong> <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a> &nbsp;|&nbsp; <strong><?= htmlspecialchars(t('admin.esg_label'), ENT_QUOTES, 'UTF-8') ?>:</strong> <a href="<?= htmlspecialchars(app_url('/api/esg_export.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/esg_export.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a></p>
               </div>
             </div>
           </div>
@@ -158,10 +158,10 @@ $LANG_JS = lang_array_for_js();
                       <option value="in_progress"><?= htmlspecialchars(t('admin.in_progress'), ENT_QUOTES, 'UTF-8') ?></option>
                       <option value="solved"><?= htmlspecialchars(t('admin.solved'), ENT_QUOTES, 'UTF-8') ?></option>
                       <option value="rejected"><?= htmlspecialchars(t('admin.rejected'), ENT_QUOTES, 'UTF-8') ?></option>
-                      <option value="pending">Pending (régi)</option>
+                      <option value="pending"><?= htmlspecialchars(t('admin.pending_legacy'), ENT_QUOTES, 'UTF-8') ?></option>
                       <option value="all"><?= htmlspecialchars(t('legend.all'), ENT_QUOTES, 'UTF-8') ?></option>
                     </select>
-                    <select id="authorityFilter" class="form-select form-select-sm" title="Hatóság szűrés (multi-city)">
+                    <select id="authorityFilter" class="form-select form-select-sm" title="<?= htmlspecialchars(t('admin.authority_filter_title'), ENT_QUOTES, 'UTF-8') ?>">
                       <option value=""><?= htmlspecialchars(t('admin.all_authorities'), ENT_QUOTES, 'UTF-8') ?></option>
                     </select>
                     <input id="reportSearch" class="form-control form-control-sm" type="search" placeholder="<?= htmlspecialchars(t('admin.search_placeholder'), ENT_QUOTES, 'UTF-8') ?>">
@@ -184,97 +184,97 @@ $LANG_JS = lang_array_for_js();
 
                 <div class="admin-tab-body" id="tab-users" hidden>
                   <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
-                    <input id="userSearch" class="form-control form-control-sm" type="search" placeholder="Keresés név/e-mail">
+                    <input id="userSearch" class="form-control form-control-sm" type="search" placeholder="<?= htmlspecialchars(t('admin.user_search_placeholder'), ENT_QUOTES, 'UTF-8') ?>">
                     <select id="userRoleFilter" class="form-select form-select-sm">
-                      <option value="">Minden szerep</option>
-                      <option value="user">User</option>
-                      <option value="civiluser">Civil</option>
-                      <option value="communityuser">Közület</option>
-                      <option value="govuser">Közigazgatási</option>
-                      <option value="admin">Admin</option>
-                      <option value="superadmin">SuperAdmin</option>
+                      <option value=""><?= htmlspecialchars(t('admin.role_all'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="user"><?= htmlspecialchars(t('admin.role_user'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="civiluser"><?= htmlspecialchars(t('admin.role_civiluser'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="communityuser"><?= htmlspecialchars(t('admin.role_communityuser'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="govuser"><?= htmlspecialchars(t('admin.role_govuser'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="admin"><?= htmlspecialchars(t('admin.role_admin'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="superadmin"><?= htmlspecialchars(t('admin.role_superadmin'), ENT_QUOTES, 'UTF-8') ?></option>
                     </select>
                     <select id="userActiveFilter" class="form-select form-select-sm">
-                      <option value="">Minden állapot</option>
-                      <option value="1">Aktív</option>
-                      <option value="0">Tiltott</option>
+                      <option value=""><?= htmlspecialchars(t('admin.active_all'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="1"><?= htmlspecialchars(t('admin.active_yes'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="0"><?= htmlspecialchars(t('admin.active_no'), ENT_QUOTES, 'UTF-8') ?></option>
                     </select>
-                    <button id="refreshUsers" class="btn btn-outline-secondary btn-sm ms-auto" type="button">Frissítés</button>
+                    <button id="refreshUsers" class="btn btn-outline-secondary btn-sm ms-auto" type="button"><?= htmlspecialchars(t('admin.refresh'), ENT_QUOTES, 'UTF-8') ?></button>
                   </div>
-                  <div class="admin-list" id="userList">Nincs adat.</div>
+                  <div class="admin-list" id="userList"><?= htmlspecialchars(t('admin.user_list_empty'), ENT_QUOTES, 'UTF-8') ?></div>
                 </div>
 
                 <div class="admin-tab-body" id="tab-layers" hidden>
                   <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
-                    <input id="layerKey" class="form-control form-control-sm" placeholder="Layer kulcs (pl. election)">
-                    <input id="layerName" class="form-control form-control-sm" placeholder="Név (pl. Szavazóhelyiségek)">
-                    <select id="layerAuthority" class="form-select form-select-sm" title="Hatóság (opcionális)">
-                      <option value="">— Nincs —</option>
+                    <input id="layerKey" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.layer_key_placeholder'), ENT_QUOTES, 'UTF-8') ?>">
+                    <input id="layerName" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.layer_name_placeholder'), ENT_QUOTES, 'UTF-8') ?>">
+                    <select id="layerAuthority" class="form-select form-select-sm" title="<?= htmlspecialchars(t('admin.layer_authority_title'), ENT_QUOTES, 'UTF-8') ?>">
+                      <option value=""><?= htmlspecialchars(t('admin.layer_authority_none'), ENT_QUOTES, 'UTF-8') ?></option>
                     </select>
                     <select id="layerCategory" class="form-select form-select-sm">
-                      <option value="election">Választás</option>
-                      <option value="public">Közszolgáltató</option>
-                      <option value="tourism">Turisztika</option>
-                      <option value="trees">Fák (fakataszter)</option>
+                      <option value="election"><?= htmlspecialchars(t('admin.layer_category_election'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="public"><?= htmlspecialchars(t('admin.layer_category_public'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="tourism"><?= htmlspecialchars(t('admin.layer_category_tourism'), ENT_QUOTES, 'UTF-8') ?></option>
+                      <option value="trees"><?= htmlspecialchars(t('admin.layer_category_trees'), ENT_QUOTES, 'UTF-8') ?></option>
                     </select>
-                    <span id="layerTreesHint" class="small text-info ms-2" style="display:none">Fakataszter – a térképen a fa réteg láthatóságát kapcsolja.</span>
+                    <span id="layerTreesHint" class="small text-info ms-2" style="display:none"><?= htmlspecialchars(t('admin.layer_trees_hint'), ENT_QUOTES, 'UTF-8') ?></span>
                     <label class="form-check form-check-inline">
                       <input type="checkbox" class="form-check-input" id="layerActive" checked>
-                      <span class="form-check-label">Aktív</span>
+                      <span class="form-check-label"><?= htmlspecialchars(t('admin.layer_active'), ENT_QUOTES, 'UTF-8') ?></span>
                     </label>
                     <label class="form-check form-check-inline">
                       <input type="checkbox" class="form-check-input" id="layerTemporary">
-                      <span class="form-check-label">Ideiglenes</span>
+                      <span class="form-check-label"><?= htmlspecialchars(t('admin.layer_temporary'), ENT_QUOTES, 'UTF-8') ?></span>
                     </label>
-                    <input id="layerFrom" class="form-control form-control-sm" type="date" placeholder="Kezdete">
-                    <input id="layerTo" class="form-control form-control-sm" type="date" placeholder="Vége">
-                    <button id="createLayer" class="btn btn-primary btn-sm ms-auto" type="button">Layer létrehozás</button>
+                    <input id="layerFrom" class="form-control form-control-sm" type="date" placeholder="<?= htmlspecialchars(t('admin.layer_from_placeholder'), ENT_QUOTES, 'UTF-8') ?>">
+                    <input id="layerTo" class="form-control form-control-sm" type="date" placeholder="<?= htmlspecialchars(t('admin.layer_to_placeholder'), ENT_QUOTES, 'UTF-8') ?>">
+                    <button id="createLayer" class="btn btn-primary btn-sm ms-auto" type="button"><?= htmlspecialchars(t('admin.layer_create'), ENT_QUOTES, 'UTF-8') ?></button>
                   </div>
 
-                  <div class="admin-list" id="layerList">Nincs adat.</div>
+                  <div class="admin-list" id="layerList"><?= htmlspecialchars(t('admin.user_list_empty'), ENT_QUOTES, 'UTF-8') ?></div>
 
-                  <div class="fw-semibold mt-3">Pont hozzáadása</div>
+                  <div class="fw-semibold mt-3"><?= htmlspecialchars(t('admin.point_add_title'), ENT_QUOTES, 'UTF-8') ?></div>
                   <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
                     <select id="pointLayerSelect" class="form-select form-select-sm"></select>
-                    <input id="pointName" class="form-control form-control-sm" placeholder="Név">
-                    <input id="pointLat" class="form-control form-control-sm" placeholder="Lat">
-                    <input id="pointLng" class="form-control form-control-sm" placeholder="Lng">
-                    <input id="pointAddress" class="form-control form-control-sm" placeholder="Cím">
-                    <input id="pointMeta" class="form-control form-control-sm" placeholder="Meta JSON (opcionális)">
-                    <button id="createPoint" class="btn btn-outline-secondary btn-sm ms-auto" type="button">Pont mentése</button>
+                    <input id="pointName" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.point_name'), ENT_QUOTES, 'UTF-8') ?>">
+                    <input id="pointLat" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.point_lat'), ENT_QUOTES, 'UTF-8') ?>">
+                    <input id="pointLng" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.point_lng'), ENT_QUOTES, 'UTF-8') ?>">
+                    <input id="pointAddress" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.point_address'), ENT_QUOTES, 'UTF-8') ?>">
+                    <input id="pointMeta" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.point_meta'), ENT_QUOTES, 'UTF-8') ?>">
+                    <button id="createPoint" class="btn btn-outline-secondary btn-sm ms-auto" type="button"><?= htmlspecialchars(t('admin.point_save'), ENT_QUOTES, 'UTF-8') ?></button>
                   </div>
-                  <div class="admin-list mt-2" id="pointList">Válassz layert.</div>
+                  <div class="admin-list mt-2" id="pointList"><?= htmlspecialchars(t('admin.point_list_hint'), ENT_QUOTES, 'UTF-8') ?></div>
                 </div>
 
                 <div class="admin-tab-body" id="tab-authorities" hidden>
-                  <div class="fw-semibold mb-2">Hatóság létrehozása</div>
+                  <div class="fw-semibold mb-2"><?= htmlspecialchars(t('admin.authority_create_title'), ENT_QUOTES, 'UTF-8') ?></div>
                   <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
-                    <input id="authorityName" class="form-control form-control-sm" placeholder="Név">
-                    <input id="authorityCity" class="form-control form-control-sm" placeholder="Város">
-                    <input id="authorityAddress" class="form-control form-control-sm" placeholder="Cím (pl. Orosháza, Szabadság u. 1)" style="min-width:220px">
-                    <input id="authorityEmail" class="form-control form-control-sm" placeholder="Email">
-                    <input id="authorityPhone" class="form-control form-control-sm" placeholder="Telefon">
-                    <button id="createAuthority" class="btn btn-primary btn-sm ms-auto" type="button">Mentés</button>
+                    <input id="authorityName" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_name'), ENT_QUOTES, 'UTF-8') ?>">
+                    <input id="authorityCity" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_city'), ENT_QUOTES, 'UTF-8') ?>">
+                    <input id="authorityAddress" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_address'), ENT_QUOTES, 'UTF-8') ?>" style="min-width:220px">
+                    <input id="authorityEmail" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_email'), ENT_QUOTES, 'UTF-8') ?>">
+                    <input id="authorityPhone" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_phone'), ENT_QUOTES, 'UTF-8') ?>">
+                    <button id="createAuthority" class="btn btn-primary btn-sm ms-auto" type="button"><?= htmlspecialchars(t('admin.authority_save'), ENT_QUOTES, 'UTF-8') ?></button>
                   </div>
-                  <div class="admin-list" id="authorityList">Nincs adat.</div>
+                  <div class="admin-list" id="authorityList"><?= htmlspecialchars(t('admin.user_list_empty'), ENT_QUOTES, 'UTF-8') ?></div>
 
-                  <div class="fw-semibold mt-4">Szolgáltatás (Open311)</div>
+                  <div class="fw-semibold mt-4"><?= htmlspecialchars(t('admin.contact_title'), ENT_QUOTES, 'UTF-8') ?></div>
                   <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
                     <select id="contactAuthoritySelect" class="form-select form-select-sm"></select>
-                    <input id="contactCode" class="form-control form-control-sm" placeholder="service_code (pl. road)">
-                    <input id="contactName" class="form-control form-control-sm" placeholder="Megnevezés">
-                    <input id="contactDesc" class="form-control form-control-sm" placeholder="Leírás">
-                    <button id="createContact" class="btn btn-outline-secondary btn-sm ms-auto" type="button">Mentés</button>
+                    <input id="contactCode" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.contact_code'), ENT_QUOTES, 'UTF-8') ?>">
+                    <input id="contactName" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.contact_name'), ENT_QUOTES, 'UTF-8') ?>">
+                    <input id="contactDesc" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.contact_desc'), ENT_QUOTES, 'UTF-8') ?>">
+                    <button id="createContact" class="btn btn-outline-secondary btn-sm ms-auto" type="button"><?= htmlspecialchars(t('admin.authority_save'), ENT_QUOTES, 'UTF-8') ?></button>
                   </div>
-                  <div class="admin-list mt-2" id="contactList">Nincs adat.</div>
+                  <div class="admin-list mt-2" id="contactList"><?= htmlspecialchars(t('admin.user_list_empty'), ENT_QUOTES, 'UTF-8') ?></div>
 
-                  <div class="fw-semibold mt-4">Hatósági felhasználó</div>
+                  <div class="fw-semibold mt-4"><?= htmlspecialchars(t('admin.assign_title'), ENT_QUOTES, 'UTF-8') ?></div>
                   <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
                     <select id="assignAuthoritySelect" class="form-select form-select-sm"></select>
-                    <input id="assignEmail" class="form-control form-control-sm" placeholder="Felhasználó e-mail">
-                    <button id="assignUser" class="btn btn-outline-secondary btn-sm ms-auto" type="button">Hozzárendelés</button>
+                    <input id="assignEmail" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.assign_email'), ENT_QUOTES, 'UTF-8') ?>">
+                    <button id="assignUser" class="btn btn-outline-secondary btn-sm ms-auto" type="button"><?= htmlspecialchars(t('admin.assign_btn'), ENT_QUOTES, 'UTF-8') ?></button>
                   </div>
-                  <div class="admin-list mt-2" id="assignList">Nincs adat.</div>
+                  <div class="admin-list mt-2" id="assignList"><?= htmlspecialchars(t('admin.user_list_empty'), ENT_QUOTES, 'UTF-8') ?></div>
                 </div>
 
                 <div class="admin-tab-body" id="tab-budget" hidden>

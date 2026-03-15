@@ -144,33 +144,11 @@ function layerIcon(category){
 }
 
 function catLabel(cat){
-  const m = {
-    road:'Úthiba / kátyú',
-    sidewalk:'Járda / burkolat hiba',
-    lighting:'Közvilágítás',
-    trash:'Szemét / illegális',
-    green:'Zöldterület / veszélyes fa',
-    traffic:'Közlekedés / tábla',
-    idea:'Ötlet / javaslat',
-    civil_event:'Civil esemény'
-  };
-  return m[cat] || cat;
+  return t('cat.' + cat + '_desc') || t('cat.' + cat) || cat;
 }
 
 // --- Státuszok (legacy + jarokelo irány) ---
-const STATUS_LABEL = {
-  pending: 'Pending (régi)',
-  approved: 'Publikálva',
-  rejected: 'Elutasítva',
-
-  new: 'Új',
-  needs_info: 'Kiegészítésre vár',
-  forwarded: 'Továbbítva',
-  waiting_reply: 'Válaszra vár',
-  in_progress: 'Megoldás alatt',
-  solved: 'Megoldva',
-  closed: 'Lezárva'
-};
+function statusLabelKey(st){ return 'admin.status_' + st; }
 
 const STATUS_OPTIONS = [
   'approved', // publikus map kompatibilitás miatt fent
@@ -186,7 +164,7 @@ const STATUS_OPTIONS = [
 ];
 
 function statusLabel(st){
-  return STATUS_LABEL[st] || st;
+  return t(statusLabelKey(st)) || st;
 }
 
 function reporterLine(r){
@@ -194,15 +172,12 @@ function reporterLine(r){
   if (!name) return '';
   const level = r.reporter_level ? ` • ${esc(r.reporter_level)}` : '';
   if (r.reporter_profile_public && r.reporter_user_id) {
-    return `<div class="text-secondary"><b>Beküldő:</b> <a href="${BASE}/user/profile.php?id=${encodeURIComponent(r.reporter_user_id)}" target="_blank">${esc(name)}</a>${level}</div>`;
+    return `<div class="text-secondary"><b>${esc(t('admin.reporter_label'))}:</b> <a href="${BASE}/user/profile.php?id=${encodeURIComponent(r.reporter_user_id)}" target="_blank">${esc(name)}</a>${level}</div>`;
   }
-  return `<div class="text-secondary"><b>Beküldő:</b> ${esc(name)}${level}</div>`;
+  return `<div class="text-secondary"><b>${esc(t('admin.reporter_label'))}:</b> ${esc(name)}${level}</div>`;
 }
 
-const CAT_LABEL = {
-  road:'Úthiba', sidewalk:'Járda', lighting:'Közvilágítás', trash:'Szemét',
-  green:'Zöld', traffic:'Közlekedés', idea:'Ötlet', civil_event:'Civil'
-};
+function catLabelShort(cat){ return t('cat.' + cat) || cat; }
 
 async function loadStats(){
   try{
@@ -225,17 +200,17 @@ async function loadStats(){
 
     if (elStatus){
       const parts = [
-        `Új: ${status.new || 0}`,
-        `Publikált: ${status.approved || 0}`,
-        `Folyamatban: ${status.in_progress || 0}`,
-        `Megoldva: ${status.solved || 0}`,
-        `Elutasítva: ${status.rejected || 0}`
+        `${t('admin.count_new')}: ${status.new || 0}`,
+        `${t('admin.count_published')}: ${status.approved || 0}`,
+        `${t('admin.count_in_progress')}: ${status.in_progress || 0}`,
+        `${t('admin.count_solved')}: ${status.solved || 0}`,
+        `${t('admin.count_rejected')}: ${status.rejected || 0}`
       ];
       elStatus.textContent = parts.join(' • ');
     }
 
     if (elCat){
-      const parts = Object.entries(category).map(([k,v]) => (CAT_LABEL[k]||k)+': '+v);
+      const parts = Object.entries(category).map(([k,v]) => (catLabelShort(k))+': '+v);
       elCat.textContent = parts.length ? parts.join(' • ') : '—';
     }
 
@@ -244,7 +219,7 @@ async function loadStats(){
     const chartStatus = document.getElementById('chartStatus');
     if (chartStatus){
       const maxS = Math.max(1, ...Object.values(status));
-      const items = statusOrder.filter(s => (status[s]||0) > 0).map(s => ({ k:s, v:status[s]||0, label:STATUS_LABEL[s]||s, color:statusColors[s]||'#6c757d' }));
+      const items = statusOrder.filter(s => (status[s]||0) > 0).map(s => ({ k:s, v:status[s]||0, label:statusLabel(s), color:statusColors[s]||'#6c757d' }));
       chartStatus.innerHTML = items.length ? items.map(x => `
         <div class="admin-chart-bar">
           <span class="label">${esc(x.label)}</span>
@@ -271,11 +246,11 @@ async function loadStats(){
     const countsEl = document.getElementById('counts');
     if (countsEl){
       countsEl.innerHTML = `
-        <span class="badge text-bg-secondary">Új: <b>${status.new || 0}</b></span>
-        <span class="badge text-bg-secondary">Publikált: <b>${status.approved || 0}</b></span>
-        <span class="badge text-bg-secondary">Folyamatban: <b>${status.in_progress || 0}</b></span>
-        <span class="badge text-bg-secondary">Megoldva: <b>${status.solved || 0}</b></span>
-        <span class="badge text-bg-secondary">Elutasítva: <b>${status.rejected || 0}</b></span>
+        <span class="badge text-bg-secondary">${t('admin.count_new')}: <b>${status.new || 0}</b></span>
+        <span class="badge text-bg-secondary">${t('admin.count_published')}: <b>${status.approved || 0}</b></span>
+        <span class="badge text-bg-secondary">${t('admin.count_in_progress')}: <b>${status.in_progress || 0}</b></span>
+        <span class="badge text-bg-secondary">${t('admin.count_solved')}: <b>${status.solved || 0}</b></span>
+        <span class="badge text-bg-secondary">${t('admin.count_rejected')}: <b>${status.rejected || 0}</b></span>
       `;
     }
   }catch(e){
@@ -306,7 +281,7 @@ async function loadAttachmentsInto(el, reportId){
     const j = await fetchJson(`${API_ATTACH_LIST}?id=${encodeURIComponent(reportId)}`);
     const rows = j.data || [];
     if (!rows.length){
-      el.innerHTML = '<span class="meta">Nincs csatolmány.</span>';
+      el.innerHTML = '<span class="meta">' + t('admin.no_attachment') + '</span>';
       return;
     }
 
@@ -316,9 +291,9 @@ async function loadAttachmentsInto(el, reportId){
       const created = esc(a.created_at || '');
       return `
         <div class="meta" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <a href="${url}" target="_blank" rel="noopener">${name || 'Csatolmány'}</a>
+          <a href="${url}" target="_blank" rel="noopener">${name || t('admin.attachment_fallback')}</a>
           <span>${created}</span>
-          <button class="del" data-att-del="${a.id}">Törlés</button>
+          <button class="del" data-att-del="${a.id}">${t('admin.delete')}</button>
         </div>
       `;
     }).join('');
@@ -327,7 +302,7 @@ async function loadAttachmentsInto(el, reportId){
       btn.addEventListener('click', async () => {
         const id = Number(btn.getAttribute('data-att-del'));
         if (!id) return;
-        if(!confirm('Biztos törlöd a csatolmányt?')) return;
+        if(!confirm(t('admin.confirm_delete_attachment'))) return;
         btn.disabled = true;
         try{
           await fetchJson(API_ATTACH_DEL, {
@@ -338,7 +313,7 @@ async function loadAttachmentsInto(el, reportId){
           await loadAttachmentsInto(el, reportId);
         }catch(e){
           console.error(e);
-          alert('Hiba törlés közben: ' + e.message);
+          alert(t('admin.error_delete') + ': ' + e.message);
         }finally{
           btn.disabled = false;
         }
@@ -346,7 +321,7 @@ async function loadAttachmentsInto(el, reportId){
     });
   }catch(e){
     console.error(e);
-    el.innerHTML = '<span class="meta">Hiba a csatolmányok betöltésekor.</span>';
+    el.innerHTML = '<span class="meta">' + t('admin.error_load_attachments') + '</span>';
   }
 }
 
@@ -365,7 +340,7 @@ function renderRow(r){
           <b>#${r.id}</b>
           <span class="text-secondary ms-2">(<span data-role="status-text">${esc(statusLabel(r.status))}</span>)</span>
         </div>
-        ${r.case_no ? `<span class="badge text-bg-secondary">Ügyszám: <span data-role="case">${esc(r.case_no)}</span></span>` : ''}
+        ${r.case_no ? `<span class="badge text-bg-secondary">${t('admin.case_no')}: <span data-role="case">${esc(r.case_no)}</span></span>` : ''}
       </div>
       <div class="fw-semibold mt-2">${esc(catLabel(r.category))}</div>
       ${r.title ? `<div class="mt-1">${esc(r.title)}</div>` : ''}
@@ -377,18 +352,18 @@ function renderRow(r){
 
       <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
         <select data-role="status" class="form-select form-select-sm" style="min-width:220px">${optionsHtml}</select>
-        <input data-role="note" class="form-control form-control-sm" placeholder="Megjegyzés (opcionális)" style="min-width:240px">
-        <button data-action="save" class="btn btn-primary btn-sm">Mentés</button>
-        <button data-action="delete" class="btn btn-outline-danger btn-sm">Törlés</button>
-        <button data-action="export-fms" class="btn btn-outline-secondary btn-sm" title="Küldés a FixMyStreet rendszerbe">Export FMS</button>
+        <input data-role="note" class="form-control form-control-sm" placeholder="${t('admin.note_placeholder')}" style="min-width:240px">
+        <button data-action="save" class="btn btn-primary btn-sm">${t('admin.save')}</button>
+        <button data-action="delete" class="btn btn-outline-danger btn-sm">${t('admin.delete')}</button>
+        <button data-action="export-fms" class="btn btn-outline-secondary btn-sm" title="${t('admin.export_fms_title')}">${t('admin.export_fms')}</button>
       </div>
 
       <div class="mt-2">
-        <button class="btn btn-outline-secondary btn-sm" data-action="log-toggle">Státusz napló</button>
+        <button class="btn btn-outline-secondary btn-sm" data-action="log-toggle">${t('admin.status_log')}</button>
         <div data-role="log" class="text-secondary mt-2" style="display:none"></div>
       </div>
       <div class="mt-2">
-        <button class="btn btn-outline-secondary btn-sm" data-action="att-toggle">Csatolmányok</button>
+        <button class="btn btn-outline-secondary btn-sm" data-action="att-toggle">${t('admin.attachments')}</button>
         <div data-role="att-list" class="text-secondary mt-2" style="display:none"></div>
       </div>
     </div>
@@ -424,7 +399,7 @@ function renderRow(r){
 
       // TÖRLÉS
       if (action === 'delete'){
-        if(!confirm(`Biztos törlöd? (#${r.id})`)) return;
+        if(!confirm(t('admin.confirm_delete_report') + ' (#' + r.id + ')')) return;
 
         try{
           await fetchJson(API_ACTION, {
@@ -441,7 +416,7 @@ function renderRow(r){
           wrap.remove();
         }catch(e){
           console.error(e);
-          alert('Hiba törlés közben: ' + e.message);
+          alert(t('admin.error_delete') + ': ' + e.message);
         }
         return;
       }
@@ -464,12 +439,12 @@ function renderRow(r){
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ report_id: r.id })
           });
-          alert('Elküldve a FixMyStreet rendszerbe.');
+          alert(t('admin.fms_sent'));
         } catch (e) {
           if (e.message && e.message.includes('400')) {
-            alert('A FixMyStreet nincs beállítva (FMS_OPEN311_*).');
+            alert(t('admin.fms_not_configured_alert'));
           } else {
-            alert('Hiba: ' + e.message);
+            alert(t('admin.error_generic') + ': ' + e.message);
           }
         }
         return;
@@ -496,7 +471,7 @@ function renderRow(r){
 
       }catch(e){
         console.error(e);
-        alert('Hiba mentésnél: ' + e.message);
+        alert(t('admin.error_save') + ': ' + e.message);
       }
     });
   });
@@ -524,7 +499,7 @@ async function ensureAuthorityFilterOptions(){
     auths.forEach(a => {
       const opt = document.createElement('option');
       opt.value = String(a.id);
-      opt.textContent = esc(a.name || a.city || 'Hatóság #' + a.id);
+      opt.textContent = esc(a.name || a.city || t('admin.authority_hash') + a.id);
       sel.appendChild(opt);
     });
     _authorityOptionsLoaded = true;
@@ -559,7 +534,7 @@ async function loadReports(){
           .addTo(map)
           .bindPopup(
             `<b>#${r.id}</b> <small>(${esc(statusLabel(r.status))})</small><br>` +
-            (r.case_no ? `<small><b>Ügyszám:</b> ${esc(r.case_no)}</small><br>` : '') +
+            (r.case_no ? `<small><b>${t('admin.case_no')}:</b> ${esc(r.case_no)}</small><br>` : '') +
             `<b>${esc(catLabel(r.category))}</b><br>` +
             `${r.title ? `<b>${esc(r.title)}</b><br>` : ''}` +
             `${esc(r.description)}<br>` +
@@ -574,7 +549,7 @@ async function loadReports(){
   }catch(e){
     console.error(e);
     list.innerHTML = '';
-    alert('Hiba betöltésnél: ' + e.message);
+    alert(t('admin.error_load') + ': ' + e.message);
   }
 }
 
@@ -602,7 +577,7 @@ async function loadUsers(){
       <table class="table table-sm table-hover align-middle mb-0">
         <thead>
           <tr>
-            <th>ID</th><th>Név</th><th>E-mail</th><th>Szint</th><th>Role</th><th>Állapot</th><th>Művelet</th>
+            <th>ID</th><th>${t('admin.user_col_name')}</th><th>${t('admin.user_col_email')}</th><th>${t('admin.user_col_level')}</th><th>${t('admin.user_col_role')}</th><th>${t('admin.user_col_status')}</th><th>${t('admin.user_col_action')}</th>
           </tr>
         </thead>
         <tbody>
@@ -617,9 +592,9 @@ async function loadUsers(){
                   ${roleOpts}
                 </select>
               </td>
-              <td>${Number(u.is_active) === 0 ? 'Tiltott' : 'Aktív'}</td>
+              <td>${Number(u.is_active) === 0 ? t('admin.user_banned') : t('admin.user_active')}</td>
               <td>
-                <button class="soft user-toggle">${Number(u.is_active) === 0 ? 'Aktivál' : 'Tilt'}</button>
+                <button class="soft user-toggle">${Number(u.is_active) === 0 ? t('admin.activate') : t('admin.deactivate')}</button>
               </td>
             </tr>
           `).join('')}
@@ -643,7 +618,7 @@ async function loadUsers(){
             body: JSON.stringify({ action:'update_role', user_id:id, role: roleSel.value })
           });
         }catch(e){
-          alert('Role frissítés hiba: ' + e.message);
+          alert(t('admin.role_update_error') + ': ' + e.message);
         }
       });
 
@@ -663,7 +638,7 @@ async function loadUsers(){
     });
   }catch(e){
     console.error(e);
-    list.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
+    list.innerHTML = '<div class="text-secondary">' + t('admin.load_error') + '</div>';
   }
 }
 
@@ -674,7 +649,7 @@ async function loadLayerAuthorityOptions(){
     const j = await fetchJson(API_AUTHORITIES);
     const authorities = j.authorities || [];
     const first = sel.querySelector('option');
-    sel.innerHTML = first ? first.outerHTML : '<option value="">— Nincs —</option>';
+    sel.innerHTML = first ? first.outerHTML : '<option value="">' + t('admin.layer_authority_none') + '</option>';
     authorities.forEach(a => {
       const opt = document.createElement('option');
       opt.value = a.id;
@@ -693,7 +668,7 @@ async function loadLayers(){
     const j = await fetchJson(API_LAYERS);
     const rows = j.data || [];
     if (!rows.length){
-      list.innerHTML = '<div class="text-secondary">Nincs layer.</div>';
+      list.innerHTML = '<div class="text-secondary">' + t('admin.no_layer') + '</div>';
     } else {
       list.innerHTML = rows.map(l => {
         const isTrees = (l.layer_key === 'trees' || l.layer_type === 'trees');
@@ -701,11 +676,11 @@ async function loadLayers(){
         return `
         <div class="admin-item" data-layer="${l.id}" data-layer-type="${esc(l.layer_type || '')}">
           <div><b>${esc(l.name)}</b> <span class="meta">(${esc(l.layer_key)})</span></div>
-          <div class="meta">${esc(l.category)}${authLine}${isTrees ? ' • Fakataszter (billenő = fa réteg ki/be)' : ' • pontok: ' + (l.point_count || 0)}</div>
+          <div class="meta">${esc(l.category)}${authLine}${isTrees ? ' • ' + t('admin.layer_trees_catalog') : ' • ' + t('admin.points_count') + ': ' + (l.point_count || 0)}</div>
           <div class="actions">
-            <label class="check"><input type="checkbox" class="layer-active" ${Number(l.is_active) ? 'checked' : ''}> Aktív</label>
-            ${isTrees ? '' : '<button class="soft layer-points">Pontok</button>'}
-            <button class="del layer-delete">Törlés</button>
+            <label class="check"><input type="checkbox" class="layer-active" ${Number(l.is_active) ? 'checked' : ''}> ${t('admin.layer_active')}</label>
+            ${isTrees ? '' : '<button class="soft layer-points">' + t('admin.layer_points_btn') + '</button>'}
+            <button class="del layer-delete">${t('admin.delete')}</button>
           </div>
         </div>
       `;
@@ -731,7 +706,7 @@ async function loadLayers(){
         await loadPoints(id);
       });
       item.querySelector('.layer-delete')?.addEventListener('click', async () => {
-        if (!confirm('Biztos törlöd a layert és pontjait?')) return;
+        if (!confirm(t('admin.confirm_delete_layer'))) return;
         await fetchJson(API_LAYERS, {
           method:'POST',
           headers:{ 'Content-Type':'application/json' },
@@ -743,7 +718,7 @@ async function loadLayers(){
     });
   }catch(e){
     console.error(e);
-    list.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
+    list.innerHTML = '<div class="text-secondary">' + t('admin.load_error') + '</div>';
   }
 }
 
@@ -754,16 +729,16 @@ async function loadPoints(layerId){
     const j = await fetchJson(`${API_LAYERS}?layer_id=${encodeURIComponent(layerId)}`);
     const rows = j.data || [];
     if (!rows.length){
-      list.innerHTML = '<div class="text-secondary">Nincs pont.</div>';
+      list.innerHTML = '<div class="text-secondary">' + t('admin.no_point') + '</div>';
       return;
     }
     list.innerHTML = rows.map(p => `
       <div class="admin-item" data-point="${p.id}">
-        <div><b>${esc(p.name || 'Pont')}</b></div>
+        <div><b>${esc(p.name || t('admin.point_fallback'))}</b></div>
         <div class="meta">${esc(p.address || '')}</div>
         <div class="meta">${Number(p.lat).toFixed(6)}, ${Number(p.lng).toFixed(6)}</div>
         <div class="actions">
-          <button class="del point-delete">Törlés</button>
+          <button class="del point-delete">${t('admin.delete')}</button>
         </div>
       </div>
     `).join('');
@@ -771,7 +746,7 @@ async function loadPoints(layerId){
     list.querySelectorAll('[data-point]').forEach(item => {
       const id = Number(item.getAttribute('data-point'));
       item.querySelector('.point-delete')?.addEventListener('click', async () => {
-        if (!confirm('Biztos törlöd a pontot?')) return;
+        if (!confirm(t('admin.confirm_delete_point'))) return;
         await fetchJson(API_LAYERS, {
           method:'POST',
           headers:{ 'Content-Type':'application/json' },
@@ -782,7 +757,7 @@ async function loadPoints(layerId){
     });
   }catch(e){
     console.error(e);
-    list.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
+    list.innerHTML = '<div class="text-secondary">' + t('admin.load_error') + '</div>';
   }
 }
 
@@ -843,13 +818,13 @@ async function loadAuthorities(){
           </div>
           <div class="text-secondary">${esc(a.contact_email || '')} ${esc(a.contact_phone || '')}</div>
           <div class="actions">
-            <button class="btn btn-outline-danger btn-sm auth-del" data-id="${a.id}">Törlés</button>
+            <button class="btn btn-outline-danger btn-sm auth-del" data-id="${a.id}">${t('admin.delete')}</button>
           </div>
         </div>
       `).join('');
       list.querySelectorAll('.auth-del').forEach(btn => {
         btn.addEventListener('click', async () => {
-          if (!confirm('Biztos törlöd a hatóságot?')) return;
+          if (!confirm(t('admin.confirm_delete_authority'))) return;
           await fetchJson(API_AUTHORITIES, {
             method:'POST',
             headers:{ 'Content-Type':'application/json' },
@@ -876,7 +851,7 @@ async function loadAuthorities(){
       `).join('');
       contactList.querySelectorAll('.contact-del').forEach(btn => {
         btn.addEventListener('click', async () => {
-          if (!confirm('Biztos törlöd a szolgáltatást?')) return;
+          if (!confirm(t('admin.confirm_delete_contact'))) return;
           await fetchJson(API_AUTHORITIES, {
             method:'POST',
             headers:{ 'Content-Type':'application/json' },
@@ -895,15 +870,15 @@ async function loadAuthorities(){
           <div class="meta">
             <b>${esc(a.display_name || a.email)}</b> • <span class="text-secondary">${esc(a.email)}</span>
           </div>
-          <div class="text-secondary">Hatóság: ${esc(a.authority_name || a.authority_id)}</div>
+          <div class="text-secondary">${t('admin.authority_label')}: ${esc(a.authority_name || a.authority_id)}</div>
           <div class="actions">
-            <button class="btn btn-outline-danger btn-sm assign-del" data-id="${a.id}">Törlés</button>
+            <button class="btn btn-outline-danger btn-sm assign-del" data-id="${a.id}">${t('admin.delete')}</button>
           </div>
         </div>
       `).join('');
       assignList.querySelectorAll('.assign-del').forEach(btn => {
         btn.addEventListener('click', async () => {
-          if (!confirm('Biztos törlöd a hozzárendelést?')) return;
+          if (!confirm(t('admin.confirm_delete_assign'))) return;
           await fetchJson(API_AUTHORITIES, {
             method:'POST',
             headers:{ 'Content-Type':'application/json' },
@@ -915,9 +890,9 @@ async function loadAuthorities(){
     }
   }catch(e){
     console.error(e);
-    list.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
-    contactList.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
-    assignList.innerHTML = '<div class="text-secondary">Hiba a betöltésnél.</div>';
+    list.innerHTML = '<div class="text-secondary">' + t('admin.load_error') + '</div>';
+    contactList.innerHTML = '<div class="text-secondary">' + t('admin.load_error') + '</div>';
+    assignList.innerHTML = '<div class="text-secondary">' + t('admin.load_error') + '</div>';
   }
 }
 
@@ -929,7 +904,7 @@ async function loadModules(){
     const j = await fetchJson(API_MODULES);
     const modules = j.modules || [];
     if (!modules.length) {
-      list.innerHTML = '<div class="text-secondary">Nincs modul.</div>';
+      list.innerHTML = '<div class="text-secondary">' + t('admin.no_module') + '</div>';
       return;
     }
     list.innerHTML = modules.map(m => {
@@ -946,7 +921,7 @@ async function loadModules(){
           return `<div class="mb-2"><label class="form-label small">${esc(s.label)}</label><select class="form-select form-select-sm" data-module-key="${esc(m.id)}" data-setting-key="${esc(s.key)}">${opts}</select></div>`;
         }
         const type = (s.type === 'password' || s.mask) ? 'password' : (s.type === 'number' ? 'number' : 'text');
-        const placeholder = s.mask && s.set ? '•••••••• (változatlan)' : (s.placeholder || '');
+        const placeholder = s.mask && s.set ? '•••••••• (' + t('admin.unchanged') + ')' : (s.placeholder || '');
         const val = s.mask && s.set ? '' : (s.value || '');
         const minAttr = s.type === 'number' ? ' min="0"' : '';
         return `<div class="mb-2"><label class="form-label small">${esc(s.label)}</label><input class="form-control form-control-sm" data-module-key="${esc(m.id)}" data-setting-key="${esc(s.key)}" type="${type}" value="${esc(val)}" placeholder="${esc(placeholder)}"${minAttr}></div>`;
@@ -960,13 +935,13 @@ async function loadModules(){
             <p class="text-secondary small">${esc(m.description || '')}</p>
             <div class="form-check mb-2">
               <input class="form-check-input module-enabled" type="checkbox" data-module-id="${esc(m.id)}" id="mod-${esc(m.id)}" ${enabled ? 'checked' : ''}>
-              <label class="form-check-label" for="mod-${esc(m.id)}">Bekapcsolva</label>
+              <label class="form-check-label" for="mod-${esc(m.id)}">${t('admin.enabled')}</label>
             </div>
             ${fields}
             <div class="d-flex gap-2 flex-wrap align-items-center">
               <button type="button" class="btn btn-sm btn-primary module-save" data-module-id="${esc(m.id)}">${t('admin.module_save')}</button>
-              ${isMistral ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTestMistral">Teszt Mistral</button>' : ''}
-              ${isOpenai ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTestOpenai">Teszt OpenAI</button>' : ''}
+              ${isMistral ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTestMistral">' + t('admin.test_mistral') + '</button>' : ''}
+              ${isOpenai ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTestOpenai">' + t('admin.test_openai') + '</button>' : ''}
             </div>
             ${isMistral ? '<div id="mistralTestResult" class="small mt-2 text-secondary"></div>' : ''}
             ${isOpenai ? '<div id="openaiTestResult" class="small mt-2 text-secondary"></div>' : ''}
@@ -998,7 +973,7 @@ async function loadModules(){
           alert(t('admin.module_saved'));
           loadModules();
         } catch (e) {
-          alert('Hiba: ' + (e.message || e));
+          alert(t('admin.error_generic') + ': ' + (e.message || e));
         }
       });
     });
@@ -1023,7 +998,7 @@ async function loadModules(){
             testResult.className = 'small mt-2 text-danger';
           }
         } catch (e) {
-          testResult.textContent = 'Hiba: ' + (e.message || e);
+          testResult.textContent = t('admin.error_generic') + ': ' + (e.message || e);
           testResult.className = 'small mt-2 text-danger';
         }
         btnTest.disabled = false;
@@ -1057,7 +1032,7 @@ async function loadModules(){
     }
   } catch (e) {
     console.error(e);
-    const msg = (e && e.message) ? e.message : 'Hiba a betöltésnél.';
+    const msg = (e && e.message) ? e.message : t('admin.load_error');
     list.innerHTML = '<div class="text-secondary">' + esc(msg) + '</div>';
   }
 }
@@ -1102,12 +1077,12 @@ function initTabs(){
   });
 }
 
-const BUDGET_STATUS_LABEL = { draft: 'Piszkozat', published: 'Közzétéve', closed: 'Lezárva' };
+function BUDGET_STATUS_LABEL() { return { draft: t('admin.budget_status_draft'), published: t('admin.budget_status_published'), closed: t('admin.budget_status_closed') }; }
 
 async function loadBudgetProjects() {
   const list = document.getElementById('budgetProjectList');
   if (!list) return;
-  list.textContent = (typeof t === 'function' ? t('admin.load') : 'Betöltés') + '...';
+  list.textContent = t('admin.load') + '...';
   try {
     const j = await fetchJson(API_BUDGET);
     const projects = j.projects || [];
@@ -1115,20 +1090,20 @@ async function loadBudgetProjects() {
     const authOptions = authorities.map(a => `<option value="${a.id}">${esc(a.name || a.city || '')}</option>`).join('');
     list.innerHTML = `
       <div id="budgetAddForm" class="border rounded p-3 mb-3 bg-light" style="display:none">
-        <h6 class="mb-2">${esc(typeof t === 'function' ? t('admin.budget_add') : 'Új projekt')}</h6>
+        <h6 class="mb-2">${esc(t('admin.budget_add'))}</h6>
         <div class="row g-2">
-          <div class="col-12"><label class="form-label small">${esc(typeof t === 'function' ? t('idea.title_placeholder') : 'Cím')}</label><input class="form-control form-control-sm" id="budgetNewTitle" placeholder="Projekt címe"></div>
-          <div class="col-12"><label class="form-label small">Leírás</label><textarea class="form-control form-control-sm" id="budgetNewDesc" rows="2"></textarea></div>
-          <div class="col-6"><label class="form-label small">Költségvetés (Ft)</label><input type="number" class="form-control form-control-sm" id="budgetNewBudget" value="0" min="0" step="0.01"></div>
-          <div class="col-6"><label class="form-label small">Státusz</label><select class="form-select form-select-sm" id="budgetNewStatus"><option value="draft">Piszkozat</option><option value="published">Közzétéve</option><option value="closed">Lezárva</option></select></div>
-          <div class="col-12"><label class="form-label small">Hatóság</label><select class="form-select form-select-sm" id="budgetNewAuthority"><option value="">—</option>${authOptions}</select></div>
-          <div class="col-12"><button type="button" class="btn btn-sm btn-primary" id="budgetSaveNew">Mentés</button> <button type="button" class="btn btn-sm btn-outline-secondary" id="budgetCancelNew">Mégse</button></div>
+          <div class="col-12"><label class="form-label small">${esc(typeof t === 'function' ? t('idea.title_placeholder') : t('admin.budget_col_title'))}</label><input class="form-control form-control-sm" id="budgetNewTitle" placeholder="${esc(t('admin.budget_placeholder'))}"></div>
+          <div class="col-12"><label class="form-label small">${esc(t('admin.description'))}</label><textarea class="form-control form-control-sm" id="budgetNewDesc" rows="2"></textarea></div>
+          <div class="col-6"><label class="form-label small">${esc(t('admin.budget_amount_ft'))}</label><input type="number" class="form-control form-control-sm" id="budgetNewBudget" value="0" min="0" step="0.01"></div>
+          <div class="col-6"><label class="form-label small">${esc(t('admin.common_status'))}</label><select class="form-select form-select-sm" id="budgetNewStatus"><option value="draft">${esc(t('admin.budget_status_draft'))}</option><option value="published">${esc(t('admin.budget_status_published'))}</option><option value="closed">${esc(t('admin.budget_status_closed'))}</option></select></div>
+          <div class="col-12"><label class="form-label small">${esc(t('admin.budget_authority'))}</label><select class="form-select form-select-sm" id="budgetNewAuthority"><option value="">—</option>${authOptions}</select></div>
+          <div class="col-12"><button type="button" class="btn btn-sm btn-primary" id="budgetSaveNew">${esc(t('admin.save'))}</button> <button type="button" class="btn btn-sm btn-outline-secondary" id="budgetCancelNew">${esc(t('admin.cancel'))}</button></div>
         </div>
       </div>
       <div class="table-responsive">
         <table class="table table-sm table-hover">
-          <thead><tr><th>#</th><th>Cím</th><th>Költségvetés</th><th>Szavazat</th><th>Státusz</th><th>Hatóság</th><th></th></tr></thead>
-          <tbody id="budgetTableBody">${projects.length ? projects.map(p => budgetRow(p, authOptions)) : '<tr><td colspan="7" class="text-secondary">Nincs projekt.</td></tr>'}</tbody>
+          <thead><tr><th>#</th><th>${t('admin.budget_col_title')}</th><th>${t('admin.budget_col_budget')}</th><th>${t('admin.budget_col_votes')}</th><th>${t('admin.common_status')}</th><th>${t('admin.budget_authority')}</th><th></th></tr></thead>
+          <tbody id="budgetTableBody">${projects.length ? projects.map(p => budgetRow(p, authOptions)) : '<tr><td colspan="7" class="text-secondary">' + esc(t('admin.no_project')) + '</td></tr>'}</tbody>
         </table>
       </div>
     `;
@@ -1142,7 +1117,7 @@ async function loadBudgetProjects() {
     });
     document.getElementById('budgetSaveNew')?.addEventListener('click', async () => {
       const title = document.getElementById('budgetNewTitle')?.value?.trim();
-      if (!title) { alert('Cím kötelező.'); return; }
+      if (!title) { alert(t('admin.title_required')); return; }
       try {
         await fetchJson(API_BUDGET, {
           method: 'POST',
@@ -1161,7 +1136,7 @@ async function loadBudgetProjects() {
         document.getElementById('budgetNewDesc').value = '';
         loadBudgetProjects();
       } catch (e) {
-        alert('Hiba: ' + (e.message || e));
+        alert(t('admin.error_generic') + ': ' + (e.message || e));
       }
     });
     list.querySelectorAll('[data-budget-edit]').forEach(btn => {
@@ -1173,23 +1148,24 @@ async function loadBudgetProjects() {
     list.querySelectorAll('[data-budget-delete]').forEach(btn => {
       const id = parseInt(btn.getAttribute('data-budget-delete'), 10);
       btn.addEventListener('click', async () => {
-        if (!confirm('Törlöd ezt a projektet?')) return;
+        if (!confirm(t('admin.confirm_delete_project'))) return;
         try {
           await fetchJson(API_BUDGET, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id }) });
           loadBudgetProjects();
         } catch (e) {
-          alert('Hiba: ' + (e.message || e));
+          alert(t('admin.error_generic') + ': ' + (e.message || e));
         }
       });
     });
   } catch (e) {
     console.error(e);
-    list.innerHTML = '<div class="text-secondary">' + esc((e && e.message) || 'Hiba a betöltésnél.') + '</div>';
+    list.innerHTML = '<div class="text-secondary">' + esc((e && e.message) || t('admin.load_error')) + '</div>';
   }
 }
 
 function budgetRow(p, authOptions) {
-  const statusLabel = BUDGET_STATUS_LABEL[p.status] || p.status;
+  const statusLabels = BUDGET_STATUS_LABEL();
+  const statusLabel = statusLabels[p.status] || p.status;
   const descStr = p.description || '';
   const descShort = descStr.slice(0, 60);
   return `<tr data-project-id="${p.id}">
@@ -1199,7 +1175,7 @@ function budgetRow(p, authOptions) {
     <td>${p.vote_count || 0}</td>
     <td>${esc(statusLabel)}</td>
     <td>${esc(p.authority_name || '—')}</td>
-    <td><button type="button" class="btn btn-sm btn-outline-secondary" data-budget-edit="${p.id}">Szerkesztés</button> <button type="button" class="btn btn-sm btn-outline-danger" data-budget-delete="${p.id}">Törlés</button></td>
+    <td><button type="button" class="btn btn-sm btn-outline-secondary" data-budget-edit="${p.id}">${esc(t('admin.edit'))}</button> <button type="button" class="btn btn-sm btn-outline-danger" data-budget-delete="${p.id}">${esc(t('admin.delete'))}</button></td>
   </tr>`;
 }
 
@@ -1210,18 +1186,18 @@ function budgetEditRow(id, proj, authorities, listEl) {
   tr.innerHTML = `
     <td colspan="7" class="align-top bg-light p-2">
       <div class="row g-2">
-        <div class="col-12"><input class="form-control form-control-sm" id="budgetEditTitle" value="${esc(proj.title)}" placeholder="Cím"></div>
+        <div class="col-12"><input class="form-control form-control-sm" id="budgetEditTitle" value="${esc(proj.title)}" placeholder="${esc(t('idea.title_placeholder'))}"></div>
         <div class="col-12"><textarea class="form-control form-control-sm" id="budgetEditDesc" rows="2">${esc(proj.description || '')}</textarea></div>
         <div class="col-4"><input type="number" class="form-control form-control-sm" id="budgetEditBudget" value="${Number(proj.budget)}" min="0" step="0.01"></div>
-        <div class="col-4"><select class="form-select form-select-sm" id="budgetEditStatus"><option value="draft"${proj.status==='draft'?' selected':''}>Piszkozat</option><option value="published"${proj.status==='published'?' selected':''}>Közzétéve</option><option value="closed"${proj.status==='closed'?' selected':''}>Lezárva</option></select></div>
+        <div class="col-4"><select class="form-select form-select-sm" id="budgetEditStatus"><option value="draft"${proj.status==='draft'?' selected':''}>${esc(t('admin.budget_status_draft'))}</option><option value="published"${proj.status==='published'?' selected':''}>${esc(t('admin.budget_status_published'))}</option><option value="closed"${proj.status==='closed'?' selected':''}>${esc(t('admin.budget_status_closed'))}</option></select></div>
         <div class="col-4"><select class="form-select form-select-sm" id="budgetEditAuthority"><option value="">—</option>${authOpts}</select></div>
-        <div class="col-12"><button type="button" class="btn btn-sm btn-primary" id="budgetSaveEdit">Mentés</button> <button type="button" class="btn btn-sm btn-outline-secondary" id="budgetCancelEdit">Mégse</button></div>
+        <div class="col-12"><button type="button" class="btn btn-sm btn-primary" id="budgetSaveEdit">${esc(t('admin.save'))}</button> <button type="button" class="btn btn-sm btn-outline-secondary" id="budgetCancelEdit">${esc(t('admin.cancel'))}</button></div>
       </div>
     </td>
   `;
   document.getElementById('budgetSaveEdit')?.addEventListener('click', async () => {
     const title = document.getElementById('budgetEditTitle')?.value?.trim();
-    if (!title) { alert('Cím kötelező.'); return; }
+    if (!title) { alert(t('api.facility_name_required') || 'Title required'); return; }
     try {
       await fetchJson(API_BUDGET, {
         method: 'POST',
@@ -1238,7 +1214,7 @@ function budgetEditRow(id, proj, authorities, listEl) {
       });
       loadBudgetProjects();
     } catch (e) {
-      alert('Hiba: ' + (e.message || e));
+      alert(t('admin.error_generic') + ': ' + (e.message || e));
     }
   });
   document.getElementById('budgetCancelEdit')?.addEventListener('click', () => loadBudgetProjects());
@@ -1266,7 +1242,7 @@ document.getElementById('layerCategory')?.addEventListener('change', () => {
     if (keyInput) { keyInput.value = 'trees'; keyInput.readOnly = true; keyInput.placeholder = 'trees (fix)'; }
     if (hint) hint.style.display = 'inline';
   } else {
-    if (keyInput) { keyInput.readOnly = false; keyInput.placeholder = 'Layer kulcs (pl. election)'; }
+    if (keyInput) { keyInput.readOnly = false; keyInput.placeholder = t('admin.layer_key_placeholder'); }
     if (hint) hint.style.display = 'none';
   }
 });
@@ -1293,7 +1269,7 @@ document.getElementById('createLayer')?.addEventListener('click', async () => {
     await loadLayers();
     await loadLayerMarkers();
   }catch(e){
-    alert('Layer mentés hiba: ' + (e.message || e));
+    alert(t('admin.layer_save_error') + ': ' + (e.message || e));
   }
 });
 
@@ -1317,7 +1293,7 @@ document.getElementById('createPoint')?.addEventListener('click', async () => {
     await loadPoints(body.layer_id);
     await loadLayerMarkers();
   }catch(e){
-    alert('Pont mentés hiba: ' + e.message);
+    alert(t('admin.point_save_error') + ': ' + e.message);
   }
 });
 
@@ -1340,7 +1316,7 @@ document.getElementById('createAuthority')?.addEventListener('click', async () =
     document.getElementById('authorityPhone').value = '';
     await loadAuthorities();
   }catch(e){
-    alert('Hatóság mentés hiba: ' + e.message);
+    alert(t('admin.authority_save_error') + ': ' + e.message);
   }
 });
 
@@ -1360,7 +1336,7 @@ document.getElementById('createContact')?.addEventListener('click', async () => 
     document.getElementById('contactDesc').value = '';
     await loadAuthorities();
   }catch(e){
-    alert('Szolgáltatás mentés hiba: ' + e.message);
+    alert(t('admin.contact_save_error') + ': ' + e.message);
   }
 });
 
@@ -1375,7 +1351,7 @@ document.getElementById('assignUser')?.addEventListener('click', async () => {
     document.getElementById('assignEmail').value = '';
     await loadAuthorities();
   }catch(e){
-    alert('Hozzárendelés hiba: ' + e.message);
+    alert(t('admin.assign_error') + ': ' + e.message);
   }
 });
 
