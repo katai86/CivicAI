@@ -143,5 +143,33 @@ class AiPromptBuilder
             "Recent reports sample: " . ($recentJson ?: '[]') . "\n\n" .
             "JSON:";
     }
+
+    /** M4: Citizen sentiment from report descriptions and status notes. */
+    public static function sentimentAnalysis(string $scopeTitle, array $texts, string $outputLang = 'hu'): string
+    {
+        $scopeTitle = trim($scopeTitle);
+        $langName = self::languageNameForCode($outputLang);
+        $sample = array_slice($texts, 0, 80);
+        $combined = implode("\n---\n", array_map(function ($t) {
+            return mb_substr(is_array($t) ? ($t['text'] ?? '') : (string)$t, 0, 500);
+        }, $sample));
+        if (mb_strlen($combined) > 12000) {
+            $combined = mb_substr($combined, 0, 12000) . "\n[... truncated]";
+        }
+        return
+            "You are an assistant analyzing citizen feedback and reports for a municipal dashboard. " .
+            "Return ONLY a compact JSON object, no prose.\n\n" .
+            "Important: Write top_concerns and emerging_issues in " . $langName . ".\n\n" .
+            "Based on the following citizen report descriptions and status notes, estimate overall sentiment and extract key themes.\n\n" .
+            "Fields:\n" .
+            "- positive_percent: number 0-100 (share of positive/satisfied tone)\n" .
+            "- neutral_percent: number 0-100 (neutral or factual)\n" .
+            "- negative_percent: number 0-100 (frustration, complaint, urgency); must sum to 100 with the two above\n" .
+            "- top_concerns: array of 3-6 short strings (main topics: e.g. roads, lighting, waste, green areas) in " . $langName . "\n" .
+            "- emerging_issues: array of 0-4 short strings (new or rising themes mentioned) in " . $langName . "\n\n" .
+            "Scope: " . $scopeTitle . "\n\n" .
+            "Sample texts:\n" . ($combined ?: '(no text)') . "\n\n" .
+            "JSON:";
+    }
 }
 

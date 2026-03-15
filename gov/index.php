@@ -579,8 +579,16 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
         <?php else: ?>
 
         <div class="admin-tab-body" id="tab-dashboard">
-          <!-- M9 Dashboard UI panelek: 5 panel + magyarázat -->
+          <!-- M3 City Health Index + M9 Dashboard UI -->
           <p class="text-secondary small mb-2"><?= h(t('gov.panels_intro')) ?></p>
+          <div class="card border-primary mb-3" id="govCityHealthCard">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.city_health_index')) ?></h6>
+              <div id="govCityHealthContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+              </div>
+            </div>
+          </div>
           <div class="row g-2 mb-3">
             <div class="col-6 col-md"><div class="card border-primary"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_city_health')) ?></h6><br><p class="text-secondary small mb-0"><?= h(t('gov.stats_title')) ?></p></div></div></div>
             <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_engagement')) ?></h6><br><p class="text-secondary small mb-0"><?= h(t('gov.analytics_title')) ?></p></div></div></div>
@@ -867,6 +875,14 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
               </div>
             </div>
           </div>
+          <div class="card mb-3">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.sentiment_title')) ?></h6>
+              <div id="govSentimentContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="admin-tab-body" id="tab-reports" hidden>
@@ -1017,6 +1033,21 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
     'trees_risk' => t('gov.statistics_trees_risk'),
     'new_users_7d' => t('gov.statistics_new_users_7d'),
     'no_data' => t('gov.no_data'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govSentimentUrl = <?= json_encode(app_url('/api/sentiment_analysis.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govSentimentLabels = <?= json_encode([
+    'positive' => t('gov.sentiment_positive'),
+    'neutral' => t('gov.sentiment_neutral'),
+    'negative' => t('gov.sentiment_negative'),
+    'top_concerns' => t('gov.sentiment_top_concerns'),
+    'emerging_issues' => t('gov.sentiment_emerging_issues'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govCityHealthUrl = <?= json_encode(app_url('/api/city_health.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govCityHealthLabels = <?= json_encode([
+    'infrastructure' => t('gov.city_health_infrastructure'),
+    'environment' => t('gov.city_health_environment'),
+    'engagement' => t('gov.city_health_engagement'),
+    'maintenance' => t('gov.city_health_maintenance'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var mapCenterLat = <?= json_encode(defined('MAP_CENTER_LAT') ? (float)MAP_CENTER_LAT : 47.1625) ?>;
   var mapCenterLng = <?= json_encode(defined('MAP_CENTER_LNG') ? (float)MAP_CENTER_LNG : 19.5033) ?>;
@@ -1181,9 +1212,11 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
       });
       if (key === 'modules') loadGovModules();
       if (key === 'trees') loadGovTrees();
-      if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); }
+      if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); }
+      if (key === 'dashboard') loadGovCityHealth();
     });
   });
+  loadGovCityHealth();
 
   function initGovHeatmapTab(){
     var container = document.getElementById('govHeatmapMap');
@@ -1215,6 +1248,57 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   document.getElementById('govHeatmapRefresh') && document.getElementById('govHeatmapRefresh').addEventListener('click', loadGovHeatmap);
   document.getElementById('govHeatmapType') && document.getElementById('govHeatmapType').addEventListener('change', loadGovHeatmap);
 
+  function loadGovSentiment(){
+    var container = document.getElementById('govSentimentContent');
+    if (!container || !govSentimentUrl) return;
+    var from = new Date(); from.setDate(from.getDate() - 30);
+    var to = new Date();
+    var params = 'date_from=' + from.toISOString().slice(0, 10) + '&date_to=' + to.toISOString().slice(0, 10);
+    fetch(govSentimentUrl + '?' + params, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
+      if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
+      var d = j.data;
+      var pos = parseInt(d.positive_percent, 10) || 0, neu = parseInt(d.neutral_percent, 10) || 0, neg = parseInt(d.negative_percent, 10) || 0;
+      var html = '<div class="admin-chart mb-2">';
+      html += '<div class="admin-chart-bar"><span class="label">' + (typeof govSentimentLabels !== 'undefined' ? govSentimentLabels.positive : 'Pozitív') + '</span><div class="bar-wrap"><div class="bar" style="width:' + pos + '%;background:#198754"></div></div><span class="val">' + pos + '%</span></div>';
+      html += '<div class="admin-chart-bar"><span class="label">' + (typeof govSentimentLabels !== 'undefined' ? govSentimentLabels.neutral : 'Semleges') + '</span><div class="bar-wrap"><div class="bar" style="width:' + neu + '%;background:#6c757d"></div></div><span class="val">' + neu + '%</span></div>';
+      html += '<div class="admin-chart-bar"><span class="label">' + (typeof govSentimentLabels !== 'undefined' ? govSentimentLabels.negative : 'Negatív') + '</span><div class="bar-wrap"><div class="bar" style="width:' + neg + '%;background:#dc3545"></div></div><span class="val">' + neg + '%</span></div>';
+      html += '</div>';
+      if (Array.isArray(d.top_concerns) && d.top_concerns.length > 0) {
+        html += '<p class="small mb-1 fw-semibold">' + (typeof govSentimentLabels !== 'undefined' ? govSentimentLabels.top_concerns : 'Fő témák') + '</p><ul class="small mb-2">';
+        d.top_concerns.forEach(function(c){ html += '<li>' + (typeof escStr === 'function' ? escStr(c) : String(c).replace(/&/g,'&amp;').replace(/</g,'&lt;')) + '</li>'; });
+        html += '</ul>';
+      }
+      if (Array.isArray(d.emerging_issues) && d.emerging_issues.length > 0) {
+        html += '<p class="small mb-1 fw-semibold">' + (typeof govSentimentLabels !== 'undefined' ? govSentimentLabels.emerging_issues : 'Felmerülő témák') + '</p><ul class="small mb-0">';
+        d.emerging_issues.forEach(function(e){ html += '<li>' + (typeof escStr === 'function' ? escStr(e) : String(e).replace(/&/g,'&amp;').replace(/</g,'&lt;')) + '</li>'; });
+        html += '</ul>';
+      }
+      container.innerHTML = html;
+    }).catch(function(){ var c = document.getElementById('govSentimentContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  function loadGovCityHealth(){
+    var container = document.getElementById('govCityHealthContent');
+    if (!container || !govCityHealthUrl) return;
+    fetch(govCityHealthUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var L = govCityHealthLabels || {};
+      if (!j.ok || !j.data) {
+        container.innerHTML = '<p class="text-secondary small mb-0">' + (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data ? govStatisticsLabels.no_data : '—') + '</p>';
+        return;
+      }
+      var d = j.data;
+      var overall = (d.city_health_score != null) ? parseInt(d.city_health_score, 10) : 0;
+      var html = '<div class="d-flex align-items-center flex-wrap gap-3 mb-3"><span class="display-4 fw-bold text-primary">' + overall + '</span><span class="text-secondary small">/ 100</span></div>';
+      html += '<div class="admin-chart">';
+      ['infrastructure','environment','engagement','maintenance'].forEach(function(k){
+        var score = (d[k + '_score'] != null) ? parseInt(d[k + '_score'], 10) : 0;
+        var label = L[k] || k;
+        html += '<div class="admin-chart-bar"><span class="label">' + label + '</span><div class="bar-wrap"><div class="bar" style="width:' + Math.min(100, score) + '%;background:#0d6efd"></div></div><span class="val">' + score + '</span></div>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }).catch(function(){ var c = document.getElementById('govCityHealthContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
   function initGovStatisticsTab(){
     var fromEl = document.getElementById('govStatsDateFrom');
     var toEl = document.getElementById('govStatsDateTo');

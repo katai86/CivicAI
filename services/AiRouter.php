@@ -67,7 +67,7 @@ class AiRouter
             }
             return $m !== '' ? $m : 'mistral-small-2506';
         }
-        if (in_array($taskType, ['admin_summary', 'gov_summary', 'gov_esg'], true)) {
+        if (in_array($taskType, ['admin_summary', 'gov_summary', 'gov_esg', 'gov_sentiment'], true)) {
             $m = defined('AI_MODEL_LARGE') ? (string) AI_MODEL_LARGE : '';
             if ($m === '' && defined('AI_PREMIUM_MODEL')) {
                 $m = (string) AI_PREMIUM_MODEL;
@@ -106,7 +106,7 @@ class AiRouter
             $max = function_exists('get_ai_limit') ? get_ai_limit('summary') : (defined('AI_SUMMARY_LIMIT') ? (int) AI_SUMMARY_LIMIT : 0);
             if ($max <= 0) return false;
             try {
-                $stmt = db()->prepare("SELECT COUNT(*) FROM ai_results WHERE task_type IN ('admin_summary','gov_summary','gov_esg') AND created_at >= CURDATE()");
+                $stmt = db()->prepare("SELECT COUNT(*) FROM ai_results WHERE task_type IN ('admin_summary','gov_summary','gov_esg','gov_sentiment') AND created_at >= CURDATE()");
                 $stmt->execute();
                 $cnt = (int)$stmt->fetchColumn();
                 return $cnt < $max;
