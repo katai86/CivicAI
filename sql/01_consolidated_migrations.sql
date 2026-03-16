@@ -474,6 +474,20 @@ CREATE TABLE IF NOT EXISTS budget_votes (
   CONSTRAINT fk_budget_votes_project FOREIGN KEY (project_id) REFERENCES budget_projects (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CALL add_column_if_not_exists('budget_projects', 'submitted_by', 'INT NULL');
+CALL add_column_if_not_exists('budget_projects', 'updated_at', 'TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP');
+
+-- ========== budget_settings: keret, feltételek, lezárás hatóságonként ==========
+CREATE TABLE IF NOT EXISTS budget_settings (
+  authority_id INT NOT NULL PRIMARY KEY,
+  frame_amount DECIMAL(12,2) NULL,
+  conditions_text TEXT NULL,
+  description TEXT NULL,
+  voting_closed TINYINT(1) NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_budget_settings_closed (voting_closed)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ========== M8 Felmérések (surveys, survey_questions, survey_responses) ==========
 CREATE TABLE IF NOT EXISTS surveys (
   id INT AUTO_INCREMENT PRIMARY KEY,

@@ -77,16 +77,38 @@ $pageTitle = t('budget.page_title');
       const res = await fetch(API_LIST + '?status=published');
       const j = await res.json();
       const data = (j && j.data) ? j.data : [];
+      const settings = (j && j.settings) ? j.settings : null;
+      const userHasAddress = !!(j && j.user_has_address);
+      const votingClosed = !!(settings && settings.voting_closed === 1);
+
+      let html = '';
+      if (settings && (settings.frame_amount != null || settings.description || settings.conditions_text)) {
+        html += '<div class="budget-card budget-settings-block mb-3">';
+        if (settings.frame_amount != null && settings.frame_amount > 0) {
+          html += '<p class="mb-2"><strong>' + esc(t('budget.frame_amount') || 'Keret összeg') + ':</strong> ' + Number(settings.frame_amount).toLocaleString('hu-HU') + ' Ft</p>';
+        }
+        if (settings.description) html += '<div class="desc mb-2">' + esc(settings.description).replace(/\n/g, '<br>') + '</div>';
+        if (settings.conditions_text) html += '<div class="small text-muted"><strong>' + esc(t('budget.conditions') || 'Feltételek, kizárások') + ':</strong><br>' + esc(settings.conditions_text).replace(/\n/g, '<br>') + '</div>';
+        html += '</div>';
+      }
+      if (loggedIn && !userHasAddress) {
+        html += '<p class="alert alert-warning small">' + esc(t('budget.address_required_hint') || 'A szavazáshoz a Beállításokban add meg a címed (város), hogy részt vehess.') + ' <a href="' + esc(BASE + '/user/settings.php') + '">' + esc(t('nav.settings') || 'Beállítások') + '</a></p>';
+      }
+      if (votingClosed) {
+        html += '<p class="text-muted small mb-2">' + esc(t('budget.voting_closed') || 'A szavazás lezárva.') + '</p>';
+      }
       if (!data.length) {
-        el.innerHTML = '<p class="intro">' + esc(t('gov.no_data') || 'Nincs közzétett projekt.') + '</p>';
+        el.innerHTML = html + '<p class="intro">' + esc(t('gov.no_data') || 'Nincs közzétett projekt.') + '</p>';
         return;
       }
-      el.innerHTML = data.map(p => {
+      html += data.map(p => {
         const voted = !!p.voted_by_me;
         const voteLabel = voted ? (t('budget.voted') || 'Visszavonás') : (t('idea.vote') || 'Támogatom');
-        const voteBtn = loggedIn
-          ? '<button type="button" class="btn btn-sm ' + (voted ? 'btn-outline-secondary' : 'btn-primary') + ' btn-vote" data-id="' + p.id + '" data-voted="' + (voted ? '1' : '0') + '">' + esc(voteLabel) + '</button>'
-          : '<span class="text-muted small">' + esc(t('idea.login_to_vote') || 'Szavazáshoz jelentkezz be.') + '</span>';
+        let voteBtn = '<span class="text-muted small">' + esc(t('idea.login_to_vote') || 'Szavazáshoz jelentkezz be.') + '</span>';
+        if (loggedIn) {
+          if (votingClosed) voteBtn = '<span class="text-muted small">' + esc(t('budget.voting_closed') || 'Szavazás lezárva') + '</span>';
+          else voteBtn = '<button type="button" class="btn btn-sm ' + (voted ? 'btn-outline-secondary' : 'btn-primary') + ' btn-vote" data-id="' + p.id + '" data-voted="' + (voted ? '1' : '0') + '">' + esc(voteLabel) + '</button>';
+        }
         return '<div class="budget-card" data-id="' + p.id + '">' +
           '<h3>' + esc(p.title) + '</h3>' +
           '<div class="meta">' + (p.authority_name ? esc(p.authority_name) + ' · ' : '') + (t('budget.budget_label') || 'Költségvetés') + ': ' + Number(p.budget).toLocaleString('hu-HU') + ' Ft</div>' +
@@ -94,6 +116,7 @@ $pageTitle = t('budget.page_title');
           '<div class="vote-wrap"><span class="vote-count">' + (p.vote_count || 0) + ' ' + (t('idea.votes') || 'szavazat') + '</span> ' + voteBtn + '</div>' +
           '</div>';
       }).join('');
+      el.innerHTML = html;
 
       el.querySelectorAll('.btn-vote').forEach(btn => {
         btn.addEventListener('click', async () => {
@@ -106,16 +129,16 @@ $pageTitle = t('budget.page_title');
               credentials: 'same-origin',
               body: JSON.stringify({ id })
             });
-            const j = await r.json();
-            if (j && j.ok) {
+            const jr = await r.json();
+            if (jr && jr.ok) {
               const card = el.querySelector('.budget-card[data-id="' + id + '"]');
               const countEl = card ? card.querySelector('.vote-count') : null;
-              if (countEl) countEl.textContent = (j.count || 0) + ' ' + (t('idea.votes') || 'szavazat');
-              btn.setAttribute('data-voted', j.voted ? '1' : '0');
-              btn.textContent = j.voted ? (t('budget.voted') || 'Visszavonás') : (t('idea.vote') || 'Támogatom');
-              btn.className = 'btn btn-sm ' + (j.voted ? 'btn-outline-secondary' : 'btn-primary') + ' btn-vote';
+              if (countEl) countEl.textContent = (jr.count || 0) + ' ' + (t('idea.votes') || 'szavazat');
+              btn.setAttribute('data-voted', jr.voted ? '1' : '0');
+              btn.textContent = jr.voted ? (t('budget.voted') || 'Visszavonás') : (t('idea.vote') || 'Támogatom');
+              btn.className = 'btn btn-sm ' + (jr.voted ? 'btn-outline-secondary' : 'btn-primary') + ' btn-vote';
             } else {
-              alert(j.error || 'Hiba');
+              alert(jr.error || 'Hiba');
             }
           } catch (e) {
             alert(e.message || 'Hiba');

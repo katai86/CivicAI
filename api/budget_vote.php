@@ -26,7 +26,7 @@ try {
   $pdo = db();
   $pdo->beginTransaction();
 
-  $stmt = $pdo->prepare("SELECT id, status FROM budget_projects WHERE id = :id LIMIT 1");
+  $stmt = $pdo->prepare("SELECT id, status, authority_id FROM budget_projects WHERE id = :id LIMIT 1");
   $stmt->execute([':id' => $id]);
   $project = $stmt->fetch(PDO::FETCH_ASSOC);
   if (!$project) {
@@ -36,6 +36,16 @@ try {
   if (($project['status'] ?? '') !== 'published') {
     $pdo->rollBack();
     json_response(['ok' => false, 'error' => t('budget.voting_closed')], 400);
+  }
+  $aid = (int)($project['authority_id'] ?? 0);
+  if ($aid > 0) {
+    $st = $pdo->prepare("SELECT voting_closed FROM budget_settings WHERE authority_id = ? LIMIT 1");
+    $st->execute([$aid]);
+    $votingClosed = (int)($st->fetchColumn() ?: 0);
+    if ($votingClosed === 1) {
+      $pdo->rollBack();
+      json_response(['ok' => false, 'error' => t('budget.voting_closed')], 400);
+    }
   }
 
   $stmt = $pdo->prepare("SELECT 1 FROM budget_votes WHERE project_id = :pid AND user_id = :uid LIMIT 1");

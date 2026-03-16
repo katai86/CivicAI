@@ -76,11 +76,9 @@ if ($statusFilter !== '' && !in_array($statusFilter, $allowedStatuses, true)) {
 // Gov user: ha van hatósága, láthatja a bejelentések listáját (read-only); admin mindig
 $showReportList = $isAdmin || !empty($authorityIds);
 
-// Status update: csak admin
+// Status update: admin vagy govuser (a saját hatósága alá tartozó bejelentéseknél)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'set_status') {
-  if (!$isAdmin) {
-    $err = t('common.error_no_permission');
-  } else {
+  $err = null;
   $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
   $new = isset($_POST['status']) ? trim((string)$_POST['status']) : '';
   $note = safe_str($_POST['note'] ?? null, 255);
@@ -186,7 +184,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
       if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
       $err = t('common.error_save_failed');
     }
-  }
   }
 }
 
@@ -561,6 +558,12 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             <a href="#" class="nav-link tab" data-tab="surveys">
               <i class="nav-icon bi bi-clipboard-pulse"></i>
               <p><?= h(t('gov.tab_surveys')) ?></p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="budget">
+              <i class="nav-icon bi bi-wallet2"></i>
+              <p><?= h(t('gov.tab_budget') ?: 'Részvételi költségvetés') ?></p>
             </a>
           </li>
           <li class="nav-item">
@@ -991,79 +994,41 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
           <div class="card">
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('legend.ideas_section') ?: 'Ötletek') ?></h6>
-              <p class="text-secondary small mb-3"><?= h(t('gov.ideas_intro') ?: 'Ötletek listája, státusz módosítása.') ?></p>
-              <div class="table-responsive">
-                <table class="table table-sm table-hover">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th><?= h(t('idea.title_placeholder') ?: 'Cím') ?></th>
-                      <th><?= h(t('idea.votes') ?: 'Szavazat') ?></th>
-                      <th><?= h(t('common.status') ?: 'Státusz') ?></th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <?php
-                    $ideaStatusLabels = [
-                      'submitted' => t('gov.idea_status_submitted') ?: 'Beküldve',
-                      'under_review' => t('gov.idea_status_review') ?: 'Átnézés alatt',
-                      'planned' => t('gov.idea_status_planned') ?: 'Tervezett',
-                      'in_progress' => t('gov.idea_status_in_progress') ?: 'Folyamatban',
-                      'completed' => t('gov.idea_status_completed') ?: 'Kész',
-                    ];
-                    foreach ($ideasList as $idea): ?>
-                    <tr>
-                      <td><?= (int)$idea['id'] ?></td>
-                      <td>
-                        <span class="fw-semibold"><?= h($idea['title'] ?: '—') ?></span>
-                        <?php if (!empty($idea['description'])): ?>
-                          <br><span class="text-secondary small"><?= h(mb_strimwidth($idea['description'], 0, 80, '…')) ?></span>
-                        <?php endif; ?>
-                        <br><span class="text-muted small"><?= h($idea['author_name'] ?: t('common.anonymous')) ?> · <?= date('Y-m-d H:i', strtotime($idea['created_at'])) ?></span>
-                      </td>
-                      <td><?= (int)($idea['vote_count'] ?? 0) ?></td>
-                      <td>
-                        <form method="post" class="d-inline" onchange="this.submit()">
-                          <input type="hidden" name="action" value="idea_set_status">
-                          <input type="hidden" name="id" value="<?= (int)$idea['id'] ?>">
-                          <select name="status" class="form-select form-select-sm" style="min-width:140px">
-                            <?php foreach (array_keys($ideaStatusLabels) as $st): ?>
-                              <option value="<?= h($st) ?>"<?= ($idea['status'] ?? '') === $st ? ' selected' : '' ?>><?= h($ideaStatusLabels[$st]) ?></option>
-                            <?php endforeach; ?>
-                          </select>
-                        </form>
-                      </td>
-                      <td></td>
-                    </tr>
-                    <?php endforeach; ?>
-                  </tbody>
-                </table>
-              </div>
-              <?php if (empty($ideasList)): ?>
+              <p class="text-secondary small mb-3"><?= h(t('gov.ideas_intro') ?: 'A hatóságodhoz beérkezett ötlet bejelentések. Státusz módosítható.') ?></p>
+              <?php if (empty($ideaReports)): ?>
                 <p class="text-secondary small mb-0"><?= h(t('gov.no_data')) ?></p>
-              <?php endif; ?>
-
-              <?php if (!empty($ideaReports)): ?>
-                <h6 class="card-title mt-4 mb-2"><?= h(t('gov.idea_reports_section') ?: 'Ötlet bejelentések (bejelentés kategória)') ?></h6>
-                <p class="text-secondary small mb-2"><?= h(t('gov.idea_reports_intro') ?: 'Bejelentések, amelyek ötlet kategóriával lettek beküldve.') ?></p>
+              <?php else: ?>
                 <div class="table-responsive">
                   <table class="table table-sm table-hover">
                     <thead>
                       <tr>
                         <th>#</th>
-                        <th><?= h(t('idea.title_placeholder') ?: 'Cím') ?></th>
+                        <th><?= h(t('gov.reporter_name') ?: 'Bejelentő neve') ?></th>
+                        <th><?= h(t('gov.report_date') ?: 'Bejelentés ideje') ?></th>
+                        <th><?= h(t('gov.report_description') ?: 'Bejelentés leírása') ?></th>
+                        <th><?= h(t('gov.report_address') ?: 'Bejelentés címe') ?></th>
                         <th><?= h(t('common.status') ?: 'Státusz') ?></th>
-                        <th><?= h(t('gov.report_address') ?: 'Cím / hely') ?></th>
                       </tr>
                     </thead>
                     <tbody>
                       <?php foreach ($ideaReports as $ir): ?>
                         <tr>
                           <td><?= (int)$ir['id'] ?></td>
-                          <td><span class="fw-semibold"><?= h($ir['title'] ?: t('gov.report_anonymous')) ?></span><br><span class="text-muted small"><?= h($ir['reporter_display_name'] ?: '') ?> · <?= date('Y-m-d H:i', strtotime($ir['created_at'])) ?></span></td>
-                          <td><?= h($ir['status']) ?></td>
+                          <td><?= h($ir['reporter_display_name'] ?: t('gov.report_anonymous')) ?></td>
+                          <td class="text-nowrap"><?= date('Y-m-d H:i', strtotime($ir['created_at'])) ?></td>
+                          <td><span class="fw-semibold"><?= h($ir['title'] ?: '—') ?></span><?php if (!empty($ir['description'])): ?><br><span class="text-secondary small"><?= h(mb_strimwidth($ir['description'], 0, 120, '…')) ?></span><?php endif; ?></td>
                           <td class="text-secondary small"><?= h($ir['address_approx'] ?: $ir['city'] ?: '—') ?></td>
+                          <td>
+                            <form method="post" class="d-inline" onchange="this.submit()">
+                              <input type="hidden" name="action" value="set_status">
+                              <input type="hidden" name="id" value="<?= (int)$ir['id'] ?>">
+                              <select name="status" class="form-select form-select-sm" style="min-width:140px">
+                                <?php foreach ($allowedStatuses as $st): ?>
+                                  <option value="<?= h($st) ?>"<?= ($ir['status'] ?? '') === $st ? ' selected' : '' ?>><?= h($statusLabels[$st] ?? $st) ?></option>
+                                <?php endforeach; ?>
+                              </select>
+                            </form>
+                          </td>
                         </tr>
                       <?php endforeach; ?>
                     </tbody>
@@ -1085,6 +1050,16 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
                 <div id="govSurveyResultsContent"></div>
                 <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="govSurveyResultsBack">← <?= h(t('nav.map') ?: 'Vissza') ?></button>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-tab-body" id="tab-budget" hidden>
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.tab_budget') ?: 'Részvételi költségvetés') ?></h6>
+              <p class="text-secondary small mb-3"><?= h(t('budget.intro') ?: 'Projektek a hatóságodhoz. Szavazat szám, költség, státusz.') ?></p>
+              <div id="govBudgetList"><?= h(t('gov.loading') ?: 'Betöltés...') ?></div>
             </div>
           </div>
         </div>
@@ -1131,6 +1106,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   var modulesUrl = <?= json_encode(app_url('/api/gov_modules.php'), JSON_UNESCAPED_SLASHES) ?>;
   var esgExportUrl = <?= json_encode(app_url('/api/esg_export.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govSurveysUrl = <?= json_encode(app_url('/api/gov_surveys.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govBudgetUrl = <?= json_encode(app_url('/api/gov_budget.php'), JSON_UNESCAPED_SLASHES) ?>;
   var weatherUrl = <?= json_encode(app_url('/api/weather.php'), JSON_UNESCAPED_SLASHES) ?>;
   var iotDevicesUrl = <?= json_encode(app_url('/api/iot_devices.php'), JSON_UNESCAPED_SLASHES) ?>;
   var heatmapUrl = <?= json_encode(app_url('/api/heatmap_data.php'), JSON_UNESCAPED_SLASHES) ?>;
@@ -1362,12 +1338,13 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
       e.preventDefault();
       var key = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
-      ['dashboard','ai','reports','ideas','surveys','trees','analytics','iot','modules'].forEach(function(k){
+      ['dashboard','ai','reports','ideas','surveys','budget','trees','analytics','iot','modules'].forEach(function(k){
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
       });
       if (key === 'modules') loadGovModules();
       if (key === 'surveys') loadGovSurveys();
+      if (key === 'budget') loadGovBudget();
       if (key === 'trees') { initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
       if (key === 'iot') loadGovIotDevices();
       if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovGreenMetrics(); loadGovEsgMetrics(); }
@@ -1872,22 +1849,59 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
       .then(function(j){
         if (!j || !j.ok) { list.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; return; }
         var data = j.data || [];
+        var firstAid = j.first_authority_id || 0;
+        var html = '<div class="mb-3"><button type="button" class="btn btn-sm btn-outline-primary" id="govSurveyNewBtn">' + (<?= json_encode(t('gov.survey_new') ?: 'Új felmérés', JSON_UNESCAPED_UNICODE) ?>) + '</button></div>';
         if (!data.length) {
-          list.innerHTML = '<p class="text-secondary small mb-0">' + (<?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>) + '</p>' +
-            '<p class="text-muted small mt-2 mb-0">' + (<?= json_encode(t('gov.surveys_empty_hint') ?: 'A felmérések táblák létrehozásához futtasd a migrációt (surveys). Az első felmérés létrehozásához használd a Felmérések API-t.', JSON_UNESCAPED_UNICODE) ?>) + '</p>';
+          list.innerHTML = html + '<p class="text-secondary small mb-0">' + (<?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>) + '</p>' +
+            '<p class="text-muted small mt-2 mb-0">' + (<?= json_encode(t('gov.surveys_empty_hint') ?: 'A felmérések táblák létrehozásához futtasd a migrációt (surveys).', JSON_UNESCAPED_UNICODE) ?>) + '</p>';
+          document.getElementById('govSurveyNewBtn') && document.getElementById('govSurveyNewBtn').addEventListener('click', function(){ showGovSurveyNewForm(list, firstAid); });
           return;
         }
         var statusLabels = { draft: <?= json_encode(t('survey.status_draft') ?: 'Piszkozat', JSON_UNESCAPED_UNICODE) ?>, active: <?= json_encode(t('survey.status_active') ?: 'Aktív', JSON_UNESCAPED_UNICODE) ?>, closed: <?= json_encode(t('survey.status_closed') ?: 'Lezárva', JSON_UNESCAPED_UNICODE) ?> };
-        list.innerHTML = '<table class="table table-sm table-hover"><thead><tr><th>#</th><th>' + (<?= json_encode(t('idea.title_placeholder') ?: 'Cím', JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('common.status'), JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('gov.survey_responses') ?: 'Válaszok', JSON_UNESCAPED_UNICODE) ?>) + '</th><th></th></tr></thead><tbody>' +
+        html += '<table class="table table-sm table-hover"><thead><tr><th>#</th><th>' + (<?= json_encode(t('idea.title_placeholder') ?: 'Cím', JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('common.status'), JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('gov.survey_responses') ?: 'Válaszok', JSON_UNESCAPED_UNICODE) ?>) + '</th><th></th></tr></thead><tbody>' +
           data.map(function(s){
             return '<tr><td>' + s.id + '</td><td><strong>' + (s.title||'').replace(/</g,'&lt;') + '</strong><br><span class="text-muted small">' + (s.authority_name||'').replace(/</g,'&lt;') + ' · ' + (s.starts_at||'').slice(0,16) + ' – ' + (s.ends_at||'').slice(0,16) + '</span></td><td>' + (statusLabels[s.status]||s.status) + '</td><td>' + (s.response_count||0) + '</td><td><button type="button" class="btn btn-sm btn-outline-primary gov-survey-results" data-id="' + s.id + '">' + (<?= json_encode(t('gov.survey_results') ?: 'Eredmények', JSON_UNESCAPED_UNICODE) ?>) + '</button></td></tr>';
           }).join('') + '</tbody></table>';
+        list.innerHTML = html;
         list.querySelectorAll('.gov-survey-results').forEach(function(btn){
           btn.addEventListener('click', function(){ showGovSurveyResults(btn.getAttribute('data-id')); });
         });
+        document.getElementById('govSurveyNewBtn') && document.getElementById('govSurveyNewBtn').addEventListener('click', function(){ showGovSurveyNewForm(list, firstAid); });
       })
       .catch(function(){ list.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; });
     if (resultsWrap) resultsWrap.style.display = 'none';
+  }
+  function showGovSurveyNewForm(container, firstAid){
+    var today = new Date().toISOString().slice(0, 16);
+    var end = new Date(); end.setDate(end.getDate() + 30);
+    var endStr = end.toISOString().slice(0, 16);
+    var statusL = { draft: <?= json_encode(t('survey.status_draft') ?: 'Piszkozat', JSON_UNESCAPED_UNICODE) ?>, active: <?= json_encode(t('survey.status_active') ?: 'Aktív', JSON_UNESCAPED_UNICODE) ?>, closed: <?= json_encode(t('survey.status_closed') ?: 'Lezárva', JSON_UNESCAPED_UNICODE) ?> };
+    var form = '<div class="card mb-3" id="govSurveyNewWrap"><div class="card-body"><h6 class="card-title">' + (<?= json_encode(t('gov.survey_new') ?: 'Új felmérés', JSON_UNESCAPED_UNICODE) ?>) + '</h6>';
+    form += '<input type="text" id="govSurveyTitle" class="form-control form-control-sm mb-2" placeholder="' + (<?= json_encode(t('idea.title_placeholder') ?: 'Cím', JSON_UNESCAPED_UNICODE) ?>) + '" required>';
+    form += '<textarea id="govSurveyDesc" class="form-control form-control-sm mb-2" rows="2" placeholder="' + (<?= json_encode(t('gov.report_description') ?: 'Leírás', JSON_UNESCAPED_UNICODE) ?>) + '"></textarea>';
+    form += '<label class="small">' + (<?= json_encode(t('gov.survey_starts') ?: 'Kezdés', JSON_UNESCAPED_UNICODE) ?>) + '</label><input type="datetime-local" id="govSurveyStarts" class="form-control form-control-sm mb-2" value="' + today + '">';
+    form += '<label class="small">' + (<?= json_encode(t('gov.survey_ends') ?: 'Befejezés', JSON_UNESCAPED_UNICODE) ?>) + '</label><input type="datetime-local" id="govSurveyEnds" class="form-control form-control-sm mb-2" value="' + endStr + '">';
+    form += '<label class="small">' + (<?= json_encode(t('common.status'), JSON_UNESCAPED_UNICODE) ?>) + '</label><select id="govSurveyStatus" class="form-select form-select-sm mb-2"><option value="draft">' + statusL.draft + '</option><option value="active">' + statusL.active + '</option><option value="closed">' + statusL.closed + '</option></select>';
+    form += '<p class="small mb-1">' + (<?= json_encode(t('gov.survey_questions') ?: 'Kérdések', JSON_UNESCAPED_UNICODE) ?>) + '</p><input type="text" id="govSurveyQ1" class="form-control form-control-sm mb-1" placeholder="1. kérdés"><input type="text" id="govSurveyQ2" class="form-control form-control-sm mb-1" placeholder="2. kérdés"><input type="text" id="govSurveyQ3" class="form-control form-control-sm mb-2" placeholder="3. kérdés">';
+    form += '<button type="button" class="btn btn-sm btn-primary me-2" id="govSurveySubmit">' + (<?= json_encode(t('gov.save') ?: 'Mentés', JSON_UNESCAPED_UNICODE) ?>) + '</button><button type="button" class="btn btn-sm btn-outline-secondary" id="govSurveyCancel">' + (<?= json_encode(t('common.cancel') ?: 'Mégse', JSON_UNESCAPED_UNICODE) ?>) + '</button></div></div>';
+    var wrap = document.createElement('div');
+    wrap.innerHTML = form;
+    container.insertBefore(wrap, container.firstChild);
+    document.getElementById('govSurveySubmit').addEventListener('click', function(){
+      var title = (document.getElementById('govSurveyTitle') && document.getElementById('govSurveyTitle').value || '').trim();
+      if (!title) return;
+      var desc = document.getElementById('govSurveyDesc') && document.getElementById('govSurveyDesc').value || '';
+      var starts = (document.getElementById('govSurveyStarts') && document.getElementById('govSurveyStarts').value || '').replace('T',' ') + ':00';
+      var ends = (document.getElementById('govSurveyEnds') && document.getElementById('govSurveyEnds').value || '').replace('T',' ') + ':00';
+      var status = document.getElementById('govSurveyStatus') && document.getElementById('govSurveyStatus').value || 'draft';
+      var qs = [];
+      [document.getElementById('govSurveyQ1'), document.getElementById('govSurveyQ2'), document.getElementById('govSurveyQ3')].forEach(function(inp, i){ if (inp && inp.value.trim()) qs.push({ question_text: inp.value.trim(), question_type: 'text', sort_order: i }); });
+      var body = { action: 'save', title: title, description: desc, authority_id: firstAid > 0 ? firstAid : null, starts_at: starts, ends_at: ends, status: status, questions: qs };
+      postJson(govSurveysUrl, body).then(function(x){
+        if (x && x.ok && x.j && x.j.ok) { var w = document.getElementById('govSurveyNewWrap'); if (w && w.parentNode) w.parentNode.removeChild(w); loadGovSurveys(); }
+      });
+    });
+    document.getElementById('govSurveyCancel').addEventListener('click', function(){ var w = document.getElementById('govSurveyNewWrap'); if (w && w.parentNode) w.parentNode.removeChild(w); });
   }
   function showGovSurveyResults(id){
     var resultsWrap = document.getElementById('govSurveyResults');
@@ -1918,6 +1932,88 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
     if (resultsWrap) resultsWrap.style.display = 'none';
     if (list) list.style.display = 'block';
   });
+
+  function loadGovBudget(){
+    var list = document.getElementById('govBudgetList');
+    if (!list || !govBudgetUrl) return;
+    list.textContent = <?= json_encode(t('gov.loading'), JSON_UNESCAPED_UNICODE) ?>;
+    fetch(govBudgetUrl, { credentials:'include' })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j || !j.ok) { list.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; return; }
+        var projects = j.projects || [];
+        var settings = j.settings || null;
+        var firstAid = j.first_authority_id || 0;
+        var statusL = { draft: <?= json_encode(t('survey.status_draft') ?: 'Piszkozat', JSON_UNESCAPED_UNICODE) ?>, published: <?= json_encode(t('budget.status_published') ?: 'Közzétéve', JSON_UNESCAPED_UNICODE) ?>, closed: <?= json_encode(t('survey.status_closed') ?: 'Lezárva', JSON_UNESCAPED_UNICODE) ?> };
+        var html = '<p class="small text-muted mb-2"><a href="' + (<?= json_encode(app_url('/budget.php'), JSON_UNESCAPED_SLASHES) ?>) + '" target="_blank" rel="noopener">' + (<?= json_encode(t('gov.budget_public_page') ?: 'Nyilvános szavazási oldal', JSON_UNESCAPED_UNICODE) ?>) + '</a>';
+        if (firstAid > 0) html += ' | <a href="' + (<?= json_encode(app_url('/budget_announce.php'), JSON_UNESCAPED_SLASHES) ?>) + '?authority_id=' + firstAid + '" target="_blank" rel="noopener">' + (<?= json_encode(t('gov.budget_announce') ?: 'Kihirdetés', JSON_UNESCAPED_UNICODE) ?>) + '</a>';
+        html += '</p>';
+        html += '<div class="card mb-3"><div class="card-body"><h6 class="card-title small">' + (<?= json_encode(t('gov.budget_settings') ?: 'Szavazás beállítások (keret, feltételek)', JSON_UNESCAPED_UNICODE) ?>) + '</h6>';
+        html += '<input type="number" id="govBudgetFrame" class="form-control form-control-sm mb-2" placeholder="' + (<?= json_encode(t('budget.frame_amount') ?: 'Keret összeg (Ft)', JSON_UNESCAPED_UNICODE) ?>) + '" min="0" step="1" value="' + (settings && settings.frame_amount != null ? settings.frame_amount : '') + '">';
+        html += '<textarea id="govBudgetConditions" class="form-control form-control-sm mb-2" rows="2" placeholder="' + (<?= json_encode(t('budget.conditions') ?: 'Feltételek, kizárások', JSON_UNESCAPED_UNICODE) ?>) + '">' + (settings && settings.conditions_text ? String(settings.conditions_text).replace(/</g,'&lt;') : '') + '</textarea>';
+        html += '<textarea id="govBudgetDescSettings" class="form-control form-control-sm mb-2" rows="2" placeholder="' + (<?= json_encode(t('gov.report_description') ?: 'Leírás (szavazási oldal első blokk)', JSON_UNESCAPED_UNICODE) ?>) + '">' + (settings && settings.description ? String(settings.description).replace(/</g,'&lt;') : '') + '</textarea>';
+        html += '<button type="button" class="btn btn-sm btn-primary me-2" id="govBudgetSaveSettings">' + (<?= json_encode(t('gov.save') ?: 'Mentés', JSON_UNESCAPED_UNICODE) ?>) + '</button>';
+        html += '<button type="button" class="btn btn-sm btn-outline-danger" id="govBudgetCloseVoting">' + (<?= json_encode(t('gov.budget_close_voting') ?: 'Lezárás (szavazás vége)', JSON_UNESCAPED_UNICODE) ?>) + '</button></div></div>';
+        html += '<div class="mb-3"><button type="button" class="btn btn-sm btn-outline-primary" id="govBudgetNewBtn">' + (<?= json_encode(t('gov.budget_new_project') ?: 'Új projekt', JSON_UNESCAPED_UNICODE) ?>) + '</button></div>';
+        if (!projects.length) {
+          list.innerHTML = html + '<p class="text-secondary small mb-0">' + (<?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>) + '</p>';
+          document.getElementById('govBudgetNewBtn') && document.getElementById('govBudgetNewBtn').addEventListener('click', function(){ showGovBudgetNewForm(list); });
+          document.getElementById('govBudgetSaveSettings') && document.getElementById('govBudgetSaveSettings').addEventListener('click', function(){
+            var frame = document.getElementById('govBudgetFrame'); var cond = document.getElementById('govBudgetConditions'); var desc = document.getElementById('govBudgetDescSettings');
+            postJson(govBudgetUrl, { action: 'save_settings', frame_amount: frame ? (frame.value === '' ? null : parseFloat(frame.value)) : null, conditions_text: cond ? cond.value : '', description: desc ? desc.value : '' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); });
+          });
+          document.getElementById('govBudgetCloseVoting') && document.getElementById('govBudgetCloseVoting').addEventListener('click', function(){
+            if (!confirm(<?= json_encode(t('gov.budget_close_confirm') ?: 'Lezárja a szavazást?', JSON_UNESCAPED_UNICODE) ?>)) return;
+            postJson(govBudgetUrl, { action: 'close_voting' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); });
+          });
+          return;
+        }
+        html += '<table class="table table-sm table-hover"><thead><tr><th>#</th><th>' + (<?= json_encode(t('idea.title_placeholder') ?: 'Cím', JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('budget.budget_label') ?: 'Költségvetés', JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('idea.votes') ?: 'Szavazat', JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('common.status'), JSON_UNESCAPED_UNICODE) ?>) + '</th></tr></thead><tbody>';
+        projects.forEach(function(p){
+          html += '<tr><td>' + p.id + '</td><td><strong>' + String(p.title||'').replace(/</g,'&lt;') + '</strong>' + (p.description ? '<br><span class="text-muted small">' + String(p.description).replace(/</g,'&lt;').slice(0,80) + (p.description.length > 80 ? '…' : '') + '</span>' : '') + '</td><td>' + Number(p.budget).toLocaleString('hu-HU') + ' Ft</td><td>' + (p.vote_count||0) + '</td><td><select class="form-select form-select-sm gov-budget-status" data-id="' + p.id + '" style="min-width:100px">';
+          ['draft','published','closed'].forEach(function(s){ html += '<option value="' + s + '"' + (p.status === s ? ' selected' : '') + '>' + (statusL[s]||s) + '</option>'; });
+          html += '</select></td></tr>';
+        });
+        html += '</tbody></table>';
+        list.innerHTML = html;
+        list.querySelectorAll('.gov-budget-status').forEach(function(sel){
+          sel.addEventListener('change', function(){
+            var id = parseInt(sel.getAttribute('data-id'), 10);
+            postJson(govBudgetUrl, { action: 'set_status', id: id, status: sel.value }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); });
+          });
+        });
+        document.getElementById('govBudgetNewBtn') && document.getElementById('govBudgetNewBtn').addEventListener('click', function(){ showGovBudgetNewForm(list); });
+        document.getElementById('govBudgetSaveSettings') && document.getElementById('govBudgetSaveSettings').addEventListener('click', function(){
+          var frame = document.getElementById('govBudgetFrame');
+          var cond = document.getElementById('govBudgetConditions');
+          var desc = document.getElementById('govBudgetDescSettings');
+          postJson(govBudgetUrl, { action: 'save_settings', frame_amount: frame ? (frame.value === '' ? null : parseFloat(frame.value)) : null, conditions_text: cond ? cond.value : '', description: desc ? desc.value : '' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); });
+        });
+        document.getElementById('govBudgetCloseVoting') && document.getElementById('govBudgetCloseVoting').addEventListener('click', function(){
+          if (!confirm(<?= json_encode(t('gov.budget_close_confirm') ?: 'Lezárja a szavazást? Ezután a felhasználók nem szavazhatnak.', JSON_UNESCAPED_UNICODE) ?>)) return;
+          postJson(govBudgetUrl, { action: 'close_voting' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); });
+        });
+      })
+      .catch(function(){ list.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; });
+  }
+  function showGovBudgetNewForm(container){
+    var statusL = { draft: <?= json_encode(t('survey.status_draft') ?: 'Piszkozat', JSON_UNESCAPED_UNICODE) ?>, published: <?= json_encode(t('budget.status_published') ?: 'Közzétéve', JSON_UNESCAPED_UNICODE) ?> };
+    var form = '<div class="card mb-3"><div class="card-body"><h6 class="card-title">' + (<?= json_encode(t('gov.budget_new_project') ?: 'Új projekt', JSON_UNESCAPED_UNICODE) ?>) + '</h6><input type="text" id="govBudgetTitle" class="form-control form-control-sm mb-2" placeholder="' + (<?= json_encode(t('idea.title_placeholder') ?: 'Cím', JSON_UNESCAPED_UNICODE) ?>) + '"><textarea id="govBudgetDesc" class="form-control form-control-sm mb-2" rows="2" placeholder="' + (<?= json_encode(t('gov.report_description') ?: 'Leírás', JSON_UNESCAPED_UNICODE) ?>) + '"></textarea><input type="number" id="govBudgetAmount" class="form-control form-control-sm mb-2" placeholder="' + (<?= json_encode(t('budget.budget_label') ?: 'Összeg (Ft)', JSON_UNESCAPED_UNICODE) ?>) + '" min="0" step="1"><button type="button" class="btn btn-sm btn-primary" id="govBudgetSubmit">' + (<?= json_encode(t('gov.save') ?: 'Mentés', JSON_UNESCAPED_UNICODE) ?>) + '</button> <button type="button" class="btn btn-sm btn-outline-secondary" id="govBudgetCancel">' + (<?= json_encode(t('common.cancel') ?: 'Mégse', JSON_UNESCAPED_UNICODE) ?>) + '</button></div></div>';
+    var wrap = document.createElement('div');
+    wrap.id = 'govBudgetNewWrap';
+    wrap.innerHTML = form;
+    container.insertBefore(wrap, container.firstChild);
+    document.getElementById('govBudgetSubmit').addEventListener('click', function(){
+      var title = (document.getElementById('govBudgetTitle') && document.getElementById('govBudgetTitle').value || '').trim();
+      var desc = document.getElementById('govBudgetDesc') && document.getElementById('govBudgetDesc').value || '';
+      var amount = parseInt(document.getElementById('govBudgetAmount') && document.getElementById('govBudgetAmount').value, 10) || 0;
+      if (!title) return;
+      postJson(govBudgetUrl, { action: 'create', title: title, description: desc, budget: amount, status: 'draft' }).then(function(x){
+        if (x && x.ok && x.j && x.j.ok) { var w = document.getElementById('govBudgetNewWrap'); if (w) w.remove(); loadGovBudget(); }
+      });
+    });
+    document.getElementById('govBudgetCancel').addEventListener('click', function(){ var w = document.getElementById('govBudgetNewWrap'); if (w) w.remove(); });
+  }
 })();
 </script>
 </body></html>

@@ -123,7 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $row['response_count'] = (int)($row['response_count'] ?? 0);
   }
   unset($row);
-  json_response(['ok' => true, 'data' => $list]);
+  $firstAid = !empty($authorityIds) ? (int)$authorityIds[0] : 0;
+  json_response(['ok' => true, 'data' => $list, 'first_authority_id' => $firstAid]);
   } catch (Throwable $e) {
     if (function_exists('log_error')) log_error('gov_surveys GET: ' . $e->getMessage());
     json_response(['ok' => true, 'data' => []]);

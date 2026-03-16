@@ -20,6 +20,7 @@ $defs = [
   ['key' => 'mistral', 'label' => 'AI (Mistral)', 'description' => 'AI panel a közig dashboardon (összefoglaló, ESG).'],
   ['key' => 'openai', 'label' => 'AI (OpenAI/ChatGPT)', 'description' => 'AI panel – OpenAI provider (ha be van kapcsolva az adminban).'],
   ['key' => 'fms', 'label' => 'FixMyStreet / Open311', 'description' => 'Külső Open311 / FixMyStreet integráció UI elemei.'],
+  ['key' => 'budget', 'label' => 'Részvételi költségvetés', 'description' => 'RK projektek, szavazás lezárása, kihirdetés.'],
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
