@@ -548,6 +548,8 @@ return [
     'gov.idea_status_planned' => 'Planned',
     'gov.idea_status_in_progress' => 'In progress',
     'gov.idea_status_completed' => 'Completed',
+    'gov.tree_cadastre_title' => 'Tree cadastre',
+    'gov.tree_cadastre_desc' => 'Display registered trees on the map.',
     'gov.trees_intro' => 'Edit tree registry: species, address, dimensions, status, watering, visibility.',
     'gov.tree_edit' => 'Edit',
     'gov.tree_save' => 'Save',

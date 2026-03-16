@@ -551,6 +551,8 @@ return [
     'gov.idea_status_planned' => 'Tervezett',
     'gov.idea_status_in_progress' => 'Folyamatban',
     'gov.idea_status_completed' => 'Kész',
+    'gov.tree_cadastre_title' => 'Fa kataszter',
+    'gov.tree_cadastre_desc' => 'A feltöltött, nyilvántartott fák megjelenítése a térképen.',
     'gov.trees_intro' => 'Faállomány szerkesztése: fajta, cím, méretek, állapot, öntözés, láthatóság.',
     'gov.tree_edit' => 'Szerkesztés',
     'gov.tree_save' => 'Mentés',
