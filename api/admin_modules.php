@@ -47,6 +47,13 @@ $MODULE_DEFS = [
       ['key' => 'enabled', 'label' => 'Szavazás aktív (menü és oldal látható)', 'type' => 'checkbox'],
     ],
   ],
+  'surveys' => [
+    'name' => 'Felmérések',
+    'description' => 'Kérdőívek létrehozása és kitöltése. Ha kikapcsolt, a menüben és a nyilvános oldalon nem látható.',
+    'settings' => [
+      ['key' => 'enabled', 'label' => 'Felmérések aktív (menü és oldal látható)', 'type' => 'checkbox'],
+    ],
+  ],
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

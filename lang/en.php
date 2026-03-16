@@ -437,6 +437,7 @@ return [
     'gov.copilot_question_required' => 'Question is required.',
     'survey.not_found' => 'Survey not found.',
     'survey.not_active' => 'This survey is not currently active.',
+    'survey.module_not_active' => 'Surveys are not currently active.',
     'survey.login_required' => 'You must log in to complete the survey.',
     'survey.already_responded' => 'You have already completed this survey.',
     'survey.thank_you' => 'Thank you for your response!',

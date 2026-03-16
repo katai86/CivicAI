@@ -440,6 +440,7 @@ return [
     'gov.copilot_question_required' => 'A kérdés megadása kötelező.',
     'survey.not_found' => 'Felmérés nem található.',
     'survey.not_active' => 'A felmérés jelenleg nem aktív.',
+    'survey.module_not_active' => 'A felmérések jelenleg nem aktívak.',
     'survey.login_required' => 'A kitöltéshez be kell jelentkezni.',
     'survey.already_responded' => 'Már kitöltötte a felmérést.',
     'survey.thank_you' => 'Köszönjük a kitöltést!',

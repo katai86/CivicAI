@@ -285,6 +285,36 @@ function participatory_budget_enabled(): bool {
     return $v !== '0' && $v !== 'false';
 }
 
+/** Felmérések – modul ki/be (menü és nyilvános oldal). Alapértelmezett: be. */
+function surveys_enabled(): bool {
+    $v = get_module_setting('surveys', 'enabled');
+    return $v !== '0' && $v !== 'false';
+}
+
+/** Igaz, ha a felhasználó városa (address_city) olyan hatósághoz tartozik, ahol van RK (projekt vagy beállítás). */
+function user_city_has_budget(int $userId): bool {
+    if ($userId <= 0) return false;
+    try {
+        $st = db()->prepare("SELECT address_city FROM users WHERE id = ? LIMIT 1");
+        $st->execute([$userId]);
+        $city = trim((string)($st->fetchColumn() ?: ''));
+        if ($city === '') return false;
+        $st = db()->prepare("SELECT a.id FROM authorities a WHERE TRIM(a.city) = ? LIMIT 1");
+        $st->execute([$city]);
+        $aid = $st->fetchColumn();
+        if ($aid === false || $aid === null) return false;
+        $aid = (int)$aid;
+        $st = db()->prepare("SELECT 1 FROM budget_projects WHERE authority_id = ? LIMIT 1");
+        $st->execute([$aid]);
+        if ($st->fetchColumn() !== false) return true;
+        $st = db()->prepare("SELECT 1 FROM budget_settings WHERE authority_id = ? LIMIT 1");
+        $st->execute([$aid]);
+        return $st->fetchColumn() !== false;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
 /** FMS: először modul (admin), majd env. */
 function fms_enabled(): bool {
     $fromModule = get_module_setting('fms', 'enabled') === '1' && (get_module_setting('fms', 'base_url') ?? '') !== '';

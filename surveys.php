@@ -17,6 +17,7 @@ if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
 $currentLang = current_lang();
 $LANG_JS = lang_array_for_js();
 
+$surveysActive = function_exists('surveys_enabled') && surveys_enabled();
 $pageTitle = t('survey.page_title');
 ?><!doctype html>
 <html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>">
@@ -40,14 +41,19 @@ $pageTitle = t('survey.page_title');
     .surveys-back { display: inline-block; margin-top: 24px; color: var(--primary); }
   </style>
 </head>
-<body data-logged-in="<?= $uid > 0 ? '1' : '0' ?>" data-role="<?= htmlspecialchars($role, ENT_QUOTES, 'UTF-8') ?>" data-lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>" data-app-base="<?= htmlspecialchars(defined('APP_BASE') ? APP_BASE : '/terkep', ENT_QUOTES, 'UTF-8') ?>">
+<body data-logged-in="<?= $uid > 0 ? '1' : '0' ?>" data-role="<?= htmlspecialchars($role, ENT_QUOTES, 'UTF-8') ?>" data-lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>" data-app-base="<?= htmlspecialchars(defined('APP_BASE') ? APP_BASE : '/terkep', ENT_QUOTES, 'UTF-8') ?>" data-surveys-active="<?= $surveysActive ? '1' : '0' ?>">
 
 <?php $desktop_topbar_show_search = false; require __DIR__ . '/inc_desktop_topbar.php'; ?>
 
 <main class="surveys-page">
   <h1><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></h1>
+  <?php if (!$surveysActive): ?>
+  <p class="intro"><?= htmlspecialchars(t('survey.module_not_active') ?: t('survey.not_active') ?: 'A felmérések jelenleg nem aktívak.', ENT_QUOTES, 'UTF-8') ?></p>
+  <div id="surveysList"></div>
+  <?php else: ?>
   <p class="intro"><?= htmlspecialchars(t('survey.intro'), ENT_QUOTES, 'UTF-8') ?></p>
   <div id="surveysList"><?= htmlspecialchars(t('gov.loading'), ENT_QUOTES, 'UTF-8') ?>...</div>
+  <?php endif; ?>
   <div id="surveyFormWrap" style="display:none">
     <div class="survey-form" id="surveyForm">
       <h3 id="surveyFormTitle"></h3>
@@ -171,7 +177,7 @@ $pageTitle = t('survey.page_title');
     }
   });
 
-  loadList();
+  if (document.body.dataset.surveysActive === '1') loadList();
 })();
 </script>
 </body>
