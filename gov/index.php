@@ -252,14 +252,19 @@ $stats = [
 ];
 
 // Gov: hatósághoz tartozó VAGY városnév alapján (authority_id még nincs beállítva)
-$govWhere = 'r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')';
-$govParams = array_values($authorityIds);
-if (!empty($authorityCities)) {
-  $govWhere .= ' OR (r.authority_id IS NULL AND r.city IN (' . implode(',', array_fill(0, count($authorityCities), '?')) . '))';
-  $govParams = array_merge($govParams, $authorityCities);
+if (!empty($authorityIds)) {
+  $govWhere = 'r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')';
+  $govParams = array_values($authorityIds);
+  if (!empty($authorityCities)) {
+    $govWhere .= ' OR (r.authority_id IS NULL AND r.city IN (' . implode(',', array_fill(0, count($authorityCities), '?')) . '))';
+    $govParams = array_merge($govParams, $authorityCities);
+  }
+  $baseWhere = $isAdmin ? '1=1' : $govWhere;
+  $baseParams = $isAdmin ? [] : $govParams;
+} else {
+  $baseWhere = $isAdmin ? '1=1' : '1=0';
+  $baseParams = $isAdmin ? [] : [];
 }
-$baseWhere = $isAdmin ? '1=1' : $govWhere;
-$baseParams = $isAdmin ? [] : $govParams;
 
 $where = $baseWhere;
 $params = $baseParams;
@@ -274,18 +279,22 @@ if ($isAdmin || $authorityIds) {
   if ($showReportList) {
     $listWhere = $where;
     $listParams = $params;
-    $stmt = $pdo->prepare("
-      SELECT r.id, r.category, r.title, r.description, r.status, r.created_at,
-             r.address_approx, r.city, r.authority_id,
-             u.display_name AS reporter_display_name, u.level AS reporter_level, u.profile_public AS reporter_profile_public
-      FROM reports r
-      LEFT JOIN users u ON u.id = r.user_id
-      WHERE $listWhere
-      ORDER BY r.created_at DESC
-      LIMIT 200
-    ");
-    $stmt->execute($listParams);
-    $reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    try {
+      $stmt = $pdo->prepare("
+        SELECT r.id, r.category, r.title, r.description, r.status, r.created_at,
+               r.address_approx, r.city, r.authority_id,
+               u.display_name AS reporter_display_name
+        FROM reports r
+        LEFT JOIN users u ON u.id = r.user_id
+        WHERE $listWhere
+        ORDER BY r.created_at DESC
+        LIMIT 200
+      ");
+      $stmt->execute($listParams);
+      $reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+      $reports = [];
+    }
   }
 
   // Statisztika: ugyanaz a szűrő (városhoz tartozó), mind adminnak mind gov usernek
@@ -1485,7 +1494,8 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
     fetch(govCityHealthUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var L = govCityHealthLabels || {};
       if (!j.ok || !j.data) {
-        container.innerHTML = '<p class="text-secondary small mb-0">' + (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data ? govStatisticsLabels.no_data : '—') + '</p>';
+        var msg = (j && j.error) ? j.error : (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data ? govStatisticsLabels.no_data : '—');
+        container.innerHTML = '<p class="text-secondary small mb-0">' + (msg.replace(/</g,'&lt;')) + '</p>';
         return;
       }
       var d = j.data;

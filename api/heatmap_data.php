@@ -185,7 +185,7 @@ try {
   if (function_exists('log_error')) {
     log_error('heatmap_data: ' . $e->getMessage());
   }
-  json_response(['ok' => false, 'error' => 'Server error'], 500);
+  json_response(['ok' => false, 'error' => function_exists('t') ? t('common.error_load') : 'Betöltési hiba']);
 }
 
 json_response(['ok' => true, 'data' => $out]);

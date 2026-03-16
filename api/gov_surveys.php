@@ -9,6 +9,15 @@ require_once __DIR__ . '/../util.php';
 
 require_gov_or_admin();
 
+function gov_surveys_tables_exist(): bool {
+  try {
+    $r = db()->query("SHOW TABLES LIKE 'surveys'");
+    return $r && $r->rowCount() > 0;
+  } catch (Throwable $e) {
+    return false;
+  }
+}
+
 $role = current_user_role();
 $uid = current_user_id() ? (int)current_user_id() : 0;
 $authorityIds = [];
@@ -41,9 +50,13 @@ if (!empty($authorityIds)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+  if (!gov_surveys_tables_exist()) {
+    json_response(['ok' => true, 'data' => []]);
+  }
   $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
   $results = !empty($_GET['results']);
 
+  try {
   if ($id && $results) {
     $stmt = db()->prepare("SELECT id, title FROM surveys WHERE id = ? AND ($scopeWhere)");
     $stmt->execute(array_merge([$id], $scopeParams));
@@ -111,10 +124,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   }
   unset($row);
   json_response(['ok' => true, 'data' => $list]);
+  } catch (Throwable $e) {
+    if (function_exists('log_error')) log_error('gov_surveys GET: ' . $e->getMessage());
+    json_response(['ok' => true, 'data' => []]);
+  }
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
   json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
+}
+if (!gov_surveys_tables_exist()) {
+  json_response(['ok' => false, 'error' => t('survey.not_found') ?: 'Felmérések modul nem elérhető. Futtasd az SQL migrációt.'], 503);
 }
 
 $input = $_POST;

@@ -39,5 +39,5 @@ try {
   if (function_exists('log_error')) {
     log_error('green_metrics: ' . $e->getMessage());
   }
-  json_response(['ok' => false, 'error' => 'Server error'], 500);
+  json_response(['ok' => false, 'error' => t('common.error_load') ?: 'Betöltési hiba']);
 }

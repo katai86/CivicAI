@@ -84,8 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     unset($row);
     json_response(['ok' => true, 'data' => $list]);
   } catch (Throwable $e) {
-    log_error('survey list: ' . $e->getMessage());
-    json_response(['ok' => false, 'error' => t('common.error_server')], 500);
+    if (function_exists('log_error')) log_error('survey list: ' . $e->getMessage());
+    json_response(['ok' => true, 'data' => []]);
   }
 }
 

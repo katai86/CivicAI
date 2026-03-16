@@ -121,4 +121,9 @@ try {
   $out['governance']['resolution_rate'] = $totalReports > 0 ? round($resolved / $totalReports, 2) : 0.0;
 } catch (Throwable $e) {}
 
-json_response(['ok' => true, 'data' => $out]);
+try {
+  json_response(['ok' => true, 'data' => $out]);
+} catch (Throwable $e) {
+  if (function_exists('log_error')) log_error('esg_metrics: ' . $e->getMessage());
+  json_response(['ok' => false, 'error' => t('common.error_load') ?: 'Betöltési hiba']);
+}
