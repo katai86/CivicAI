@@ -23,7 +23,7 @@ Ez a dokumentum a **Urban Intelligence Platform** bővítés 10 milestone-ját �
 | M6 | Green Intelligence Module | Fa réteg bővítés: lombkorona, CO2, biodiverzitás, szárazság kockázat | services/GreenIntelligence.php, api/green_metrics.php, gov panel |
 | M7 | ESG Command Center | ESG dashboard upgrade: E/S/G szekciók, automatikus jelentés, PDF/CSV/JSON | api/esg_metrics.php, jelentés generálás, export |
 | M8 | Citizen Participation Suite | Ötletek, szavazás, felmérések, részvételi költségvetés lite, projekt fórum | ideas, votes, surveys táblák + API-k + frontend |
-| M9 | Urban Digital Twin Lite | Egyesített intelligencia térkép: issues, trees, facilities, activity, ESG, predictions + rétegvezérlés | Layer control, egy fő „intelligence” felület |
+| M9 | Urban Digital Twin Lite | *(kihagyva)* Egyesített intelligencia térkép, rétegvezérlés | — |
 | M10 | AI Government Copilot | Beszélgetős AI asszisztens gov usereknek (meglévő AI Router) | services/GovCopilot.php, api/gov_copilot.php, gov chat UI |
 
 ---
@@ -378,9 +378,11 @@ Meglévő ESG dashboard fejlesztése: Environmental / Social / Governance szekci
 
 ---
 
-# MILESTONE 9 – URBAN DIGITAL TWIN LITE
+# MILESTONE 9 – URBAN DIGITAL TWIN LITE *(kihagyva)*
 
-## Cél
+*Ez a milestone projekt döntés alapján nem kerül megvalósításra.*
+
+## Cél (referencia)
 Egyesített városi intelligencia térkép: issues, trees, facilities, citizen activity, ESG indikátorok, predictions egy rétegvezérlős felületen; ez legyen a fő „intelligence” felület.
 
 ## Architektúra és integráció

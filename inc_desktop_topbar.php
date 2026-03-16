@@ -83,6 +83,7 @@ $rankAll = isset($rankAll) ? $rankAll : null;
         <?php if (function_exists('participatory_budget_enabled') && participatory_budget_enabled()): ?>
         <a class="topbtn" href="<?= htmlspecialchars(app_url('/budget.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.budget'), ENT_QUOTES, 'UTF-8') ?></a>
         <?php endif; ?>
+        <a class="topbtn" href="<?= htmlspecialchars(app_url('/surveys.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.surveys') ?: t('survey.page_title'), ENT_QUOTES, 'UTF-8') ?></a>
         <a class="topbtn" href="<?= htmlspecialchars(app_url('/faq.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.faq'), ENT_QUOTES, 'UTF-8') ?></a>
         <?php if ($role === 'govuser'): ?>
           <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>

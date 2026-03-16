@@ -24,6 +24,7 @@
 --   • 2026-22: ideas, idea_votes (ötletek + szavazás)
 --   • 2026-23: budget_projects, budget_votes (részvételi költségvetés)
 --   • 2026-24: ideas.authority_id
+--   • M8: surveys, survey_questions, survey_responses (felmérések)
 --   • Reports bővítés: reporter_name, address_approx, city, stb.
 --   • Users bővítés: profile_public, level, total_xp, streak_days, avatar_filename
 --   • user_xp_log (XP napló)
@@ -523,6 +524,45 @@ CREATE TABLE IF NOT EXISTS budget_votes (
   KEY idx_budget_votes_project (project_id),
   KEY idx_budget_votes_user (user_id),
   CONSTRAINT fk_budget_votes_project FOREIGN KEY (project_id) REFERENCES budget_projects (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ========== M8 Felmérések (surveys, survey_questions, survey_responses) ==========
+CREATE TABLE IF NOT EXISTS surveys (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  authority_id INT NULL,
+  starts_at DATETIME NOT NULL,
+  ends_at DATETIME NOT NULL,
+  status ENUM('draft','active','closed') NOT NULL DEFAULT 'draft',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_surveys_authority (authority_id),
+  KEY idx_surveys_dates (starts_at, ends_at),
+  KEY idx_surveys_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS survey_questions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  survey_id INT NOT NULL,
+  question_text TEXT NOT NULL,
+  question_type VARCHAR(32) NOT NULL DEFAULT 'text',
+  sort_order INT NOT NULL DEFAULT 0,
+  options_json TEXT,
+  KEY idx_survey_questions_survey (survey_id),
+  CONSTRAINT fk_survey_questions_survey FOREIGN KEY (survey_id) REFERENCES surveys (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS survey_responses (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  survey_id INT NOT NULL,
+  user_id INT NOT NULL,
+  response_json JSON,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_survey_response (survey_id, user_id),
+  KEY idx_survey_responses_survey (survey_id),
+  KEY idx_survey_responses_user (user_id),
+  CONSTRAINT fk_survey_responses_survey FOREIGN KEY (survey_id) REFERENCES surveys (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ========== Eltávolítjuk a segéd procedure-öket ==========
