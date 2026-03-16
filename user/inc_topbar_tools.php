@@ -2,9 +2,17 @@
 /** Közös topbar: téma váltó + nyelv választó (leaderboard, login, stb.) */
 $curLang = isset($currentLang) ? $currentLang : (function_exists('current_lang') ? current_lang() : 'hu');
 $langAllowed = defined('LANG_ALLOWED') ? LANG_ALLOWED : ['hu', 'en'];
-$path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-$path = ($path !== null && $path !== '') ? $path : '/';
-$langBase = function_exists('app_url') ? app_url($path) : ($path . '?');
+$uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$uriPath = ($uriPath !== null && $uriPath !== '') ? $uriPath : '/';
+$basePath = (string)(defined('APP_BASE') ? APP_BASE : '');
+// Ne duplikáljuk az APP_BASE-t: csak a relatív útvonalat adjuk app_url()-nak
+if ($basePath !== '' && strpos($uriPath, $basePath) === 0) {
+  $relPath = substr($uriPath, strlen($basePath));
+  $relPath = ($relPath === '' || $relPath === '/') ? '' : ltrim($relPath, '/');
+} else {
+  $relPath = ($uriPath === '/' || $uriPath === '') ? '' : ltrim($uriPath, '/');
+}
+$langBase = function_exists('app_url') ? app_url($relPath) : ($relPath !== '' ? $relPath . '?' : '?');
 ?>
 <div class="topbar-tools">
     <button type="button" id="themeToggle" class="topbtn topbtn-icon" aria-label="<?= htmlspecialchars(function_exists('t') ? t('theme.aria') : 'Téma', ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(function_exists('t') ? t('theme.dark') : 'Sötét', ENT_QUOTES, 'UTF-8') ?>" data-title-light="<?= htmlspecialchars(function_exists('t') ? t('theme.light') : 'Világos', ENT_QUOTES, 'UTF-8') ?>" data-title-dark="<?= htmlspecialchars(function_exists('t') ? t('theme.dark') : 'Sötét', ENT_QUOTES, 'UTF-8') ?>">
