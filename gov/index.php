@@ -239,6 +239,7 @@ if ($isAdmin || !empty($authorityIds)) {
   }
 }
 
+$ideaReports = [];
 $reports = [];
 $stats = [
   'reports_1d' => 0,
@@ -287,8 +288,12 @@ if ($isAdmin || $authorityIds) {
       ");
       $stmt->execute($listParams);
       $reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      $ideaReports = array_values(array_filter($reports, function ($r) {
+        return isset($r['category']) && (string)$r['category'] === 'idea';
+      }));
     } catch (Throwable $e) {
       $reports = [];
+      $ideaReports = [];
     }
   }
 
@@ -1037,6 +1042,33 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
               </div>
               <?php if (empty($ideasList)): ?>
                 <p class="text-secondary small mb-0"><?= h(t('gov.no_data')) ?></p>
+              <?php endif; ?>
+
+              <?php if (!empty($ideaReports)): ?>
+                <h6 class="card-title mt-4 mb-2"><?= h(t('gov.idea_reports_section') ?: 'Ötlet bejelentések (bejelentés kategória)') ?></h6>
+                <p class="text-secondary small mb-2"><?= h(t('gov.idea_reports_intro') ?: 'Bejelentések, amelyek ötlet kategóriával lettek beküldve.') ?></p>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th><?= h(t('idea.title_placeholder') ?: 'Cím') ?></th>
+                        <th><?= h(t('common.status') ?: 'Státusz') ?></th>
+                        <th><?= h(t('gov.report_address') ?: 'Cím / hely') ?></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <?php foreach ($ideaReports as $ir): ?>
+                        <tr>
+                          <td><?= (int)$ir['id'] ?></td>
+                          <td><span class="fw-semibold"><?= h($ir['title'] ?: t('gov.report_anonymous')) ?></span><br><span class="text-muted small"><?= h($ir['reporter_display_name'] ?: '') ?> · <?= date('Y-m-d H:i', strtotime($ir['created_at'])) ?></span></td>
+                          <td><?= h($ir['status']) ?></td>
+                          <td class="text-secondary small"><?= h($ir['address_approx'] ?: $ir['city'] ?: '—') ?></td>
+                        </tr>
+                      <?php endforeach; ?>
+                    </tbody>
+                  </table>
+                </div>
               <?php endif; ?>
             </div>
           </div>
@@ -1840,7 +1872,11 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
       .then(function(j){
         if (!j || !j.ok) { list.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; return; }
         var data = j.data || [];
-        if (!data.length) { list.innerHTML = '<p class="text-secondary small mb-0">' + (<?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>) + '</p>'; return; }
+        if (!data.length) {
+          list.innerHTML = '<p class="text-secondary small mb-0">' + (<?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>) + '</p>' +
+            '<p class="text-muted small mt-2 mb-0">' + (<?= json_encode(t('gov.surveys_empty_hint') ?: 'A felmérések táblák létrehozásához futtasd a migrációt (surveys). Az első felmérés létrehozásához használd a Felmérések API-t.', JSON_UNESCAPED_UNICODE) ?>) + '</p>';
+          return;
+        }
         var statusLabels = { draft: <?= json_encode(t('survey.status_draft') ?: 'Piszkozat', JSON_UNESCAPED_UNICODE) ?>, active: <?= json_encode(t('survey.status_active') ?: 'Aktív', JSON_UNESCAPED_UNICODE) ?>, closed: <?= json_encode(t('survey.status_closed') ?: 'Lezárva', JSON_UNESCAPED_UNICODE) ?> };
         list.innerHTML = '<table class="table table-sm table-hover"><thead><tr><th>#</th><th>' + (<?= json_encode(t('idea.title_placeholder') ?: 'Cím', JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('common.status'), JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('gov.survey_responses') ?: 'Válaszok', JSON_UNESCAPED_UNICODE) ?>) + '</th><th></th></tr></thead><tbody>' +
           data.map(function(s){

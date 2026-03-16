@@ -6,7 +6,8 @@ start_secure_session();
 require_user();
 
 $role = current_user_role() ?: '';
-if ($role !== 'govuser') {
+$allowedRoles = ['admin', 'superadmin', 'govuser'];
+if (!in_array($role, $allowedRoles, true)) {
   json_response(['ok' => false, 'error' => t('api.unauthorized')], 401);
 }
 
