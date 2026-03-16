@@ -102,12 +102,6 @@ $LANG_JS = lang_array_for_js();
             </a>
           </li>
           <li class="nav-item">
-            <a href="#" class="nav-link tab" data-tab="budget">
-              <i class="nav-icon bi bi-cash-stack"></i>
-              <p><?= htmlspecialchars(t('admin.budget_projects'), ENT_QUOTES, 'UTF-8') ?></p>
-            </a>
-          </li>
-          <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="modules">
               <i class="nav-icon bi bi-gear"></i>
               <p><?= htmlspecialchars(t('admin.modules'), ENT_QUOTES, 'UTF-8') ?></p>
@@ -286,14 +280,6 @@ $LANG_JS = lang_array_for_js();
                     <button id="assignUser" class="btn btn-outline-secondary btn-sm ms-auto" type="button"><?= htmlspecialchars(t('admin.assign_btn'), ENT_QUOTES, 'UTF-8') ?></button>
                   </div>
                   <div class="admin-list mt-2" id="assignList"><?= htmlspecialchars(t('admin.user_list_empty'), ENT_QUOTES, 'UTF-8') ?></div>
-                </div>
-
-                <div class="admin-tab-body" id="tab-budget" hidden>
-                  <p class="text-secondary small mb-3"><?= htmlspecialchars(t('admin.budget_intro'), ENT_QUOTES, 'UTF-8') ?></p>
-                  <div class="mb-3">
-                    <button type="button" class="btn btn-sm btn-primary" id="btnBudgetAdd"><?= htmlspecialchars(t('admin.budget_add'), ENT_QUOTES, 'UTF-8') ?></button>
-                  </div>
-                  <div id="budgetProjectList"><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?>...</div>
                 </div>
 
                 <div class="admin-tab-body" id="tab-modules" hidden>

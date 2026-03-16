@@ -166,14 +166,22 @@ if ($action === 'save_settings') {
   $conditionsText = isset($body['conditions_text']) ? trim((string)$body['conditions_text']) : null;
   $description = isset($body['description']) ? trim((string)$body['description']) : null;
   try {
-    db()->prepare("
+    $pdo = db();
+    $pdo->prepare("
       INSERT INTO budget_settings (authority_id, frame_amount, conditions_text, description, voting_closed)
       VALUES (?, ?, ?, ?, 0)
       ON DUPLICATE KEY UPDATE frame_amount = VALUES(frame_amount), conditions_text = VALUES(conditions_text), description = VALUES(description), updated_at = NOW()
     ")->execute([$firstAid, $frameAmount, $conditionsText, $description]);
     json_response(['ok' => true]);
   } catch (Throwable $e) {
-    json_response(['ok' => false, 'error' => t('common.error_save_failed')], 500);
+    if (function_exists('log_error')) {
+      log_error('gov_budget save_settings: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    }
+    $msg = t('common.error_save_failed');
+    if ($e->getCode() == 1146 || strpos((string)$e->getMessage(), 'budget_settings') !== false) {
+      $msg = 'Részvételi költségvetés beállítások tábla hiányzik. Futtasd a migrációt (sql/01_consolidated_migrations.sql – budget_settings).';
+    }
+    json_response(['ok' => false, 'error' => $msg], 500);
   }
   exit;
 }
@@ -186,7 +194,14 @@ if ($action === 'close_voting') {
     db()->prepare("INSERT INTO budget_settings (authority_id, voting_closed) VALUES (?, 1) ON DUPLICATE KEY UPDATE voting_closed = 1, updated_at = NOW()")->execute([$firstAid]);
     json_response(['ok' => true]);
   } catch (Throwable $e) {
-    json_response(['ok' => false, 'error' => t('common.error_save_failed')], 500);
+    if (function_exists('log_error')) {
+      log_error('gov_budget close_voting: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    }
+    $msg = t('common.error_save_failed');
+    if ($e->getCode() == 1146 || strpos((string)$e->getMessage(), 'budget_settings') !== false) {
+      $msg = 'Részvételi költségvetés beállítások tábla hiányzik. Futtasd a migrációt (sql/01_consolidated_migrations.sql – budget_settings).';
+    }
+    json_response(['ok' => false, 'error' => $msg], 500);
   }
   exit;
 }

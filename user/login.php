@@ -52,7 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['admin_logged_in'] = true;
       }
       $redirect = trim((string)($_GET['redirect'] ?? ''));
-      if ($redirect !== '' && strpos($redirect, 'admin') !== false && in_array($_SESSION['user_role'], ['admin', 'superadmin'], true)) {
+      // Only allow relative paths (no protocol, no host)
+      if ($redirect !== '' && $redirect[0] === '/' && strpos($redirect, '//') === false) {
+        header('Location: ' . app_url($redirect));
+      } elseif ($redirect !== '' && strpos($redirect, 'admin') !== false && in_array($_SESSION['user_role'], ['admin', 'superadmin'], true)) {
         header('Location: ' . app_url('/admin/index.php'));
       } else {
         header('Location: ' . app_url('/'));

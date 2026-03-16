@@ -1047,7 +1047,6 @@ function initTabs(){
     users: document.getElementById('tab-users'),
     layers: document.getElementById('tab-layers'),
     authorities: document.getElementById('tab-authorities'),
-    budget: document.getElementById('tab-budget'),
     modules: document.getElementById('tab-modules')
   };
   tabs.forEach(btn => {
@@ -1062,7 +1061,7 @@ function initTabs(){
       } else {
         if (overviewEl) overviewEl.hidden = true;
         if (panelEl) panelEl.hidden = false;
-        ['reports','users','layers','authorities','budget','modules'].forEach(k => {
+        ['reports','users','layers','authorities','modules'].forEach(k => {
           const el = bodies[k];
           if (el) el.hidden = (k !== key);
         });
@@ -1081,7 +1080,6 @@ function initTabs(){
           clearLayerMarkers();
           loadAuthorities();
         }
-        if (key === 'budget') loadBudgetProjects();
         if (key === 'modules') loadModules();
       }
     });

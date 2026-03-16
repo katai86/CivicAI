@@ -1083,7 +1083,7 @@ function showLoginGate(){
       <h2>${esc(t('site.name') || 'Problématérkép')}</h2>
       <p class="intro-muted">${esc(t('modal.report_requires_login') || 'Bejelentés küldéséhez jelentkezz be vagy regisztrálj.')}</p>
       <div class="intro-actions">
-        <a class="btn-primary" href="${BASE}/user/login.php">${esc(t('nav.login') || 'Belépés')}</a>
+        <a class="btn-primary" href="${BASE}/user/login.php?redirect=${encodeURIComponent(window.location.pathname || '/')}">${esc(t('nav.login') || 'Belépés')}</a>
         <a class="btn-ghost" href="${BASE}/user/register.php">${esc(t('nav.register') || 'Regisztráció')}</a>
       </div>
     </div>
@@ -1687,7 +1687,7 @@ document.getElementById('btnNewReport')?.addEventListener('click', () => {
 
 // ====== FIRST POPUP (vendég: csak Belépés / Regisztráció – anonim bejelentés nincs) ======
 (function introGate(){
-  if (window.TERKEP_LOGGED_IN === true) return;
+  if (window.TERKEP_LOGGED_IN === true || document.body?.dataset?.loggedIn === '1') return;
   document.body.classList.add('intro-open');
   const ov = document.createElement('div');
   ov.id = 'introOverlayGate';
@@ -1697,7 +1697,7 @@ document.getElementById('btnNewReport')?.addEventListener('click', () => {
       <h2>${esc(t('site.name') || 'Problématérkép')}</h2>
       <p class="intro-muted">${esc(t('modal.report_requires_login') || 'Bejelentés küldéséhez jelentkezz be vagy regisztrálj.')}</p>
       <div class="intro-actions">
-        <a class="btn-primary" href="${BASE}/user/login.php">${esc(t('nav.login') || 'Belépés')}</a>
+        <a class="btn-primary" href="${BASE}/user/login.php?redirect=${encodeURIComponent(window.location.pathname || '/')}">${esc(t('nav.login') || 'Belépés')}</a>
         <a class="btn-ghost" href="${BASE}/user/register.php">${esc(t('nav.register') || 'Regisztráció')}</a>
       </div>
       <div class="intro-foot"><small>${esc(t('modal.report_login_tip') || 'Belépés után a saját ügyeidet is könnyen visszakeresed.')}</small></div>
