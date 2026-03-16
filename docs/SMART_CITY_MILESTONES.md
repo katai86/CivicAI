@@ -177,16 +177,17 @@ A cél: **minimal change**, **moduláris bővítés**, és hogy minden épüljö
 
 ---
 
-### M10 — Jövőbeli AI funkciók (placeholder) ✅
+### M10 — Jövőbeli AI funkciók (placeholder + bővítések) ✅
 
-**Cél:** Későbbi bővítés lehetővé tétele anélkül, hogy most megvalósítanánk.
+**Cél:** Későbbi bővítés lehetővé tétele + első AI/analytics bővítmények a Gov dashboardon.
 
-**Megvalósítva:** `docs/FUTURE_AI_FEATURES.md` – lehetséges témák (karbantartási predikció, hősziget, árvíz kockázat, zöldfedettség, digitális iker), adatigény, javasolt API/interface (prediction service, rate limit, cache), illeszkedés AiRouter és statisztika modulhoz. Nincs új tábla vagy production kód.
+**Megvalósítva:**
+- **Dokumentum:** `docs/FUTURE_AI_FEATURES.md` – lehetséges további témák (hősziget, árvíz, zöldfedettség, digitális iker), adatigény, API/interface javaslat.
+- **Gov AI Copilot:** `api/gov_copilot.php`, `services/GovCopilot.php` – kérdés–válasz a hatósági adatokról (kerületek, problémák, fák); Gov dashboard „AI Copilot” kártya.
+- **Surveys fül:** `api/gov_surveys.php` – Gov „Felmérések” tab: aktív/lezárt felmérések listája, eredmények megtekintése.
+- **Analytics bővítmények (Analytics tab):** Predictions (`api/predictions.php`), Green Intelligence (`api/green_metrics.php`), ESG Command Center (`api/esg_metrics.php` + JSON/CSV export linkek) – mind a Gov Analytics fülön, Sentiment alatt.
 
-- **Lehetséges témák:** karbantartási tervezés predikció, hősziget érzékelés, árvíz kockázat, zöldfedettség elemzés, digitális iker.
-- **Teendő:** rövid architektúra doc (pl. `docs/FUTURE_AI_FEATURES.md`) – milyen adat kellene, milyen API/interface (pl. „prediction service”), hogyan illeszkedne a jelenlegi AiRouter és a statisztika modulhoz. Nincs új tábla vagy production kód, csak terv.
-
-**Kimenet:** egy dokumentum a későbbi bővítéshez.
+**Kimenet:** doc a jövőbeli témákhoz + Copilot, Surveys, Predictions/Green/ESG analytics implementálva. Részletes áttekintés: `docs/MILESTONE_REVIEW.md`.
 
 ---
 

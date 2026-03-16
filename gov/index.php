@@ -252,19 +252,14 @@ $stats = [
 ];
 
 // Gov: hatósághoz tartozó VAGY városnév alapján (authority_id még nincs beállítva)
-if (!empty($authorityIds)) {
-  $govWhere = 'r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')';
-  $govParams = array_values($authorityIds);
-  if (!empty($authorityCities)) {
-    $govWhere .= ' OR (r.authority_id IS NULL AND r.city IN (' . implode(',', array_fill(0, count($authorityCities), '?')) . '))';
-    $govParams = array_merge($govParams, $authorityCities);
-  }
-  $baseWhere = $isAdmin ? '1=1' : $govWhere;
-  $baseParams = $isAdmin ? [] : $govParams;
-} else {
-  $baseWhere = $isAdmin ? '1=1' : '1=0';
-  $baseParams = $isAdmin ? [] : [];
+$govWhere = 'r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')';
+$govParams = array_values($authorityIds);
+if (!empty($authorityCities)) {
+  $govWhere .= ' OR (r.authority_id IS NULL AND r.city IN (' . implode(',', array_fill(0, count($authorityCities), '?')) . '))';
+  $govParams = array_merge($govParams, $authorityCities);
 }
+$baseWhere = $isAdmin ? '1=1' : $govWhere;
+$baseParams = $isAdmin ? [] : $govParams;
 
 $where = $baseWhere;
 $params = $baseParams;
@@ -275,11 +270,11 @@ if ($statusFilter !== '') {
 
 if ($isAdmin || $authorityIds) {
   $pdo = db();
-  // Lista csak adminnak (gov user csak statisztikát lát)
+  // Lista csak adminnak (gov user csak statisztikát lát); csak display_name (level/profile_public nincs minden telepén)
   if ($showReportList) {
-    $listWhere = $where;
-    $listParams = $params;
     try {
+      $listWhere = $where;
+      $listParams = $params;
       $stmt = $pdo->prepare("
         SELECT r.id, r.category, r.title, r.description, r.status, r.created_at,
                r.address_approx, r.city, r.authority_id,
@@ -412,6 +407,10 @@ if ($isAdmin || $authorityIds) {
     }
   } catch (Throwable $e) {}
   $stats['governance'] = $gov;
+} else {
+  $stats['environment'] = ['trees_total' => 0, 'trees_needing_inspection' => 0, 'trees_needing_water' => 0, 'trees_dangerous' => 0, 'green_reports' => 0];
+  $stats['social'] = ['active_citizens_30d' => 0, 'tree_adopters' => 0, 'green_events_active' => 0, 'watering_actions_30d' => 0];
+  $stats['governance'] = ['reports_total' => 0, 'reports_open' => 0, 'reports_solved_30d' => 0, 'avg_resolution_days' => null];
 }
 
 // Export (JSON / CSV) – még HTML előtt
@@ -570,6 +569,12 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
               <p><?= h(t('gov.tab_analytics')) ?></p>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="iot">
+              <i class="nav-icon bi bi-cpu"></i>
+              <p><?= h(t('gov.tab_iot') ?: 'IoT') ?></p>
+            </a>
+          </li>
           <?php if (!$isAdmin): ?>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="modules">
@@ -616,6 +621,16 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
               <div id="govCopilotError" class="mt-2 text-danger small" style="display:none;"></div>
             </div>
           </div>
+          <?php if (defined('WEATHER_ENABLED') && WEATHER_ENABLED): ?>
+          <div class="card mb-3" id="govWeatherCard">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.weather_title') ?: 'Időjárás') ?></h6>
+              <div id="govWeatherContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
           <div class="row g-2 mb-3">
             <div class="col-6 col-md"><div class="card border-primary"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_city_health')) ?></h6><br><p class="text-secondary small mb-0"><?= h(t('gov.stats_title')) ?></p></div></div></div>
             <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_engagement')) ?></h6><br><p class="text-secondary small mb-0"><?= h(t('gov.analytics_title')) ?></p></div></div></div>
@@ -1047,6 +1062,19 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
           </div>
         </div>
 
+        <div class="admin-tab-body" id="tab-iot" hidden>
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.tab_iot') ?: 'IoT') ?></h6>
+              <p class="text-secondary small mb-3"><?= h(t('gov.iot_intro') ?: 'Mérőeszközök csatlakoztatása és megjelenítése a térképen. Kapcsold be a kívánt eszközöket.') ?></p>
+              <div id="govIotDeviceList">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+              </div>
+              <p class="text-secondary small mt-2 mb-0"><?= h(t('gov.iot_hint') ?: 'Később itt kapcsolhatók be a térképre megjelenítendő szenzorok (légszenzor, zaj, stb.).') ?></p>
+            </div>
+          </div>
+        </div>
+
         <?php if (!$isAdmin): ?>
         <div class="admin-tab-body" id="tab-modules" hidden>
           <div class="card">
@@ -1078,6 +1106,8 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   var modulesUrl = <?= json_encode(app_url('/api/gov_modules.php'), JSON_UNESCAPED_SLASHES) ?>;
   var esgExportUrl = <?= json_encode(app_url('/api/esg_export.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govSurveysUrl = <?= json_encode(app_url('/api/gov_surveys.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var weatherUrl = <?= json_encode(app_url('/api/weather.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var iotDevicesUrl = <?= json_encode(app_url('/api/iot_devices.php'), JSON_UNESCAPED_SLASHES) ?>;
   var heatmapUrl = <?= json_encode(app_url('/api/heatmap_data.php'), JSON_UNESCAPED_SLASHES) ?>;
   var authorityIdForHeatmap = <?= !empty($authorityIds) ? (int)$authorityIds[0] : '0' ?>;
   var govStatisticsUrl = <?= json_encode(app_url('/api/gov_statistics.php'), JSON_UNESCAPED_SLASHES) ?>;
@@ -1107,6 +1137,14 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
     'new_users_7d' => t('gov.statistics_new_users_7d'),
     'no_data' => t('gov.no_data'),
   ], JSON_UNESCAPED_UNICODE) ?>;
+  var govSentimentUrl = <?= json_encode(app_url('/api/sentiment_analysis.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govSentimentLabels = <?= json_encode([
+    'positive' => t('gov.sentiment_positive'),
+    'neutral' => t('gov.sentiment_neutral'),
+    'negative' => t('gov.sentiment_negative'),
+    'top_concerns' => t('gov.sentiment_top_concerns'),
+    'emerging_issues' => t('gov.sentiment_emerging_issues'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
   var govEsgMetricsUrl = <?= json_encode(app_url('/api/esg_metrics.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govEsgMetricsLabels = <?= json_encode([
     'environmental' => t('gov.esg_env'),
@@ -1133,14 +1171,6 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
     'risk_zones' => t('gov.predictions_risk_zones'),
     'tree_failures' => t('gov.predictions_tree_failures'),
   ], JSON_UNESCAPED_UNICODE) ?>;
-  var govSentimentUrl = <?= json_encode(app_url('/api/sentiment_analysis.php'), JSON_UNESCAPED_SLASHES) ?>;
-  var govSentimentLabels = <?= json_encode([
-    'positive' => t('gov.sentiment_positive'),
-    'neutral' => t('gov.sentiment_neutral'),
-    'negative' => t('gov.sentiment_negative'),
-    'top_concerns' => t('gov.sentiment_top_concerns'),
-    'emerging_issues' => t('gov.sentiment_emerging_issues'),
-  ], JSON_UNESCAPED_UNICODE) ?>;
   var govCityHealthUrl = <?= json_encode(app_url('/api/city_health.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govCityHealthLabels = <?= json_encode([
     'infrastructure' => t('gov.city_health_infrastructure'),
@@ -1150,6 +1180,8 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
   ], JSON_UNESCAPED_UNICODE) ?>;
   var mapCenterLat = <?= json_encode(defined('MAP_CENTER_LAT') ? (float)MAP_CENTER_LAT : 47.1625) ?>;
   var mapCenterLng = <?= json_encode(defined('MAP_CENTER_LNG') ? (float)MAP_CENTER_LNG : 19.5033) ?>;
+  var govWeatherHumidityLabel = <?= json_encode(t('gov.weather_humidity') ?: 'Humidity', JSON_UNESCAPED_UNICODE) ?>;
+  var govIotShowOnMap = <?= json_encode(t('gov.iot_show_on_map') ?: 'Show on map', JSON_UNESCAPED_UNICODE) ?>;
   var appName = <?= json_encode(t('site.name'), JSON_UNESCAPED_UNICODE) ?>;
   var logoUrl = <?= json_encode(app_url('/assets/logo.png'), JSON_UNESCAPED_SLASHES) ?>;
   var govHeatmapMap = null;
@@ -1305,18 +1337,20 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
       e.preventDefault();
       var key = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
-      ['dashboard','reports','ideas','surveys','trees','analytics','modules'].forEach(function(k){
+      ['dashboard','reports','ideas','surveys','trees','analytics','iot','modules'].forEach(function(k){
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
       });
       if (key === 'modules') loadGovModules();
       if (key === 'surveys') loadGovSurveys();
       if (key === 'trees') loadGovTrees();
+      if (key === 'iot') loadGovIotDevices();
       if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovGreenMetrics(); loadGovEsgMetrics(); }
-      if (key === 'dashboard') loadGovCityHealth();
+      if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); }
     });
   });
   loadGovCityHealth();
+  loadGovWeather();
 
   (function initGovCopilot(){
     var btn = document.getElementById('govCopilotSend');
@@ -1510,6 +1544,48 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
       html += '</div>';
       container.innerHTML = html;
     }).catch(function(){ var c = document.getElementById('govCityHealthContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  function loadGovWeather(){
+    var container = document.getElementById('govWeatherContent');
+    if (!container || !weatherUrl) return;
+    fetch(weatherUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.data) {
+        container.innerHTML = '<p class="text-secondary small mb-0">' + (j && j.error ? String(j.error).replace(/</g,'&lt;') : '—') + '</p>';
+        return;
+      }
+      var d = j.data;
+      var temp = d.temp != null ? d.temp + ' °C' : '—';
+      var humidity = d.humidity != null ? d.humidity + '%' : '—';
+      var desc = (d.description || '—').replace(/</g,'&lt;');
+      container.innerHTML = '<div class="d-flex flex-wrap gap-3 align-items-center"><span class="fs-4 fw-bold">' + temp + '</span><span class="text-secondary small">' + desc + '</span><span class="text-secondary small">' + (typeof govWeatherHumidityLabel !== 'undefined' ? govWeatherHumidityLabel : 'Páratartalom') + ': ' + humidity + '</span></div>';
+    }).catch(function(){ var c = document.getElementById('govWeatherContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  function loadGovIotDevices(){
+    var container = document.getElementById('govIotDeviceList');
+    if (!container || !iotDevicesUrl) return;
+    var authId = typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0;
+    var url = iotDevicesUrl + (authId > 0 ? '?authority_id=' + authId : '');
+    fetch(url, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok) {
+        container.innerHTML = '<p class="text-danger small">' + (j && j.error ? String(j.error).replace(/</g,'&lt;') : '—') + '</p>';
+        return;
+      }
+      var devices = j.devices || [];
+      var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
+      var showOnMapLabel = typeof govIotShowOnMap !== 'undefined' ? govIotShowOnMap : 'Megjelenítés a térképen';
+      if (devices.length === 0) {
+        container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>';
+        return;
+      }
+      var html = '<ul class="list-unstyled mb-0">';
+      devices.forEach(function(dev){
+        var name = (dev.name || '#' + (dev.id || '')).replace(/</g,'&lt;');
+        var type = (dev.type || '').replace(/</g,'&lt;');
+        html += '<li class="d-flex align-items-center justify-content-between border-bottom py-2"><div><strong>' + name + '</strong> <span class="text-secondary small">' + type + '</span></div><label class="form-check form-switch mb-0"><input class="form-check-input gov-iot-toggle" type="checkbox" data-id="' + (dev.id || '') + '" ' + (dev.visible_on_map ? 'checked' : '') + '><span class="form-check-label small">' + showOnMapLabel + '</span></label></li>';
+      });
+      html += '</ul>';
+      container.innerHTML = html;
+    }).catch(function(){ var c = document.getElementById('govIotDeviceList'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
   }
   function initGovStatisticsTab(){
     var fromEl = document.getElementById('govStatsDateFrom');
@@ -1737,7 +1813,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
         if (!j || !j.ok) { list.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; return; }
         var data = j.data || [];
         if (!data.length) { list.innerHTML = '<p class="text-secondary small mb-0">' + (<?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>) + '</p>'; return; }
-        var statusLabels = { draft: <?= json_encode(t('survey.status_draft') ?: 'Piszkozat'), JSON_UNESCAPED_UNICODE) ?>, active: <?= json_encode(t('survey.status_active') ?: 'Aktív'), JSON_UNESCAPED_UNICODE) ?>, closed: <?= json_encode(t('survey.status_closed') ?: 'Lezárva'), JSON_UNESCAPED_UNICODE) ?> };
+        var statusLabels = { draft: <?= json_encode(t('survey.status_draft') ?: 'Piszkozat', JSON_UNESCAPED_UNICODE) ?>, active: <?= json_encode(t('survey.status_active') ?: 'Aktív', JSON_UNESCAPED_UNICODE) ?>, closed: <?= json_encode(t('survey.status_closed') ?: 'Lezárva', JSON_UNESCAPED_UNICODE) ?> };
         list.innerHTML = '<table class="table table-sm table-hover"><thead><tr><th>#</th><th>' + (<?= json_encode(t('idea.title_placeholder') ?: 'Cím', JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('common.status'), JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('gov.survey_responses') ?: 'Válaszok', JSON_UNESCAPED_UNICODE) ?>) + '</th><th></th></tr></thead><tbody>' +
           data.map(function(s){
             return '<tr><td>' + s.id + '</td><td><strong>' + (s.title||'').replace(/</g,'&lt;') + '</strong><br><span class="text-muted small">' + (s.authority_name||'').replace(/</g,'&lt;') + ' · ' + (s.starts_at||'').slice(0,16) + ' – ' + (s.ends_at||'').slice(0,16) + '</span></td><td>' + (statusLabels[s.status]||s.status) + '</td><td>' + (s.response_count||0) + '</td><td><button type="button" class="btn btn-sm btn-outline-primary gov-survey-results" data-id="' + s.id + '">' + (<?= json_encode(t('gov.survey_results') ?: 'Eredmények', JSON_UNESCAPED_UNICODE) ?>) + '</button></td></tr>';

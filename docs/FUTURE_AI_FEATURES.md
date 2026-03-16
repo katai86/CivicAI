@@ -1,6 +1,20 @@
 # Jövőbeli AI funkciók (placeholder)
 
-Ez a dokumentum a későbbi bővítések architektúra-tervét írja le. **Nincs production kód vagy új tábla** – csak terv és illeszkedés a meglévő AiRouter és statisztika modulhoz.
+Ez a dokumentum a későbbi bővítések architektúra-tervét írja le. **A 2. szakasz („Már megvalósítva”) kivételével** nincs új production kód vagy tábla a leírt további témákhoz – csak terv és illeszkedés a meglévő AiRouter és statisztika modulhoz.
+
+---
+
+## Már megvalósítva (M10 bővítések)
+
+| Funkció | Leírás | Fájlok |
+|---------|--------|--------|
+| **Gov AI Copilot** | Kérdés–válasz a hatósági adatokról (kerületek, problémák, fák). | api/gov_copilot.php, services/GovCopilot.php; Gov dashboard kártya. |
+| **Surveys fül** | Aktív/lezárt felmérések listája, eredmények megtekintése. | api/gov_surveys.php; Gov „Felmérések” tab. |
+| **Predictions (Analytics)** | Városi kockázat előrejelzés (várható problémák, kockázati zónák, fa kockázat). | api/predictions.php; Gov Analytics tab. |
+| **Green Intelligence (Analytics)** | Lombkorona, CO₂, biodiverzitás, szárazság kockázat. | api/green_metrics.php; Gov Analytics tab. |
+| **ESG Command Center (Analytics)** | E/S/G mutatók, JSON/CSV export. | api/esg_metrics.php; Gov Analytics tab. |
+
+A fenti részek production kódban megvannak. Az alábbi szakaszok továbbra is **terv** (placeholder).
 
 ---
 

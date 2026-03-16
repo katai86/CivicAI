@@ -99,6 +99,9 @@ define('AI_MAX_REPORTS_PER_DAY', (int)(getenv('AI_MAX_REPORTS_PER_DAY') ?: 1000)
 define('AI_SUMMARY_LIMIT', (int)(getenv('AI_SUMMARY_LIMIT') ?: 20));
 define('AI_IMAGE_ANALYSIS_LIMIT', (int)(getenv('AI_IMAGE_ANALYSIS_LIMIT') ?: 300));
 
+// Időjárás API (Gov dashboard) – Open-Meteo használata, API kulcs nem kell
+define('WEATHER_ENABLED', filter_var(getenv('WEATHER_ENABLED'), FILTER_VALIDATE_BOOLEAN) ?: true);
+
 // Production bootstrap: kritikus beállítások ellenőrzése (nem blokkol, csak jelzés)
 if (!defined('DB_HOST') || !defined('DB_NAME') || !defined('APP_BASE_URL')) {
   throw new RuntimeException('Kritikus config hiányzik: DB_HOST, DB_NAME vagy APP_BASE_URL.');

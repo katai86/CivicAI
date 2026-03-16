@@ -127,9 +127,9 @@ Több önkormányzat: **authorities** + **authority_users** + **reports.authorit
 | M7 | Tree watering + értesítés | Kész | tree_species_care, trees_needing_water.php, Gov „Öntözendő fák” blokk |
 | M8 | Export & Open Data | Kész | export.php reports/trees/esg, csv/geojson/json |
 | M9 | Dashboard UI panelek | Kész | Gov 5 panel (City Health, Engagement, Issues, Trees, ESG) |
-| M10 | Jövőbeli AI (placeholder) | Kész | docs/FUTURE_AI_FEATURES.md |
+| M10 | Jövőbeli AI (placeholder + bővítések) | Kész | docs/FUTURE_AI_FEATURES.md; Gov Copilot (gov_copilot.php), Surveys fül (gov_surveys.php), Analytics: Predictions, Green, ESG Command Center (predictions.php, green_metrics.php, esg_metrics.php). |
 
-A milestone fejlesztés **kész**; opcionális: M7 e-mail/cron értesítés, M8 nyilvános rate limit, M10 predikciós szolgáltatás.
+A milestone fejlesztés **kész**; opcionális: M7 e-mail/cron értesítés, M8 nyilvános rate limit. Részletes áttekintés: docs/MILESTONE_REVIEW.md.
 
 ---
 
