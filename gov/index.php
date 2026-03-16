@@ -535,10 +535,11 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
         <ul class="nav sidebar-menu flex-column">
           <li class="nav-item">
             <a href="#" class="nav-link tab active" data-tab="dashboard">
-              <i class="nav-icon bi bi-speedometer2"></i>
+              <i class="nav-icon bi bi-house-door-fill"></i>
               <p><?= h(t('gov.tab_dashboard')) ?></p>
             </a>
           </li>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_work')) ?></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="reports">
               <i class="nav-icon bi bi-flag-fill"></i>
@@ -547,14 +548,14 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
           </li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="ideas">
-              <i class="nav-icon bi bi-lightbulb"></i>
-              <p><?= h(t('legend.ideas_section') ?: 'Ötletek') ?></p>
+              <i class="nav-icon bi bi-lightbulb-fill"></i>
+              <p><?= h(t('gov.tab_ideas')) ?></p>
             </a>
           </li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="surveys">
               <i class="nav-icon bi bi-clipboard-pulse"></i>
-              <p><?= h(t('gov.tab_surveys') ?: 'Felmérések') ?></p>
+              <p><?= h(t('gov.tab_surveys')) ?></p>
             </a>
           </li>
           <li class="nav-item">
@@ -563,22 +564,30 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
               <p><?= h(t('gov.tab_trees')) ?></p>
             </a>
           </li>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_insights')) ?></li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="ai">
+              <i class="nav-icon bi bi-robot"></i>
+              <p><?= h(t('gov.tab_ai')) ?></p>
+            </a>
+          </li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="analytics">
-              <i class="nav-icon bi bi-graph-up"></i>
+              <i class="nav-icon bi bi-graph-up-arrow"></i>
               <p><?= h(t('gov.tab_analytics')) ?></p>
             </a>
           </li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="iot">
-              <i class="nav-icon bi bi-cpu"></i>
-              <p><?= h(t('gov.tab_iot') ?: 'IoT') ?></p>
+              <i class="nav-icon bi bi-broadcast"></i>
+              <p><?= h(t('gov.tab_iot')) ?></p>
             </a>
           </li>
           <?php if (!$isAdmin): ?>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_settings')) ?></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="modules">
-              <i class="nav-icon bi bi-sliders"></i>
+              <i class="nav-icon bi bi-gear"></i>
               <p><?= h(t('gov.tab_modules')) ?></p>
             </a>
           </li>
@@ -599,7 +608,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
         <?php else: ?>
 
         <div class="admin-tab-body" id="tab-dashboard">
-          <!-- M3 City Health Index + M9 Dashboard UI -->
+          <!-- Áttekintés: City Health, időjárás, statisztikák, ESG összefoglaló -->
           <p class="text-secondary small mb-2"><?= h(t('gov.panels_intro')) ?></p>
           <div class="card border-primary mb-3" id="govCityHealthCard">
             <div class="card-body">
@@ -607,18 +616,6 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
               <div id="govCityHealthContent">
                 <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
               </div>
-            </div>
-          </div>
-          <div class="card mb-3" id="govCopilotCard">
-            <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('gov.copilot_title') ?: 'AI Copilot') ?></h6>
-              <p class="text-secondary small mb-2"><?= h(t('gov.copilot_desc') ?: 'Kérdezd az adataidról: kerületek, problémák, fák, változások.') ?></p>
-              <div class="d-flex flex-column gap-2">
-                <textarea id="govCopilotQuestion" class="form-control" rows="2" placeholder="<?= h(t('gov.copilot_placeholder') ?: 'Pl. Mely kerületeknek van a legtöbb problémája?') ?>"></textarea>
-                <button type="button" class="btn btn-primary btn-sm align-self-start" id="govCopilotSend"><?= h(t('gov.copilot_send') ?: 'Küldés') ?></button>
-              </div>
-              <div id="govCopilotAnswer" class="mt-3 p-2 rounded bg-light small" style="display:none; white-space: pre-wrap;"></div>
-              <div id="govCopilotError" class="mt-2 text-danger small" style="display:none;"></div>
             </div>
           </div>
           <?php if (defined('WEATHER_ENABLED') && WEATHER_ENABLED): ?>
@@ -786,8 +783,24 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             </div>
           </div>
 
+        </div>
+
+        <div class="admin-tab-body" id="tab-ai" hidden>
+          <p class="text-secondary small mb-3"><?= h(t('gov.tab_ai_intro') ?: 'AI Copilot, összefoglalók és jelentések az adataid alapján.') ?></p>
+          <div class="card mb-3" id="govCopilotCard">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.copilot_title') ?: 'AI Copilot') ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.copilot_desc') ?: 'Kérdezd az adataidról: kerületek, problémák, fák, változások.') ?></p>
+              <div class="d-flex flex-column gap-2">
+                <textarea id="govCopilotQuestion" class="form-control" rows="2" placeholder="<?= h(t('gov.copilot_placeholder') ?: 'Pl. Mely kerületeknek van a legtöbb problémája?') ?>"></textarea>
+                <button type="button" class="btn btn-primary btn-sm align-self-start" id="govCopilotSend"><?= h(t('gov.copilot_send') ?: 'Küldés') ?></button>
+              </div>
+              <div id="govCopilotAnswer" class="mt-3 p-2 rounded bg-light small" style="display:none; white-space: pre-wrap;"></div>
+              <div id="govCopilotError" class="mt-2 text-danger small" style="display:none;"></div>
+            </div>
+          </div>
           <?php if ($govAiUiEnabled): ?>
-          <p class="text-secondary small mb-2 mt-3"><?= h(t('gov.ai_summaries_intro')) ?></p>
+          <p class="text-secondary small mb-2"><?= h(t('gov.ai_summaries_intro')) ?></p>
           <div class="row g-3">
             <div class="col-md-6">
               <div class="card h-100">
@@ -1337,7 +1350,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
       e.preventDefault();
       var key = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
-      ['dashboard','reports','ideas','surveys','trees','analytics','iot','modules'].forEach(function(k){
+      ['dashboard','ai','reports','ideas','surveys','trees','analytics','iot','modules'].forEach(function(k){
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
       });

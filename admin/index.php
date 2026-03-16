@@ -70,7 +70,14 @@ $LANG_JS = lang_array_for_js();
       <nav class="mt-2">
         <ul class="nav sidebar-menu flex-column">
           <li class="nav-item">
-            <a href="#" class="nav-link tab active" data-tab="reports">
+            <a href="#" class="nav-link tab active" data-tab="overview">
+              <i class="nav-icon bi bi-house-door-fill"></i>
+              <p><?= htmlspecialchars(t('admin.tab_overview'), ENT_QUOTES, 'UTF-8') ?></p>
+            </a>
+          </li>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= htmlspecialchars(t('admin.nav_section_manage'), ENT_QUOTES, 'UTF-8') ?></li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="reports">
               <i class="nav-icon bi bi-flag-fill"></i>
               <p><?= htmlspecialchars(t('admin.reports'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
@@ -81,6 +88,7 @@ $LANG_JS = lang_array_for_js();
               <p><?= htmlspecialchars(t('admin.users'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
           </li>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= htmlspecialchars(t('admin.nav_section_system'), ENT_QUOTES, 'UTF-8') ?></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="layers">
               <i class="nav-icon bi bi-layers-fill"></i>
@@ -101,7 +109,7 @@ $LANG_JS = lang_array_for_js();
           </li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="modules">
-              <i class="nav-icon bi bi-puzzle"></i>
+              <i class="nav-icon bi bi-gear"></i>
               <p><?= htmlspecialchars(t('admin.modules'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
           </li>
@@ -113,42 +121,45 @@ $LANG_JS = lang_array_for_js();
   <main class="app-main">
     <div class="app-content">
       <div class="container-fluid">
-        <div class="row g-3 mb-3">
-          <div class="col-12">
-            <div class="card">
-              <div class="card-body">
-                <h6 class="card-title d-flex align-items-center gap-2">
-                  <?= htmlspecialchars(t('admin.statistics'), ENT_QUOTES, 'UTF-8') ?>
-                  <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshStats" title="<?= htmlspecialchars(t('admin.refresh'), ENT_QUOTES, 'UTF-8') ?>">↻</button>
-                </h6>
-                <div class="row g-2">
-                  <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.reports_today'), ENT_QUOTES, 'UTF-8') ?></span><span class="fw-bold fs-5" id="kpiReports1">—</span></div></div>
-                  <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.reports_7d'), ENT_QUOTES, 'UTF-8') ?></span><span class="fw-bold fs-5" id="kpiReports7">—</span></div></div>
-                  <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.users_7d'), ENT_QUOTES, 'UTF-8') ?></span><span class="fw-bold fs-5" id="kpiUsers7">—</span></div></div>
-                  <div class="col-md-3"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.status'), ENT_QUOTES, 'UTF-8') ?></span><span class="small" id="kpiStatus">—</span></div></div>
-                  <div class="col-md-3"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.category'), ENT_QUOTES, 'UTF-8') ?></span><span class="small" id="kpiCategory">—</span></div></div>
-                </div>
-                <div class="row g-3 mt-2">
-                  <div class="col-md-6">
-                    <h6 class="text-secondary small mb-2"><?= htmlspecialchars(t('admin.status_dist'), ENT_QUOTES, 'UTF-8') ?></h6>
-                    <div id="chartStatus" class="admin-chart"></div>
+        <div id="tab-overview" class="admin-tab-body">
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h6 class="card-title d-flex align-items-center gap-2">
+                    <?= htmlspecialchars(t('admin.statistics'), ENT_QUOTES, 'UTF-8') ?>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshStats" title="<?= htmlspecialchars(t('admin.refresh'), ENT_QUOTES, 'UTF-8') ?>">↻</button>
+                  </h6>
+                  <div class="row g-2">
+                    <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.reports_today'), ENT_QUOTES, 'UTF-8') ?></span><span class="fw-bold fs-5" id="kpiReports1">—</span></div></div>
+                    <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.reports_7d'), ENT_QUOTES, 'UTF-8') ?></span><span class="fw-bold fs-5" id="kpiReports7">—</span></div></div>
+                    <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.users_7d'), ENT_QUOTES, 'UTF-8') ?></span><span class="fw-bold fs-5" id="kpiUsers7">—</span></div></div>
+                    <div class="col-md-3"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.status'), ENT_QUOTES, 'UTF-8') ?></span><span class="small" id="kpiStatus">—</span></div></div>
+                    <div class="col-md-3"><div class="d-flex flex-column"><span class="text-secondary small"><?= htmlspecialchars(t('admin.category'), ENT_QUOTES, 'UTF-8') ?></span><span class="small" id="kpiCategory">—</span></div></div>
                   </div>
-                  <div class="col-md-6">
-                    <h6 class="text-secondary small mb-2"><?= htmlspecialchars(t('admin.category_dist'), ENT_QUOTES, 'UTF-8') ?></h6>
-                    <div id="chartCategory" class="admin-chart"></div>
+                  <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                      <h6 class="text-secondary small mb-2"><?= htmlspecialchars(t('admin.status_dist'), ENT_QUOTES, 'UTF-8') ?></h6>
+                      <div id="chartStatus" class="admin-chart"></div>
+                    </div>
+                    <div class="col-md-6">
+                      <h6 class="text-secondary small mb-2"><?= htmlspecialchars(t('admin.category_dist'), ENT_QUOTES, 'UTF-8') ?></h6>
+                      <div id="chartCategory" class="admin-chart"></div>
+                    </div>
                   </div>
+                  <?php $fmsOk = false; $aiOk = false; try { $fmsOk = fms_enabled(); } catch (Throwable $e) { /* module_settings hiányzik esetén */ } try { $aiOk = ai_configured(); } catch (Throwable $e) { /* module_settings hiányzik esetén */ } ?>
+                  <p class="text-secondary small mt-2 mb-0"><?= htmlspecialchars(t('admin.integration_status'), ENT_QUOTES, 'UTF-8') ?> FixMyStreet: <?= $fmsOk ? htmlspecialchars(t('admin.fms_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.fms_not_configured'), ENT_QUOTES, 'UTF-8') ?> | AI (Mistral): <?= $aiOk ? htmlspecialchars(t('admin.ai_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.ai_not_configured'), ENT_QUOTES, 'UTF-8') ?></p>
+                  <p class="text-secondary small mt-1 mb-0"><strong><?= htmlspecialchars(t('admin.analytics_label'), ENT_QUOTES, 'UTF-8') ?>:</strong> <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a> &nbsp;|&nbsp; <strong><?= htmlspecialchars(t('admin.esg_label'), ENT_QUOTES, 'UTF-8') ?>:</strong> <a href="<?= htmlspecialchars(app_url('/api/esg_export.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/esg_export.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a></p>
                 </div>
-                <?php $fmsOk = false; $aiOk = false; try { $fmsOk = fms_enabled(); } catch (Throwable $e) { /* module_settings hiányzik esetén */ } try { $aiOk = ai_configured(); } catch (Throwable $e) { /* module_settings hiányzik esetén */ } ?>
-                <p class="text-secondary small mt-2 mb-0"><?= htmlspecialchars(t('admin.integration_status'), ENT_QUOTES, 'UTF-8') ?> FixMyStreet: <?= $fmsOk ? htmlspecialchars(t('admin.fms_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.fms_not_configured'), ENT_QUOTES, 'UTF-8') ?> | AI (Mistral): <?= $aiOk ? htmlspecialchars(t('admin.ai_configured'), ENT_QUOTES, 'UTF-8') : htmlspecialchars(t('admin.ai_not_configured'), ENT_QUOTES, 'UTF-8') ?></p>
-                <p class="text-secondary small mt-1 mb-0"><strong><?= htmlspecialchars(t('admin.analytics_label'), ENT_QUOTES, 'UTF-8') ?>:</strong> <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/analytics.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a> &nbsp;|&nbsp; <strong><?= htmlspecialchars(t('admin.esg_label'), ENT_QUOTES, 'UTF-8') ?>:</strong> <a href="<?= htmlspecialchars(app_url('/api/esg_export.php?format=json'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">JSON</a> · <a href="<?= htmlspecialchars(app_url('/api/esg_export.php?format=csv'), ENT_QUOTES, 'UTF-8') ?>" download>CSV</a></p>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="row g-3">
-          <div class="col-12">
-            <div class="card">
+        <div id="admin-tab-panel" class="admin-tab-body" hidden>
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="card">
               <div class="card-body">
                 <div class="admin-tab-body" id="tab-reports">
                   <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
@@ -292,6 +303,7 @@ $LANG_JS = lang_array_for_js();
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

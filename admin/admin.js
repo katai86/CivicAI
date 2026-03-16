@@ -1039,7 +1039,10 @@ async function loadModules(){
 
 function initTabs(){
   const tabs = document.querySelectorAll('.tab[data-tab]');
+  const overviewEl = document.getElementById('tab-overview');
+  const panelEl = document.getElementById('admin-tab-panel');
   const bodies = {
+    overview: overviewEl,
     reports: document.getElementById('tab-reports'),
     users: document.getElementById('tab-users'),
     layers: document.getElementById('tab-layers'),
@@ -1052,27 +1055,35 @@ function initTabs(){
       e.preventDefault();
       const key = btn.getAttribute('data-tab');
       tabs.forEach(t => t.classList.toggle('active', t === btn));
-      Object.keys(bodies).forEach(k => {
-        const el = bodies[k];
-        if (el) el.hidden = (k !== key);
-      });
-      if (key === 'users') loadUsers();
-      if (key === 'layers') {
-        clearMarkers();
-        loadLayerAuthorityOptions();
-        loadLayers();
-        loadLayerMarkers();
-      }
-      if (key === 'reports') {
-        clearLayerMarkers();
+      if (key === 'overview') {
+        if (overviewEl) overviewEl.hidden = false;
+        if (panelEl) panelEl.hidden = true;
         loadStats();
+      } else {
+        if (overviewEl) overviewEl.hidden = true;
+        if (panelEl) panelEl.hidden = false;
+        ['reports','users','layers','authorities','budget','modules'].forEach(k => {
+          const el = bodies[k];
+          if (el) el.hidden = (k !== key);
+        });
+        if (key === 'users') loadUsers();
+        if (key === 'layers') {
+          clearMarkers();
+          loadLayerAuthorityOptions();
+          loadLayers();
+          loadLayerMarkers();
+        }
+        if (key === 'reports') {
+          clearLayerMarkers();
+          loadStats();
+        }
+        if (key === 'authorities') {
+          clearLayerMarkers();
+          loadAuthorities();
+        }
+        if (key === 'budget') loadBudgetProjects();
+        if (key === 'modules') loadModules();
       }
-      if (key === 'authorities') {
-        clearLayerMarkers();
-        loadAuthorities();
-      }
-      if (key === 'budget') loadBudgetProjects();
-      if (key === 'modules') loadModules();
     });
   });
 }
