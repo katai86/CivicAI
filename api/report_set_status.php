@@ -189,7 +189,8 @@ try {
       $unsubscribeUrl
     );
 
-    send_mail($to, $subject, $bodyText);
+    $bodyHtml = email_template_html($subject, nl2br(htmlspecialchars($bodyText, ENT_QUOTES, 'UTF-8')));
+    send_mail_html($to, $subject, $bodyHtml);
   }
   // ===== /EMAIL =====
 

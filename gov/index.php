@@ -583,7 +583,6 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
               <p><?= h(t('gov.tab_iot')) ?></p>
             </a>
           </li>
-          <?php if (!$isAdmin): ?>
           <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_settings')) ?></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="modules">
@@ -591,7 +590,6 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
               <p><?= h(t('gov.tab_modules')) ?></p>
             </a>
           </li>
-          <?php endif; ?>
         </ul>
       </nav>
     </div>
@@ -628,13 +626,6 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             </div>
           </div>
           <?php endif; ?>
-          <div class="row g-2 mb-3">
-            <div class="col-6 col-md"><div class="card border-primary"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_city_health')) ?></h6><br><p class="text-secondary small mb-0"><?= h(t('gov.stats_title')) ?></p></div></div></div>
-            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_engagement')) ?></h6><br><p class="text-secondary small mb-0"><?= h(t('gov.analytics_title')) ?></p></div></div></div>
-            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_urban_issues')) ?></h6><br><p class="text-secondary small mb-0"><?= h(t('gov.reports_list')) ?></p></div></div></div>
-            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_tree_registry')) ?></h6><br><p class="text-secondary small mb-0"><?= (int)($stats['environment']['trees_total'] ?? 0) ?> <?= h(t('gov.esg_trees_total')) ?></p></div></div></div>
-            <div class="col-6 col-md"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0"><?= h(t('gov.panel_esg')) ?></h6><br><p class="text-secondary small mb-0"><?= h(t('gov.esg_dashboard_title')) ?></p></div></div></div>
-          </div>
           <div class="row g-3 mb-3">
             <div class="col-12">
               <div class="card">
@@ -1079,7 +1070,6 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
           </div>
         </div>
 
-        <?php if (!$isAdmin): ?>
         <div class="admin-tab-body" id="tab-modules" hidden>
           <div class="card">
             <div class="card-body">
@@ -1088,7 +1078,6 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             </div>
           </div>
         </div>
-        <?php endif; ?>
 
         <?php endif; // auth/no authority ?>
       </div>

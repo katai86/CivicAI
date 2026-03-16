@@ -103,7 +103,8 @@ $role = 'guest';
     <input name="pass" type="password" placeholder="<?= htmlspecialchars(t('auth.password'), ENT_QUOTES, 'UTF-8') ?>" required>
     <button type="submit" class="primary"><?= htmlspecialchars(t('auth.login_title'), ENT_QUOTES, 'UTF-8') ?></button>
   </form>
-  <div style="margin-top:10px"><a href="<?= htmlspecialchars(app_url('/user/register.php')) ?>"><?= htmlspecialchars(t('nav.register'), ENT_QUOTES, 'UTF-8') ?></a></div>
+  <div style="margin-top:10px"><a href="<?= htmlspecialchars(app_url('/user/forgot_password.php')) ?>"><?= htmlspecialchars(t('auth.forgot_password_title'), ENT_QUOTES, 'UTF-8') ?></a></div>
+  <div style="margin-top:6px"><a href="<?= htmlspecialchars(app_url('/user/register.php')) ?>"><?= htmlspecialchars(t('nav.register'), ENT_QUOTES, 'UTF-8') ?></a></div>
 </div>
 <?php if (!$isMobile): ?>
 </div>

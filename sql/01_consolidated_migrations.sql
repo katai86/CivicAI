@@ -301,6 +301,10 @@ CALL add_column_if_not_exists('authorities', 'is_active', 'TINYINT(1) NOT NULL D
 CALL add_column_if_not_exists('users', 'preferred_lang', 'VARCHAR(8) NULL');
 CALL add_column_if_not_exists('users', 'preferred_theme', 'VARCHAR(8) NULL');
 
+-- ========== 2026-12b Password reset ==========
+CALL add_column_if_not_exists('users', 'reset_token', 'VARCHAR(64) NULL');
+CALL add_column_if_not_exists('users', 'reset_token_expires', 'DATETIME NULL');
+
 -- ========== 2026-13 Tree cadastre ==========
 CREATE TABLE IF NOT EXISTS trees (
   id INT AUTO_INCREMENT PRIMARY KEY,

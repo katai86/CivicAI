@@ -8,6 +8,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 start_secure_session();
 
+// Bejelentés csak bejelentkezett felhasználótól (anonim = név rejtése a térképen, nem vendég beküldés)
+if (empty($_SESSION['user_id']) || (int)$_SESSION['user_id'] <= 0) {
+  json_response(['ok' => false, 'error' => t('api.report_requires_login')], 401);
+}
+
 $body = read_json_body();
 
 $category = safe_str($body['category'] ?? null, 32);

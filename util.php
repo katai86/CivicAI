@@ -784,11 +784,9 @@ function send_mail(string $to, string $subject, string $bodyText): bool {
     $from = defined('MAIL_FROM') ? (string)MAIL_FROM : 'no-reply@localhost';
     $fromName = defined('MAIL_FROM_NAME') ? (string)MAIL_FROM_NAME : 'Problématérkép';
 
-    // RFC2047 header encoding
     $encodedFromName = function_exists('mb_encode_mimeheader')
         ? mb_encode_mimeheader($fromName, 'UTF-8', 'B')
         : $fromName;
-
     $encodedSubject = function_exists('mb_encode_mimeheader')
         ? mb_encode_mimeheader($subject, 'UTF-8', 'B')
         : $subject;
@@ -801,4 +799,42 @@ function send_mail(string $to, string $subject, string $bodyText): bool {
     $headers[] = 'Reply-To: ' . $from;
 
     return @mail($to, $encodedSubject, $bodyText, implode("\r\n", $headers));
+}
+
+/**
+ * Szabályos HTML e-mail sablon (cím + tartalom + lábléc).
+ */
+function email_template_html(string $title, string $bodyHtml): string {
+    $siteName = defined('MAIL_FROM_NAME') ? (string)MAIL_FROM_NAME : (function_exists('t') ? t('site.name') : 'CivicAI');
+    $bodyHtml = trim($bodyHtml);
+    return '<!DOCTYPE html><html lang="hu"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+        . '<title>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</title>'
+        . '<style>body{font-family:system-ui,-apple-system,sans-serif;line-height:1.5;color:#333;max-width:600px;margin:0 auto;padding:20px;}'
+        . 'a{color:#0d6efd;} .footer{font-size:12px;color:#6c757d;margin-top:24px;border-top:1px solid #dee2e6;padding-top:12px;}</style></head><body>'
+        . '<div class="content">' . $bodyHtml . '</div>'
+        . '<div class="footer">' . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . '</div></body></html>';
+}
+
+/**
+ * HTML e-mail küldés (UTF-8, szabályos fejlécek).
+ */
+function send_mail_html(string $to, string $subject, string $bodyHtml): bool {
+    $from = defined('MAIL_FROM') ? (string)MAIL_FROM : 'no-reply@localhost';
+    $fromName = defined('MAIL_FROM_NAME') ? (string)MAIL_FROM_NAME : 'Problématérkép';
+
+    $encodedFromName = function_exists('mb_encode_mimeheader')
+        ? mb_encode_mimeheader($fromName, 'UTF-8', 'B')
+        : $fromName;
+    $encodedSubject = function_exists('mb_encode_mimeheader')
+        ? mb_encode_mimeheader($subject, 'UTF-8', 'B')
+        : $subject;
+
+    $headers = [];
+    $headers[] = 'MIME-Version: 1.0';
+    $headers[] = 'Content-Type: text/html; charset=UTF-8';
+    $headers[] = 'Content-Transfer-Encoding: 8bit';
+    $headers[] = 'From: ' . $encodedFromName . ' <' . $from . '>';
+    $headers[] = 'Reply-To: ' . $from;
+
+    return @mail($to, $encodedSubject, $bodyHtml, implode("\r\n", $headers));
 }

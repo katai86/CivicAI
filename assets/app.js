@@ -1072,7 +1072,30 @@ function openIdeaModal(latlng){
   };
 }
 
+function showLoginGate(){
+  if (document.getElementById('introOverlayGate')) return;
+  document.body.classList.add('intro-open');
+  const ov = document.createElement('div');
+  ov.id = 'introOverlayGate';
+  ov.className = 'intro-overlay';
+  ov.innerHTML = `
+    <div class="intro-card">
+      <h2>${esc(t('site.name') || 'Problématérkép')}</h2>
+      <p class="intro-muted">${esc(t('modal.report_requires_login') || 'Bejelentés küldéséhez jelentkezz be vagy regisztrálj.')}</p>
+      <div class="intro-actions">
+        <a class="btn-primary" href="${BASE}/user/login.php">${esc(t('nav.login') || 'Belépés')}</a>
+        <a class="btn-ghost" href="${BASE}/user/register.php">${esc(t('nav.register') || 'Regisztráció')}</a>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(ov);
+}
+
 function openModal(latlng, options){
+  if (!IS_LOGGED_IN) {
+    showLoginGate();
+    return;
+  }
   if (options && options.category === 'idea') {
     openIdeaModal(latlng);
     return;
@@ -1662,54 +1685,23 @@ document.getElementById('btnNewReport')?.addEventListener('click', () => {
   openModal({ lat: c.lat, lng: c.lng });
 });
 
-// ====== FIRST POPUP (Belépés / Reg / Anonim) ======
+// ====== FIRST POPUP (vendég: csak Belépés / Regisztráció – anonim bejelentés nincs) ======
 (function introGate(){
-  const KEY = 'terkep_intro_done_v1';
-  // Ha már egyszer döntött, ne zavarjuk újra
-  if (localStorage.getItem(KEY) === '1') return;
-
-  // Ha be van jelentkezve, akkor semmi értelme újra mutatni.
-  // (Belépés után visszadobhat a /terkep/ oldalra, és nem akarjuk újra felugrasztani.)
-  if (window.TERKEP_LOGGED_IN === true) {
-    localStorage.setItem(KEY, '1');
-    return;
-  }
-
+  if (window.TERKEP_LOGGED_IN === true) return;
   document.body.classList.add('intro-open');
-
   const ov = document.createElement('div');
+  ov.id = 'introOverlayGate';
   ov.className = 'intro-overlay';
   ov.innerHTML = `
     <div class="intro-card">
-      <h2>Problématérkép</h2>
-      <p class="intro-muted">
-        Bejelentés küldéséhez választhatsz: <b>belépés</b>, <b>regisztráció</b> vagy <b>anonim folytatás</b>.
-      </p>
-
+      <h2>${esc(t('site.name') || 'Problématérkép')}</h2>
+      <p class="intro-muted">${esc(t('modal.report_requires_login') || 'Bejelentés küldéséhez jelentkezz be vagy regisztrálj.')}</p>
       <div class="intro-actions">
-        <a class="btn-primary" id="introLogin" href="${BASE}/user/login.php">Belépés</a>
-        <a class="btn-ghost" id="introReg" href="${BASE}/user/register.php">Regisztráció</a>
-        <button class="btn-soft" type="button" id="introAnon">Anonim folytatás</button>
+        <a class="btn-primary" href="${BASE}/user/login.php">${esc(t('nav.login') || 'Belépés')}</a>
+        <a class="btn-ghost" href="${BASE}/user/register.php">${esc(t('nav.register') || 'Regisztráció')}</a>
       </div>
-
-      <div class="intro-foot">
-        <small>
-          Tipp: ha belépsz/regisztrálsz, később könnyebb visszakeresni a saját ügyeidet.
-        </small>
-      </div>
+      <div class="intro-foot"><small>${esc(t('modal.report_login_tip') || 'Belépés után a saját ügyeidet is könnyen visszakeresed.')}</small></div>
     </div>
   `;
   document.body.appendChild(ov);
-
-  // Ha belépés / regisztráció gombra megy, akkor is tekintsük „eldöntöttnek”,
-  // hogy visszatéréskor ne ugorjon fel újra.
-  const markDone = () => { try { localStorage.setItem(KEY, '1'); } catch(e){} };
-  ov.querySelector('#introLogin')?.addEventListener('click', markDone);
-  ov.querySelector('#introReg')?.addEventListener('click', markDone);
-
-  ov.querySelector('#introAnon').addEventListener('click', () => {
-    localStorage.setItem(KEY, '1');
-    document.body.classList.remove('intro-open');
-    ov.remove();
-  });
 })();

@@ -70,12 +70,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         award_badge($newUserId, 'level_1');
       }
 
-      // MVP: email küldés később (D/E-nél).
-      // Most kiírjuk a verify linket (admin/dev mód).
       $verifyUrl = app_url('/user/verify.php?token=' . $token);
+      $siteName = defined('MAIL_FROM_NAME') ? (string)MAIL_FROM_NAME : (function_exists('t') ? t('site.name') : 'CivicAI');
+      $subject = (function_exists('t') ? t('email.welcome_subject') : 'Üdvözölünk a ') . $siteName;
+      $body = (function_exists('t') ? t('email.welcome_body') : 'Köszönjük a regisztrációt. Az alábbi linkre kattintva aktiválhatod a fiókod:')
+        . '<br><br><a href="' . htmlspecialchars($verifyUrl, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($verifyUrl, ENT_QUOTES, 'UTF-8') . '</a><br><br>'
+        . (function_exists('t') ? t('email.welcome_ignore') : 'Ha nem te regisztráltál, hagyd figyelmen kívül ezt az e-mailt.');
+      $html = email_template_html($subject, $body);
+      send_mail_html($email_lc, $subject, $html);
 
-      $_SESSION['flash'] = "Sikeres regisztráció. Ellenőrző link (MVP): " . $verifyUrl;
-      header('Location: ' . app_url('/user/login.php'));
+      header('Location: ' . app_url('/user/register_thanks.php'));
       exit;
 
 } catch (Throwable $e) {
