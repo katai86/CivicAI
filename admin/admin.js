@@ -78,7 +78,7 @@ async function fetchJson(url, opts){
     const msg = (j && (j.error || j.message)) ? (j.error || j.message) : text;
     throw new Error(`HTTP ${res.status}: ${msg}`);
   }
-  return j;
+  return j != null ? j : {};
 }
 
 // ---- Ikonok: stabil emoji-s jelölők (nincs külső kép / URL) ----
@@ -182,6 +182,7 @@ function catLabelShort(cat){ return t('cat.' + cat) || cat; }
 async function loadStats(){
   try{
     const j = await fetchJson(API_STATS);
+    if (!j || typeof j !== 'object') { throw new Error('Érvénytelen válasz'); }
     const data = j.data || {};
     const reports1 = data.reports_1d ?? 0;
     const reports7 = data.reports_7d ?? 0;
@@ -232,7 +233,7 @@ async function loadStats(){
     const chartCategory = document.getElementById('chartCategory');
     if (chartCategory){
       const maxC = Math.max(1, ...Object.values(category));
-      const items = Object.entries(category).sort((a,b)=>b[1]-a[1]).map(([k,v]) => ({ k, v, label:CAT_LABEL[k]||k }));
+      const items = Object.entries(category).sort((a,b)=>b[1]-a[1]).map(([k,v]) => ({ k, v, label: catLabelShort(k) || k }));
       const catColors = ['#e74c3c','#3498db','#f1c40f','#34495e','#27ae60','#9b59b6','#ff7a00','#0ea5e9'];
       chartCategory.innerHTML = items.length ? items.map((x,i) => `
         <div class="admin-chart-bar">
@@ -525,7 +526,7 @@ async function loadReports(){
     if (authorityId > 0) qs.set('authority_id', String(authorityId));
     if (limit) qs.set('limit', String(limit));
     const j = await fetchJson(`${API_LIST}?${qs.toString()}`);
-    const rows = j.data || [];
+    const rows = (j && j.data) ? j.data : [];
     renderReports(rows);
 
     if (map) {

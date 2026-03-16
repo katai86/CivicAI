@@ -158,6 +158,19 @@ if ($action === 'update' || $action === 'set_status') {
   exit;
 }
 
+function ensure_budget_settings_table(): void {
+  $sql = "CREATE TABLE IF NOT EXISTS budget_settings (
+    authority_id INT NOT NULL PRIMARY KEY,
+    frame_amount DECIMAL(12,2) NULL,
+    conditions_text TEXT NULL,
+    description TEXT NULL,
+    voting_closed TINYINT(1) NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_budget_settings_closed (voting_closed)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+  db()->exec($sql);
+}
+
 if ($action === 'save_settings') {
   if ($firstAid <= 0) {
     json_response(['ok' => false, 'error' => t('gov.no_authority_assigned')], 400);
@@ -166,6 +179,7 @@ if ($action === 'save_settings') {
   $conditionsText = isset($body['conditions_text']) ? trim((string)$body['conditions_text']) : null;
   $description = isset($body['description']) ? trim((string)$body['description']) : null;
   try {
+    ensure_budget_settings_table();
     $pdo = db();
     $pdo->prepare("
       INSERT INTO budget_settings (authority_id, frame_amount, conditions_text, description, voting_closed)
@@ -191,6 +205,7 @@ if ($action === 'close_voting') {
     json_response(['ok' => false, 'error' => t('gov.no_authority_assigned')], 400);
   }
   try {
+    ensure_budget_settings_table();
     db()->prepare("INSERT INTO budget_settings (authority_id, voting_closed) VALUES (?, 1) ON DUPLICATE KEY UPDATE voting_closed = 1, updated_at = NOW()")->execute([$firstAid]);
     json_response(['ok' => true]);
   } catch (Throwable $e) {
