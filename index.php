@@ -46,6 +46,8 @@ if (isset($_SESSION['flash'])) unset($_SESSION['flash']);
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/png" href="<?= htmlspecialchars(app_url('/assets/fav_icon.png'), ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="apple-touch-icon" href="<?= htmlspecialchars(app_url('/assets/fav_icon.png'), ENT_QUOTES, 'UTF-8') ?>">
   <title><?php echo htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8'); ?></title>
   <script>try{var t=localStorage.getItem('civicai_theme');<?php if ($userPreferredTheme): ?>if(!t)localStorage.setItem('civicai_theme',<?= json_encode($userPreferredTheme, JSON_UNESCAPED_UNICODE) ?>);t=localStorage.getItem('civicai_theme');<?php endif; ?>t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');document.documentElement.setAttribute('data-bs-theme','dark');}</script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">

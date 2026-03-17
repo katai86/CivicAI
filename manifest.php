@@ -23,13 +23,13 @@ $manifest = [
   'background_color' => '#0f1721',
   'icons' => [
     [
-      'src' => $base . '/Mobilekit_v2-9-1/HTML/assets/img/icon/192x192.png',
+      'src' => $base . '/assets/fav_icon.png',
       'sizes' => '192x192',
       'type' => 'image/png',
       'purpose' => 'any maskable'
     ],
     [
-      'src' => $base . '/Mobilekit_v2-9-1/HTML/assets/img/icon/384x384.png',
+      'src' => $base . '/assets/fav_icon.png',
       'sizes' => '384x384',
       'type' => 'image/png',
       'purpose' => 'any maskable'

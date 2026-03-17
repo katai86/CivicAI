@@ -102,6 +102,8 @@ $isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : false;
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,viewport-fit=cover">
+  <link rel="icon" type="image/png" href="<?= h(app_url('/assets/fav_icon.png')) ?>">
+  <link rel="apple-touch-icon" href="<?= h(app_url('/assets/fav_icon.png')) ?>">
   <title><?= h(t('site.name')) ?> – <?= h($caseNo) ?></title>
   <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
   <?php if ($isMobile): ?>

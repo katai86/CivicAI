@@ -23,15 +23,18 @@ $ok = $stmt->rowCount() > 0;
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" type="image/png" href="<?= htmlspecialchars(app_url('/assets/fav_icon.png'), ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="apple-touch-icon" href="<?= htmlspecialchars(app_url('/assets/fav_icon.png'), ENT_QUOTES, 'UTF-8') ?>">
   <title>CivicAI – Értesítések</title>
+  <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');}</script>
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="page auth-page">
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
-        <span class="brand-logo" aria-hidden="true"></span>
-        <b>CivicAI</b>
+        <img src="<?= htmlspecialchars(app_url('/assets/logo_dark.png'), ENT_QUOTES, 'UTF-8') ?>" alt="CivicAI" class="brand-logo-img brand-logo-img--dark" width="120" height="40">
+        <img src="<?= htmlspecialchars(app_url('/assets/logo_light.png'), ENT_QUOTES, 'UTF-8') ?>" alt="CivicAI" class="brand-logo-img brand-logo-img--light" width="120" height="40">
       </a>
       <div class="topbar-links">
         <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">Térkép</a>

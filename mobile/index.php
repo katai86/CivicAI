@@ -23,6 +23,8 @@ $LANG_JS = lang_array_for_js();
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#0f1721" />
   <link rel="manifest" href="<?= htmlspecialchars(app_url('/manifest.php'), ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="icon" type="image/png" href="<?= htmlspecialchars(app_url('/assets/fav_icon.png'), ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="apple-touch-icon" href="<?= htmlspecialchars(app_url('/assets/fav_icon.png'), ENT_QUOTES, 'UTF-8') ?>">
   <title><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?></title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">

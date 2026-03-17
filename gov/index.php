@@ -482,6 +482,8 @@ $govBudgetEnabled = $isAdmin ? true : user_module_enabled($govUid, 'budget');
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="icon" type="image/png" href="<?= h(app_url('/assets/fav_icon.png')) ?>">
+  <link rel="apple-touch-icon" href="<?= h(app_url('/assets/fav_icon.png')) ?>">
   <title><?= h(t('site.name')) ?> – <?= h(t('gov.title')) ?></title>
   <script>try{var t=localStorage.getItem('civicai_theme');t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');document.documentElement.setAttribute('data-bs-theme','dark');}</script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
@@ -530,8 +532,9 @@ $govBudgetEnabled = $isAdmin ? true : user_module_enabled($govUid, 'budget');
 
   <aside class="app-sidebar bg-body-secondary shadow">
     <div class="sidebar-brand">
-      <a href="<?= h(app_url('/')) ?>" class="brand-link">
-        <span class="brand-text fw-light">CivicAI</span>
+      <a href="<?= h(app_url('/')) ?>" class="brand-link d-flex align-items-center">
+        <img src="<?= h(app_url('/assets/logo_dark.png')) ?>" alt="<?= h(t('site.name')) ?>" class="civic-brand-img civic-brand-img--dark" style="height:2rem;width:auto;max-width:120px;object-fit:contain">
+        <img src="<?= h(app_url('/assets/logo_light.png')) ?>" alt="<?= h(t('site.name')) ?>" class="civic-brand-img civic-brand-img--light" style="height:2rem;width:auto;max-width:120px;object-fit:contain">
       </a>
     </div>
     <div class="sidebar-wrapper">

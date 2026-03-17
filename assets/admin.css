@@ -3,6 +3,14 @@
 [data-theme="light"] .theme-icon.theme-sun{display:none}
 [data-theme="light"] .theme-icon.theme-moon{display:inline}
 
+/* CivicAI logo by theme (admin/gov): dark theme = logo_light.png, light theme = logo_dark.png */
+.civic-brand-img--light{display:block!important;}
+.civic-brand-img--dark{display:none!important;}
+[data-theme="light"] .civic-brand-img--light{display:none!important;}
+[data-theme="light"] .civic-brand-img--dark{display:block!important;}
+[data-bs-theme="light"] .civic-brand-img--light{display:none!important;}
+[data-bs-theme="light"] .civic-brand-img--dark{display:block!important;}
+
 /* Admin light theme: form controls, inputs, navbar, sidebar */
 [data-theme="light"] .form-control,[data-theme="light"] .form-select,[data-theme="light"] .app-wrapper input,[data-theme="light"] .app-wrapper select,[data-theme="light"] .app-wrapper textarea{
   background-color:#fff!important;border-color:rgba(0,0,0,.12);color:#0f172a;

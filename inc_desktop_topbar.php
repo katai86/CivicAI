@@ -13,8 +13,8 @@ $rankAll = isset($rankAll) ? $rankAll : null;
 <header class="topbar">
   <div class="topbar-inner">
     <a class="brand brand-link" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">
-      <span class="brand-logo" aria-hidden="true"></span>
-      <b><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?></b>
+      <img src="<?= htmlspecialchars(app_url('/assets/logo_dark.png'), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?>" class="brand-logo-img brand-logo-img--dark" width="120" height="40">
+      <img src="<?= htmlspecialchars(app_url('/assets/logo_light.png'), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?>" class="brand-logo-img brand-logo-img--light" width="120" height="40">
     </a>
 
     <?php if ($showSearch): ?>
