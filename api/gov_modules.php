@@ -21,6 +21,7 @@ $defs = [
   ['key' => 'openai', 'label' => 'AI (OpenAI/ChatGPT)', 'description' => 'AI panel – OpenAI provider (ha be van kapcsolva az adminban).'],
   ['key' => 'fms', 'label' => 'FixMyStreet / Open311', 'description' => 'Külső Open311 / FixMyStreet integráció UI elemei.'],
   ['key' => 'budget', 'label' => 'Részvételi költségvetés', 'description' => 'RK projektek, szavazás lezárása, kihirdetés.'],
+  ['key' => 'surveys', 'label' => 'Felmérések', 'description' => 'Kérdőívek létrehozása, eredmények megtekintése.'],
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -33,6 +34,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       'description' => $d['description'],
       'enabled' => $enabled ? 1 : 0,
     ];
+    // Szinkron a nyilvános menühöz: surveys és budget kapcsoló állapota → module_settings (így a külső oldal is naprakész)
+    $globalKey = ($d['key'] === 'surveys') ? 'surveys' : (($d['key'] === 'budget') ? 'participatory_budget' : null);
+    if ($globalKey !== null) {
+      try {
+        $val = $enabled ? '1' : '0';
+        db()->prepare("
+          INSERT INTO module_settings (module_key, setting_key, value) VALUES (?, 'enabled', ?)
+          ON DUPLICATE KEY UPDATE value = VALUES(value)
+        ")->execute([$globalKey, $val]);
+      } catch (Throwable $e) { /* ignore */ }
+    }
   }
   json_response(['ok' => true, 'modules' => $out]);
 }
@@ -57,6 +69,26 @@ db()->prepare("
   VALUES (?, ?, ?)
   ON DUPLICATE KEY UPDATE is_enabled = VALUES(is_enabled)
 ")->execute([$uid, $key, $enabled]);
+
+// Szinkron: Felmérések és RK gov kapcsolója vezérli a nyilvános menüt is (module_settings)
+$globalModuleKey = null;
+if ($key === 'surveys') {
+  $globalModuleKey = 'surveys';
+} elseif ($key === 'budget') {
+  $globalModuleKey = 'participatory_budget';
+}
+if ($globalModuleKey !== null) {
+  try {
+    $val = $enabled ? '1' : '0';
+    $pdo = db();
+    $pdo->prepare("
+      INSERT INTO module_settings (module_key, setting_key, value) VALUES (?, 'enabled', ?)
+      ON DUPLICATE KEY UPDATE value = VALUES(value)
+    ")->execute([$globalModuleKey, $val]);
+  } catch (Throwable $e) {
+    // module_settings tábla hiányozhat
+  }
+}
 
 json_response(['ok' => true]);
 

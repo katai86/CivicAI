@@ -17,8 +17,7 @@ if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
 $currentLang = current_lang();
 $LANG_JS = lang_array_for_js();
 
-$budgetActive = (function_exists('participatory_budget_enabled') && participatory_budget_enabled())
-  || ($uid > 0 && function_exists('user_city_has_budget') && user_city_has_budget($uid));
+$budgetActive = function_exists('participatory_budget_enabled') && participatory_budget_enabled();
 $pageTitle = t('budget.page_title');
 ?><!doctype html>
 <html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>">

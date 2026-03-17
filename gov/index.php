@@ -474,6 +474,8 @@ function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 $govUid = current_user_id();
 $govAiUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'mistral');
 $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
+$govSurveysEnabled = $isAdmin ? true : user_module_enabled($govUid, 'surveys');
+$govBudgetEnabled = $isAdmin ? true : user_module_enabled($govUid, 'budget');
 ?>
 <!doctype html>
 <html lang="<?= h($currentLang) ?>">
@@ -554,18 +556,22 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
               <p><?= h(t('gov.tab_ideas')) ?></p>
             </a>
           </li>
+          <?php if ($govSurveysEnabled): ?>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="surveys">
               <i class="nav-icon bi bi-clipboard-pulse"></i>
               <p><?= h(t('gov.tab_surveys')) ?></p>
             </a>
           </li>
+          <?php endif; ?>
+          <?php if ($govBudgetEnabled): ?>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="budget">
               <i class="nav-icon bi bi-wallet2"></i>
               <p><?= h(t('gov.tab_budget') ?: 'Részvételi költségvetés') ?></p>
             </a>
           </li>
+          <?php endif; ?>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="trees">
               <i class="nav-icon bi bi-tree-fill"></i>
@@ -1039,6 +1045,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
           </div>
         </div>
 
+        <?php if ($govSurveysEnabled): ?>
         <div class="admin-tab-body" id="tab-surveys" hidden>
           <div class="card">
             <div class="card-body">
@@ -1053,7 +1060,9 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             </div>
           </div>
         </div>
+        <?php endif; ?>
 
+        <?php if ($govBudgetEnabled): ?>
         <div class="admin-tab-body" id="tab-budget" hidden>
           <div class="card">
             <div class="card-body">
@@ -1063,6 +1072,7 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
             </div>
           </div>
         </div>
+        <?php endif; ?>
 
         <div class="admin-tab-body" id="tab-iot" hidden>
           <div class="card">

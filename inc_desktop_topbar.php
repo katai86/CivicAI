@@ -80,7 +80,7 @@ $rankAll = isset($rankAll) ? $rankAll : null;
             </div>
           </div>
         </div>
-        <?php if ((function_exists('participatory_budget_enabled') && participatory_budget_enabled()) || ($uid > 0 && function_exists('user_city_has_budget') && user_city_has_budget($uid))): ?>
+        <?php if (function_exists('participatory_budget_enabled') && participatory_budget_enabled()): ?>
         <a class="topbtn" href="<?= htmlspecialchars(app_url('/budget.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.budget'), ENT_QUOTES, 'UTF-8') ?></a>
         <?php endif; ?>
         <?php if (function_exists('surveys_enabled') && surveys_enabled()): ?>
