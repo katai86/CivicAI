@@ -63,7 +63,7 @@ $LANG_JS = lang_array_for_js();
   <aside class="app-sidebar bg-body-secondary shadow">
     <div class="sidebar-brand">
       <a href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>" class="brand-link">
-        <span class="brand-text fw-light">CivicAI</span>
+        <span class="brand-text fw-light"><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?></span>
       </a>
     </div>
     <div class="sidebar-wrapper">

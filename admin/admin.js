@@ -182,7 +182,7 @@ function catLabelShort(cat){ return t('cat.' + cat) || cat; }
 async function loadStats(){
   try{
     const j = await fetchJson(API_STATS);
-    if (!j || typeof j !== 'object') { throw new Error('Érvénytelen válasz'); }
+    if (!j || typeof j !== 'object') { throw new Error(t('admin.invalid_response')); }
     const data = j.data || {};
     const reports1 = data.reports_1d ?? 0;
     const reports7 = data.reports_7d ?? 0;
@@ -347,7 +347,7 @@ function renderRow(r){
       ${r.title ? `<div class="mt-1">${esc(r.title)}</div>` : ''}
       <div class="text-secondary mt-1" title="${esc(r.description)}">${esc(descriptionSummary(r.description))}</div>
       ${r.address_approx ? `<div class="text-secondary mt-1">${esc(r.address_approx)}</div>` : ''}
-      ${r.authority_name ? `<div class="text-secondary small">Hatóság: ${esc(r.authority_name)}</div>` : ''}
+      ${r.authority_name ? `<div class="text-secondary small">${esc(t('admin.authority_label'))}: ${esc(r.authority_name)}</div>` : ''}
       ${reporterLine(r)}
       <div class="text-secondary mt-1">${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)} • ${esc(r.created_at || '')}</div>
 
@@ -573,7 +573,7 @@ async function loadUsers(){
       return;
     }
 
-    const roleOpts = ['user','civiluser','communityuser','govuser','admin','superadmin'].map(r => `<option value="${r}">${r}</option>`).join('');
+    const roleOpts = ['user','civiluser','communityuser','govuser','admin','superadmin'].map(r => `<option value="${r}">${esc(t('admin.role_'+r) || r)}</option>`).join('');
     list.innerHTML = `
       <table class="table table-sm table-hover align-middle mb-0">
         <thead>
@@ -633,7 +633,7 @@ async function loadUsers(){
           });
           await loadUsers();
         }catch(e){
-          alert('Állapot frissítés hiba: ' + e.message);
+          alert(t('admin.status_update_error') + ': ' + e.message);
         }
       });
     });
@@ -958,7 +958,7 @@ async function loadModules(){
         const enabled = card.querySelector('.module-enabled')?.checked ?? false;
         const settings = {};
         card.querySelectorAll('input[data-module-key][data-setting-key]').forEach(inp => {
-          if (inp.type === 'password' && inp.placeholder && inp.placeholder.includes('változatlan') && inp.value === '') return;
+          if (inp.type === 'password' && inp.value === '') return;
           if (inp.value.trim() !== '') settings[inp.getAttribute('data-setting-key')] = inp.value.trim();
         });
         card.querySelectorAll('select[data-module-key][data-setting-key]').forEach(sel => {
@@ -983,7 +983,7 @@ async function loadModules(){
     const testResult = document.getElementById('mistralTestResult');
     if (btnTest && testResult) {
       btnTest.addEventListener('click', async () => {
-        testResult.textContent = 'Tesztelés...';
+        testResult.textContent = t('admin.testing');
         btnTest.disabled = true;
         try {
           const j = await fetchJson(API_MODULES, {
@@ -992,10 +992,10 @@ async function loadModules(){
             body: JSON.stringify({ action: 'test_mistral' })
           });
           if (j && j.ok) {
-            testResult.textContent = (j.message || 'Mistral: OK');
+            testResult.textContent = (j.message || t('admin.mistral_ok'));
             testResult.className = 'small mt-2 text-success';
           } else {
-            testResult.textContent = (j && j.error) ? j.error : 'Ismeretlen hiba';
+            testResult.textContent = (j && j.error) ? j.error : t('admin.unknown_error');
             testResult.className = 'small mt-2 text-danger';
           }
         } catch (e) {
@@ -1009,7 +1009,7 @@ async function loadModules(){
     const openaiTestResult = document.getElementById('openaiTestResult');
     if (btnTestOpenai && openaiTestResult) {
       btnTestOpenai.addEventListener('click', async () => {
-        openaiTestResult.textContent = 'Tesztelés...';
+        openaiTestResult.textContent = t('admin.testing');
         btnTestOpenai.disabled = true;
         try {
           const j = await fetchJson(API_MODULES, {
@@ -1018,14 +1018,14 @@ async function loadModules(){
             body: JSON.stringify({ action: 'test_openai' })
           });
           if (j && j.ok) {
-            openaiTestResult.textContent = (j.message || 'OpenAI: OK');
+            openaiTestResult.textContent = (j.message || t('admin.openai_ok'));
             openaiTestResult.className = 'small mt-2 text-success';
           } else {
             openaiTestResult.textContent = (j && j.error) ? j.error : 'Ismeretlen hiba';
             openaiTestResult.className = 'small mt-2 text-danger';
           }
         } catch (e) {
-          openaiTestResult.textContent = 'Hiba: ' + (e.message || e);
+          openaiTestResult.textContent = t('admin.error_generic') + ': ' + (e.message || e);
           openaiTestResult.className = 'small mt-2 text-danger';
         }
         btnTestOpenai.disabled = false;

@@ -143,16 +143,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
           $token = (string)($r['notify_token'] ?? '');
           if ($notifyEnabled === 1 && $to !== '' && filter_var($to, FILTER_VALIDATE_EMAIL) && $token !== '') {
             $labels = [
-              'pending' => 'Ellenőrzés alatt',
-              'approved' => 'Publikálva',
-              'rejected' => 'Elutasítva',
-              'new' => 'Új',
-              'needs_info' => 'Kiegészítésre vár',
-              'forwarded' => 'Továbbítva',
-              'waiting_reply' => 'Válaszra vár',
-              'in_progress' => 'Folyamatban',
-              'solved' => 'Megoldva',
-              'closed' => 'Lezárva',
+              'pending' => t('status.pending'),
+              'approved' => t('status.approved'),
+              'rejected' => t('status.rejected'),
+              'new' => t('status.new'),
+              'needs_info' => t('status.needs_info'),
+              'forwarded' => t('status.forwarded'),
+              'waiting_reply' => t('status.waiting_reply'),
+              'in_progress' => t('status.in_progress'),
+              'solved' => t('status.solved'),
+              'closed' => t('status.closed'),
             ];
             $case = case_number((int)$r['id'], (string)$r['created_at']);
             $trackUrl = app_url('/case.php?token=' . rawurlencode($token));
@@ -1892,7 +1892,7 @@ $govBudgetEnabled = $isAdmin ? true : user_module_enabled($govUid, 'budget');
     form += '<label class="small">' + (<?= json_encode(t('gov.survey_starts') ?: 'Kezdés', JSON_UNESCAPED_UNICODE) ?>) + '</label><input type="datetime-local" id="govSurveyStarts" class="form-control form-control-sm mb-2" value="' + today + '">';
     form += '<label class="small">' + (<?= json_encode(t('gov.survey_ends') ?: 'Befejezés', JSON_UNESCAPED_UNICODE) ?>) + '</label><input type="datetime-local" id="govSurveyEnds" class="form-control form-control-sm mb-2" value="' + endStr + '">';
     form += '<label class="small">' + (<?= json_encode(t('common.status'), JSON_UNESCAPED_UNICODE) ?>) + '</label><select id="govSurveyStatus" class="form-select form-select-sm mb-2"><option value="draft">' + statusL.draft + '</option><option value="active">' + statusL.active + '</option><option value="closed">' + statusL.closed + '</option></select>';
-    form += '<p class="small mb-1">' + (<?= json_encode(t('gov.survey_questions') ?: 'Kérdések', JSON_UNESCAPED_UNICODE) ?>) + '</p><input type="text" id="govSurveyQ1" class="form-control form-control-sm mb-1" placeholder="1. kérdés"><input type="text" id="govSurveyQ2" class="form-control form-control-sm mb-1" placeholder="2. kérdés"><input type="text" id="govSurveyQ3" class="form-control form-control-sm mb-2" placeholder="3. kérdés">';
+    form += '<p class="small mb-1">' + (<?= json_encode(t('gov.survey_questions') ?: 'Kérdések', JSON_UNESCAPED_UNICODE) ?>) + '</p><input type="text" id="govSurveyQ1" class="form-control form-control-sm mb-1" placeholder="1. ' + (<?= json_encode(t('gov.survey_question_placeholder') ?: 'kérdés', JSON_UNESCAPED_UNICODE) ?>) + '"><input type="text" id="govSurveyQ2" class="form-control form-control-sm mb-1" placeholder="2. ' + (<?= json_encode(t('gov.survey_question_placeholder') ?: 'kérdés', JSON_UNESCAPED_UNICODE) ?>) + '"><input type="text" id="govSurveyQ3" class="form-control form-control-sm mb-2" placeholder="3. ' + (<?= json_encode(t('gov.survey_question_placeholder') ?: 'kérdés', JSON_UNESCAPED_UNICODE) ?>) + '">';
     form += '<button type="button" class="btn btn-sm btn-primary me-2" id="govSurveySubmit">' + (<?= json_encode(t('gov.save') ?: 'Mentés', JSON_UNESCAPED_UNICODE) ?>) + '</button><button type="button" class="btn btn-sm btn-outline-secondary" id="govSurveyCancel">' + (<?= json_encode(t('common.cancel') ?: 'Mégse', JSON_UNESCAPED_UNICODE) ?>) + '</button></div></div>';
     var wrap = document.createElement('div');
     wrap.innerHTML = form;

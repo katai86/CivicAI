@@ -109,17 +109,7 @@ function placeSearchMarker(lat, lon){
 }
 
 // ====== Category labels + badge icons ======
-const CAT_LABEL = {
-  road:'Úthiba / kátyú',
-  sidewalk:'Járda / burkolat hiba',
-  lighting:'Közvilágítás',
-  trash:'Szemét / illegális',
-  green:'Zöldterület / veszélyes fa',
-  traffic:'Közlekedés / tábla',
-  idea:'Ötlet / javaslat',
-  civil_event:'Civil esemény',
-  tree_upload:'Fa feltöltés'
-};
+function catLabel(cat){ return (window.LANG && (window.LANG['cat.'+cat+'_desc'] || window.LANG['cat.'+cat])) || cat; }
 
 const ICON = {
   road:     { tw: '1f6a7', color:'#e74c3c' }, // 🚧
@@ -132,8 +122,6 @@ const ICON = {
   civil_event: { tw: '1f91d', color:'#0ea5e9' }, // 🤝
   tree_upload: { tw: '1f333', color:'#27ae60' }  // 🌳
 };
-
-function catLabel(cat){ return CAT_LABEL[cat] || cat; }
 
 function shortDescription(text) {
   if (!text || !String(text).trim()) return '';
@@ -157,37 +145,23 @@ function buildCategoryOptions(){
   const opts = [];
   if (canCreateIssue()) {
     opts.push(
-      { id:'road', label:'Úthiba / kátyú' },
-      { id:'sidewalk', label:'Járda / burkolat hiba' },
-      { id:'lighting', label:'Közvilágítás' },
-      { id:'trash', label:'Szemét / illegális' },
-      { id:'green', label:'Zöldterület / veszélyes fa' },
-      { id:'traffic', label:'Közlekedés / tábla' },
-      { id:'idea', label:'Ötlet / javaslat' },
-      { id:'tree_upload', label:'Fa feltöltés' }
+      { id:'road', label: t('cat.road_desc') },
+      { id:'sidewalk', label: t('cat.sidewalk_desc') },
+      { id:'lighting', label: t('cat.lighting_desc') },
+      { id:'trash', label: t('cat.trash_desc') },
+      { id:'green', label: t('cat.green_desc') },
+      { id:'traffic', label: t('cat.traffic_desc') },
+      { id:'idea', label: t('cat.idea_desc') },
+      { id:'tree_upload', label: t('cat.tree_upload_desc') }
     );
   }
   if (canUseCivil()) {
-    opts.push({ id:'civil_event', label:'Civil esemény' });
+    opts.push({ id:'civil_event', label: t('cat.civil_event_desc') });
   }
-  return opts.map(o => `<option value="${o.id}">${o.label}</option>`).join('');
+  return opts.map(o => `<option value="${o.id}">${esc(o.label)}</option>`).join('');
 }
 
-function statusLabel(st){
-  const m = {
-    approved: 'Publikálva',
-    pending: 'Ellenőrzés alatt',
-    new: 'Új',
-    needs_info: 'Kiegészítésre vár',
-    forwarded: 'Továbbítva',
-    waiting_reply: 'Válaszra vár',
-    in_progress: 'Folyamatban',
-    solved: 'Megoldva',
-    closed: 'Lezárva',
-    rejected: 'Elutasítva',
-  };
-  return m[st] || st;
-}
+function statusLabel(st){ return t('status.' + st) || st; }
 
 function userLine(r){
   if (!r) return '';
@@ -462,7 +436,7 @@ map.on('popupopen', (e) => {
   if (likeBtn) {
     likeBtn.addEventListener('click', async () => {
       if (!IS_LOGGED_IN) {
-        alert('Bejelentkezés szükséges.');
+        alert(t('auth.login_required'));
         return;
       }
       const id = Number(likeBtn.getAttribute('data-id'));
@@ -476,7 +450,7 @@ map.on('popupopen', (e) => {
         const countEl = el.querySelector('.like-count');
         const labelEl = el.querySelector('.like-label');
         if (countEl) countEl.textContent = String(j.count ?? 0);
-        if (labelEl) labelEl.textContent = j.liked ? 'Kedveled' : 'Tetszik';
+        if (labelEl) labelEl.textContent = j.liked ? t('popup.liked') : t('modal.like');
         likeBtn.classList.toggle('liked', !!j.liked);
       }catch(err){
         console.error(err);
@@ -538,7 +512,7 @@ map.on('popupopen', (e) => {
           });
           const j = await res.json().catch(() => null);
           if (!res.ok || !j || !j.ok) {
-            alert((j && j.error) ? j.error : (window.LANG && window.LANG['tree.water_error']) ? window.LANG['tree.water_error'] : 'Öntözés sikertelen.');
+            alert((j && j.error) ? j.error : t('tree.water_error'));
             return;
           }
           const lastLine = el.querySelector('.tree-last-watered-line');
@@ -553,7 +527,7 @@ map.on('popupopen', (e) => {
           if (typeof alert === 'function') alert(msg);
         }catch(err){
           console.error(err);
-          alert((window.LANG && window.LANG['tree.water_error']) ? window.LANG['tree.water_error'] : 'Öntözés sikertelen.');
+          alert(t('tree.water_error'));
         }
       });
     }
@@ -564,26 +538,26 @@ map.on('popupopen', (e) => {
         ev.preventDefault();
         const photoInput = healthForm.querySelector('.tree-health-photo');
         if (!photoInput || !photoInput.files || !photoInput.files[0]) {
-          alert((window.LANG && window.LANG['tree.health_analyze_need_photo']) ? window.LANG['tree.health_analyze_need_photo'] : 'Válassz egy képet a fáról.');
+          alert(t('tree.health_analyze_need_photo'));
           return;
         }
         const fd = new FormData();
         fd.append('tree_id', String(treeId));
         fd.append('photo', photoInput.files[0]);
         const resultEl = healthForm.querySelector('.tree-health-result');
-        if (resultEl) resultEl.textContent = (window.LANG && window.LANG['tree.health_analyzing']) ? window.LANG['tree.health_analyzing'] : 'Elemzés...';
+        if (resultEl) resultEl.textContent = t('tree.health_analyzing');
         try {
           const res = await fetch(API_TREE_HEALTH_ANALYZE, { method: 'POST', body: fd });
           const j = await res.json().catch(() => null);
           if (!res.ok || !j || !j.ok) {
-            if (resultEl) resultEl.textContent = (j && j.error) ? j.error : 'Hiba';
+            if (resultEl) resultEl.textContent = (j && j.error) ? j.error : t('common.error_generic');
             return;
           }
           const statusLabel = (window.LANG && window.LANG['tree.health_status_' + j.status]) ? window.LANG['tree.health_status_' + j.status] : j.status;
           if (resultEl) resultEl.textContent = statusLabel + (j.suggestion ? ': ' + j.suggestion : '');
           healthForm.reset();
         } catch (err) {
-          if (resultEl) resultEl.textContent = (window.LANG && window.LANG['tree.water_error']) ? window.LANG['tree.water_error'] : 'Hiba';
+          if (resultEl) resultEl.textContent = t('tree.water_error');
         }
       });
     }
@@ -1051,7 +1025,7 @@ function openIdeaModal(latlng){
   modal.querySelector('.modal-x').onclick = () => { closeModal(); };
   modal.querySelector('#mIdeaSubmit').onclick = async () => {
     const title = modal.querySelector('#mIdeaTitle').value.trim();
-    if (!title) { alert(t('api.facility_name_required') || 'Cím megadása kötelező.'); return; }
+    if (!title) { alert(t('api.facility_name_required')); return; }
     const description = modal.querySelector('#mIdeaDesc').value.trim();
     try {
       const j = await fetchJson(API_IDEA_CREATE, {
@@ -1062,7 +1036,7 @@ function openIdeaModal(latlng){
       if (j.ok) {
         closeModal();
         loadIdeas().catch(() => {});
-        alert(t('modal.thanks') || 'Köszönjük!');
+        alert(t('modal.thanks'));
       } else {
         alert(j.error || t('common.error_generic'));
       }
@@ -1270,10 +1244,10 @@ function openModal(latlng, options){
     const street = modal.querySelector('#mStreet')?.value.trim() || '';
     const house = modal.querySelector('#mHouse')?.value.trim() || '';
     const addr = [street, house, city, zip].filter(Boolean).join(', ');
-    if (!addr) { alert('Add meg legalább a várost vagy az utcát!'); return; }
+    if (!addr) { alert(t('modal.address_required')); return; }
     try {
       const hits = await geocodeAddress(addr, 1);
-      if (!hits || !hits.length) { alert('Nem található a cím. Próbáld pontosítani (pl. Orosháza, Balassa Pál utca 25).'); return; }
+      if (!hits || !hits.length) { alert(t('modal.geocode_no_results')); return; }
       const h = hits[0];
       const lat = parseFloat(h.lat);
       const lon = parseFloat(h.lon);
@@ -1283,11 +1257,11 @@ function openModal(latlng, options){
         map.setView([lat, lon], 17, { animate: true });
         latlng.lat = lat;
         latlng.lng = lon;
-        alert('Hely beállítva. Most küldd el a bejelentést.');
-      } else { alert('Nem sikerült a koordináta.'); }
+        alert(t('modal.location_set'));
+      } else { alert(t('modal.geocode_failed')); }
     } catch (e) {
       console.error(e);
-      alert('Hiba a cím keresésnél. Próbáld újra.');
+      alert(t('modal.geocode_error'));
     }
   });
 
@@ -1336,7 +1310,7 @@ function openModal(latlng, options){
     if (mReportFields) mReportFields.style.display = isTree ? 'none' : '';
     if (mTreeHint) {
       mTreeHint.style.display = isTree ? 'block' : 'none';
-      mTreeHint.textContent = t('modal.tree_hint') || 'A fa helye: a térképen kattintott pont.';
+      mTreeHint.textContent = t('modal.tree_hint');
     }
     const mImageBlock = modal.querySelector('#mImageBlock');
     const mTreeSizes = modal.querySelector('#mTreeSizes');
@@ -1349,13 +1323,13 @@ function openModal(latlng, options){
       if (scroll && target) scroll.insertBefore(mImageBlock, target);
     }
     if (isTree) {
-      if (mTitleLabel) mTitleLabel.textContent = t('modal.tree_species_label') || t('tree.species_placeholder') || 'Fajta';
-      if (mDescLabel) mDescLabel.textContent = t('modal.tree_note_label') || t('tree.note_placeholder') || 'Megjegyzés';
+      if (mTitleLabel) mTitleLabel.textContent = t('modal.tree_species_label');
+      if (mDescLabel) mDescLabel.textContent = t('modal.tree_note_label');
       if (mTitleInput) mTitleInput.placeholder = t('tree.species_placeholder') || 'pl. kőris, tölgy';
       if (mDescInput) mDescInput.placeholder = t('tree.note_placeholder') || 'pl. becsült életkor, állapot';
     } else {
       if (mTitleLabel) mTitleLabel.textContent = t('modal.category') + ' – rövid cím';
-      if (mDescLabel) mDescLabel.textContent = 'Leírás';
+      if (mDescLabel) mDescLabel.textContent = t('modal.description_label');
       if (mTitleInput) mTitleInput.placeholder = t('modal.title_placeholder') || 'pl. Kátyú a kereszteződésnél';
       if (mDescInput) mDescInput.placeholder = t('modal.desc_placeholder') || 'Írd le röviden a problémát';
     }
@@ -1376,14 +1350,14 @@ function openModal(latlng, options){
   modal.querySelector('#mAnalyzePhotoBtn')?.addEventListener('click', async () => {
     const fileInput = modal.querySelector('#mImage');
     if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-      alert(t('tree.health_analyze_need_photo') || 'Válassz egy képet a fáról.');
+      alert(t('tree.health_analyze_need_photo'));
       return;
     }
     const btn = modal.querySelector('#mAnalyzePhotoBtn');
     const origText = btn?.textContent;
     const resultEl = modal.querySelector('#mTreeAnalyzeResult');
     if (resultEl) { resultEl.style.display = 'none'; resultEl.textContent = ''; }
-    if (btn) { btn.disabled = true; btn.textContent = t('tree.analyze_photo_analyzing') || 'Elemzés...'; }
+    if (btn) { btn.disabled = true; btn.textContent = t('tree.analyze_photo_analyzing'); }
     try {
       const fd = new FormData();
       fd.append('photo', fileInput.files[0]);
@@ -1403,21 +1377,21 @@ function openModal(latlng, options){
             resultEl.style.display = 'none';
             resultEl.textContent = '';
           } else {
-            resultEl.textContent = t('tree.analyze_no_result') || 'Nem sikerült a felismerés.';
+            resultEl.textContent = t('tree.analyze_no_result');
             resultEl.style.display = 'block';
           }
         }
       } else {
         const resultEl = modal.querySelector('#mTreeAnalyzeResult');
         if (resultEl) { resultEl.style.display = 'none'; resultEl.textContent = ''; }
-        alert(j && j.error ? j.error : (t('common.error_server') || 'Elemzés sikertelen.'));
+        alert(j && j.error ? j.error : t('common.error_server'));
       }
     } catch (e) {
       const re = modal.querySelector('#mTreeAnalyzeResult');
       if (re) { re.style.display = 'none'; re.textContent = ''; }
-      alert(t('common.error_server') || 'Elemzés sikertelen.');
+      alert(t('common.error_server'));
     }
-    if (btn) { btn.disabled = false; btn.textContent = origText || (t('tree.analyze_photo_btn') || 'Fotó elemzése (AI)'); }
+    if (btn) { btn.disabled = false; btn.textContent = origText || t('tree.analyze_photo_btn'); }
   });
 
   // Kategória javaslat a leírás alapján (Phase 4 – szabályalapú javaslat)
@@ -1453,7 +1427,7 @@ function openModal(latlng, options){
     if (category === 'tree_upload') {
       if (modal._treeSubmitting) return;
       if (!IS_LOGGED_IN) {
-        alert(t('modal.tree_upload_login') || 'Fa feltöltéshez be kell jelentkezned.');
+        alert(t('modal.tree_upload_login'));
         return;
       }
       modal._treeSubmitting = true;
@@ -1495,20 +1469,20 @@ function openModal(latlng, options){
     }
     
     if (!description && category !== 'tree_upload'){
-      alert('Kérlek írj leírást!');
+      alert(t('api.description_required'));
       return;
     }
 
     // nem anonim -> név kell
     if (!IS_LOGGED_IN && !reporter_is_anonymous && !reporter_name) {
-      alert('Ha nem anonim a beküldés, kérlek add meg a neved!');
+      alert(t('modal.name_required'));
       return;
     }
 
     const needsPersonal = (notify_enabled || create_account || !reporter_is_anonymous);
 
     if (!IS_LOGGED_IN && needsPersonal && !consent_data) {
-      alert('Kérjük fogadd el az adatkezelési tájékoztatót (hozzájárulás az adatkezeléshez).');
+      alert(t('api.gdpr_consent_required'));
       return;
     }
 
@@ -1519,7 +1493,7 @@ function openModal(latlng, options){
     }
 
     if (create_account && password.length < 8) {
-      alert('A regisztrációhoz legalább 8 karakteres jelszó kell.');
+      alert(t('api.password_min_8'));
       return;
     }
 
@@ -1535,7 +1509,7 @@ function openModal(latlng, options){
           `${API_NEARBY}?lat=${encodeURIComponent(latlng.lat)}&lng=${encodeURIComponent(latlng.lng)}&category=${encodeURIComponent(category)}&radius=200`
         );
         if (near200.ok && near200.data && near200.data.length > 0 && elNearby200) {
-          elNearby200.textContent = `ℹ️ ${near200.data.length} hasonló bejelentés 200 m-en belül (ugyanebben a kategóriában).`;
+          elNearby200.textContent = 'ℹ️ ' + (t('modal.nearby_count').replace('{n}', String(near200.data.length)));
           elNearby200.style.display = 'block';
         }
       } catch (e) { console.warn('nearby 200m check failed', e); }
@@ -1564,7 +1538,7 @@ function openModal(latlng, options){
 
     const btn = modal.querySelector('#mSubmit');
     btn.disabled = true;
-    btn.textContent = 'Beküldés...';
+    btn.textContent = t('modal.submitting');
 
     try{
       if (category === 'tree_upload') {
@@ -1593,19 +1567,19 @@ function openModal(latlng, options){
           modal._treeSubmitting = false;
           throw new Error(j && j.error ? j.error : (t('common.error_server') || 'Fa feltöltés sikertelen.'));
         }
-        alert(t('tree.submit_success') || 'Fa rögzítve. Megjelenik a térképen.');
+        alert(t('tree.submit_success'));
         modal._treeSubmitting = false;
         closeModal();
         loadTrees().catch(e => console.warn('loadTrees after tree_create', e));
         btn.disabled = false;
-        btn.textContent = t('modal.submit') || 'Beküldés';
+        btn.textContent = t('modal.submit');
         return;
       }
       if (category === 'civil_event') {
         if (!event_start || !event_end) {
-          alert('Az esemény kezdetét és végét add meg.');
+          alert(t('modal.event_dates_required'));
           btn.disabled = false;
-          btn.textContent = 'Beküldés';
+          btn.textContent = t('modal.submit');
           return;
         }
         await fetchJson(API_CIVIL_EVENT_CREATE, {
@@ -1664,15 +1638,15 @@ function openModal(latlng, options){
         }
       }
 
-      alert(t('modal.thanks') || 'Köszönjük! A bejelentés ellenőrzés után fog megjelenni a térképen.');
+      alert(t('modal.thanks'));
       closeModal();
 
     }catch(err){
       console.error(err);
       modal._treeSubmitting = false;
-      alert('Hiba a beküldésnél: ' + err.message);
+      alert(t('common.error_submit') + ': ' + err.message);
       btn.disabled = false;
-      btn.textContent = 'Beküldés';
+      btn.textContent = t('modal.submit');
     }
   });
 }
