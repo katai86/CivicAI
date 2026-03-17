@@ -22,6 +22,7 @@ $defs = [
   ['key' => 'fms', 'label' => 'FixMyStreet / Open311', 'description' => 'Külső Open311 / FixMyStreet integráció UI elemei.'],
   ['key' => 'budget', 'label' => 'Részvételi költségvetés', 'description' => 'RK projektek, szavazás lezárása, kihirdetés.'],
   ['key' => 'surveys', 'label' => 'Felmérések', 'description' => 'Kérdőívek létrehozása, eredmények megtekintése.'],
+  ['key' => 'iot', 'label' => 'IoT / Szenzorok', 'description' => 'Virtuális szenzorok (légszennyezés, időjárás), térkép és City Brain.'],
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

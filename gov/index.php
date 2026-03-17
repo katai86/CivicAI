@@ -476,6 +476,7 @@ $govAiUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'mistral');
 $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
 $govSurveysEnabled = $isAdmin ? true : user_module_enabled($govUid, 'surveys');
 $govBudgetEnabled = $isAdmin ? true : user_module_enabled($govUid, 'budget');
+$govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
 ?>
 <!doctype html>
 <html lang="<?= h($currentLang) ?>">
@@ -594,10 +595,55 @@ $govBudgetEnabled = $isAdmin ? true : user_module_enabled($govUid, 'budget');
               <p><?= h(t('gov.tab_analytics')) ?></p>
             </a>
           </li>
+          <?php if ($govIotEnabled): ?>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="iot">
               <i class="nav-icon bi bi-broadcast"></i>
               <p><?= h(t('gov.tab_iot')) ?></p>
+            </a>
+          </li>
+          <?php endif; ?>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_city_brain')) ?></li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="citybrain-live">
+              <i class="nav-icon bi bi-speedometer2"></i>
+              <p><?= h(t('gov.city_brain_live')) ?></p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="citybrain-predictive">
+              <i class="nav-icon bi bi-graph-up-arrow"></i>
+              <p><?= h(t('gov.city_brain_predictive')) ?></p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="citybrain-hotspot">
+              <i class="nav-icon bi bi-geo-alt-fill"></i>
+              <p><?= h(t('gov.city_brain_hotspot')) ?></p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="citybrain-behavior">
+              <i class="nav-icon bi bi-activity"></i>
+              <p><?= h(t('gov.city_brain_behavior')) ?></p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="citybrain-environmental">
+              <i class="nav-icon bi bi-cloud-sun"></i>
+              <p><?= h(t('gov.city_brain_environmental')) ?></p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="citybrain-insights">
+              <i class="nav-icon bi bi-lightbulb"></i>
+              <p><?= h(t('gov.city_brain_insights')) ?></p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="citybrain-risk">
+              <i class="nav-icon bi bi-exclamation-triangle-fill"></i>
+              <p><?= h(t('gov.city_brain_risk')) ?></p>
             </a>
           </li>
           <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_settings')) ?></li>
@@ -1077,17 +1123,63 @@ $govBudgetEnabled = $isAdmin ? true : user_module_enabled($govUid, 'budget');
         </div>
         <?php endif; ?>
 
+        <?php if ($govIotEnabled): ?>
         <div class="admin-tab-body" id="tab-iot" hidden>
-          <div class="card">
+          <div class="card mb-3">
             <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('gov.tab_iot') ?: 'IoT') ?></h6>
-              <p class="text-secondary small mb-3"><?= h(t('gov.iot_intro') ?: 'Mérőeszközök csatlakoztatása és megjelenítése a térképen. Kapcsold be a kívánt eszközöket.') ?></p>
-              <div id="govIotDeviceList">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+              <h6 class="card-title mb-2"><?= h(t('gov.tab_iot')) ?></h6>
+              <p class="text-secondary small mb-3"><?= h(t('gov.iot_intro')) ?></p>
+              <div id="govIotSummary" class="row g-2 mb-3"></div>
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <label class="small mb-0"><?= h(t('iot.filter_provider')) ?></label>
+                <select id="govIotProviderFilter" class="form-select form-select-sm" style="width:auto;">
+                  <option value=""><?= h(t('iot.filter_all')) ?></option>
+                </select>
+                <span class="small text-secondary">|</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="govIotViewList"><?= h(t('iot.view_list')) ?></button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="govIotViewTable"><?= h(t('iot.view_table')) ?></button>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="govIotExportCsv"><?= h(t('iot.export_csv')) ?></button>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="govIotExportJson"><?= h(t('iot.export_json')) ?></button>
               </div>
-              <p class="text-secondary small mt-2 mb-0"><?= h(t('gov.iot_hint') ?: 'Később itt kapcsolhatók be a térképre megjelenítendő szenzorok (légszenzor, zaj, stb.).') ?></p>
+              <div id="govIotCharts" class="mb-3"></div>
+              <div id="govIotMap" class="rounded border" style="height:280px;min-height:200px;"></div>
+              <div id="govIotDetailPanel" class="card mt-2 mb-2" style="display:none;">
+                <div class="card-body py-2">
+                  <div class="d-flex justify-content-between align-items-start"><h6 class="card-title small mb-1" id="govIotDetailTitle">—</h6><button type="button" class="btn btn-sm btn-close" id="govIotDetailClose" aria-label="Close"></button></div>
+                  <div id="govIotDetailBody" class="small"></div>
+                </div>
+              </div>
+              <h6 class="small mt-3 mb-2"><?= h(t('iot.sensor_list')) ?></h6>
+              <div id="govIotDeviceList">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+              <div id="govIotDeviceTable" class="table-responsive mb-2" style="display:none;"></div>
+              <p class="text-secondary small mt-2 mb-0"><?= h(t('gov.iot_hint')) ?></p>
             </div>
           </div>
+        </div>
+        <?php endif; ?>
+
+        <div class="admin-tab-body" id="tab-citybrain-live" hidden>
+          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_live')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+        </div>
+        <div class="admin-tab-body" id="tab-citybrain-predictive" hidden>
+          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_predictive')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+        </div>
+        <div class="admin-tab-body" id="tab-citybrain-hotspot" hidden>
+          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_hotspot')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+        </div>
+        <div class="admin-tab-body" id="tab-citybrain-behavior" hidden>
+          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_behavior')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+        </div>
+        <div class="admin-tab-body" id="tab-citybrain-environmental" hidden>
+          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_environmental')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+        </div>
+        <div class="admin-tab-body" id="tab-citybrain-insights" hidden>
+          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_insights')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+        </div>
+        <div class="admin-tab-body" id="tab-citybrain-risk" hidden>
+          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_risk')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
         </div>
 
         <div class="admin-tab-body" id="tab-modules" hidden>
@@ -1122,6 +1214,24 @@ $govBudgetEnabled = $isAdmin ? true : user_module_enabled($govUid, 'budget');
   var govBudgetUrl = <?= json_encode(app_url('/api/gov_budget.php'), JSON_UNESCAPED_SLASHES) ?>;
   var weatherUrl = <?= json_encode(app_url('/api/weather.php'), JSON_UNESCAPED_SLASHES) ?>;
   var iotDevicesUrl = <?= json_encode(app_url('/api/iot_devices.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var virtualSensorsListUrl = <?= json_encode(app_url('/api/virtual_sensors_list.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govIotLabels = <?= json_encode([
+    'total_sensors' => t('iot.total_sensors'),
+    'active_sensors' => t('iot.active_sensors'),
+    'stale_sensors' => t('iot.stale_sensors'),
+    'avg_aqi' => t('iot.avg_aqi'),
+    'avg_pm25' => t('iot.avg_pm25'),
+    'avg_temperature' => t('iot.avg_temperature'),
+    'no_data' => t('gov.no_data'),
+    'sensor_list' => t('iot.sensor_list'),
+    'sensors_by_provider' => t('iot.sensors_by_provider'),
+    'filter_provider' => t('iot.filter_provider'),
+    'filter_all' => t('iot.filter_all'),
+    'view_list' => t('iot.view_list'),
+    'view_table' => t('iot.view_table'),
+    'export_csv' => t('iot.export_csv'),
+    'export_json' => t('iot.export_json'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
   var heatmapUrl = <?= json_encode(app_url('/api/heatmap_data.php'), JSON_UNESCAPED_SLASHES) ?>;
   var authorityIdForHeatmap = <?= !empty($authorityIds) ? (int)$authorityIds[0] : '0' ?>;
   var govStatisticsUrl = <?= json_encode(app_url('/api/gov_statistics.php'), JSON_UNESCAPED_SLASHES) ?>;
@@ -1351,7 +1461,7 @@ $govBudgetEnabled = $isAdmin ? true : user_module_enabled($govUid, 'budget');
       e.preventDefault();
       var key = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
-      ['dashboard','ai','reports','ideas','surveys','budget','trees','analytics','iot','modules'].forEach(function(k){
+      ['dashboard','ai','reports','ideas','surveys','budget','trees','analytics','iot','citybrain-live','citybrain-predictive','citybrain-hotspot','citybrain-behavior','citybrain-environmental','citybrain-insights','citybrain-risk','modules'].forEach(function(k){
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
       });
@@ -1575,33 +1685,188 @@ $govBudgetEnabled = $isAdmin ? true : user_module_enabled($govUid, 'budget');
       container.innerHTML = '<div class="d-flex flex-wrap gap-3 align-items-center"><span class="fs-4 fw-bold">' + temp + '</span><span class="text-secondary small">' + desc + '</span><span class="text-secondary small">' + (typeof govWeatherHumidityLabel !== 'undefined' ? govWeatherHumidityLabel : 'Páratartalom') + ': ' + humidity + '</span></div>';
     }).catch(function(){ var c = document.getElementById('govWeatherContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
   }
+  var govIotMap = null;
+  var govIotMarkers = [];
+  var govIotSensorsCache = [];
+  var govIotSummaryCache = null;
+  function govIotFilteredSensors(){
+    var sel = document.getElementById('govIotProviderFilter');
+    var p = (sel && sel.value) ? sel.value.trim().toLowerCase() : '';
+    if (!p) return govIotSensorsCache;
+    return govIotSensorsCache.filter(function(s){ return (s.source_provider || '').toLowerCase() === p; });
+  }
+  function showGovIotDetail(sensor){
+    var panel = document.getElementById('govIotDetailPanel');
+    var titleEl = document.getElementById('govIotDetailTitle');
+    var bodyEl = document.getElementById('govIotDetailBody');
+    if (!panel || !titleEl || !bodyEl) return;
+    var name = (sensor.name || sensor.source_provider + ' #' + (sensor.external_station_id || '')).replace(/</g,'&lt;');
+    titleEl.textContent = name;
+    var rows = [];
+    rows.push('<p class="mb-1"><strong>Provider:</strong> ' + (sensor.source_provider || '—').replace(/</g,'&lt;') + '</p>');
+    rows.push('<p class="mb-1"><strong>Municipality:</strong> ' + (sensor.municipality || '—').replace(/</g,'&lt;') + '</p>');
+    rows.push('<p class="mb-1"><strong>Last seen:</strong> ' + (sensor.last_seen_at || '—').replace(/</g,'&lt;') + '</p>');
+    if (sensor.lat != null && sensor.lng != null) rows.push('<p class="mb-1"><strong>Coordinates:</strong> ' + sensor.lat + ', ' + sensor.lng + '</p>');
+    if (sensor.metrics && Object.keys(sensor.metrics).length > 0) {
+      rows.push('<table class="table table-sm mt-2"><thead><tr><th>Metric</th><th>Value</th><th>Unit</th></tr></thead><tbody>');
+      for (var k in sensor.metrics) {
+        var v = sensor.metrics[k];
+        var val = (v && typeof v === 'object' && v.value != null) ? v.value : (v || '—');
+        var unit = (v && typeof v === 'object' && v.unit) ? v.unit : '';
+        rows.push('<tr><td>' + String(k).replace(/</g,'&lt;') + '</td><td>' + val + '</td><td>' + String(unit).replace(/</g,'&lt;') + '</td></tr>');
+      }
+      rows.push('</tbody></table>');
+    }
+    bodyEl.innerHTML = rows.join('');
+    panel.style.display = 'block';
+  }
+  function renderGovIotFiltered(sensors){
+    var listEl = document.getElementById('govIotDeviceList');
+    var summaryEl = document.getElementById('govIotSummary');
+    var mapEl = document.getElementById('govIotMap');
+    var chartsEl = document.getElementById('govIotCharts');
+    var tableEl = document.getElementById('govIotDeviceTable');
+    var Lbl = govIotLabels || {};
+    var summary = govIotSummaryCache || {};
+    if (summaryEl) {
+      summaryEl.innerHTML = '<div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.total_sensors || 'Összes') + '</h6><p class="mb-0 fw-bold">' + summary.total + '</p></div></div></div>' +
+        '<div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.active_sensors || 'Aktív') + '</h6><p class="mb-0 fw-bold">' + summary.active + '</p></div></div></div>' +
+        '<div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_aqi || 'Átlag AQI') + '</h6><p class="mb-0 fw-bold">' + (summary.avg_aqi != null ? summary.avg_aqi : '—') + '</p></div></div></div>' +
+        '<div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_pm25 || 'PM2.5') + '</h6><p class="mb-0 fw-bold">' + (summary.avg_pm25 != null ? summary.avg_pm25 + ' µg/m³' : '—') + '</p></div></div></div>' +
+        '<div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_temperature || 'Hőm.') + '</h6><p class="mb-0 fw-bold">' + (summary.avg_temperature != null ? summary.avg_temperature + ' °C' : '—') + '</p></div></div></div>';
+    }
+    if (sensors.length === 0) {
+      if (summaryEl) summaryEl.innerHTML = '<div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.total_sensors || 'Összes') + '</h6><p class="mb-0 fw-bold">0</p></div></div></div><div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.active_sensors || 'Aktív') + '</h6><p class="mb-0 fw-bold">0</p></div></div></div><div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_aqi || 'Átlag AQI') + '</h6><p class="mb-0 fw-bold">—</p></div></div></div><div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_pm25 || 'PM2.5') + '</h6><p class="mb-0 fw-bold">—</p></div></div></div><div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_temperature || 'Hőm.') + '</h6><p class="mb-0 fw-bold">—</p></div></div></div>';
+      if (listEl) listEl.innerHTML = '<p class="text-secondary small mb-0">' + (Lbl.no_data || '—') + '</p>';
+      if (chartsEl) chartsEl.innerHTML = '';
+      if (tableEl) tableEl.innerHTML = '';
+      if (mapEl && govIotMap) { govIotMarkers.forEach(function(m){ govIotMap.removeLayer(m); }); govIotMarkers = []; }
+      return;
+    }
+    var html = '<ul class="list-unstyled mb-0">';
+    sensors.forEach(function(s){
+      var name = (s.name || s.source_provider + ' #' + s.external_station_id).replace(/</g,'&lt;');
+      var prov = (s.source_provider || '').replace(/</g,'&lt;');
+      var last = s.last_seen_at ? s.last_seen_at.replace(/</g,'&lt;') : '—';
+      var aqi = (s.metrics && s.metrics.aqi && s.metrics.aqi.value != null) ? s.metrics.aqi.value : '—';
+      html += '<li class="d-flex align-items-center justify-content-between border-bottom py-2 gov-iot-sensor-row" style="cursor:pointer;" data-index="' + govIotSensorsCache.indexOf(s) + '"><div><strong>' + name + '</strong> <span class="text-secondary small">' + prov + '</span><br><span class="text-muted small">AQI: ' + aqi + ' · ' + last + '</span></div></li>';
+    });
+    html += '</ul>';
+    if (listEl) listEl.innerHTML = html;
+    listEl && listEl.querySelectorAll('.gov-iot-sensor-row').forEach(function(li){
+      var idx = parseInt(li.getAttribute('data-index'), 10);
+      var s = govIotSensorsCache[idx];
+      if (s) li.addEventListener('click', function(){ showGovIotDetail(s); });
+    });
+    if (chartsEl) {
+      var byProvider = {};
+      sensors.forEach(function(s){ var p = (s.source_provider || 'other').toLowerCase(); byProvider[p] = (byProvider[p] || 0) + 1; });
+      var maxP = Math.max(1, Math.max.apply(null, Object.values(byProvider)));
+      var chartHtml = '<h6 class="small mb-2">' + (Lbl.sensors_by_provider || 'Sensors by provider') + '</h6><div class="admin-chart">';
+      Object.keys(byProvider).sort().forEach(function(p){
+        chartHtml += '<div class="admin-chart-bar"><span class="label">' + String(p).replace(/</g,'&lt;') + '</span><div class="bar-wrap"><div class="bar" style="width:' + Math.round(100 * byProvider[p] / maxP) + '%;background:#0d6efd"></div></div><span class="val">' + byProvider[p] + '</span></div>';
+      });
+      chartHtml += '</div>';
+      chartsEl.innerHTML = chartHtml;
+    }
+    if (tableEl && tableEl.style.display !== 'none') {
+      var tb = '<table class="table table-sm"><thead><tr><th>Name</th><th>Provider</th><th>Municipality</th><th>Last seen</th><th>AQI</th><th>PM2.5</th></tr></thead><tbody>';
+      sensors.forEach(function(s){
+        var aqi = (s.metrics && s.metrics.aqi && s.metrics.aqi.value != null) ? s.metrics.aqi.value : '—';
+        var pm25 = (s.metrics && s.metrics.pm25 && s.metrics.pm25.value != null) ? s.metrics.pm25.value : '—';
+        tb += '<tr class="gov-iot-table-row" style="cursor:pointer;" data-index="' + govIotSensorsCache.indexOf(s) + '"><td>' + (s.name || '').replace(/</g,'&lt;') + '</td><td>' + (s.source_provider || '').replace(/</g,'&lt;') + '</td><td>' + (s.municipality || '').replace(/</g,'&lt;') + '</td><td>' + (s.last_seen_at || '—').replace(/</g,'&lt;') + '</td><td>' + aqi + '</td><td>' + pm25 + '</td></tr>';
+      });
+      tb += '</tbody></table>';
+      tableEl.innerHTML = tb;
+      tableEl.querySelectorAll('.gov-iot-table-row').forEach(function(tr){
+        var idx = parseInt(tr.getAttribute('data-index'), 10);
+        var s = govIotSensorsCache[idx];
+        if (s) tr.addEventListener('click', function(){ showGovIotDetail(s); });
+      });
+    }
+    if (mapEl && typeof L !== 'undefined') {
+      if (!govIotMap) {
+        govIotMap = L.map('govIotMap').setView([typeof mapCenterLat !== 'undefined' ? mapCenterLat : 46.56, typeof mapCenterLng !== 'undefined' ? mapCenterLng : 20.67], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(govIotMap);
+      }
+      govIotMarkers.forEach(function(m){ if (govIotMap) govIotMap.removeLayer(m); });
+      govIotMarkers = [];
+      var bounds = [];
+      sensors.forEach(function(s){
+        if (s.lat != null && s.lng != null) {
+          var mk = L.marker([s.lat, s.lng]).addTo(govIotMap);
+          var pop = (s.name || s.source_provider).replace(/</g,'&lt;') + '<br><small>' + (s.municipality || '') + '</small>';
+          if (s.metrics && s.metrics.aqi && s.metrics.aqi.value != null) pop += '<br>AQI: ' + s.metrics.aqi.value;
+          pop += '<br><a href="#" class="gov-iot-detail-link" data-index="' + govIotSensorsCache.indexOf(s) + '">Details</a>';
+          mk.bindPopup(pop);
+          mk.on('popupopen', function(){
+            var wrapper = mk.getPopup().getElement();
+            if (wrapper) {
+              var link = wrapper.querySelector('.gov-iot-detail-link');
+              if (link) link.addEventListener('click', function(e){ e.preventDefault(); showGovIotDetail(govIotSensorsCache[parseInt(link.getAttribute('data-index'),10)]); });
+            }
+          });
+          govIotMarkers.push(mk);
+          bounds.push([s.lat, s.lng]);
+        }
+      });
+      if (bounds.length > 0 && govIotMap) govIotMap.fitBounds(bounds, { padding: [20, 20] });
+    }
+  }
   function loadGovIotDevices(){
-    var container = document.getElementById('govIotDeviceList');
-    if (!container || !iotDevicesUrl) return;
-    var authId = typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0;
-    var url = iotDevicesUrl + (authId > 0 ? '?authority_id=' + authId : '');
+    var listEl = document.getElementById('govIotDeviceList');
+    var summaryEl = document.getElementById('govIotSummary');
+    var mapEl = document.getElementById('govIotMap');
+    var url = virtualSensorsListUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : '');
+    if (!listEl) return;
+    if (summaryEl) summaryEl.innerHTML = '';
+    listEl.innerHTML = '<p class="text-secondary small mb-0">' + (govIotLabels && govIotLabels.no_data ? govIotLabels.no_data : '') + '</p>';
     fetch(url, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok) {
-        container.innerHTML = '<p class="text-danger small">' + (j && j.error ? String(j.error).replace(/</g,'&lt;') : '—') + '</p>';
+        listEl.innerHTML = '<p class="text-danger small">' + (j && j.error ? String(j.error).replace(/</g,'&lt;') : '—') + '</p>';
         return;
       }
-      var devices = j.devices || [];
-      var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
-      var showOnMapLabel = typeof govIotShowOnMap !== 'undefined' ? govIotShowOnMap : 'Megjelenítés a térképen';
-      if (devices.length === 0) {
-        container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>';
-        return;
+      govIotSensorsCache = j.sensors || [];
+      govIotSummaryCache = j.summary || {};
+      var Lbl = govIotLabels || {};
+      var filterSel = document.getElementById('govIotProviderFilter');
+      if (filterSel) {
+        var opts = filterSel.innerHTML;
+        filterSel.innerHTML = '<option value="">' + (Lbl.filter_all || 'All') + '</option>';
+        var providers = {};
+        govIotSensorsCache.forEach(function(s){ var p = (s.source_provider || '').toLowerCase(); if (p) providers[p] = true; });
+        Object.keys(providers).sort().forEach(function(p){ filterSel.innerHTML += '<option value="' + p.replace(/"/g,'&quot;') + '">' + p.replace(/</g,'&lt;') + '</option>'; });
       }
-      var html = '<ul class="list-unstyled mb-0">';
-      devices.forEach(function(dev){
-        var name = (dev.name || '#' + (dev.id || '')).replace(/</g,'&lt;');
-        var type = (dev.type || '').replace(/</g,'&lt;');
-        html += '<li class="d-flex align-items-center justify-content-between border-bottom py-2"><div><strong>' + name + '</strong> <span class="text-secondary small">' + type + '</span></div><label class="form-check form-switch mb-0"><input class="form-check-input gov-iot-toggle" type="checkbox" data-id="' + (dev.id || '') + '" ' + (dev.visible_on_map ? 'checked' : '') + '><span class="form-check-label small">' + showOnMapLabel + '</span></label></li>';
-      });
-      html += '</ul>';
-      container.innerHTML = html;
+      renderGovIotFiltered(govIotFilteredSensors());
     }).catch(function(){ var c = document.getElementById('govIotDeviceList'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
   }
+  document.getElementById('govIotProviderFilter') && document.getElementById('govIotProviderFilter').addEventListener('change', function(){ renderGovIotFiltered(govIotFilteredSensors()); });
+  document.getElementById('govIotDetailClose') && document.getElementById('govIotDetailClose').addEventListener('click', function(){ var p = document.getElementById('govIotDetailPanel'); if (p) p.style.display = 'none'; });
+  document.getElementById('govIotViewList') && document.getElementById('govIotViewList').addEventListener('click', function(){
+    var listEl = document.getElementById('govIotDeviceList'); var tableEl = document.getElementById('govIotDeviceTable');
+    if (listEl) listEl.style.display = ''; if (tableEl) tableEl.style.display = 'none';
+  });
+  document.getElementById('govIotViewTable') && document.getElementById('govIotViewTable').addEventListener('click', function(){
+    var listEl = document.getElementById('govIotDeviceList'); var tableEl = document.getElementById('govIotDeviceTable');
+    if (listEl) listEl.style.display = 'none'; if (tableEl) { tableEl.style.display = ''; tableEl.innerHTML = ''; renderGovIotFiltered(govIotFilteredSensors()); }
+  });
+  document.getElementById('govIotExportCsv') && document.getElementById('govIotExportCsv').addEventListener('click', function(){
+    var sensors = govIotFilteredSensors();
+    if (sensors.length === 0) return;
+    var head = 'Name,Provider,Municipality,Lat,Lng,Last seen,AQI,PM2.5,Temperature\n';
+    var csv = head + sensors.map(function(s){
+      var aqi = (s.metrics && s.metrics.aqi && s.metrics.aqi.value != null) ? s.metrics.aqi.value : '';
+      var pm25 = (s.metrics && s.metrics.pm25 && s.metrics.pm25.value != null) ? s.metrics.pm25.value : '';
+      var temp = (s.metrics && (s.metrics.temperature || s.metrics.temp)) ? ((s.metrics.temperature || s.metrics.temp).value != null ? (s.metrics.temperature || s.metrics.temp).value : '') : '';
+      return '"' + (s.name || '').replace(/"/g,'""') + '","' + (s.source_provider || '').replace(/"/g,'""') + '","' + (s.municipality || '').replace(/"/g,'""') + '",' + (s.lat || '') + ',' + (s.lng || '') + ',"' + (s.last_seen_at || '').replace(/"/g,'""') + '",' + aqi + ',' + pm25 + ',' + temp;
+    }).join('\n');
+    var a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.download = 'virtual_sensors.csv'; a.click();
+  });
+  document.getElementById('govIotExportJson') && document.getElementById('govIotExportJson').addEventListener('click', function(){
+    var sensors = govIotFilteredSensors();
+    if (sensors.length === 0) return;
+    var a = document.createElement('a'); a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify({ sensors: sensors })); a.download = 'virtual_sensors.json'; a.click();
+  });
   function initGovStatisticsTab(){
     var fromEl = document.getElementById('govStatsDateFrom');
     var toEl = document.getElementById('govStatsDateTo');

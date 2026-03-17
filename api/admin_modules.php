@@ -54,6 +54,21 @@ $MODULE_DEFS = [
       ['key' => 'enabled', 'label' => 'Felmérések aktív (menü és oldal látható)', 'type' => 'checkbox'],
     ],
   ],
+  'iot' => [
+    'name' => 'IoT / Virtuális szenzorok',
+    'description' => 'Külső adatforrások (légszennyezés, időjárás) virtuális szenzorként a közig dashboardon és térképen. API kulcsok a providerekhez.',
+    'settings' => [
+      ['key' => 'enabled', 'label' => 'IoT modul bekapcsolva (gov felületen ki/be kapcsolható)', 'type' => 'checkbox'],
+      ['key' => 'openaq_api_key', 'label' => 'OpenAQ API token (opcionális)', 'type' => 'password', 'mask' => true],
+      ['key' => 'aqicn_api_key', 'label' => 'AQICN API token', 'type' => 'password', 'mask' => true],
+      ['key' => 'openweather_api_key', 'label' => 'OpenWeather API kulcs', 'type' => 'password', 'mask' => true],
+      ['key' => 'weatherxm_api_key', 'label' => 'WeatherXM API token (opcionális)', 'type' => 'password', 'mask' => true],
+      ['key' => 'aeris_client_id', 'label' => 'AerisWeather / PWS Client ID (opcionális)', 'type' => 'password', 'mask' => true],
+      ['key' => 'aeris_client_secret', 'label' => 'AerisWeather Client Secret (opcionális)', 'type' => 'password', 'mask' => true],
+      ['key' => 'iot_sync_interval_min', 'label' => 'Sync gyakoriság (perc)', 'type' => 'number', 'placeholder' => '60'],
+      ['key' => 'iot_max_stations_per_city', 'label' => 'Max állomás városonként', 'type' => 'number', 'placeholder' => '100'],
+    ],
+  ],
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
