@@ -1166,25 +1166,101 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
         <?php endif; ?>
 
         <div class="admin-tab-body" id="tab-citybrain-live" hidden>
-          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_live')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+          <div class="card">
+            <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_live')) ?></h6></div>
+            <div class="card-body">
+              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_live_desc') ?: 'Valós idejű összesítő: szenzorok, bejelentések, ötletek.') ?></p>
+              <div id="citybrainLiveContent"><p class="text-secondary small mb-0"><?= h(t('admin.load') ?: 'Betöltés...') ?></p></div>
+            </div>
+          </div>
         </div>
         <div class="admin-tab-body" id="tab-citybrain-predictive" hidden>
-          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_predictive')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+          <div class="card">
+            <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_predictive')) ?></h6></div>
+            <div class="card-body">
+              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_predictive_desc') ?: 'Előrejelzett problémák, kockázati zónák, faegészség.') ?></p>
+              <div id="citybrainPredictiveContent"><p class="text-secondary small mb-0"><?= h(t('admin.load') ?: 'Betöltés...') ?></p></div>
+            </div>
+          </div>
         </div>
         <div class="admin-tab-body" id="tab-citybrain-hotspot" hidden>
-          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_hotspot')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+          <div class="card">
+            <div class="card-header d-flex flex-wrap align-items-center gap-2">
+              <h6 class="card-title mb-0"><?= h(t('gov.city_brain_hotspot')) ?></h6>
+              <select id="citybrainHotspotType" class="form-select form-select-sm" style="width:auto;">
+                <option value="issue_density"><?= h(t('gov.heatmap_issue_density') ?: 'Probléma sűrűség') ?></option>
+                <option value="unresolved_issues"><?= h(t('gov.heatmap_unresolved') ?: 'Nyitott ügyek') ?></option>
+                <option value="citizen_activity"><?= h(t('gov.heatmap_citizen_activity') ?: 'Polgári aktivitás') ?></option>
+                <option value="tree_health_risk"><?= h(t('gov.heatmap_tree_risk') ?: 'Fa egészség kockázat') ?></option>
+                <option value="esg_risk"><?= h(t('gov.heatmap_esg_risk') ?: 'ESG kockázat') ?></option>
+              </select>
+            </div>
+            <div class="card-body">
+              <div id="citybrainHotspotMap" style="height:400px; border-radius:6px;"></div>
+            </div>
+          </div>
         </div>
         <div class="admin-tab-body" id="tab-citybrain-behavior" hidden>
-          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_behavior')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+          <div class="card">
+            <div class="card-header d-flex flex-wrap align-items-center gap-2">
+              <h6 class="card-title mb-0"><?= h(t('gov.city_brain_behavior')) ?></h6>
+              <input type="date" id="citybrainBehaviorDateFrom" class="form-control form-control-sm" style="width:auto;">
+              <input type="date" id="citybrainBehaviorDateTo" class="form-control form-control-sm" style="width:auto;">
+              <button type="button" id="citybrainBehaviorRefresh" class="btn btn-sm btn-outline-primary"><?= h(t('common.refresh') ?: 'Frissítés') ?></button>
+            </div>
+            <div class="card-body">
+              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_behavior_desc') ?: 'Bejelentési trendek, feloldási arány, részvétel.') ?></p>
+              <div id="citybrainBehaviorContent"><p class="text-secondary small mb-0"><?= h(t('admin.load') ?: 'Betöltés...') ?></p></div>
+            </div>
+          </div>
         </div>
         <div class="admin-tab-body" id="tab-citybrain-environmental" hidden>
-          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_environmental')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+          <div class="card">
+            <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_environmental')) ?></h6></div>
+            <div class="card-body">
+              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_environmental_desc') ?: 'Környezeti metrikák: levegőminőség, hőmérséklet, szenzorok providerek szerint.') ?></p>
+              <div id="citybrainEnvironmentalContent"><p class="text-secondary small mb-0"><?= h(t('admin.load') ?: 'Betöltés...') ?></p></div>
+            </div>
+          </div>
         </div>
         <div class="admin-tab-body" id="tab-citybrain-insights" hidden>
-          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_insights')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+          <div class="card">
+            <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_insights')) ?></h6></div>
+            <div class="card-body">
+              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_insights_desc') ?: 'AI összefoglaló vagy ESG jelentés generálása a hatóság adatai alapján.') ?></p>
+              <div class="row g-2 mb-3">
+                <div class="col-auto">
+                  <select id="citybrainInsightsType" class="form-select form-select-sm">
+                    <option value="summary"><?= h(t('gov.ai_summary') ?: 'Összefoglaló') ?></option>
+                    <option value="esg"><?= h(t('gov.ai_esg') ?: 'ESG') ?></option>
+                    <option value="maintenance"><?= h(t('gov.ai_maintenance') ?: 'Karbantartás') ?></option>
+                    <option value="engagement"><?= h(t('gov.ai_engagement') ?: 'Részvétel') ?></option>
+                    <option value="sustainability"><?= h(t('gov.ai_sustainability') ?: 'Fenntarthatóság') ?></option>
+                  </select>
+                </div>
+                <div class="col-auto">
+                  <select id="citybrainInsightsTimeframe" class="form-select form-select-sm">
+                    <option value="last_30_days"><?= h(t('gov.last_30_days') ?: 'Utolsó 30 nap') ?></option>
+                    <option value="last_90_days" selected><?= h(t('gov.last_90_days') ?: 'Utolsó 90 nap') ?></option>
+                    <option value="last_year"><?= h(t('gov.last_year') ?: 'Elmúlt év') ?></option>
+                  </select>
+                </div>
+                <div class="col-auto">
+                  <button type="button" id="citybrainInsightsGenerate" class="btn btn-sm btn-primary"><?= h(t('gov.generate') ?: 'Generálás') ?></button>
+                </div>
+              </div>
+              <div id="citybrainInsightsResult" class="border rounded p-3 bg-light bg-opacity-50" style="min-height:80px; white-space:pre-wrap;"></div>
+            </div>
+          </div>
         </div>
         <div class="admin-tab-body" id="tab-citybrain-risk" hidden>
-          <div class="card"><div class="card-body"><h6 class="card-title"><?= h(t('gov.city_brain_risk')) ?></h6><p class="text-secondary small mb-0"><?= h(t('gov.city_brain_placeholder')) ?></p></div></div>
+          <div class="card">
+            <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_risk')) ?></h6></div>
+            <div class="card-body">
+              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_risk_desc') ?: 'Automatikus riasztások: magas AQI, elavult szenzorok, nagy nyitott backlog.') ?></p>
+              <div id="citybrainRiskContent"><p class="text-secondary small mb-0"><?= h(t('admin.load') ?: 'Betöltés...') ?></p></div>
+            </div>
+          </div>
         </div>
 
         <div class="admin-tab-body" id="tab-modules" hidden>
@@ -1252,6 +1328,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   var heatmapUrl = <?= json_encode(app_url('/api/heatmap_data.php'), JSON_UNESCAPED_SLASHES) ?>;
   var authorityIdForHeatmap = <?= !empty($authorityIds) ? (int)$authorityIds[0] : '0' ?>;
   var govStatisticsUrl = <?= json_encode(app_url('/api/gov_statistics.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var citybrainDashboardUrl = <?= json_encode(app_url('/api/citybrain_dashboard.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govStatisticsLabels = <?= json_encode([
     'issue_trend' => t('gov.statistics_issue_trend'),
     'resolution_time' => t('gov.statistics_resolution_time'),
@@ -1489,6 +1566,13 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
       if (key === 'iot') loadGovIotDevices();
       if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovGreenMetrics(); loadGovEsgMetrics(); }
       if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); }
+      if (key === 'citybrain-live') loadCitybrainLive();
+      if (key === 'citybrain-predictive') loadCitybrainPredictive();
+      if (key === 'citybrain-hotspot') initCitybrainHotspot();
+      if (key === 'citybrain-behavior') loadCitybrainBehavior();
+      if (key === 'citybrain-environmental') loadCitybrainEnvironmental();
+      if (key === 'citybrain-insights') initCitybrainInsights();
+      if (key === 'citybrain-risk') loadCitybrainRisk();
     });
   });
 
@@ -1967,6 +2051,161 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     }).catch(function(){ var container = document.getElementById('govStatisticsContent'); if (container) container.innerHTML = '<p class="text-danger small">Hiba a betöltéskor.</p>'; });
   }
   document.getElementById('govStatisticsRefresh') && document.getElementById('govStatisticsRefresh').addEventListener('click', loadGovStatistics);
+
+  function loadCitybrainLive(){
+    var container = document.getElementById('citybrainLiveContent');
+    if (!container || !citybrainDashboardUrl) return;
+    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?></p>';
+    fetch(citybrainDashboardUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.live) { container.innerHTML = '<p class="text-secondary small mb-0">—</p>'; return; }
+      var L = govIotLabels || {};
+      var s = j.live.sensors_summary || {};
+      var html = '<div class="row g-3">';
+      html += '<div class="col-md-3"><div class="card border-primary"><div class="card-body py-2"><h6 class="small text-muted">' + (L.total_sensors || 'Szenzorok') + '</h6><p class="mb-0 fs-5">' + (s.total || 0) + '</p><small class="text-success">' + (s.active || 0) + ' aktív</small></div></div></div>';
+      html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_aqi || 'Átlag AQI') + '</h6><p class="mb-0 fs-5">' + (s.avg_aqi != null ? s.avg_aqi : '—') + '</p></div></div></div>';
+      html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_pm25 || 'PM2.5') + '</h6><p class="mb-0 fs-5">' + (s.avg_pm25 != null ? s.avg_pm25 + ' µg/m³' : '—') + '</p></div></div></div>';
+      html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_temperature || 'Hőmérséklet') + '</h6><p class="mb-0 fs-5">' + (s.avg_temperature != null ? s.avg_temperature + ' °C' : '—') + '</p></div></div></div>';
+      html += '</div><div class="row g-3 mt-1">';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">Bejelentések (24h)</h6><p class="mb-0">' + (j.live.reports_24h || 0) + '</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">Ötletek (24h)</h6><p class="mb-0">' + (j.live.ideas_24h || 0) + '</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">Nyitott bejelentések</h6><p class="mb-0">' + (j.live.open_reports || 0) + '</p></div></div></div>';
+      html += '</div>';
+      container.innerHTML = html;
+    }).catch(function(){ if (container) container.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  function loadCitybrainPredictive(){
+    var container = document.getElementById('citybrainPredictiveContent');
+    if (!container || !govPredictionsUrl) return;
+    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?></p>';
+    fetch(govPredictionsUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var L = govPredictionsLabels || {};
+      var noData = (govStatisticsLabels && govStatisticsLabels.no_data) || '—';
+      if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
+      var d = j.data;
+      var issues = Array.isArray(d.predicted_issues) ? d.predicted_issues : [];
+      var zones = Array.isArray(d.risk_zones) ? d.risk_zones : [];
+      var trees = Array.isArray(d.predicted_tree_failures) ? d.predicted_tree_failures : [];
+      var html = '<p class="small mb-2">Előrejelzett ügyek: <b>' + issues.length + '</b> · Kockázati zónák: <b>' + zones.length + '</b> · Fa kockázat: <b>' + trees.length + '</b></p>';
+      if (issues.length > 0) { html += '<p class="small fw-semibold">Előrejelzett ügyek</p><ul class="small mb-2">'; issues.slice(0, 5).forEach(function(x){ html += '<li>' + (x.category || '') + ' ' + (x.risk_level || '') + '</li>'; }); if (issues.length > 5) html += '<li class="text-secondary">… +' + (issues.length - 5) + '</li>'; html += '</ul>'; }
+      if (trees.length > 0) { html += '<p class="small fw-semibold">Fa kockázat</p><ul class="small mb-0">'; trees.slice(0, 5).forEach(function(x){ html += '<li>#' + (x.tree_id || '') + ' ' + (x.risk || '') + '</li>'; }); if (trees.length > 5) html += '<li class="text-secondary">… +' + (trees.length - 5) + '</li>'; html += '</ul>'; }
+      if (issues.length === 0 && trees.length === 0) html += '<p class="text-secondary small mb-0">' + noData + '</p>';
+      container.innerHTML = html;
+    }).catch(function(){ if (container) container.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  var citybrainHotspotMap = null;
+  var citybrainHotspotLayer = null;
+  function initCitybrainHotspot(){
+    var mapEl = document.getElementById('citybrainHotspotMap');
+    if (!mapEl || typeof L === 'undefined' || typeof L.heatLayer === 'undefined') return;
+    if (!citybrainHotspotMap) {
+      citybrainHotspotMap = L.map('citybrainHotspotMap').setView([typeof mapCenterLat !== 'undefined' ? mapCenterLat : 47.5, typeof mapCenterLng !== 'undefined' ? mapCenterLng : 19], 11);
+      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OSM' }).addTo(citybrainHotspotMap);
+      citybrainHotspotLayer = L.heatLayer([], { radius: 25, blur: 15 }).addTo(citybrainHotspotMap);
+    }
+    loadCitybrainHotspot();
+    document.getElementById('citybrainHotspotType') && document.getElementById('citybrainHotspotType').addEventListener('change', loadCitybrainHotspot);
+  }
+  function loadCitybrainHotspot(){
+    if (!heatmapUrl || !citybrainHotspotLayer) return;
+    var type = (document.getElementById('citybrainHotspotType') && document.getElementById('citybrainHotspotType').value) || 'issue_density';
+    var params = 'type=' + encodeURIComponent(type);
+    if (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) params += '&authority_id=' + authorityIdForHeatmap;
+    fetch(heatmapUrl + '?' + params, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !Array.isArray(j.data)) { citybrainHotspotLayer.setLatLngs([]); return; }
+      var points = j.data.map(function(p){ return [parseFloat(p.lat), parseFloat(p.lng), parseFloat(p.weight) || 1]; });
+      citybrainHotspotLayer.setLatLngs(points);
+    }).catch(function(){ if (citybrainHotspotLayer) citybrainHotspotLayer.setLatLngs([]); });
+  }
+  function loadCitybrainBehavior(){
+    var container = document.getElementById('citybrainBehaviorContent');
+    if (!container || !govStatisticsUrl) return;
+    var fromEl = document.getElementById('citybrainBehaviorDateFrom');
+    var toEl = document.getElementById('citybrainBehaviorDateTo');
+    var dateFrom = (fromEl && fromEl.value) ? fromEl.value : new Date(Date.now() - 30*24*60*60*1000).toISOString().slice(0, 10);
+    var dateTo = (toEl && toEl.value) ? toEl.value : new Date().toISOString().slice(0, 10);
+    if (fromEl && !fromEl.value) fromEl.value = dateFrom;
+    if (toEl && !toEl.value) toEl.value = dateTo;
+    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?></p>';
+    var params = 'date_from=' + encodeURIComponent(dateFrom) + '&date_to=' + encodeURIComponent(dateTo);
+    if (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) params += '&authority_id=' + authorityIdForHeatmap;
+    fetch(govStatisticsUrl + '?' + params, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var L = govStatisticsLabels || {};
+      if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + (L.no_data || '—') + '</p>'; return; }
+      var d = j.data;
+      var html = '<div class="row g-3 mb-3">';
+      html += '<div class="col-md-6"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.resolution_rate || 'Feloldási arány') + '</h6><p class="mb-0 small">Feloldva: <b>' + (d.resolution_rate && d.resolution_rate.resolved) + '</b> / ' + (d.resolution_rate && d.resolution_rate.total) + ' (' + (d.resolution_rate ? (d.resolution_rate.rate * 100).toFixed(0) + '%' : '') + ')</p></div></div></div>';
+      html += '<div class="col-md-6"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.resolution_time || 'Reakcióidő') + '</h6><p class="mb-0 small">Átlag: <b>' + (d.response_times && d.response_times.avg_hours) + ' h</b> · Medián: ' + (d.response_times && d.response_times.median_hours) + ' h</p></div></div></div>';
+      html += '</div><div class="row g-3 mb-3">';
+      var trendLabel = (d.backlog_growth && d.backlog_growth.trend === 'up') ? (L.trend_up || '↑') : (d.backlog_growth && d.backlog_growth.trend === 'down') ? (L.trend_down || '↓') : (L.trend_stable || '→');
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.backlog || 'Backlog') + '</h6><p class="mb-0 small">Nyitott: <b>' + (d.backlog_growth && d.backlog_growth.current_open) + '</b> (' + trendLabel + ')</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.participation || 'Részvétel') + '</h6><p class="mb-0 small">Aktív 7 nap: <b>' + (d.citizen_participation_rate && d.citizen_participation_rate.active_users_7d) + '</b> · Bejelentések 7d: ' + (d.citizen_participation_rate && d.citizen_participation_rate.reports_7d) + '</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.trees || 'Fák') + '</h6><p class="mb-0 small">Összes: ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.total_trees) + ' · Öntözve 7d: ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.watered_7d) + ' · Örökbefogadott: ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.adopted) + '</p></div></div></div>';
+      html += '</div>';
+      if (Array.isArray(d.issue_trends) && d.issue_trends.length > 0) {
+        html += '<h6 class="small mt-2">' + (L.issue_trend || 'Ügy trend') + '</h6><ul class="small list-unstyled mb-0">';
+        var byDate = {};
+        d.issue_trends.forEach(function(t){ byDate[t.date] = (byDate[t.date] || 0) + t.count; });
+        Object.keys(byDate).sort().slice(-14).forEach(function(date){ html += '<li>' + date + ': <b>' + byDate[date] + '</b> ügy</li>'; });
+        html += '</ul>';
+      }
+      container.innerHTML = html;
+    }).catch(function(){ if (container) container.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  document.getElementById('citybrainBehaviorRefresh') && document.getElementById('citybrainBehaviorRefresh').addEventListener('click', loadCitybrainBehavior);
+  function loadCitybrainEnvironmental(){
+    var container = document.getElementById('citybrainEnvironmentalContent');
+    if (!container || !citybrainDashboardUrl) return;
+    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?></p>';
+    fetch(citybrainDashboardUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.environmental) { container.innerHTML = '<p class="text-secondary small mb-0">—</p>'; return; }
+      var L = govIotLabels || {};
+      var s = j.environmental.summary || {};
+      var byProvider = j.environmental.by_provider || {};
+      var html = '<div class="row g-3 mb-3">';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_aqi || 'Átlag AQI') + '</h6><p class="mb-0 fs-5">' + (s.avg_aqi != null ? s.avg_aqi : '—') + '</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_pm25 || 'PM2.5') + '</h6><p class="mb-0 fs-5">' + (s.avg_pm25 != null ? s.avg_pm25 + ' µg/m³' : '—') + '</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_temperature || 'Hőmérséklet') + '</h6><p class="mb-0 fs-5">' + (s.avg_temperature != null ? s.avg_temperature + ' °C' : '—') + '</p></div></div></div>';
+      html += '</div><h6 class="small">Szenzorok providerek szerint</h6><ul class="small list-unstyled mb-0">';
+      Object.keys(byProvider).sort().forEach(function(p){ html += '<li>' + p + ': <b>' + byProvider[p] + '</b></li>'; });
+      if (Object.keys(byProvider).length === 0) html += '<li class="text-secondary">—</li>';
+      html += '</ul>';
+      container.innerHTML = html;
+    }).catch(function(){ if (container) container.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  function initCitybrainInsights(){
+    var btn = document.getElementById('citybrainInsightsGenerate');
+    var resultEl = document.getElementById('citybrainInsightsResult');
+    if (!btn || !resultEl || !aiUrl) return;
+    btn.addEventListener('click', function(){
+      var typeEl = document.getElementById('citybrainInsightsType');
+      var timeframeEl = document.getElementById('citybrainInsightsTimeframe');
+      var type = (typeEl && typeEl.value) ? typeEl.value : 'summary';
+      var timeframe = (timeframeEl && timeframeEl.value) ? timeframeEl.value : 'last_90_days';
+      resultEl.textContent = '<?= json_encode(t('gov.generating') ?: 'Generálás...', JSON_UNESCAPED_UNICODE) ?>';
+      btn.disabled = true;
+      postJson(aiUrl, { action: 'generate', type: type, timeframe: timeframe }).then(function(x){
+        btn.disabled = false;
+        if (x.ok && x.j && x.j.ok && x.j.data && x.j.data.text) { resultEl.textContent = x.j.data.text; }
+        else { resultEl.textContent = (x.j && x.j.error) ? x.j.error : '—'; }
+      }).catch(function(){ btn.disabled = false; resultEl.textContent = '—'; });
+    });
+  }
+  function loadCitybrainRisk(){
+    var container = document.getElementById('citybrainRiskContent');
+    if (!container || !citybrainDashboardUrl) return;
+    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?></p>';
+    fetch(citybrainDashboardUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !Array.isArray(j.risks)) { container.innerHTML = '<p class="text-secondary small mb-0">—</p>'; return; }
+      if (j.risks.length === 0) { container.innerHTML = '<p class="text-success small mb-0">Nincs aktív riasztás.</p>'; return; }
+      var html = '<ul class="list-group list-group-flush">';
+      j.risks.forEach(function(r){
+        var severityClass = (r.severity === 'high') ? 'list-group-item-danger' : 'list-group-item-warning';
+        html += '<li class="list-group-item ' + severityClass + '">' + (r.message || '') + (r.since ? ' <small>(' + r.since + ')</small>' : '') + '</li>';
+      });
+      html += '</ul>';
+      container.innerHTML = html;
+    }).catch(function(){ if (container) container.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
 
   var govTreesListUrl = <?= json_encode(app_url('/api/gov_trees_list.php'), JSON_UNESCAPED_SLASHES) ?>;
   var treeEditUrl = <?= json_encode(app_url('/api/tree_edit.php'), JSON_UNESCAPED_SLASHES) ?>;
