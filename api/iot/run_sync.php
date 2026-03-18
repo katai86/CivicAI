@@ -43,7 +43,7 @@ function run_iot_sync(): array {
 
     try {
       $options = ['limit' => $maxStations];
-      if ($providerKey === 'openaq') {
+      if ($providerKey === 'openaq' || $providerKey === 'aqicn') {
         $options['bbox'] = $bbox;
       }
       if ($providerKey === 'openweather') {
@@ -105,7 +105,7 @@ function run_iot_sync(): array {
         }
       }
 
-      $extIdsForFetch = ($providerKey === 'openweather') ? [] : array_keys($extIdToVsId);
+      $extIdsForFetch = ($providerKey === 'openweather' || $providerKey === 'aqicn') ? [] : array_keys($extIdToVsId);
 
       if (empty($extIdsForFetch)) {
         $finished = date('Y-m-d H:i:s');

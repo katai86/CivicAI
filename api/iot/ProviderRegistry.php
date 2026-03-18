@@ -7,6 +7,7 @@ namespace CivicAI\Iot;
 require_once __DIR__ . '/VirtualSensorProviderInterface.php';
 require_once __DIR__ . '/OpenAQAdapter.php';
 require_once __DIR__ . '/OpenWeatherAdapter.php';
+require_once __DIR__ . '/AQICNAdapter.php';
 
 class ProviderRegistry {
 
@@ -19,7 +20,7 @@ class ProviderRegistry {
   public static function getConfiguredAdapters(): array {
     if (self::$adapters === null) {
       self::$adapters = [];
-      foreach ([new OpenAQAdapter(), new OpenWeatherAdapter()] as $adapter) {
+      foreach ([new OpenAQAdapter(), new OpenWeatherAdapter(), new AQICNAdapter()] as $adapter) {
         if ($adapter->isConfigured()) {
           self::$adapters[$adapter->getProviderKey()] = $adapter;
         }
