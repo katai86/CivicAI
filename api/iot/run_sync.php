@@ -7,6 +7,13 @@ require_once __DIR__ . '/ProviderRegistry.php';
 
 use CivicAI\Iot\ProviderRegistry;
 
+/** Convert ISO 8601 or any parseable datetime to MySQL datetime (Y-m-d H:i:s). */
+function _iot_normalize_datetime(?string $value): ?string {
+  if ($value === null || trim($value) === '') return null;
+  $ts = strtotime($value);
+  return $ts !== false ? date('Y-m-d H:i:s', $ts) : null;
+}
+
 function run_iot_sync(): array {
   $db = db();
   $authorityCities = [];
@@ -97,7 +104,7 @@ function run_iot_sync(): array {
             if ($key === '') continue;
             $val = isset($m['metric_value']) ? (float)$m['metric_value'] : null;
             $unit = $m['metric_unit'] ?? null;
-            $measuredAt = !empty($m['measured_at']) ? $m['measured_at'] : null;
+            $measuredAt = _iot_normalize_datetime(!empty($m['measured_at']) ? $m['measured_at'] : null);
             if ($measuredAt && ($latestMeasured === null || strtotime($measuredAt) > strtotime($latestMeasured))) $latestMeasured = $measuredAt;
             try {
               $db->prepare("INSERT INTO virtual_sensor_metrics_latest (virtual_sensor_id, metric_key, metric_value, metric_unit, measured_at) VALUES (?, ?, ?, ?, ?)
@@ -143,7 +150,7 @@ function run_iot_sync(): array {
           if ($key === '') continue;
           $val = isset($m['metric_value']) ? (float)$m['metric_value'] : null;
           $unit = $m['metric_unit'] ?? null;
-          $measuredAt = !empty($m['measured_at']) ? $m['measured_at'] : null;
+          $measuredAt = _iot_normalize_datetime(!empty($m['measured_at']) ? $m['measured_at'] : null);
           if ($measuredAt && ($sensorLatest === null || strtotime($measuredAt) > strtotime($sensorLatest))) $sensorLatest = $measuredAt;
           try {
             $db->prepare("INSERT INTO virtual_sensor_metrics_latest (virtual_sensor_id, metric_key, metric_value, metric_unit, measured_at) VALUES (?, ?, ?, ?, ?)
