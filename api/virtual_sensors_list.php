@@ -77,30 +77,7 @@ if (!$tableExists) {
   json_response(['ok' => true, 'sensors' => [], 'summary' => ['total' => 0, 'active' => 0, 'stale_count' => 0, 'avg_aqi' => null, 'avg_pm25' => null, 'avg_temperature' => null]]);
 }
 
-$scopeParts = [];
-$params = [];
-if (!empty($cities)) {
-  $ph = implode(',', array_fill(0, count($cities), '?'));
-  $scopeParts[] = "(vs.municipality IN ($ph) OR vs.address_or_area_name IN ($ph))";
-  $params = array_merge($params, $cities, $cities);
-}
-if (!empty($bounds)) {
-  $minLat = min(array_column($bounds, 0));
-  $maxLat = max(array_column($bounds, 1));
-  $minLng = min(array_column($bounds, 2));
-  $maxLng = max(array_column($bounds, 3));
-  $scopeParts[] = "(vs.latitude IS NOT NULL AND vs.longitude IS NOT NULL AND vs.latitude >= ? AND vs.latitude <= ? AND vs.longitude >= ? AND vs.longitude <= ?)";
-  $params = array_merge($params, [$minLat, $maxLat, $minLng, $maxLng]);
-}
-// Ha egy hatóságnak nincs bboxa (bounds), csak város van: ne szűrjünk földrajzra – minden aktív szenzor megjelenik
-// (pl. WeatherXM/OpenAQ sokszor nem ad municipality-t, csak koordinátát; bbox beállításával később szűkíthető).
-if (empty($bounds) && !empty($cities)) {
-  $scopeParts[] = "1=1";
-}
-$where = "vs.is_active = 1";
-if (!empty($scopeParts)) {
-  $where .= " AND (" . implode(" OR ", $scopeParts) . ")";
-}
+list($where, $params) = virtual_sensors_scope_for_authority($cities, $bounds);
 
 $sql = "SELECT vs.id, vs.source_provider, vs.external_station_id, vs.name, vs.sensor_type, vs.category,
         vs.latitude, vs.longitude, vs.address_or_area_name, vs.municipality, vs.country, vs.status,

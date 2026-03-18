@@ -60,28 +60,7 @@ try {
   }
 } catch (Throwable $e) {}
 
-$scopeParts = [];
-$params = [];
-if (!empty($cities)) {
-  $ph = implode(',', array_fill(0, count($cities), '?'));
-  $scopeParts[] = "(vs.municipality IN ($ph) OR vs.address_or_area_name IN ($ph))";
-  $params = array_merge($params, $cities, $cities);
-}
-if (!empty($bounds)) {
-  $minLat = min(array_column($bounds, 0));
-  $maxLat = max(array_column($bounds, 1));
-  $minLng = min(array_column($bounds, 2));
-  $maxLng = max(array_column($bounds, 3));
-  $scopeParts[] = "(vs.latitude IS NOT NULL AND vs.longitude IS NOT NULL AND vs.latitude >= ? AND vs.latitude <= ? AND vs.longitude >= ? AND vs.longitude <= ?)";
-  $params = array_merge($params, [$minLat, $maxLat, $minLng, $maxLng]);
-}
-if (empty($bounds) && !empty($cities)) {
-  $scopeParts[] = "(TRIM(COALESCE(vs.municipality,'')) = '' AND TRIM(COALESCE(vs.address_or_area_name,'')) = '')";
-}
-$where = "vs.is_active = 1";
-if (!empty($scopeParts)) {
-  $where .= " AND (" . implode(" OR ", $scopeParts) . ")";
-}
+list($where, $params) = virtual_sensors_scope_for_authority($cities, $bounds);
 
 $pdo = db();
 $sensorsSummary = ['total' => 0, 'active' => 0, 'stale_count' => 0, 'avg_aqi' => null, 'avg_pm25' => null, 'avg_temperature' => null];
