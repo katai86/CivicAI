@@ -35,7 +35,7 @@ function run_iot_sync(): array {
     $bbox = [46.5, 48.6, 16.0, 23.0];
   }
 
-  $maxStations = (int)get_module_setting('iot', 'iot_max_stations_per_city') ?: 100;
+  $maxStations = (int)get_module_setting('iot', 'iot_max_stations_per_city') ?: 300;
   $maxStations = min(1000, max(10, $maxStations));
 
   $adapters = ProviderRegistry::getConfiguredAdapters();

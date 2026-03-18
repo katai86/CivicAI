@@ -1,7 +1,8 @@
 <?php
 /**
  * OpenAQ v3 adapter – air quality locations and latest measurements.
- * API: https://docs.openaq.org/ (v3 locations, location latest).
+ * API: https://docs.openaq.org/ – v3 locations (bbox = Min X, Min Y, Max X, Max Y = minLng, minLat, maxLng, maxLat).
+ * API kulcs szükséges a v3 végponthoz (X-API-Key header).
  */
 namespace CivicAI\Iot;
 
@@ -20,7 +21,7 @@ class OpenAQAdapter extends AbstractProvider {
 
   /**
    * @param array $options [ 'bbox' => [minLat, maxLat, minLng, maxLng], 'limit' => 500 ]
-   * OpenAQ v3: max 1000 per page; we paginate until we have limit or no more.
+   * OpenAQ v3 bbox: Min X (minLng), Min Y (minLat), Max X (maxLng), Max Y (maxLat). Max 1000/oldal.
    */
   public function fetchStations(array $options = []): array {
     if (!$this->isConfigured()) return [];
@@ -33,11 +34,11 @@ class OpenAQAdapter extends AbstractProvider {
     do {
       $params = ['limit' => $perPage, 'page' => $page];
       if (!empty($options['bbox']) && is_array($options['bbox']) && count($options['bbox']) >= 4) {
-        $minLat = $options['bbox'][0];
-        $maxLat = $options['bbox'][1];
-        $minLng = $options['bbox'][2];
-        $maxLng = $options['bbox'][3];
-        $params['bbox'] = implode(',', [(float)$minLng, (float)$minLat, (float)$maxLng, (float)$maxLat]);
+        $minLat = (float)$options['bbox'][0];
+        $maxLat = (float)$options['bbox'][1];
+        $minLng = (float)$options['bbox'][2];
+        $maxLng = (float)$options['bbox'][3];
+        $params['bbox'] = $minLng . ',' . $minLat . ',' . $maxLng . ',' . $maxLat;
       }
       $url = self::BASE_URL . '/locations?' . http_build_query($params);
       $data = $this->httpGet($url, $headers);
@@ -67,11 +68,19 @@ class OpenAQAdapter extends AbstractProvider {
   public function normalizeStation($rawStation): array {
     if (!is_array($rawStation)) return [];
     $id = $rawStation['id'] ?? null;
-    $lat = isset($rawStation['coordinates']['latitude']) ? (float)$rawStation['coordinates']['latitude'] : null;
-    $lng = isset($rawStation['coordinates']['longitude']) ? (float)$rawStation['coordinates']['longitude'] : null;
+    if ($id === null) return [];
+    $lat = null;
+    $lng = null;
+    if (isset($rawStation['coordinates']['latitude'], $rawStation['coordinates']['longitude'])) {
+      $lat = (float)$rawStation['coordinates']['latitude'];
+      $lng = (float)$rawStation['coordinates']['longitude'];
+    } elseif (isset($rawStation['latitude'], $rawStation['longitude'])) {
+      $lat = (float)$rawStation['latitude'];
+      $lng = (float)$rawStation['longitude'];
+    }
     $country = isset($rawStation['country']['code']) ? (string)$rawStation['country']['code'] : (isset($rawStation['country']['name']) ? (string)$rawStation['country']['name'] : null);
     $locality = isset($rawStation['locality']) ? (string)$rawStation['locality'] : null;
-    $name = isset($rawStation['name']) ? (string)$rawStation['name'] : ('OpenAQ #' . $id);
+    $name = isset($rawStation['name']) && (string)$rawStation['name'] !== '' ? (string)$rawStation['name'] : ('OpenAQ #' . $id);
     return [
       'source_provider' => $this->getProviderKey(),
       'external_station_id' => (string)$id,

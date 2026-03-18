@@ -2,7 +2,8 @@
 /**
  * AQICN / WAQI adapter – air quality stations and AQI from map/bounds.
  * API: https://api.waqi.info/map/bounds/?latlng=minLat,minLng,maxLat,maxLng&token=TOKEN
- * Response: data[] with lat, lon, aqi, station.name (aqi can be "-" when missing).
+ * Doc: https://aqicn.org/json-api/doc/#api-Map_Queries-GetMapStations
+ * latlng = délnyugat sarok (minLat, minLng), északkelet (maxLat, maxLng). data[]: lat, lon (vagy geo), aqi, station.name, uid.
  */
 namespace CivicAI\Iot;
 
@@ -21,6 +22,7 @@ class AQICNAdapter extends AbstractProvider {
 
   /**
    * @param array $options [ 'bbox' => [minLat, maxLat, minLng, maxLng] ]
+   * WAQI latlng: minLat, minLng, maxLat, maxLng (bottom-left, top-right).
    */
   public function fetchStations(array $options = []): array {
     if (!$this->isConfigured()) return [];
@@ -34,14 +36,15 @@ class AQICNAdapter extends AbstractProvider {
     $maxLat = (float)$options['bbox'][1];
     $minLng = (float)$options['bbox'][2];
     $maxLng = (float)$options['bbox'][3];
-    $latlng = implode(',', [$minLat, $minLng, $maxLat, $maxLng]);
+    $latlng = $minLat . ',' . $minLng . ',' . $maxLat . ',' . $maxLng;
 
     $url = self::BASE_URL . '/map/bounds/?latlng=' . rawurlencode($latlng) . '&token=' . rawurlencode($token);
-    $data = $this->httpGet($url);
+    $data = $this->httpGet($url, [], 20);
     if (!$data || !isset($data['data']) || !is_array($data['data'])) return [];
 
     $stations = [];
     foreach ($data['data'] as $d) {
+      if (!is_array($d)) continue;
       $item = $d;
       $item['metrics'] = [
         ['aqi' => $d['aqi'] ?? null, 'time' => isset($d['time']['iso']) ? (string)$d['time']['iso'] : null],
@@ -57,13 +60,22 @@ class AQICNAdapter extends AbstractProvider {
 
   public function normalizeStation($rawStation): array {
     if (!is_array($rawStation)) return [];
-    $lat = isset($rawStation['lat']) ? (float)$rawStation['lat'] : null;
-    $lon = isset($rawStation['lon']) ? (float)$rawStation['lon'] : null;
+    $lat = null;
+    $lon = null;
+    if (isset($rawStation['lat'], $rawStation['lon'])) {
+      $lat = is_numeric($rawStation['lat']) ? (float)$rawStation['lat'] : null;
+      $lon = is_numeric($rawStation['lon']) ? (float)$rawStation['lon'] : null;
+    }
+    if ($lat === null && isset($rawStation['geo']['latitude'], $rawStation['geo']['longitude'])) {
+      $lat = (float)$rawStation['geo']['latitude'];
+      $lon = (float)$rawStation['geo']['longitude'];
+    }
     $uid = isset($rawStation['uid']) ? (string)$rawStation['uid'] : null;
-    $externalId = $uid !== null && $uid !== '' ? $uid : ($lat !== null && $lon !== null ? 'aqicn_' . round($lat, 4) . '_' . round($lon, 4) : null);
-    if ($externalId === null) return [];
+    if ($uid === '') $uid = null;
+    $externalId = $uid !== null ? $uid : ($lat !== null && $lon !== null ? 'aqicn_' . round($lat, 4) . '_' . round($lon, 4) : null);
+    if ($externalId === null || ($lat === null && $lon === null)) return [];
 
-    $name = isset($rawStation['station']['name']) ? (string)$rawStation['station']['name'] : ('AQICN ' . $externalId);
+    $name = isset($rawStation['station']['name']) && (string)$rawStation['station']['name'] !== '' ? (string)$rawStation['station']['name'] : ('AQICN ' . $externalId);
     return [
       'source_provider' => $this->getProviderKey(),
       'external_station_id' => $externalId,
