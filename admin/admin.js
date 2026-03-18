@@ -12,6 +12,7 @@ const API_USERS       = `${BASE}/api/admin_users.php`;
 const API_LAYERS      = `${BASE}/api/admin_layers.php`;
 const API_AUTHORITIES = `${BASE}/api/admin_authorities.php`;
 const API_MODULES     = `${BASE}/api/admin_modules.php`;
+const API_IOT_SYNC    = `${BASE}/api/admin_iot_sync.php`;
 const API_BUDGET      = `${BASE}/api/admin_budget_projects.php`;
 const LOGOUT_URL      = `${BASE}/admin/logout.php`;
 // ========================================================
@@ -929,11 +930,13 @@ async function loadModules(){
       }).join('');
       const isMistral = (m.id === 'mistral');
       const isOpenai = (m.id === 'openai');
+      const isIot = (m.id === 'iot');
       return `
         <div class="card mb-3" data-module-id="${esc(m.id)}">
           <div class="card-body">
             <h6 class="card-title">${esc(m.name)}</h6>
             <p class="text-secondary small">${esc(m.description || '')}</p>
+            ${isIot ? '<p class="text-secondary small mb-2">' + (t('admin.iot_sync_hint') || 'Az adatok a szinkronizálás után jelennek meg a közig Szenzorok fülön.') + '</p>' : ''}
             <div class="form-check mb-2">
               <input class="form-check-input module-enabled" type="checkbox" data-module-id="${esc(m.id)}" id="mod-${esc(m.id)}" ${enabled ? 'checked' : ''}>
               <label class="form-check-label" for="mod-${esc(m.id)}">${t('admin.enabled')}</label>
@@ -943,9 +946,11 @@ async function loadModules(){
               <button type="button" class="btn btn-sm btn-primary module-save" data-module-id="${esc(m.id)}">${t('admin.module_save')}</button>
               ${isMistral ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTestMistral">' + t('admin.test_mistral') + '</button>' : ''}
               ${isOpenai ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTestOpenai">' + t('admin.test_openai') + '</button>' : ''}
+              ${isIot ? '<button type="button" class="btn btn-sm btn-outline-primary" id="btnIotSync">' + (t('admin.iot_sync_now') || 'Szinkronizálás most') + '</button>' : ''}
             </div>
             ${isMistral ? '<div id="mistralTestResult" class="small mt-2 text-secondary"></div>' : ''}
             ${isOpenai ? '<div id="openaiTestResult" class="small mt-2 text-secondary"></div>' : ''}
+            ${isIot ? '<div id="iotSyncResult" class="small mt-2 text-secondary"></div>' : ''}
           </div>
         </div>
       `;
@@ -1029,6 +1034,33 @@ async function loadModules(){
           openaiTestResult.className = 'small mt-2 text-danger';
         }
         btnTestOpenai.disabled = false;
+      });
+    }
+    const btnIotSync = document.getElementById('btnIotSync');
+    const iotSyncResult = document.getElementById('iotSyncResult');
+    if (btnIotSync && iotSyncResult) {
+      btnIotSync.addEventListener('click', async () => {
+        iotSyncResult.textContent = t('admin.iot_sync_running') || 'Szinkronizálás…';
+        iotSyncResult.className = 'small mt-2 text-secondary';
+        btnIotSync.disabled = true;
+        try {
+          const j = await fetchJson(API_IOT_SYNC);
+          if (j && j.ok && j.providers) {
+            const parts = Object.entries(j.providers).map(([k, v]) => {
+              const err = v.error ? ' (' + v.error + ')' : '';
+              return k + ': ' + (v.imported || 0) + ' szenzor' + (v.updated ? ', ' + v.updated + ' metrika' : '') + err;
+            });
+            iotSyncResult.textContent = (t('admin.iot_sync_done') || 'Kész.') + ' ' + (parts.length ? parts.join('; ') : (t('admin.iot_sync_no_providers') || 'Nincs konfigurált provider.'));
+            iotSyncResult.className = 'small mt-2 text-success';
+          } else {
+            iotSyncResult.textContent = (j && j.error) ? j.error : (t('admin.unknown_error') || 'Ismeretlen hiba');
+            iotSyncResult.className = 'small mt-2 text-danger';
+          }
+        } catch (e) {
+          iotSyncResult.textContent = t('admin.error_generic') + ': ' + (e.message || e);
+          iotSyncResult.className = 'small mt-2 text-danger';
+        }
+        btnIotSync.disabled = false;
       });
     }
   } catch (e) {
@@ -1368,5 +1400,16 @@ document.getElementById('assignUser')?.addEventListener('click', async () => {
 document.getElementById('refreshStats')?.addEventListener('click', loadStats);
 
 initTabs();
+document.querySelectorAll('.app-sidebar .sidebar-section-header').forEach(function(header){
+  header.addEventListener('click', function(){
+    header.classList.toggle('sidebar-section-collapsed');
+    var next = header.nextElementSibling;
+    while (next && !next.classList.contains('nav-header')) {
+      next.classList.toggle('sidebar-section-item-hidden');
+      next = next.nextElementSibling;
+    }
+  });
+  header.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); header.click(); } });
+});
 loadStats();
 loadReports();

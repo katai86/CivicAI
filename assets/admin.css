@@ -61,3 +61,30 @@
 @media (max-width: 992px){
   .admin-map{height:55vh;min-height:360px}
 }
+
+/* Sidebar görgethető (gov/admin): ne csússzon a menü a monitor alá */
+.app-sidebar .sidebar-wrapper {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100vh - 4.5rem);
+  -webkit-overflow-scrolling: touch;
+}
+.app-sidebar .sidebar-wrapper::-webkit-scrollbar { width: 6px; }
+.app-sidebar .sidebar-wrapper::-webkit-scrollbar-track { background: transparent; }
+.app-sidebar .sidebar-wrapper::-webkit-scrollbar-thumb { background: rgba(128,128,128,.35); border-radius: 3px; }
+
+/* Összecsukható menüszekciók (sidebar-section-header) */
+.sidebar-section-header {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sidebar-section-header:hover { opacity: .9; }
+.sidebar-section-header .nav-section-chevron {
+  transition: transform .2s ease;
+  opacity: .7;
+}
+.sidebar-section-collapsed .nav-section-chevron { transform: rotate(-90deg); }
+.sidebar-section-item-hidden { display: none !important; }

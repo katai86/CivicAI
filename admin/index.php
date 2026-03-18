@@ -82,7 +82,7 @@ $LANG_JS = lang_array_for_js();
               <p><?= htmlspecialchars(t('admin.tab_overview'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
           </li>
-          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= htmlspecialchars(t('admin.nav_section_manage'), ENT_QUOTES, 'UTF-8') ?></li>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= htmlspecialchars(t('admin.nav_section_manage'), ENT_QUOTES, 'UTF-8') ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="reports">
               <i class="nav-icon bi bi-flag-fill"></i>
@@ -95,7 +95,7 @@ $LANG_JS = lang_array_for_js();
               <p><?= htmlspecialchars(t('admin.users'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
           </li>
-          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= htmlspecialchars(t('admin.nav_section_system'), ENT_QUOTES, 'UTF-8') ?></li>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= htmlspecialchars(t('admin.nav_section_system'), ENT_QUOTES, 'UTF-8') ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="layers">
               <i class="nav-icon bi bi-layers-fill"></i>

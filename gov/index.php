@@ -547,7 +547,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
               <p><?= h(t('gov.tab_dashboard')) ?></p>
             </a>
           </li>
-          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_work')) ?></li>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= h(t('gov.nav_section_work')) ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="reports">
               <i class="nav-icon bi bi-flag-fill"></i>
@@ -582,7 +582,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
               <p><?= h(t('gov.tab_trees')) ?></p>
             </a>
           </li>
-          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_insights')) ?></li>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= h(t('gov.nav_section_insights')) ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="ai">
               <i class="nav-icon bi bi-robot"></i>
@@ -603,7 +603,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
             </a>
           </li>
           <?php endif; ?>
-          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_city_brain')) ?></li>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= h(t('gov.nav_section_city_brain')) ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="citybrain-live">
               <i class="nav-icon bi bi-speedometer2"></i>
@@ -646,7 +646,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
               <p><?= h(t('gov.city_brain_risk')) ?></p>
             </a>
           </li>
-          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_settings')) ?></li>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= h(t('gov.nav_section_settings')) ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="modules">
               <i class="nav-icon bi bi-gear"></i>
@@ -1486,6 +1486,20 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
       if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); }
     });
   });
+
+  // Összecsukható menüszekciók (sidebar): kattintásra elrejti/megmutatja a szekció elemeit
+  document.querySelectorAll('.app-sidebar .sidebar-section-header').forEach(function(header){
+    header.addEventListener('click', function(){
+      header.classList.toggle('sidebar-section-collapsed');
+      var next = header.nextElementSibling;
+      while (next && !next.classList.contains('nav-header')) {
+        next.classList.toggle('sidebar-section-item-hidden');
+        next = next.nextElementSibling;
+      }
+    });
+    header.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); header.click(); } });
+  });
+
   loadGovCityHealth();
   loadGovWeather();
 
