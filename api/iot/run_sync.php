@@ -14,18 +14,51 @@ function _iot_normalize_datetime(?string $value): ?string {
   return $ts !== false ? date('Y-m-d H:i:s', $ts) : null;
 }
 
-function run_iot_sync(): array {
+/** Append one metric reading to history (for trend charts). */
+function _iot_append_history(PDO $db, int $virtualSensorId, string $metricKey, ?float $metricValue, ?string $metricUnit, ?string $measuredAt): void {
+  if ($measuredAt === null) return;
+  try {
+    $db->prepare("INSERT INTO virtual_sensor_metric_history (virtual_sensor_id, metric_key, metric_value, metric_unit, measured_at) VALUES (?, ?, ?, ?, ?)")
+      ->execute([$virtualSensorId, $metricKey, $metricValue, $metricUnit, $measuredAt]);
+  } catch (Throwable $e) { /* table may not exist */ }
+}
+
+/**
+ * @param array $options Opcionális: 'authority_id' => int – csak az adott hatóság területére szinkronizál (gov sync).
+ */
+function run_iot_sync(array $options = []): array {
   $db = db();
   $authorityCities = [];
   $allBounds = [];
+  $singleAuthorityId = isset($options['authority_id']) ? (int)$options['authority_id'] : 0;
+
   try {
-    $rows = $db->query("SELECT city, min_lat, max_lat, min_lng, max_lng FROM authorities WHERE city IS NOT NULL AND TRIM(city) <> ''")->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($rows as $r) {
-      $city = trim($r['city'] ?? '');
-      if ($city !== '') $authorityCities[] = ['name' => $city, 'country' => 'HU'];
-      if (isset($r['min_lat'], $r['max_lat'], $r['min_lng'], $r['max_lng']) &&
-          $r['min_lat'] !== null && $r['max_lat'] !== null && $r['min_lng'] !== null && $r['max_lng'] !== null) {
-        $allBounds[] = [(float)$r['min_lat'], (float)$r['max_lat'], (float)$r['min_lng'], (float)$r['max_lng']];
+    if ($singleAuthorityId > 0) {
+      $stmt = $db->prepare("SELECT city, min_lat, max_lat, min_lng, max_lng FROM authorities WHERE id = ? LIMIT 1");
+      $stmt->execute([$singleAuthorityId]);
+      $r = $stmt->fetch(PDO::FETCH_ASSOC);
+      if ($r) {
+        $city = trim($r['city'] ?? '');
+        if ($city !== '') $authorityCities[] = ['name' => $city, 'country' => 'HU'];
+        if (isset($r['min_lat'], $r['max_lat'], $r['min_lng'], $r['max_lng']) &&
+            $r['min_lat'] !== null && $r['max_lat'] !== null && $r['min_lng'] !== null && $r['max_lng'] !== null) {
+          $allBounds[] = [(float)$r['min_lat'], (float)$r['max_lat'], (float)$r['min_lng'], (float)$r['max_lng']];
+        }
+      }
+    }
+    if (empty($allBounds) && empty($authorityCities) && $singleAuthorityId > 0) {
+      // Hatóságnak nincs bounds/city – országos bbox fallback (pl. Budapest környéke)
+      $allBounds[] = [47.3, 47.6, 18.9, 19.3];
+    }
+    if ($singleAuthorityId <= 0) {
+      $rows = $db->query("SELECT city, min_lat, max_lat, min_lng, max_lng FROM authorities WHERE city IS NOT NULL AND TRIM(city) <> ''")->fetchAll(PDO::FETCH_ASSOC);
+      foreach ($rows as $r) {
+        $city = trim($r['city'] ?? '');
+        if ($city !== '') $authorityCities[] = ['name' => $city, 'country' => 'HU'];
+        if (isset($r['min_lat'], $r['max_lat'], $r['min_lng'], $r['max_lng']) &&
+            $r['min_lat'] !== null && $r['max_lat'] !== null && $r['min_lng'] !== null && $r['max_lng'] !== null) {
+          $allBounds[] = [(float)$r['min_lat'], (float)$r['max_lat'], (float)$r['min_lng'], (float)$r['max_lng']];
+        }
       }
     }
     if (!empty($allBounds)) {
@@ -44,6 +77,9 @@ function run_iot_sync(): array {
 
   $maxStations = (int)get_module_setting('iot', 'iot_max_stations_per_city') ?: 300;
   $maxStations = min(1000, max(10, $maxStations));
+  if ($singleAuthorityId > 0) {
+    $maxStations = 500;
+  }
 
   $adapters = ProviderRegistry::getConfiguredAdapters();
   $results = [];
@@ -111,6 +147,7 @@ function run_iot_sync(): array {
                             ON DUPLICATE KEY UPDATE metric_value=VALUES(metric_value), metric_unit=VALUES(metric_unit), measured_at=VALUES(measured_at)")
                 ->execute([$vsId, $key, $val, $unit, $measuredAt]);
               $updated++;
+              _iot_append_history($db, $vsId, $key, $val, $unit, $measuredAt);
             } catch (Throwable $e) { $errors++; }
           }
           if ($latestMeasured) {
@@ -157,6 +194,7 @@ function run_iot_sync(): array {
                           ON DUPLICATE KEY UPDATE metric_value=VALUES(metric_value), metric_unit=VALUES(metric_unit), measured_at=VALUES(measured_at)")
               ->execute([$vsId, $key, $val, $unit, $measuredAt]);
             $updated++;
+            _iot_append_history($db, $vsId, $key, $val, $unit, $measuredAt);
           } catch (Throwable $e) {
             $errors++;
           }

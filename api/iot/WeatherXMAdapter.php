@@ -125,7 +125,7 @@ class WeatherXMAdapter extends AbstractProvider {
       'wind_direction' => ['key' => 'wind_direction', 'unit' => 'degrees'],
       'uv_index' => ['key' => 'uv_index', 'unit' => null],
       'precipitation_rate' => ['key' => 'precipitation_rate', 'unit' => 'mm/h'],
-      'solar_irradiance' => ['key' => 'solar_irradiance', 'unit' => null],
+      'solar_irradiance' => ['key' => 'solar_irradiance', 'unit' => 'W/m²'],
     ];
     foreach ($map as $apiKey => $def) {
       if (!array_key_exists($apiKey, $obs)) continue;

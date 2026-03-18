@@ -1145,6 +1145,9 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="govIotViewTable"><?= h(t('iot.view_table')) ?></button>
                 <button type="button" class="btn btn-sm btn-outline-primary" id="govIotExportCsv"><?= h(t('iot.export_csv')) ?></button>
                 <button type="button" class="btn btn-sm btn-outline-primary" id="govIotExportJson"><?= h(t('iot.export_json')) ?></button>
+                <span class="small text-secondary">|</span>
+                <button type="button" class="btn btn-sm btn-success" id="govIotSyncBtn" title="<?= h(t('gov.iot_sync_scope_hint') ?: 'Csak a hatóságod területére húzza le a szenzorokat (pl. Budapest WeatherXM).') ?>"><?= h(t('gov.iot_sync_now') ?: 'Szinkronizálás') ?></button>
+                <span id="govIotSyncStatus" class="small text-muted"></span>
               </div>
               <div id="govIotCharts" class="mb-3"></div>
               <div id="govIotMap" class="rounded border" style="height:280px;min-height:200px;"></div>
@@ -1296,6 +1299,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   var weatherUrl = <?= json_encode(app_url('/api/weather.php'), JSON_UNESCAPED_SLASHES) ?>;
   var iotDevicesUrl = <?= json_encode(app_url('/api/iot_devices.php'), JSON_UNESCAPED_SLASHES) ?>;
   var virtualSensorsListUrl = <?= json_encode(app_url('/api/virtual_sensors_list.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govIotSyncUrl = <?= json_encode(app_url('/api/gov_iot_sync.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govIotLabels = <?= json_encode([
     'total_sensors' => t('iot.total_sensors'),
     'active_sensors' => t('iot.active_sensors'),
@@ -1325,6 +1329,23 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     'tier_2' => t('iot.tier_2'),
     'tier_3' => t('iot.tier_3'),
   ], JSON_UNESCAPED_UNICODE) ?>;
+  var govIotMetricLabels = <?= json_encode([
+    'temperature' => t('iot.metric_temperature') ?: 'Temperature',
+    'feels_like' => t('iot.metric_feels_like') ?: 'Feels Like',
+    'dew_point' => t('iot.metric_dew_point') ?: 'Dew Point',
+    'humidity' => t('iot.metric_humidity') ?: 'Humidity',
+    'pressure' => t('iot.metric_pressure') ?: 'Pressure (abs)',
+    'wind_speed' => t('iot.metric_wind_speed') ?: 'Wind',
+    'wind_gust' => t('iot.metric_wind_gust') ?: 'Wind Gust',
+    'wind_direction' => t('iot.metric_wind_direction') ?: 'Direction',
+    'uv_index' => t('iot.metric_uv_index') ?: 'UV',
+    'precipitation_rate' => t('iot.metric_precipitation_rate') ?: 'Precip Rate',
+    'solar_irradiance' => t('iot.metric_solar_irradiance') ?: 'Solar Radiation',
+    'aqi' => t('iot.avg_aqi') ?: 'AQI',
+    'pm25' => t('iot.avg_pm25') ?: 'PM2.5',
+    'temp' => t('iot.metric_temperature') ?: 'Temperature',
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govIotSensorHistoryUrl = <?= json_encode(app_url('/api/sensor_metric_history.php'), JSON_UNESCAPED_SLASHES) ?>;
   var heatmapUrl = <?= json_encode(app_url('/api/heatmap_data.php'), JSON_UNESCAPED_SLASHES) ?>;
   var authorityIdForHeatmap = <?= !empty($authorityIds) ? (int)$authorityIds[0] : '0' ?>;
   var govStatisticsUrl = <?= json_encode(app_url('/api/gov_statistics.php'), JSON_UNESCAPED_SLASHES) ?>;
@@ -1813,6 +1834,15 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     if (!p) return govIotSensorsCache;
     return govIotSensorsCache.filter(function(s){ return (s.source_provider || '').toLowerCase() === p; });
   }
+  function formatMetricValue(key, val, unit){
+    if (val == null || val === '') return '—';
+    var u = (unit && String(unit)) || '';
+    if (key === 'wind_direction' && u === 'degrees') u = '°';
+    if (key === 'solar_irradiance' && !u) u = 'W/m²';
+    if (key === 'humidity' && val != null) return Number(val) + '%';
+    if (key === 'uv_index' && val != null && (u === '' || u === 'null')) u = '';
+    return Number(val) + (u ? ' ' + u : '');
+  }
   function showGovIotDetail(sensor){
     var panel = document.getElementById('govIotDetailPanel');
     var titleEl = document.getElementById('govIotDetailTitle');
@@ -1820,28 +1850,53 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     if (!panel || !titleEl || !bodyEl) return;
     var name = (sensor.name || sensor.source_provider + ' #' + (sensor.external_station_id || '')).replace(/</g,'&lt;');
     titleEl.textContent = name;
-    var rows = [];
     var L = govIotLabels || {};
+    var M = govIotMetricLabels || {};
+    var rows = [];
     rows.push('<p class="mb-1"><strong>Provider:</strong> ' + (sensor.source_provider || '—').replace(/</g,'&lt;') + ' <span class="badge bg-secondary ms-1">' + getGovIotOwnershipLabel(sensor).replace(/</g,'&lt;') + '</span></p>');
     rows.push('<p class="mb-1"><strong>Municipality:</strong> ' + (sensor.municipality || '—').replace(/</g,'&lt;') + '</p>');
     rows.push('<p class="mb-1"><strong>Last seen:</strong> ' + (sensor.last_seen_at || '—').replace(/</g,'&lt;') + '</p>');
     var fr = getGovIotFreshness(sensor.last_seen_at); rows.push('<p class="mb-1"><strong>' + (L.freshness || 'Freshness') + ':</strong> <span class="' + fr.class + '">' + fr.label.replace(/</g,'&lt;') + '</span></p>');
-    if (sensor.trust_score != null) rows.push('<p class="mb-1"><strong>' + (L.trust_score || 'Trust') + ':</strong> ' + sensor.trust_score + '</p>');
-    if (sensor.confidence_score != null) rows.push('<p class="mb-1"><strong>' + (L.confidence_score || 'Confidence') + ':</strong> ' + sensor.confidence_score + '</p>');
-    rows.push('<p class="mb-1"><strong>' + (L.provider_tier || 'Provider tier') + ':</strong> ' + getGovIotProviderTier(sensor.source_provider).replace(/</g,'&lt;') + '</p>');
     if (sensor.lat != null && sensor.lng != null) rows.push('<p class="mb-1"><strong>Coordinates:</strong> ' + sensor.lat + ', ' + sensor.lng + '</p>');
-    if (sensor.metrics && Object.keys(sensor.metrics).length > 0) {
-      rows.push('<table class="table table-sm mt-2"><thead><tr><th>Metric</th><th>Value</th><th>Unit</th></tr></thead><tbody>');
-      for (var k in sensor.metrics) {
-        var v = sensor.metrics[k];
-        var val = (v && typeof v === 'object' && v.value != null) ? v.value : (v || '—');
-        var unit = (v && typeof v === 'object' && v.unit) ? v.unit : '';
-        rows.push('<tr><td>' + String(k).replace(/</g,'&lt;') + '</td><td>' + val + '</td><td>' + String(unit).replace(/</g,'&lt;') + '</td></tr>');
+    var m = sensor.metrics || {};
+    var getVal = function(k){ var v = m[k]; return (v && typeof v === 'object' && v.value != null) ? v.value : null; };
+    var getUnit = function(k){ var v = m[k]; return (v && typeof v === 'object' && v.unit) ? v.unit : ''; };
+    var label = function(k){ return (M[k] || k).replace(/</g,'&lt;'); };
+    if (Object.keys(m).length > 0) {
+      var tempVal = getVal('temperature') != null ? getVal('temperature') : getVal('temp');
+      if (tempVal != null) rows.push('<div class="mb-3"><span class="display-6 fw-bold">' + formatMetricValue('temperature', tempVal, getUnit('temperature') || getUnit('temp') || 'celsius') + '</span></div>');
+      rows.push('<div class="row g-2 mb-2">');
+      var metricOrder = ['feels_like','dew_point','humidity','pressure','wind_speed','wind_gust','wind_direction','precipitation_rate','uv_index','solar_irradiance','aqi','pm25'];
+      metricOrder.forEach(function(k){
+        if (!m[k]) return;
+        var v = getVal(k); if (v == null && (m[k] && typeof m[k] === 'object' && m[k].value === undefined)) return;
+        var u = getUnit(k); if (k === 'solar_irradiance' && !u) u = 'W/m²';
+        var disp = formatMetricValue(k, v, u);
+        if (k === 'wind_speed' && getVal('wind_direction') != null) disp += ' ' + Math.round(parseFloat(getVal('wind_direction'))) + '°';
+        rows.push('<div class="col-6"><div class="border rounded p-2 bg-light bg-opacity-50"><span class="d-block small text-muted">' + label(k) + '</span><strong>' + disp + '</strong></div></div>');
+      });
+      rows.push('</div>');
+      if (sensor.id && govIotSensorHistoryUrl) {
+        rows.push('<h6 class="small mt-3 mb-2">Trend (7 nap)</h6><div id="govIotDetailTrend" class="admin-chart" data-sensor-id="' + sensor.id + '"><p class="text-secondary small mb-0">Betöltés...</p></div>');
       }
-      rows.push('</tbody></table>');
     }
     bodyEl.innerHTML = rows.join('');
     panel.style.display = 'block';
+    if (sensor.id && govIotSensorHistoryUrl) loadGovIotDetailTrend(sensor.id);
+  }
+  function loadGovIotDetailTrend(sensorId){
+    var container = document.getElementById('govIotDetailTrend');
+    if (!container || !sensorId) return;
+    var days = 7;
+    fetch(govIotSensorHistoryUrl + '?sensor_id=' + sensorId + '&days=' + days + '&metric_key=temperature', { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !Array.isArray(j.data) || j.data.length === 0) { container.innerHTML = '<p class="text-secondary small mb-0">Nincs trend adat.</p>'; return; }
+      var data = j.data;
+      var maxV = Math.max.apply(null, data.map(function(x){ return parseFloat(x.value) || 0; }));
+      if (maxV <= 0) maxV = 1;
+      var html = '';
+      data.forEach(function(x){ var v = parseFloat(x.value); var pct = maxV > 0 ? Math.round(100 * (v || 0) / maxV) : 0; html += '<div class="admin-chart-bar"><span class="label">' + (x.date || x.measured_at || '').replace(/</g,'&lt;') + '</span><div class="bar-wrap"><div class="bar" style="width:' + pct + '%;background:#0d6efd"></div></div><span class="val">' + (v != null ? v + ' °C' : '—') + '</span></div>'; });
+      container.innerHTML = html;
+    }).catch(function(){ if (container) container.innerHTML = '<p class="text-secondary small mb-0">—</p>'; });
   }
   function renderGovIotFiltered(sensors){
     var listEl = document.getElementById('govIotDeviceList');
@@ -1975,6 +2030,24 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   document.getElementById('govIotViewTable') && document.getElementById('govIotViewTable').addEventListener('click', function(){
     var listEl = document.getElementById('govIotDeviceList'); var tableEl = document.getElementById('govIotDeviceTable');
     if (listEl) listEl.style.display = 'none'; if (tableEl) { tableEl.style.display = ''; tableEl.innerHTML = ''; renderGovIotFiltered(govIotFilteredSensors()); }
+  });
+  document.getElementById('govIotSyncBtn') && document.getElementById('govIotSyncBtn').addEventListener('click', function(){
+    var btn = document.getElementById('govIotSyncBtn');
+    var statusEl = document.getElementById('govIotSyncStatus');
+    if (!btn || !govIotSyncUrl) return;
+    btn.disabled = true;
+    if (statusEl) statusEl.textContent = '<?= json_encode(t('gov.loading') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?>';
+    fetch(govIotSyncUrl, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(function(r){ return r.json(); }).then(function(j){
+      btn.disabled = false;
+      if (statusEl) {
+        if (j.ok && j.providers) {
+          var parts = []; for (var p in j.providers) { var x = j.providers[p]; parts.push(p + ': ' + (x.imported || 0) + ' szenzor' + (x.updated ? ', ' + x.updated + ' metrika' : '')); }
+          statusEl.textContent = 'Kész. ' + parts.join('; ');
+          statusEl.className = 'small text-success';
+        } else { statusEl.textContent = j.error || '—'; statusEl.className = 'small text-danger'; }
+      }
+      loadGovIotDevices();
+    }).catch(function(){ btn.disabled = false; if (statusEl) { statusEl.textContent = '—'; statusEl.className = 'small text-danger'; } });
   });
   document.getElementById('govIotExportCsv') && document.getElementById('govIotExportCsv').addEventListener('click', function(){
     var sensors = govIotFilteredSensors();
