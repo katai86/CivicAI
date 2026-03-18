@@ -99,7 +99,7 @@ if (!empty($scopeParts)) {
 
 $sql = "SELECT vs.id, vs.source_provider, vs.external_station_id, vs.name, vs.sensor_type, vs.category,
         vs.latitude, vs.longitude, vs.address_or_area_name, vs.municipality, vs.country, vs.status,
-        vs.trust_score, vs.last_seen_at, vs.ownership_type
+        vs.trust_score, vs.confidence_score, vs.last_seen_at, vs.ownership_type
         FROM virtual_sensors vs WHERE $where ORDER BY vs.last_seen_at DESC, vs.id";
 $stmt = $db->prepare($sql);
 $stmt->execute($params);
@@ -154,6 +154,7 @@ foreach ($rows as $r) {
     'country' => $r['country'],
     'status' => $r['status'],
     'trust_score' => $r['trust_score'] !== null ? (float)$r['trust_score'] : null,
+    'confidence_score' => isset($r['confidence_score']) && $r['confidence_score'] !== null ? (float)$r['confidence_score'] : null,
     'last_seen_at' => $r['last_seen_at'],
     'ownership_type' => $r['ownership_type'],
     'metrics' => $metricsBySensor[$sid] ?? [],

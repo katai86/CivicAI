@@ -1231,6 +1231,18 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     'view_table' => t('iot.view_table'),
     'export_csv' => t('iot.export_csv'),
     'export_json' => t('iot.export_json'),
+    'label_imported_network' => t('iot.label_imported_network'),
+    'label_civicai_sensor' => t('iot.label_civicai_sensor'),
+    'trust_score' => t('iot.trust_score'),
+    'confidence_score' => t('iot.confidence_score'),
+    'freshness' => t('iot.freshness'),
+    'freshness_fresh' => t('iot.freshness_fresh'),
+    'freshness_ok' => t('iot.freshness_ok'),
+    'freshness_stale' => t('iot.freshness_stale'),
+    'provider_tier' => t('iot.provider_tier'),
+    'tier_1' => t('iot.tier_1'),
+    'tier_2' => t('iot.tier_2'),
+    'tier_3' => t('iot.tier_3'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var heatmapUrl = <?= json_encode(app_url('/api/heatmap_data.php'), JSON_UNESCAPED_SLASHES) ?>;
   var authorityIdForHeatmap = <?= !empty($authorityIds) ? (int)$authorityIds[0] : '0' ?>;
@@ -1689,6 +1701,9 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   var govIotMarkers = [];
   var govIotSensorsCache = [];
   var govIotSummaryCache = null;
+  function getGovIotOwnershipLabel(s){ var L = govIotLabels || {}; return ((s.ownership_type || '').toLowerCase() === 'civicai') ? (L.label_civicai_sensor || 'CivicAI Sensor') : (L.label_imported_network || 'Imported Network'); }
+  function getGovIotFreshness(lastSeenAt){ var L = govIotLabels || {}; if (!lastSeenAt) return { label: L.freshness_stale || 'Stale', class: 'text-secondary' }; var h = (Date.now() - new Date(lastSeenAt).getTime()) / 3600000; if (h < 1) return { label: L.freshness_fresh || 'Fresh', class: 'text-success' }; if (h < 24) return { label: L.freshness_ok || 'OK', class: 'text-primary' }; return { label: L.freshness_stale || 'Stale', class: 'text-secondary' }; }
+  function getGovIotProviderTier(provider){ var p = (provider || '').toLowerCase(); var tier = (p === 'openaq') ? 1 : (p === 'sensor_community' || p === 'sensorcommunity') ? 3 : 2; var L = govIotLabels || {}; return L['tier_' + tier] || ('Tier ' + tier); }
   function govIotFilteredSensors(){
     var sel = document.getElementById('govIotProviderFilter');
     var p = (sel && sel.value) ? sel.value.trim().toLowerCase() : '';
@@ -1703,9 +1718,14 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     var name = (sensor.name || sensor.source_provider + ' #' + (sensor.external_station_id || '')).replace(/</g,'&lt;');
     titleEl.textContent = name;
     var rows = [];
-    rows.push('<p class="mb-1"><strong>Provider:</strong> ' + (sensor.source_provider || '—').replace(/</g,'&lt;') + '</p>');
+    var L = govIotLabels || {};
+    rows.push('<p class="mb-1"><strong>Provider:</strong> ' + (sensor.source_provider || '—').replace(/</g,'&lt;') + ' <span class="badge bg-secondary ms-1">' + getGovIotOwnershipLabel(sensor).replace(/</g,'&lt;') + '</span></p>');
     rows.push('<p class="mb-1"><strong>Municipality:</strong> ' + (sensor.municipality || '—').replace(/</g,'&lt;') + '</p>');
     rows.push('<p class="mb-1"><strong>Last seen:</strong> ' + (sensor.last_seen_at || '—').replace(/</g,'&lt;') + '</p>');
+    var fr = getGovIotFreshness(sensor.last_seen_at); rows.push('<p class="mb-1"><strong>' + (L.freshness || 'Freshness') + ':</strong> <span class="' + fr.class + '">' + fr.label.replace(/</g,'&lt;') + '</span></p>');
+    if (sensor.trust_score != null) rows.push('<p class="mb-1"><strong>' + (L.trust_score || 'Trust') + ':</strong> ' + sensor.trust_score + '</p>');
+    if (sensor.confidence_score != null) rows.push('<p class="mb-1"><strong>' + (L.confidence_score || 'Confidence') + ':</strong> ' + sensor.confidence_score + '</p>');
+    rows.push('<p class="mb-1"><strong>' + (L.provider_tier || 'Provider tier') + ':</strong> ' + getGovIotProviderTier(sensor.source_provider).replace(/</g,'&lt;') + '</p>');
     if (sensor.lat != null && sensor.lng != null) rows.push('<p class="mb-1"><strong>Coordinates:</strong> ' + sensor.lat + ', ' + sensor.lng + '</p>');
     if (sensor.metrics && Object.keys(sensor.metrics).length > 0) {
       rows.push('<table class="table table-sm mt-2"><thead><tr><th>Metric</th><th>Value</th><th>Unit</th></tr></thead><tbody>');
@@ -1749,7 +1769,8 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
       var prov = (s.source_provider || '').replace(/</g,'&lt;');
       var last = s.last_seen_at ? s.last_seen_at.replace(/</g,'&lt;') : '—';
       var aqi = (s.metrics && s.metrics.aqi && s.metrics.aqi.value != null) ? s.metrics.aqi.value : '—';
-      html += '<li class="d-flex align-items-center justify-content-between border-bottom py-2 gov-iot-sensor-row" style="cursor:pointer;" data-index="' + govIotSensorsCache.indexOf(s) + '"><div><strong>' + name + '</strong> <span class="text-secondary small">' + prov + '</span><br><span class="text-muted small">AQI: ' + aqi + ' · ' + last + '</span></div></li>';
+      var ownershipLabel = getGovIotOwnershipLabel(s).replace(/</g,'&lt;');
+      html += '<li class="d-flex align-items-center justify-content-between border-bottom py-2 gov-iot-sensor-row" style="cursor:pointer;" data-index="' + govIotSensorsCache.indexOf(s) + '"><div><strong>' + name + '</strong> <span class="text-secondary small">' + prov + '</span> <span class="badge bg-secondary badge-sm">' + ownershipLabel + '</span><br><span class="text-muted small">AQI: ' + aqi + ' · ' + last + '</span></div></li>';
     });
     html += '</ul>';
     if (listEl) listEl.innerHTML = html;
@@ -1770,11 +1791,13 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
       chartsEl.innerHTML = chartHtml;
     }
     if (tableEl && tableEl.style.display !== 'none') {
-      var tb = '<table class="table table-sm"><thead><tr><th>Name</th><th>Provider</th><th>Municipality</th><th>Last seen</th><th>AQI</th><th>PM2.5</th></tr></thead><tbody>';
+      var tb = '<table class="table table-sm"><thead><tr><th>Name</th><th>Provider</th><th>Ownership</th><th>Municipality</th><th>Last seen</th><th>Freshness</th><th>AQI</th><th>PM2.5</th></tr></thead><tbody>';
       sensors.forEach(function(s){
         var aqi = (s.metrics && s.metrics.aqi && s.metrics.aqi.value != null) ? s.metrics.aqi.value : '—';
         var pm25 = (s.metrics && s.metrics.pm25 && s.metrics.pm25.value != null) ? s.metrics.pm25.value : '—';
-        tb += '<tr class="gov-iot-table-row" style="cursor:pointer;" data-index="' + govIotSensorsCache.indexOf(s) + '"><td>' + (s.name || '').replace(/</g,'&lt;') + '</td><td>' + (s.source_provider || '').replace(/</g,'&lt;') + '</td><td>' + (s.municipality || '').replace(/</g,'&lt;') + '</td><td>' + (s.last_seen_at || '—').replace(/</g,'&lt;') + '</td><td>' + aqi + '</td><td>' + pm25 + '</td></tr>';
+        var ownershipLabel = getGovIotOwnershipLabel(s).replace(/</g,'&lt;');
+        var fr = getGovIotFreshness(s.last_seen_at);
+        tb += '<tr class="gov-iot-table-row" style="cursor:pointer;" data-index="' + govIotSensorsCache.indexOf(s) + '"><td>' + (s.name || '').replace(/</g,'&lt;') + '</td><td>' + (s.source_provider || '').replace(/</g,'&lt;') + '</td><td><span class="badge bg-secondary">' + ownershipLabel + '</span></td><td>' + (s.municipality || '').replace(/</g,'&lt;') + '</td><td>' + (s.last_seen_at || '—').replace(/</g,'&lt;') + '</td><td><span class="' + fr.class + ' small">' + fr.label.replace(/</g,'&lt;') + '</span></td><td>' + aqi + '</td><td>' + pm25 + '</td></tr>';
       });
       tb += '</tbody></table>';
       tableEl.innerHTML = tb;
@@ -1795,7 +1818,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
       sensors.forEach(function(s){
         if (s.lat != null && s.lng != null) {
           var mk = L.marker([s.lat, s.lng]).addTo(govIotMap);
-          var pop = (s.name || s.source_provider).replace(/</g,'&lt;') + '<br><small>' + (s.municipality || '') + '</small>';
+          var pop = (s.name || s.source_provider).replace(/</g,'&lt;') + '<br><small>' + (s.municipality || '') + '</small><br><span class="badge bg-secondary">' + getGovIotOwnershipLabel(s).replace(/</g,'&lt;') + '</span>';
           if (s.metrics && s.metrics.aqi && s.metrics.aqi.value != null) pop += '<br>AQI: ' + s.metrics.aqi.value;
           pop += '<br><a href="#" class="gov-iot-detail-link" data-index="' + govIotSensorsCache.indexOf(s) + '">Details</a>';
           mk.bindPopup(pop);
@@ -1853,12 +1876,14 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   document.getElementById('govIotExportCsv') && document.getElementById('govIotExportCsv').addEventListener('click', function(){
     var sensors = govIotFilteredSensors();
     if (sensors.length === 0) return;
-    var head = 'Name,Provider,Municipality,Lat,Lng,Last seen,AQI,PM2.5,Temperature\n';
+    var head = 'Name,Provider,Ownership,Municipality,Lat,Lng,Last seen,Freshness,AQI,PM2.5,Temperature\n';
     var csv = head + sensors.map(function(s){
       var aqi = (s.metrics && s.metrics.aqi && s.metrics.aqi.value != null) ? s.metrics.aqi.value : '';
       var pm25 = (s.metrics && s.metrics.pm25 && s.metrics.pm25.value != null) ? s.metrics.pm25.value : '';
       var temp = (s.metrics && (s.metrics.temperature || s.metrics.temp)) ? ((s.metrics.temperature || s.metrics.temp).value != null ? (s.metrics.temperature || s.metrics.temp).value : '') : '';
-      return '"' + (s.name || '').replace(/"/g,'""') + '","' + (s.source_provider || '').replace(/"/g,'""') + '","' + (s.municipality || '').replace(/"/g,'""') + '",' + (s.lat || '') + ',' + (s.lng || '') + ',"' + (s.last_seen_at || '').replace(/"/g,'""') + '",' + aqi + ',' + pm25 + ',' + temp;
+      var ownership = getGovIotOwnershipLabel(s).replace(/"/g,'""');
+      var fr = getGovIotFreshness(s.last_seen_at);
+      return '"' + (s.name || '').replace(/"/g,'""') + '","' + (s.source_provider || '').replace(/"/g,'""') + '","' + ownership + '","' + (s.municipality || '').replace(/"/g,'""') + '",' + (s.lat || '') + ',' + (s.lng || '') + ',"' + (s.last_seen_at || '').replace(/"/g,'""') + '","' + fr.label.replace(/"/g,'""') + '",' + aqi + ',' + pm25 + ',' + temp;
     }).join('\n');
     var a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.download = 'virtual_sensors.csv'; a.click();
   });

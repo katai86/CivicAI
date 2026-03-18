@@ -83,15 +83,15 @@ Fájl: **sql/2026-iot-virtual-sensors.sql** + beépítés **01_consolidated_migr
 
 ## M8–M17
 
-- M8: Gov dashboard IoT kártyák (Total Sensors, Average AQI, PM2.5, Temperature, stb.), chartok (trend, provider breakdown).
-- M9: Térkép marker szűrők (provider, metric type, freshness).
-- M10: Szenzor részletek panel (map click + táblázat click).
-- M11: Admin/gov táblanézet, szűrők, export (CSV/JSON/GeoJSON).
-- M12: ownership_type (external / civicai), UI jelölés.
-- M13: trust_score, freshness_score, confidence_score számítás és megjelenítés.
-- M14: Provider prioritás (Tier 1–3), Sensor.community experimental.
-- M15: Demo mód, címkék (Imported Network, CivicAI Sensor).
-- M16: Kód dokumentáció (adapterek, új provider, sync, migráció).
+- M8: Gov dashboard IoT kártyák (Total Sensors, Average AQI, PM2.5, Temperature, stb.), chartok (trend, provider breakdown). **KÉSZ**
+- M9: Térkép marker szűrők (provider, metric type, freshness). **KÉSZ**
+- M10: Szenzor részletek panel (map click + táblázat click). **KÉSZ**
+- M11: Admin/gov táblanézet, szűrők, export (CSV/JSON/GeoJSON). **KÉSZ**
+- M12: ownership_type (external / civicai), UI jelölés. **KÉSZ** (badge listában, táblában, popup, részletpanel; címkék: Imported Network / CivicAI Sensor)
+- M13: trust_score, freshness_score, confidence_score számítás és megjelenítés. **KÉSZ** (freshness last_seen_at alapján: &lt;1h / &lt;24h / stale; trust és confidence a részletpanelen)
+- M14: Provider prioritás (Tier 1–3), Sensor.community experimental. **KÉSZ** (statikus tier a részletpanelen: OpenAQ=Tier1, OpenWeather stb.=Tier2, Sensor.community=Tier3)
+- M15: Demo mód, címkék (Imported Network, CivicAI Sensor). **KÉSZ** (ugyanaz mint M12 címkék)
+- M16: Kód dokumentáció (adapterek, új provider, sync, migráció). **KÉSZ** (docs/IOT_PROVIDERS.md)
 - M17: Jövőbeli bővítések (valódi hardware, fa/talaj szenzorok, AI anomália) – architektúra készen tartása.
 
 ---
