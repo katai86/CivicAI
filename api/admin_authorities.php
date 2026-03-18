@@ -146,17 +146,28 @@ if ($action === 'create_authority') {
 if ($action === 'update_authority') {
   $id = (int)($body['id'] ?? 0);
   if ($id <= 0) json_response(['ok' => false, 'error' => t('api.invalid_id')], 400);
+  $name = safe_str($body['name'] ?? null, 160);
+  $city = safe_str($body['city'] ?? null, 80);
+  $address = safe_str($body['address'] ?? null, 255);
+  $email = safe_str($body['contact_email'] ?? null, 190);
+  $phone = safe_str($body['contact_phone'] ?? null, 40);
   $minLat = array_key_exists('min_lat', $body) ? (is_numeric($body['min_lat']) ? (float)$body['min_lat'] : null) : null;
   $maxLat = array_key_exists('max_lat', $body) ? (is_numeric($body['max_lat']) ? (float)$body['max_lat'] : null) : null;
   $minLng = array_key_exists('min_lng', $body) ? (is_numeric($body['min_lng']) ? (float)$body['min_lng'] : null) : null;
   $maxLng = array_key_exists('max_lng', $body) ? (is_numeric($body['max_lng']) ? (float)$body['max_lng'] : null) : null;
   try {
-    $stmt = db()->prepare("UPDATE authorities SET min_lat = :minlat, max_lat = :maxlat, min_lng = :minlng, max_lng = :maxlng WHERE id = :id");
-    $stmt->execute([':minlat' => $minLat, ':maxlat' => $maxLat, ':minlng' => $minLng, ':maxlng' => $maxLng, ':id' => $id]);
+    $pdo = db();
+    $pdo->prepare("UPDATE authorities SET name = ?, city = ?, contact_email = ?, contact_phone = ?, min_lat = ?, max_lat = ?, min_lng = ?, max_lng = ? WHERE id = ?")
+      ->execute([$name, $city, $email, $phone, $minLat, $maxLat, $minLng, $maxLng, $id]);
+    if ($address !== null && $address !== '') {
+      try {
+        $pdo->prepare("UPDATE authorities SET address = ? WHERE id = ?")->execute([$address, $id]);
+      } catch (Throwable $e) { /* address oszlop opcionális */ }
+    }
     json_response(['ok' => true]);
   } catch (Throwable $e) {
     if (strpos($e->getMessage(), 'Unknown column') !== false) {
-      json_response(['ok' => false, 'error' => 'authorities táblában hiányoznak a min_lat/max_lat/min_lng/max_lng oszlopok. Futtasd a migrációt.'], 400);
+      json_response(['ok' => false, 'error' => 'authorities táblában hiányzó oszlop. Futtasd a migrációt.'], 400);
     }
     log_error('admin_authorities update_authority: ' . $e->getMessage());
     json_response(['ok' => false, 'error' => t('api.authority_save_failed')], 500);

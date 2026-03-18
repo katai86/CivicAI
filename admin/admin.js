@@ -813,6 +813,7 @@ async function loadAuthorities(){
     if (!authorities.length){
       list.innerHTML = '<div class="text-secondary">' + t('admin.no_data') + '</div>';
     } else {
+      const editLabel = t('admin.authority_edit') || 'Szerkesztés';
       list.innerHTML = authorities.map(a => {
         const hasBounds = a.min_lat != null && a.max_lat != null && a.min_lng != null && a.max_lng != null;
         const boundsStr = hasBounds ? ` [${Number(a.min_lat).toFixed(2)}, ${Number(a.max_lat).toFixed(2)}, ${Number(a.min_lng).toFixed(2)}, ${Number(a.max_lng).toFixed(2)}]` : ' <span class="text-warning">' + (t('admin.authority_no_bounds') || 'nincs terület') + '</span>';
@@ -822,15 +823,25 @@ async function loadAuthorities(){
             <b>${esc(a.name)}</b> • ${esc(a.city || '')}${boundsStr}
           </div>
           <div class="text-secondary">${esc(a.contact_email || '')} ${esc(a.contact_phone || '')}</div>
-          <div class="auth-edit-fields d-none d-flex flex-wrap gap-2 align-items-center mt-2">
-            <input class="form-control form-control-sm auth-edit-minlat" type="number" step="any" placeholder="min_lat" value="${a.min_lat != null ? a.min_lat : ''}" style="width:80px">
-            <input class="form-control form-control-sm auth-edit-maxlat" type="number" step="any" placeholder="max_lat" value="${a.max_lat != null ? a.max_lat : ''}" style="width:80px">
-            <input class="form-control form-control-sm auth-edit-minlng" type="number" step="any" placeholder="min_lng" value="${a.min_lng != null ? a.min_lng : ''}" style="width:80px">
-            <input class="form-control form-control-sm auth-edit-maxlng" type="number" step="any" placeholder="max_lng" value="${a.max_lng != null ? a.max_lng : ''}" style="width:80px">
-            <button type="button" class="btn btn-sm btn-primary auth-save-bounds">${t('admin.authority_save')}</button>
+          <div class="auth-edit-fields d-none border rounded p-2 mt-2 bg-light">
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+              <input class="form-control form-control-sm auth-edit-name" placeholder="${esc(t('admin.authority_name'))}" value="${esc(a.name || '')}" style="min-width:140px">
+              <input class="form-control form-control-sm auth-edit-city" placeholder="${esc(t('admin.authority_city'))}" value="${esc(a.city || '')}" style="width:100px">
+              <input class="form-control form-control-sm auth-edit-address" placeholder="${esc(t('admin.authority_address'))}" value="${esc(a.address || '')}" style="min-width:180px">
+              <input class="form-control form-control-sm auth-edit-email" placeholder="${esc(t('admin.authority_email'))}" value="${esc(a.contact_email || '')}" style="width:140px">
+              <input class="form-control form-control-sm auth-edit-phone" placeholder="${esc(t('admin.authority_phone'))}" value="${esc(a.contact_phone || '')}" style="width:100px">
+            </div>
+            <div class="small text-secondary mb-1">${esc(t('admin.authority_bounds_hint') || '')}</div>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <input class="form-control form-control-sm auth-edit-minlat" type="number" step="any" placeholder="min_lat" value="${a.min_lat != null ? a.min_lat : ''}" style="width:80px">
+              <input class="form-control form-control-sm auth-edit-maxlat" type="number" step="any" placeholder="max_lat" value="${a.max_lat != null ? a.max_lat : ''}" style="width:80px">
+              <input class="form-control form-control-sm auth-edit-minlng" type="number" step="any" placeholder="min_lng" value="${a.min_lng != null ? a.min_lng : ''}" style="width:80px">
+              <input class="form-control form-control-sm auth-edit-maxlng" type="number" step="any" placeholder="max_lng" value="${a.max_lng != null ? a.max_lng : ''}" style="width:80px">
+              <button type="button" class="btn btn-sm btn-primary auth-save-full">${t('admin.authority_save')}</button>
+            </div>
           </div>
-          <div class="actions">
-            <button class="btn btn-outline-secondary btn-sm auth-edit" data-id="${a.id}">${t('admin.authority_edit_bounds') || 'Terület'}</button>
+          <div class="actions mt-1">
+            <button type="button" class="btn btn-outline-secondary btn-sm auth-edit">${editLabel}</button>
             <button class="btn btn-outline-danger btn-sm auth-del" data-id="${a.id}">${t('admin.delete')}</button>
           </div>
         </div>
@@ -851,25 +862,39 @@ async function loadAuthorities(){
         btn.addEventListener('click', () => {
           const row = btn.closest('.auth-row');
           const fields = row.querySelector('.auth-edit-fields');
-          if (fields) fields.classList.toggle('d-none');
+          if (fields) {
+            fields.classList.toggle('d-none');
+            btn.textContent = fields.classList.contains('d-none') ? (t('admin.authority_edit') || 'Szerkesztés') : (t('admin.cancel') || 'Mégse');
+          }
         });
       });
-      list.querySelectorAll('.auth-save-bounds').forEach(btn => {
+      list.querySelectorAll('.auth-save-full').forEach(btn => {
         btn.addEventListener('click', async () => {
           const row = btn.closest('.auth-row');
           const id = row ? Number(row.dataset.id) : 0;
           if (id <= 0) return;
-          const minLat = parseNum(row.querySelector('.auth-edit-minlat')?.value);
-          const maxLat = parseNum(row.querySelector('.auth-edit-maxlat')?.value);
-          const minLng = parseNum(row.querySelector('.auth-edit-minlng')?.value);
-          const maxLng = parseNum(row.querySelector('.auth-edit-maxlng')?.value);
+          const body = {
+            action: 'update_authority',
+            id,
+            name: row.querySelector('.auth-edit-name')?.value?.trim() || '',
+            city: row.querySelector('.auth-edit-city')?.value?.trim() || '',
+            address: row.querySelector('.auth-edit-address')?.value?.trim() || '',
+            contact_email: row.querySelector('.auth-edit-email')?.value?.trim() || '',
+            contact_phone: row.querySelector('.auth-edit-phone')?.value?.trim() || '',
+            min_lat: parseNum(row.querySelector('.auth-edit-minlat')?.value),
+            max_lat: parseNum(row.querySelector('.auth-edit-maxlat')?.value),
+            min_lng: parseNum(row.querySelector('.auth-edit-minlng')?.value),
+            max_lng: parseNum(row.querySelector('.auth-edit-maxlng')?.value)
+          };
           try {
             await fetchJson(API_AUTHORITIES, {
-              method:'POST',
-              headers:{ 'Content-Type':'application/json' },
-              body: JSON.stringify({ action:'update_authority', id, min_lat: minLat, max_lat: maxLat, min_lng: minLng, max_lng: maxLng })
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
             });
             row.querySelector('.auth-edit-fields')?.classList.add('d-none');
+            const editBtn = row.querySelector('.auth-edit');
+            if (editBtn) editBtn.textContent = t('admin.authority_edit') || 'Szerkesztés';
             await loadAuthorities();
           } catch (e) {
             alert(t('admin.authority_save_error') + ': ' + e.message);

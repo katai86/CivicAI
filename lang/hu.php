@@ -330,6 +330,7 @@ return [
     'admin.authority_bounds_hint' => 'Terület határai (IoT szenzorok, Gov szűrő): min/max szélesség és hosszúság (opcionális).',
     'admin.authority_no_bounds' => 'nincs terület',
     'admin.authority_edit_bounds' => 'Terület',
+    'admin.authority_edit' => 'Szerkesztés',
     'admin.authority_save' => 'Mentés',
     'admin.contact_title' => 'Szolgáltatás (Open311)',
     'admin.contact_code' => 'service_code (pl. road)',

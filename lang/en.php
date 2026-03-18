@@ -328,6 +328,7 @@ return [
     'admin.authority_bounds_hint' => 'Bounds for IoT sensors / Gov filter: min/max latitude and longitude (optional).',
     'admin.authority_no_bounds' => 'no bounds',
     'admin.authority_edit_bounds' => 'Bounds',
+    'admin.authority_edit' => 'Edit',
     'admin.authority_save' => 'Save',
     'admin.contact_title' => 'Service (Open311)',
     'admin.contact_code' => 'service_code (e.g. road)',
