@@ -432,6 +432,7 @@ return [
 
     'gov.title' => 'Government dashboard',
     'gov.authorities' => 'Authorities',
+    'gov.your_authority' => 'Your authority',
     'gov.stats_title' => 'Statistics – reports for your area',
     'gov.stat_today' => 'Today',
     'gov.stat_7d' => 'Last 7 days',

@@ -435,6 +435,7 @@ return [
     // Gov dashboard
     'gov.title' => 'Közigazgatási dashboard',
     'gov.authorities' => 'Hatóságok',
+    'gov.your_authority' => 'Saját hatóság',
     'gov.stats_title' => 'Statisztika – a városhoz tartozó bejelentések',
     'gov.stat_today' => 'Ma',
     'gov.stat_7d' => 'Elmúlt 7 nap',

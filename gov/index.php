@@ -249,12 +249,17 @@ $stats = [
   'governance' => [],
 ];
 
-// Gov: hatósághoz tartozó VAGY városnév alapján (authority_id még nincs beállítva)
-$govWhere = 'r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')';
-$govParams = array_values($authorityIds);
-if (!empty($authorityCities)) {
-  $govWhere .= ' OR (r.authority_id IS NULL AND r.city IN (' . implode(',', array_fill(0, count($authorityCities), '?')) . '))';
-  $govParams = array_merge($govParams, $authorityCities);
+// Gov user: CSAK a saját hatóság(ok) adatai – soha ne jelenjen meg más város/hatóság
+// Admin: összes adat; nem admin: csak authority_users-ból származó authority_ids
+$govWhere = '1=0';
+$govParams = [];
+if (!empty($authorityIds)) {
+  $govWhere = 'r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')';
+  $govParams = array_values($authorityIds);
+  if (!empty($authorityCities)) {
+    $govWhere .= ' OR (r.authority_id IS NULL AND r.city IN (' . implode(',', array_fill(0, count($authorityCities), '?')) . '))';
+    $govParams = array_merge($govParams, $authorityCities);
+  }
 }
 $baseWhere = $isAdmin ? '1=1' : $govWhere;
 $baseParams = $isAdmin ? [] : $govParams;
@@ -698,7 +703,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
                     <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_today')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_1d'] ?></span></div></div>
                     <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_7d')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_7d'] ?></span></div></div>
                     <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_total')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_total'] ?></span></div></div>
-                    <div class="col-md-6"><div class="text-secondary small"><?= h(t('gov.authorities')) ?>: <b><?= h(implode(', ', array_map(fn($a)=>$a['name'], $authorities))) ?></b></div></div>
+                    <div class="col-md-6"><div class="text-secondary small"><?= ($isAdmin ? h(t('gov.authorities')) . ': ' : h(t('gov.your_authority') ?: 'Saját hatóság') . ': ') ?><b><?= h($isAdmin ? implode(', ', array_map(fn($a)=>$a['name'], $authorities)) : ($authorities[0]['name'] ?? '—')) ?></b></div></div>
                   </div>
                   <div class="row g-3 mt-2">
                     <div class="col-md-6">
