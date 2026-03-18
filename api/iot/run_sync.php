@@ -50,7 +50,7 @@ function run_iot_sync(): array {
 
     try {
       $options = ['limit' => $maxStations];
-      if ($providerKey === 'openaq' || $providerKey === 'aqicn') {
+      if ($providerKey === 'openaq' || $providerKey === 'aqicn' || $providerKey === 'weatherxm') {
         $options['bbox'] = $bbox;
       }
       if ($providerKey === 'openweather') {
@@ -112,7 +112,7 @@ function run_iot_sync(): array {
         }
       }
 
-      $extIdsForFetch = ($providerKey === 'openweather' || $providerKey === 'aqicn') ? [] : array_keys($extIdToVsId);
+      $extIdsForFetch = in_array($providerKey, ['openweather', 'aqicn'], true) ? [] : array_keys($extIdToVsId);
 
       if (empty($extIdsForFetch)) {
         $finished = date('Y-m-d H:i:s');
@@ -122,7 +122,7 @@ function run_iot_sync(): array {
         continue;
       }
 
-      $chunkSize = $providerKey === 'openaq' ? 10 : 20;
+      $chunkSize = ($providerKey === 'openaq' || $providerKey === 'weatherxm') ? 10 : 20;
       $latestByExt = [];
       foreach (array_chunk($extIdsForFetch, $chunkSize) as $chunk) {
         $latestByExt = array_merge($latestByExt, $adapter->fetchLatestMetrics($chunk));

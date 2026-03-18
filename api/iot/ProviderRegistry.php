@@ -11,6 +11,9 @@ require_once __DIR__ . '/OpenWeatherAdapter.php';
 if (is_file(__DIR__ . '/AQICNAdapter.php')) {
   require_once __DIR__ . '/AQICNAdapter.php';
 }
+if (is_file(__DIR__ . '/WeatherXMAdapter.php')) {
+  require_once __DIR__ . '/WeatherXMAdapter.php';
+}
 
 class ProviderRegistry {
 
@@ -29,6 +32,9 @@ class ProviderRegistry {
       ];
       if (class_exists('CivicAI\Iot\AQICNAdapter', false)) {
         $adapterClasses[] = \CivicAI\Iot\AQICNAdapter::class;
+      }
+      if (class_exists('CivicAI\Iot\WeatherXMAdapter', false)) {
+        $adapterClasses[] = \CivicAI\Iot\WeatherXMAdapter::class;
       }
       foreach ($adapterClasses as $class) {
         try {
