@@ -871,7 +871,8 @@ function send_mail_html(string $to, string $subject, string $bodyHtml): bool {
 
 /**
  * Virtuális szenzorok szűrési feltétele hatóság városai és bounds alapján.
- * Csak a hatóság területéhez tartozó szenzorok: város név egyezés VAGY koordináta a bboxban.
+ * Megjelennek: város név egyezés VAGY koordináta a bboxban VAGY (ha van város) municipality nélküli, koordinátás szenzorok.
+ * Az utóbbi miatt a WeatherXM/OpenAQ stb. is látszanak, ha a hatóságnak nincs bboxja (csak városa).
  * @param array $cities Hatóság városnevei (pl. ['Budapest'])
  * @param array $bounds Hatóság bbox listája [[minLat, maxLat, minLng, maxLng], ...]
  * @return array [where string (vs. alias), params array]
@@ -891,6 +892,9 @@ function virtual_sensors_scope_for_authority(array $cities, array $bounds): arra
     $maxLng = max(array_column($bounds, 3));
     $scopeParts[] = "(vs.latitude IS NOT NULL AND vs.longitude IS NOT NULL AND vs.latitude >= ? AND vs.latitude <= ? AND vs.longitude >= ? AND vs.longitude <= ?)";
     $params = array_merge($params, [$minLat, $maxLat, $minLng, $maxLng]);
+  }
+  if (!empty($cities)) {
+    $scopeParts[] = "(TRIM(COALESCE(vs.municipality,'')) = '' AND vs.latitude IS NOT NULL AND vs.longitude IS NOT NULL)";
   }
   $where = "vs.is_active = 1";
   if (!empty($scopeParts)) {
