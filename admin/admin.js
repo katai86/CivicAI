@@ -813,17 +813,29 @@ async function loadAuthorities(){
     if (!authorities.length){
       list.innerHTML = '<div class="text-secondary">' + t('admin.no_data') + '</div>';
     } else {
-      list.innerHTML = authorities.map(a => `
-        <div class="admin-item">
+      list.innerHTML = authorities.map(a => {
+        const hasBounds = a.min_lat != null && a.max_lat != null && a.min_lng != null && a.max_lng != null;
+        const boundsStr = hasBounds ? ` [${Number(a.min_lat).toFixed(2)}, ${Number(a.max_lat).toFixed(2)}, ${Number(a.min_lng).toFixed(2)}, ${Number(a.max_lng).toFixed(2)}]` : ' <span class="text-warning">' + (t('admin.authority_no_bounds') || 'nincs terület') + '</span>';
+        return `
+        <div class="admin-item auth-row" data-id="${a.id}">
           <div class="meta">
-            <b>${esc(a.name)}</b> • ${esc(a.city || '')}
+            <b>${esc(a.name)}</b> • ${esc(a.city || '')}${boundsStr}
           </div>
           <div class="text-secondary">${esc(a.contact_email || '')} ${esc(a.contact_phone || '')}</div>
+          <div class="auth-edit-fields d-none d-flex flex-wrap gap-2 align-items-center mt-2">
+            <input class="form-control form-control-sm auth-edit-minlat" type="number" step="any" placeholder="min_lat" value="${a.min_lat != null ? a.min_lat : ''}" style="width:80px">
+            <input class="form-control form-control-sm auth-edit-maxlat" type="number" step="any" placeholder="max_lat" value="${a.max_lat != null ? a.max_lat : ''}" style="width:80px">
+            <input class="form-control form-control-sm auth-edit-minlng" type="number" step="any" placeholder="min_lng" value="${a.min_lng != null ? a.min_lng : ''}" style="width:80px">
+            <input class="form-control form-control-sm auth-edit-maxlng" type="number" step="any" placeholder="max_lng" value="${a.max_lng != null ? a.max_lng : ''}" style="width:80px">
+            <button type="button" class="btn btn-sm btn-primary auth-save-bounds">${t('admin.authority_save')}</button>
+          </div>
           <div class="actions">
+            <button class="btn btn-outline-secondary btn-sm auth-edit" data-id="${a.id}">${t('admin.authority_edit_bounds') || 'Terület'}</button>
             <button class="btn btn-outline-danger btn-sm auth-del" data-id="${a.id}">${t('admin.delete')}</button>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
       list.querySelectorAll('.auth-del').forEach(btn => {
         btn.addEventListener('click', async () => {
           if (!confirm(t('admin.confirm_delete_authority'))) return;
@@ -833,6 +845,35 @@ async function loadAuthorities(){
             body: JSON.stringify({ action:'delete_authority', id: Number(btn.dataset.id) })
           });
           await loadAuthorities();
+        });
+      });
+      list.querySelectorAll('.auth-edit').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const row = btn.closest('.auth-row');
+          const fields = row.querySelector('.auth-edit-fields');
+          if (fields) fields.classList.toggle('d-none');
+        });
+      });
+      list.querySelectorAll('.auth-save-bounds').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const row = btn.closest('.auth-row');
+          const id = row ? Number(row.dataset.id) : 0;
+          if (id <= 0) return;
+          const minLat = parseNum(row.querySelector('.auth-edit-minlat')?.value);
+          const maxLat = parseNum(row.querySelector('.auth-edit-maxlat')?.value);
+          const minLng = parseNum(row.querySelector('.auth-edit-minlng')?.value);
+          const maxLng = parseNum(row.querySelector('.auth-edit-maxlng')?.value);
+          try {
+            await fetchJson(API_AUTHORITIES, {
+              method:'POST',
+              headers:{ 'Content-Type':'application/json' },
+              body: JSON.stringify({ action:'update_authority', id, min_lat: minLat, max_lat: maxLat, min_lng: minLng, max_lng: maxLng })
+            });
+            row.querySelector('.auth-edit-fields')?.classList.add('d-none');
+            await loadAuthorities();
+          } catch (e) {
+            alert(t('admin.authority_save_error') + ': ' + e.message);
+          }
         });
       });
     }
@@ -1339,6 +1380,10 @@ document.getElementById('createPoint')?.addEventListener('click', async () => {
   }
 });
 
+function parseNum(val) {
+  const v = parseFloat(String(val || '').replace(',', '.'));
+  return isFinite(v) ? v : null;
+}
 document.getElementById('createAuthority')?.addEventListener('click', async () => {
   const body = {
     action:'create_authority',
@@ -1349,6 +1394,14 @@ document.getElementById('createAuthority')?.addEventListener('click', async () =
     contact_phone: document.getElementById('authorityPhone').value.trim(),
     is_active: 1
   };
+  const minLat = parseNum(document.getElementById('authorityMinLat')?.value);
+  const maxLat = parseNum(document.getElementById('authorityMaxLat')?.value);
+  const minLng = parseNum(document.getElementById('authorityMinLng')?.value);
+  const maxLng = parseNum(document.getElementById('authorityMaxLng')?.value);
+  if (minLat != null) body.min_lat = minLat;
+  if (maxLat != null) body.max_lat = maxLat;
+  if (minLng != null) body.min_lng = minLng;
+  if (maxLng != null) body.max_lng = maxLng;
   try{
     await fetchJson(API_AUTHORITIES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     document.getElementById('authorityName').value = '';
@@ -1356,6 +1409,10 @@ document.getElementById('createAuthority')?.addEventListener('click', async () =
     document.getElementById('authorityAddress').value = '';
     document.getElementById('authorityEmail').value = '';
     document.getElementById('authorityPhone').value = '';
+    document.getElementById('authorityMinLat').value = '';
+    document.getElementById('authorityMaxLat').value = '';
+    document.getElementById('authorityMinLng').value = '';
+    document.getElementById('authorityMaxLng').value = '';
     await loadAuthorities();
   }catch(e){
     alert(t('admin.authority_save_error') + ': ' + e.message);

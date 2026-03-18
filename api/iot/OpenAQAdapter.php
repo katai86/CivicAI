@@ -19,25 +19,35 @@ class OpenAQAdapter extends AbstractProvider {
   }
 
   /**
-   * @param array $options [ 'bbox' => [minLat, maxLat, minLng, maxLng], 'limit' => 100, 'page' => 1 ]
+   * @param array $options [ 'bbox' => [minLat, maxLat, minLng, maxLng], 'limit' => 500 ]
+   * OpenAQ v3: max 1000 per page; we paginate until we have limit or no more.
    */
   public function fetchStations(array $options = []): array {
     if (!$this->isConfigured()) return [];
-    $limit = (int)($options['limit'] ?? 100);
-    $page = (int)($options['page'] ?? 1);
-    $params = ['limit' => min(100, max(1, $limit)), 'page' => max(1, $page)];
-    if (!empty($options['bbox']) && is_array($options['bbox']) && count($options['bbox']) >= 4) {
-      $minLat = $options['bbox'][0];
-      $maxLat = $options['bbox'][1];
-      $minLng = $options['bbox'][2];
-      $maxLng = $options['bbox'][3];
-      $params['bbox'] = implode(',', [(float)$minLng, (float)$minLat, (float)$maxLng, (float)$maxLat]);
-    }
-    $url = self::BASE_URL . '/locations?' . http_build_query($params);
+    $wantLimit = (int)($options['limit'] ?? 100);
+    $wantLimit = min(2000, max(1, $wantLimit));
+    $perPage = min(1000, $wantLimit);
     $headers = ['X-API-Key: ' . trim($this->getIotSetting('openaq_api_key') ?? '')];
-    $data = $this->httpGet($url, $headers);
-    if (!$data || !isset($data['results']) || !is_array($data['results'])) return [];
-    return $data['results'];
+    $all = [];
+    $page = 1;
+    do {
+      $params = ['limit' => $perPage, 'page' => $page];
+      if (!empty($options['bbox']) && is_array($options['bbox']) && count($options['bbox']) >= 4) {
+        $minLat = $options['bbox'][0];
+        $maxLat = $options['bbox'][1];
+        $minLng = $options['bbox'][2];
+        $maxLng = $options['bbox'][3];
+        $params['bbox'] = implode(',', [(float)$minLng, (float)$minLat, (float)$maxLng, (float)$maxLat]);
+      }
+      $url = self::BASE_URL . '/locations?' . http_build_query($params);
+      $data = $this->httpGet($url, $headers);
+      if (!$data || !isset($data['results']) || !is_array($data['results'])) break;
+      $batch = $data['results'];
+      $all = array_merge($all, $batch);
+      if (count($batch) < $perPage || count($all) >= $wantLimit) break;
+      $page++;
+    } while (count($all) < $wantLimit && $page <= 20);
+    return array_slice($all, 0, $wantLimit);
   }
 
   public function fetchLatestMetrics(array $externalStationIds): array {

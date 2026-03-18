@@ -260,13 +260,20 @@ $LANG_JS = lang_array_for_js();
 
                 <div class="admin-tab-body" id="tab-authorities" hidden>
                   <div class="fw-semibold mb-2"><?= htmlspecialchars(t('admin.authority_create_title'), ENT_QUOTES, 'UTF-8') ?></div>
-                  <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                  <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
                     <input id="authorityName" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_name'), ENT_QUOTES, 'UTF-8') ?>">
                     <input id="authorityCity" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_city'), ENT_QUOTES, 'UTF-8') ?>">
                     <input id="authorityAddress" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_address'), ENT_QUOTES, 'UTF-8') ?>" style="min-width:220px">
                     <input id="authorityEmail" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_email'), ENT_QUOTES, 'UTF-8') ?>">
                     <input id="authorityPhone" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_phone'), ENT_QUOTES, 'UTF-8') ?>">
                     <button id="createAuthority" class="btn btn-primary btn-sm ms-auto" type="button"><?= htmlspecialchars(t('admin.authority_save'), ENT_QUOTES, 'UTF-8') ?></button>
+                  </div>
+                  <div class="small text-secondary mb-2"><?= htmlspecialchars(t('admin.authority_bounds_hint'), ENT_QUOTES, 'UTF-8') ?></div>
+                  <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                    <input id="authorityMinLat" class="form-control form-control-sm" type="number" step="any" placeholder="min_lat (pl. 47.4)" style="width:100px">
+                    <input id="authorityMaxLat" class="form-control form-control-sm" type="number" step="any" placeholder="max_lat (pl. 47.6)" style="width:100px">
+                    <input id="authorityMinLng" class="form-control form-control-sm" type="number" step="any" placeholder="min_lng (pl. 18.9)" style="width:100px">
+                    <input id="authorityMaxLng" class="form-control form-control-sm" type="number" step="any" placeholder="max_lng (pl. 19.2)" style="width:100px">
                   </div>
                   <div class="admin-list" id="authorityList"><?= htmlspecialchars(t('admin.user_list_empty'), ENT_QUOTES, 'UTF-8') ?></div>
 

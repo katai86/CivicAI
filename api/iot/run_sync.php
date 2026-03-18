@@ -10,26 +10,33 @@ use CivicAI\Iot\ProviderRegistry;
 function run_iot_sync(): array {
   $db = db();
   $authorityCities = [];
-  $bbox = null;
+  $allBounds = [];
   try {
     $rows = $db->query("SELECT city, min_lat, max_lat, min_lng, max_lng FROM authorities WHERE city IS NOT NULL AND TRIM(city) <> ''")->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as $r) {
       $city = trim($r['city'] ?? '');
       if ($city !== '') $authorityCities[] = ['name' => $city, 'country' => 'HU'];
-      if ($bbox === null && isset($r['min_lat'], $r['max_lat'], $r['min_lng'], $r['max_lng']) &&
+      if (isset($r['min_lat'], $r['max_lat'], $r['min_lng'], $r['max_lng']) &&
           $r['min_lat'] !== null && $r['max_lat'] !== null && $r['min_lng'] !== null && $r['max_lng'] !== null) {
-        $bbox = [(float)$r['min_lat'], (float)$r['max_lat'], (float)$r['min_lng'], (float)$r['max_lng']];
+        $allBounds[] = [(float)$r['min_lat'], (float)$r['max_lat'], (float)$r['min_lng'], (float)$r['max_lng']];
       }
     }
-    if ($bbox === null) {
-      $bbox = [47.0, 48.0, 19.0, 23.0];
+    if (!empty($allBounds)) {
+      $bbox = [
+        min(array_column($allBounds, 0)),
+        max(array_column($allBounds, 1)),
+        min(array_column($allBounds, 2)),
+        max(array_column($allBounds, 3)),
+      ];
+    } else {
+      $bbox = [46.5, 48.6, 16.0, 23.0];
     }
   } catch (Throwable $e) {
-    $bbox = [47.0, 48.0, 19.0, 23.0];
+    $bbox = [46.5, 48.6, 16.0, 23.0];
   }
 
   $maxStations = (int)get_module_setting('iot', 'iot_max_stations_per_city') ?: 100;
-  $maxStations = min(200, max(10, $maxStations));
+  $maxStations = min(1000, max(10, $maxStations));
 
   $adapters = ProviderRegistry::getConfiguredAdapters();
   $results = [];

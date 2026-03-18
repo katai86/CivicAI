@@ -92,6 +92,11 @@ if (!empty($bounds)) {
   $scopeParts[] = "(vs.latitude IS NOT NULL AND vs.longitude IS NOT NULL AND vs.latitude >= ? AND vs.latitude <= ? AND vs.longitude >= ? AND vs.longitude <= ?)";
   $params = array_merge($params, [$minLat, $maxLat, $minLng, $maxLng]);
 }
+// Ha egy hatóságnak nincs bboxa (bounds), csak város van: OpenAQ/AQICN szenzorok gyakran null municipality-t adnak, ezért kiesnek.
+// Ilyenkor ne szűrjünk földrajzra – minden aktív szenzor megjelenik (később a hatóság bbox beállításával szűkíthető).
+if (empty($bounds) && !empty($cities)) {
+  $scopeParts[] = "(TRIM(COALESCE(vs.municipality,'')) = '' AND TRIM(COALESCE(vs.address_or_area_name,'')) = '')";
+}
 $where = "vs.is_active = 1";
 if (!empty($scopeParts)) {
   $where .= " AND (" . implode(" OR ", $scopeParts) . ")";

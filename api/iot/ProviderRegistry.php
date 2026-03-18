@@ -5,9 +5,12 @@
 namespace CivicAI\Iot;
 
 require_once __DIR__ . '/VirtualSensorProviderInterface.php';
+require_once __DIR__ . '/AbstractProvider.php';
 require_once __DIR__ . '/OpenAQAdapter.php';
 require_once __DIR__ . '/OpenWeatherAdapter.php';
-require_once __DIR__ . '/AQICNAdapter.php';
+if (is_file(__DIR__ . '/AQICNAdapter.php')) {
+  require_once __DIR__ . '/AQICNAdapter.php';
+}
 
 class ProviderRegistry {
 
@@ -20,9 +23,21 @@ class ProviderRegistry {
   public static function getConfiguredAdapters(): array {
     if (self::$adapters === null) {
       self::$adapters = [];
-      foreach ([new OpenAQAdapter(), new OpenWeatherAdapter(), new AQICNAdapter()] as $adapter) {
-        if ($adapter->isConfigured()) {
-          self::$adapters[$adapter->getProviderKey()] = $adapter;
+      $adapterClasses = [
+        OpenAQAdapter::class,
+        OpenWeatherAdapter::class,
+      ];
+      if (class_exists('CivicAI\Iot\AQICNAdapter', false)) {
+        $adapterClasses[] = \CivicAI\Iot\AQICNAdapter::class;
+      }
+      foreach ($adapterClasses as $class) {
+        try {
+          $adapter = new $class();
+          if ($adapter->isConfigured()) {
+            self::$adapters[$adapter->getProviderKey()] = $adapter;
+          }
+        } catch (Throwable $e) {
+          // skip broken adapter, avoid 500
         }
       }
     }
