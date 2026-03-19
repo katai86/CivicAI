@@ -11,6 +11,15 @@
     return (typeof window.LANG !== 'undefined' && window.LANG[key]) ? window.LANG[key] : key;
   }
 
+  function getDriverFactory() {
+    // Driver.js különböző buildjei eltérő globális neveket adhatnak.
+    if (typeof window.driver === 'function') return window.driver;
+    if (window.driver && window.driver.js && typeof window.driver.js.driver === 'function') return window.driver.js.driver;
+    if (window.Driver && typeof window.Driver === 'function') return window.Driver;
+    if (window.Driver && typeof window.Driver.driver === 'function') return window.Driver.driver;
+    return null;
+  }
+
   function getMapSteps() {
     return [
       { element: '#mapWrap', popover: { title: null, description: t('tour.step_map'), side: 'bottom', align: 'center' } },
@@ -48,7 +57,8 @@
   }
 
   function start() {
-    if (typeof window.driver === 'undefined') {
+    var createDriver = getDriverFactory();
+    if (!createDriver) {
       console.warn('CivicAI tour: Driver.js not loaded. Include driver.js and driver.css from CDN.');
       return;
     }
@@ -58,7 +68,7 @@
     if (activeDriver && typeof activeDriver.destroy === 'function') {
       try { activeDriver.destroy(); } catch (_) {}
     }
-    activeDriver = window.driver({
+    activeDriver = createDriver({
       showProgress: true,
       steps: steps,
       nextBtnText: t('tour.next'),
