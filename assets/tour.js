@@ -5,6 +5,7 @@
  */
 (function () {
   'use strict';
+  var activeDriver = null;
 
   function t(key) {
     return (typeof window.LANG !== 'undefined' && window.LANG[key]) ? window.LANG[key] : key;
@@ -54,8 +55,10 @@
     var isGov = document.querySelector('[data-tab="dashboard"]') && window.location.pathname.indexOf('/gov/') !== -1;
     var steps = isGov ? getGovSteps() : getMapSteps();
     if (steps.length === 0) return;
-    window.driver.destroy();
-    window.driver({
+    if (activeDriver && typeof activeDriver.destroy === 'function') {
+      try { activeDriver.destroy(); } catch (_) {}
+    }
+    activeDriver = window.driver({
       showProgress: true,
       steps: steps,
       nextBtnText: t('tour.next'),
@@ -64,7 +67,10 @@
       onDestroyStarted: function () {
         try { localStorage.setItem('civicai_tour_done', '1'); } catch (_) {}
       }
-    }).drive();
+    });
+    if (activeDriver && typeof activeDriver.drive === 'function') {
+      activeDriver.drive();
+    }
   }
 
   window.civicaiTour = { start: start };
