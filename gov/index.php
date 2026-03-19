@@ -496,6 +496,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/dashboard/dist/css/adminlte.min.css'), ENT_QUOTES, 'UTF-8') ?>">
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/admin.css'), ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
 </head>
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
 <div class="app-wrapper">
@@ -525,6 +526,9 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
               <li><a class="dropdown-item<?= $code === $currentLang ? ' active' : '' ?>" href="<?= h(app_url('/gov/index.php?lang=' . $code)) ?>"><?= h(strtoupper($code)) ?></a></li>
             <?php endforeach; ?>
           </ul>
+        </li>
+        <li class="nav-item">
+          <button type="button" class="nav-link btn btn-link border-0" id="btnStartTour" aria-label="<?= h(t('tour.start')) ?>"><?= h(t('tour.start')) ?></button>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
@@ -2650,4 +2654,8 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   }
 })();
 </script>
+<script>window.LANG = <?= json_encode(lang_array_for_js(), JSON_UNESCAPED_UNICODE) ?>;</script>
+<script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+<script src="<?= h(app_url('/assets/tour.js')) ?>"></script>
+<script>(function(){ var b = document.getElementById('btnStartTour'); if (b && window.civicaiTour) b.addEventListener('click', function(){ window.civicaiTour.start(); }); })();</script>
 </body></html>

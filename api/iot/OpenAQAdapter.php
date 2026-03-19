@@ -115,6 +115,24 @@ class OpenAQAdapter extends AbstractProvider {
       'o3' => 'o3', 'no2' => 'no2', 'so2' => 'so2', 'co' => 'co',
       'bc' => 'bc', 'temperature' => 'temperature', 'humidity' => 'humidity',
     ];
+    // OpenAQ temperature unit lehet Fahrenheit vagy Kelvin is. A UI mindenhol °C-t vár,
+    // ezért itt egységesen Celsiusra normalizálunk.
+    $toCelsius = function (?float $value, ?string $unit) : ?array {
+      if ($value === null) return null;
+      $unitLower = strtolower(trim((string)($unit ?? '')));
+      if ($unitLower === '' || $unitLower === 'null') return ['value' => $value, 'unit' => 'celsius'];
+      if ($unitLower === 'celsius' || strpos($unitLower, 'celsius') !== false || $unitLower === 'degc' || strpos($unitLower, 'degc') !== false) {
+        return ['value' => $value, 'unit' => 'celsius'];
+      }
+      if ($unitLower === 'fahrenheit' || strpos($unitLower, 'fahrenheit') !== false || $unitLower === 'degf' || strpos($unitLower, 'degf') !== false || $unitLower === 'f') {
+        return ['value' => ($value - 32.0) * (5.0 / 9.0), 'unit' => 'celsius'];
+      }
+      if ($unitLower === 'kelvin' || strpos($unitLower, 'kelvin') !== false || $unitLower === 'degk' || strpos($unitLower, 'degk') !== false || $unitLower === 'k') {
+        return ['value' => $value - 273.15, 'unit' => 'celsius'];
+      }
+      // Ismeretlen unit: nem konvertálunk, de a UI-t ne zavarjuk (mindenképp °C legyen).
+      return ['value' => $value, 'unit' => 'celsius'];
+    };
     foreach ($list as $m) {
       if (!is_array($m)) continue;
       $param = isset($m['parameter']['name']) ? strtolower((string)$m['parameter']['name']) : '';
@@ -125,6 +143,15 @@ class OpenAQAdapter extends AbstractProvider {
       $dt = null;
       if (isset($m['datetime']['utc'])) $dt = (string)$m['datetime']['utc'];
       elseif (isset($m['datetime']['local'])) $dt = (string)$m['datetime']['local'];
+
+      if ($key === 'temperature') {
+        $converted = $toCelsius($value, $unit);
+        if ($converted) {
+          $value = $converted['value'];
+          $unit = $converted['unit']; // mindig celsius
+        }
+      }
+
       $normalized[] = [
         'metric_key' => $key,
         'metric_value' => $value,

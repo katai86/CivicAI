@@ -87,6 +87,9 @@ $rankAll = isset($rankAll) ? $rankAll : null;
         <a class="topbtn" href="<?= htmlspecialchars(app_url('/surveys.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.surveys') ?: t('survey.page_title'), ENT_QUOTES, 'UTF-8') ?></a>
         <?php endif; ?>
         <a class="topbtn" href="<?= htmlspecialchars(app_url('/faq.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.faq'), ENT_QUOTES, 'UTF-8') ?></a>
+        <?php if (!empty($show_tour_button)): ?>
+        <button type="button" class="topbtn" id="btnStartTour" aria-label="<?= htmlspecialchars(t('tour.start'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('tour.start'), ENT_QUOTES, 'UTF-8') ?></button>
+        <?php endif; ?>
         <?php if ($role === 'govuser'): ?>
           <a class="topbtn" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
           <a class="topbtn" href="<?= htmlspecialchars(app_url('/user/settings.php'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('nav.settings'), ENT_QUOTES, 'UTF-8') ?></a>

@@ -81,6 +81,36 @@ $pageTitle = t('faq.title');
     <p class="faq-a"><?= nl2br(htmlspecialchars(t('faq.a_mobile'), ENT_QUOTES, 'UTF-8')) ?></p>
   </section>
 
+  <section class="faq-section" aria-labelledby="faq-ideas">
+    <h2 id="faq-ideas"><?= htmlspecialchars(t('faq.section_ideas'), ENT_QUOTES, 'UTF-8') ?></h2>
+    <p class="faq-q"><?= htmlspecialchars(t('faq.q_ideas'), ENT_QUOTES, 'UTF-8') ?></p>
+    <p class="faq-a"><?= nl2br(htmlspecialchars(t('faq.a_ideas'), ENT_QUOTES, 'UTF-8')) ?></p>
+  </section>
+
+  <section class="faq-section" aria-labelledby="faq-sensors">
+    <h2 id="faq-sensors"><?= htmlspecialchars(t('faq.section_sensors'), ENT_QUOTES, 'UTF-8') ?></h2>
+    <p class="faq-q"><?= htmlspecialchars(t('faq.q_sensors'), ENT_QUOTES, 'UTF-8') ?></p>
+    <p class="faq-a"><?= nl2br(htmlspecialchars(t('faq.a_sensors'), ENT_QUOTES, 'UTF-8')) ?></p>
+  </section>
+
+  <section class="faq-section" aria-labelledby="faq-gov">
+    <h2 id="faq-gov"><?= htmlspecialchars(t('faq.section_gov'), ENT_QUOTES, 'UTF-8') ?></h2>
+    <p class="faq-q"><?= htmlspecialchars(t('faq.q_gov'), ENT_QUOTES, 'UTF-8') ?></p>
+    <p class="faq-a"><?= nl2br(htmlspecialchars(t('faq.a_gov'), ENT_QUOTES, 'UTF-8')) ?></p>
+  </section>
+
+  <section class="faq-section" aria-labelledby="faq-budget">
+    <h2 id="faq-budget"><?= htmlspecialchars(t('faq.section_budget'), ENT_QUOTES, 'UTF-8') ?></h2>
+    <p class="faq-q"><?= htmlspecialchars(t('faq.q_budget'), ENT_QUOTES, 'UTF-8') ?></p>
+    <p class="faq-a"><?= nl2br(htmlspecialchars(t('faq.a_budget'), ENT_QUOTES, 'UTF-8')) ?></p>
+  </section>
+
+  <section class="faq-section" aria-labelledby="faq-surveys">
+    <h2 id="faq-surveys"><?= htmlspecialchars(t('faq.section_surveys'), ENT_QUOTES, 'UTF-8') ?></h2>
+    <p class="faq-q"><?= htmlspecialchars(t('faq.q_surveys'), ENT_QUOTES, 'UTF-8') ?></p>
+    <p class="faq-a"><?= nl2br(htmlspecialchars(t('faq.a_surveys'), ENT_QUOTES, 'UTF-8')) ?></p>
+  </section>
+
   <a class="faq-back" href="<?= htmlspecialchars(app_url('/'), ENT_QUOTES, 'UTF-8') ?>">← <?= htmlspecialchars(t('nav.map'), ENT_QUOTES, 'UTF-8') ?></a>
 </main>
 
