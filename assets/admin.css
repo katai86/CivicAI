@@ -88,3 +88,52 @@
 }
 .sidebar-section-collapsed .nav-section-chevron { transform: rotate(-90deg); }
 .sidebar-section-item-hidden { display: none !important; }
+
+/* Guided tour (Driver.js) - CivicAI visual style */
+.driver-overlay {
+  background: rgba(3, 10, 20, 0.66) !important;
+}
+.driver-popover.civic-tour-popover {
+  background: linear-gradient(180deg, #152334 0%, #0f1b29 100%);
+  border: 1px solid rgba(86, 137, 255, 0.45);
+  border-radius: 14px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+  color: #e7edf7;
+  min-width: 300px;
+  max-width: 420px;
+}
+.driver-popover.civic-tour-popover .driver-popover-title {
+  color: #f3f7ff;
+  font-weight: 700;
+}
+.driver-popover.civic-tour-popover .driver-popover-description {
+  color: #c6d3e8;
+  line-height: 1.45;
+}
+.driver-popover.civic-tour-popover .driver-popover-footer {
+  border-top: 1px solid rgba(137, 169, 231, 0.25);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.driver-popover.civic-tour-popover .driver-popover-next-btn,
+.driver-popover.civic-tour-popover .driver-popover-prev-btn,
+.driver-popover.civic-tour-popover .driver-popover-close-btn {
+  border-radius: 10px;
+  border: 1px solid rgba(133, 171, 255, 0.35);
+  background: #1a2a40;
+  color: #eaf2ff;
+  text-shadow: none;
+}
+.driver-popover.civic-tour-popover .driver-popover-next-btn:hover,
+.driver-popover.civic-tour-popover .driver-popover-prev-btn:hover,
+.driver-popover.civic-tour-popover .driver-popover-close-btn:hover {
+  background: #234067;
+  color: #ffffff;
+}
+.driver-popover.civic-tour-popover .driver-popover-progress-text {
+  color: #9fb5d8;
+}
+.driver-popover.civic-tour-popover,
+.driver-popover.civic-tour-popover * {
+  pointer-events: auto;
+}
