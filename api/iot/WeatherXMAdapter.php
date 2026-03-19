@@ -129,15 +129,17 @@ class WeatherXMAdapter extends AbstractProvider {
     ];
     $normalizeTempCelsius = function (?float $value): ?float {
       if ($value === null) return null;
-      // WeatherXM esetén előfordulhat, hogy Fahrenheit jellegű érték érkezik.
-      if ($value > 70 && $value <= 180) {
-        return ($value - 32.0) * (5.0 / 9.0);
+      // 50°C felett nem tekintjük valós Celsiusnak lakott területi mérésnél.
+      // Előbb Fahrenheit, utána Kelvin fallback.
+      if ($value > 50 && $value <= 180) {
+        $f = ($value - 32.0) * (5.0 / 9.0);
+        if ($f > -60 && $f <= 50) return $f;
       }
-      // Biztonsági fallback Kelvin jellegű értékre.
       if ($value > 180 && $value <= 400) {
-        return $value - 273.15;
+        $k = $value - 273.15;
+        if ($k > -60 && $k <= 50) return $k;
       }
-      return $value;
+      return ($value > -60 && $value <= 50) ? $value : null;
     };
     foreach ($map as $apiKey => $def) {
       if (!array_key_exists($apiKey, $obs)) continue;

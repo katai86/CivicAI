@@ -1838,9 +1838,24 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     if (!p) return govIotSensorsCache;
     return govIotSensorsCache.filter(function(s){ return (s.source_provider || '').toLowerCase() === p; });
   }
+  function normalizeUiTempCelsius(v){
+    var n = Number(v);
+    if (!isFinite(n)) return null;
+    if (n > 50 && n <= 180) {
+      n = (n - 32) * (5/9);
+    } else if (n > 180 && n <= 400) {
+      n = n - 273.15;
+    }
+    if (n <= -60 || n > 50) return null;
+    return Math.round(n * 10) / 10;
+  }
   function formatMetricValue(key, val, unit){
     if (val == null || val === '') return '—';
     var u = (unit && String(unit)) || '';
+    if (key === 'temperature' || key === 'temp' || key === 'feels_like' || key === 'dew_point') {
+      var tc = normalizeUiTempCelsius(val);
+      return tc == null ? '—' : (tc + ' °C');
+    }
     if (key === 'wind_direction' && u === 'degrees') u = '°';
     if (key === 'solar_irradiance' && !u) u = 'W/m²';
     if (key === 'humidity' && val != null) return Number(val) + '%';
@@ -1895,10 +1910,10 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     fetch(govIotSensorHistoryUrl + '?sensor_id=' + sensorId + '&days=' + days + '&metric_key=temperature', { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok || !Array.isArray(j.data) || j.data.length === 0) { container.innerHTML = '<p class="text-secondary small mb-0">Nincs trend adat.</p>'; return; }
       var data = j.data;
-      var maxV = Math.max.apply(null, data.map(function(x){ return parseFloat(x.value) || 0; }));
+      var maxV = Math.max.apply(null, data.map(function(x){ var n = normalizeUiTempCelsius(parseFloat(x.value)); return n != null ? n : 0; }));
       if (maxV <= 0) maxV = 1;
       var html = '';
-      data.forEach(function(x){ var v = parseFloat(x.value); var pct = maxV > 0 ? Math.round(100 * (v || 0) / maxV) : 0; html += '<div class="admin-chart-bar"><span class="label">' + (x.date || x.measured_at || '').replace(/</g,'&lt;') + '</span><div class="bar-wrap"><div class="bar" style="width:' + pct + '%;background:#0d6efd"></div></div><span class="val">' + (v != null ? v + ' °C' : '—') + '</span></div>'; });
+      data.forEach(function(x){ var v = parseFloat(x.value); var vc = normalizeUiTempCelsius(v); var pct = maxV > 0 ? Math.round(100 * ((vc || 0)) / maxV) : 0; html += '<div class="admin-chart-bar"><span class="label">' + (x.date || x.measured_at || '').replace(/</g,'&lt;') + '</span><div class="bar-wrap"><div class="bar" style="width:' + pct + '%;background:#0d6efd"></div></div><span class="val">' + (vc != null ? vc + ' °C' : '—') + '</span></div>'; });
       container.innerHTML = html;
     }).catch(function(){ if (container) container.innerHTML = '<p class="text-secondary small mb-0">—</p>'; });
   }
@@ -1915,7 +1930,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
         '<div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.active_sensors || 'Aktív') + '</h6><p class="mb-0 fw-bold">' + summary.active + '</p></div></div></div>' +
         '<div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_aqi || 'Átlag AQI') + '</h6><p class="mb-0 fw-bold">' + (summary.avg_aqi != null ? summary.avg_aqi : '—') + '</p></div></div></div>' +
         '<div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_pm25 || 'PM2.5') + '</h6><p class="mb-0 fw-bold">' + (summary.avg_pm25 != null ? summary.avg_pm25 + ' µg/m³' : '—') + '</p></div></div></div>' +
-        '<div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_temperature || 'Hőm.') + '</h6><p class="mb-0 fw-bold">' + (summary.avg_temperature != null ? summary.avg_temperature + ' °C' : '—') + '</p></div></div></div>';
+        '<div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_temperature || 'Hőm.') + '</h6><p class="mb-0 fw-bold">' + (normalizeUiTempCelsius(summary.avg_temperature) != null ? normalizeUiTempCelsius(summary.avg_temperature) + ' °C' : '—') + '</p></div></div></div>';
     }
     if (sensors.length === 0) {
       if (summaryEl) summaryEl.innerHTML = '<div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.total_sensors || 'Összes') + '</h6><p class="mb-0 fw-bold">0</p></div></div></div><div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.active_sensors || 'Aktív') + '</h6><p class="mb-0 fw-bold">0</p></div></div></div><div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_aqi || 'Átlag AQI') + '</h6><p class="mb-0 fw-bold">—</p></div></div></div><div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_pm25 || 'PM2.5') + '</h6><p class="mb-0 fw-bold">—</p></div></div></div><div class="col-md-2"><div class="card"><div class="card-body py-2"><h6 class="card-title small mb-0">' + (Lbl.avg_temperature || 'Hőm.') + '</h6><p class="mb-0 fw-bold">—</p></div></div></div>';
@@ -2141,7 +2156,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
       html += '<div class="col-md-3"><div class="card border-primary"><div class="card-body py-2"><h6 class="small text-muted">' + (L.total_sensors || 'Szenzorok') + '</h6><p class="mb-0 fs-5">' + (s.total || 0) + '</p><small class="text-success">' + (s.active || 0) + ' aktív</small></div></div></div>';
       html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_aqi || 'Átlag AQI') + '</h6><p class="mb-0 fs-5">' + (s.avg_aqi != null ? s.avg_aqi : '—') + '</p></div></div></div>';
       html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_pm25 || 'PM2.5') + '</h6><p class="mb-0 fs-5">' + (s.avg_pm25 != null ? s.avg_pm25 + ' µg/m³' : '—') + '</p></div></div></div>';
-      html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_temperature || 'Hőmérséklet') + '</h6><p class="mb-0 fs-5">' + (s.avg_temperature != null ? s.avg_temperature + ' °C' : '—') + '</p></div></div></div>';
+      html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_temperature || 'Hőmérséklet') + '</h6><p class="mb-0 fs-5">' + (normalizeUiTempCelsius(s.avg_temperature) != null ? normalizeUiTempCelsius(s.avg_temperature) + ' °C' : '—') + '</p></div></div></div>';
       html += '</div><div class="row g-3 mt-1">';
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">Bejelentések (24h)</h6><p class="mb-0">' + (j.live.reports_24h || 0) + '</p></div></div></div>';
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">Ötletek (24h)</h6><p class="mb-0">' + (j.live.ideas_24h || 0) + '</p></div></div></div>';
@@ -2241,7 +2256,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
       var html = '<div class="row g-3 mb-3">';
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_aqi || 'Átlag AQI') + '</h6><p class="mb-0 fs-5">' + (s.avg_aqi != null ? s.avg_aqi : '—') + '</p></div></div></div>';
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_pm25 || 'PM2.5') + '</h6><p class="mb-0 fs-5">' + (s.avg_pm25 != null ? s.avg_pm25 + ' µg/m³' : '—') + '</p></div></div></div>';
-      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_temperature || 'Hőmérséklet') + '</h6><p class="mb-0 fs-5">' + (s.avg_temperature != null ? s.avg_temperature + ' °C' : '—') + '</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_temperature || 'Hőmérséklet') + '</h6><p class="mb-0 fs-5">' + (normalizeUiTempCelsius(s.avg_temperature) != null ? normalizeUiTempCelsius(s.avg_temperature) + ' °C' : '—') + '</p></div></div></div>';
       html += '</div><h6 class="small">Szenzorok providerek szerint</h6><ul class="small list-unstyled mb-0">';
       Object.keys(byProvider).sort().forEach(function(p){ html += '<li>' + p + ': <b>' + byProvider[p] + '</b></li>'; });
       if (Object.keys(byProvider).length === 0) html += '<li class="text-secondary">—</li>';

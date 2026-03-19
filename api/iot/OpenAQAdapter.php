@@ -130,7 +130,15 @@ class OpenAQAdapter extends AbstractProvider {
       if ($unitLower === 'kelvin' || strpos($unitLower, 'kelvin') !== false || $unitLower === 'degk' || strpos($unitLower, 'degk') !== false || $unitLower === 'k') {
         return ['value' => $value - 273.15, 'unit' => 'celsius'];
       }
-      // Ismeretlen unit: nem konvertálunk, de a UI-t ne zavarjuk (mindenképp °C legyen).
+      // Ismeretlen / hibás unit: 50°C felett nem fogadjuk el nyers Celsiusként.
+      if ($value > 50 && $value <= 180) {
+        $f = ($value - 32.0) * (5.0 / 9.0);
+        return ['value' => $f, 'unit' => 'celsius'];
+      }
+      if ($value > 180 && $value <= 400) {
+        $k = $value - 273.15;
+        return ['value' => $k, 'unit' => 'celsius'];
+      }
       return ['value' => $value, 'unit' => 'celsius'];
     };
     foreach ($list as $m) {
@@ -149,6 +157,10 @@ class OpenAQAdapter extends AbstractProvider {
         if ($converted) {
           $value = $converted['value'];
           $unit = $converted['unit']; // mindig celsius
+        }
+        // Kemény sanity check lakott területre.
+        if ($value !== null && ($value <= -60 || $value > 50)) {
+          continue;
         }
       }
 

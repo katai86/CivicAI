@@ -100,14 +100,22 @@ if (!empty($sensorIds)) {
     if ($value === null) return null;
     $u = strtolower(trim((string)($unit ?? '')));
     if ($u === 'fahrenheit' || $u === 'degf' || $u === 'f' || strpos($u, 'fahrenheit') !== false || strpos($u, 'degf') !== false) {
-      return ($value - 32.0) * (5.0 / 9.0);
+      $value = ($value - 32.0) * (5.0 / 9.0);
+      return ($value > -60 && $value <= 50) ? $value : null;
     }
     if ($u === 'kelvin' || $u === 'k' || $u === 'degk' || strpos($u, 'kelvin') !== false || strpos($u, 'degk') !== false) {
-      return $value - 273.15;
+      $value = $value - 273.15;
+      return ($value > -60 && $value <= 50) ? $value : null;
     }
-    if ($value > 70 && $value <= 180) return ($value - 32.0) * (5.0 / 9.0);
-    if ($value > 180 && $value <= 400) return $value - 273.15;
-    return $value;
+    if ($value > 50 && $value <= 180) {
+      $f = ($value - 32.0) * (5.0 / 9.0);
+      if ($f > -60 && $f <= 50) return $f;
+    }
+    if ($value > 180 && $value <= 400) {
+      $k = $value - 273.15;
+      if ($k > -60 && $k <= 50) return $k;
+    }
+    return ($value > -60 && $value <= 50) ? $value : null;
   };
   while ($row = $mStmt->fetch(PDO::FETCH_ASSOC)) {
     $v = $row['metric_value'] !== null ? (float)$row['metric_value'] : null;

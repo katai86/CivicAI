@@ -50,19 +50,56 @@ $pdo = db();
 $data = [];
 try {
   $stmt = $pdo->prepare("
-    SELECT DATE(measured_at) AS d, AVG(metric_value) AS v, MAX(measured_at) AS last_at
+    SELECT measured_at, metric_value, metric_unit
     FROM virtual_sensor_metric_history
     WHERE virtual_sensor_id = ? AND metric_key = ? AND measured_at >= ?
-    GROUP BY DATE(measured_at)
-    ORDER BY d ASC
-    LIMIT 90
+    ORDER BY measured_at ASC
+    LIMIT 5000
   ");
   $stmt->execute([$sensorId, $metricKey, $dateFrom]);
+  $byDay = [];
+  $normalizeTempCelsius = function (?float $value, ?string $unit): ?float {
+    if ($value === null) return null;
+    $u = strtolower(trim((string)($unit ?? '')));
+    if ($u === 'fahrenheit' || $u === 'degf' || $u === 'f' || strpos($u, 'fahrenheit') !== false || strpos($u, 'degf') !== false) {
+      $value = ($value - 32.0) * (5.0 / 9.0);
+      return ($value > -60 && $value <= 50) ? $value : null;
+    }
+    if ($u === 'kelvin' || $u === 'k' || $u === 'degk' || strpos($u, 'kelvin') !== false || strpos($u, 'degk') !== false) {
+      $value = $value - 273.15;
+      return ($value > -60 && $value <= 50) ? $value : null;
+    }
+    if ($value > 50 && $value <= 180) {
+      $f = ($value - 32.0) * (5.0 / 9.0);
+      if ($f > -60 && $f <= 50) return $f;
+    }
+    if ($value > 180 && $value <= 400) {
+      $k = $value - 273.15;
+      if ($k > -60 && $k <= 50) return $k;
+    }
+    return ($value > -60 && $value <= 50) ? $value : null;
+  };
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $measuredAt = (string)($row['measured_at'] ?? '');
+    if ($measuredAt === '') continue;
+    $value = $row['metric_value'] !== null ? (float)$row['metric_value'] : null;
+    if (in_array($metricKey, ['temperature', 'temp', 'feels_like', 'dew_point'], true)) {
+      $value = $normalizeTempCelsius($value, $row['metric_unit'] ?? null);
+    }
+    if ($value === null) continue;
+    $d = substr($measuredAt, 0, 10);
+    if (!isset($byDay[$d])) $byDay[$d] = ['sum' => 0.0, 'cnt' => 0, 'last_at' => $measuredAt];
+    $byDay[$d]['sum'] += $value;
+    $byDay[$d]['cnt'] += 1;
+    if ($measuredAt > $byDay[$d]['last_at']) $byDay[$d]['last_at'] = $measuredAt;
+  }
+  ksort($byDay);
+  foreach ($byDay as $d => $agg) {
+    if ($agg['cnt'] <= 0) continue;
     $data[] = [
-      'date' => $row['d'],
-      'value' => $row['v'] !== null ? (float)$row['v'] : null,
-      'measured_at' => $row['last_at'],
+      'date' => $d,
+      'value' => round($agg['sum'] / $agg['cnt'], 1),
+      'measured_at' => $agg['last_at'],
     ];
   }
 } catch (Throwable $e) {
