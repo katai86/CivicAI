@@ -95,6 +95,26 @@ $summaryTemp = [];
 $staleCount = 0;
 $now = time();
 $staleSeconds = 24 * 3600;
+// Backfill védelem: korábban hibásan eltárolt (F/K) hőmérsékletet is normalizáljuk °C-ra.
+$normalizeTempCelsius = function (?float $value, ?string $unit): ?float {
+  if ($value === null) return null;
+  $u = strtolower(trim((string)($unit ?? '')));
+  if ($u === 'fahrenheit' || $u === 'degf' || $u === 'f' || strpos($u, 'fahrenheit') !== false || strpos($u, 'degf') !== false) {
+    return ($value - 32.0) * (5.0 / 9.0);
+  }
+  if ($u === 'kelvin' || $u === 'k' || $u === 'degk' || strpos($u, 'kelvin') !== false || strpos($u, 'degk') !== false) {
+    return $value - 273.15;
+  }
+  // Ha a unit hibásan "celsius", de irreális érték érkezett (pl. 89), kezeljük Fahrenheitként.
+  if ($value > 70 && $value <= 180) {
+    return ($value - 32.0) * (5.0 / 9.0);
+  }
+  // Nyilvánvaló Kelvin tartomány fallback
+  if ($value > 180 && $value <= 400) {
+    return $value - 273.15;
+  }
+  return $value;
+};
 
 if (!empty($sensorIds)) {
   $in = implode(',', array_fill(0, count($sensorIds), '?'));
@@ -104,14 +124,22 @@ if (!empty($sensorIds)) {
   while ($row = $mStmt->fetch(PDO::FETCH_ASSOC)) {
     $sid = (int)$row['virtual_sensor_id'];
     if (!isset($metricsBySensor[$sid])) $metricsBySensor[$sid] = [];
-    $metricsBySensor[$sid][$row['metric_key']] = [
-      'value' => $row['metric_value'] !== null ? (float)$row['metric_value'] : null,
-      'unit' => $row['metric_unit'],
+    $metricKey = (string)$row['metric_key'];
+    $rawValue = $row['metric_value'] !== null ? (float)$row['metric_value'] : null;
+    $metricUnit = $row['metric_unit'];
+    $value = $rawValue;
+    if (in_array($metricKey, ['temperature', 'temp'], true)) {
+      $value = $normalizeTempCelsius($rawValue, $metricUnit);
+      $metricUnit = 'celsius';
+    }
+    $metricsBySensor[$sid][$metricKey] = [
+      'value' => $value,
+      'unit' => $metricUnit,
       'measured_at' => $row['measured_at'],
     ];
-    if ($row['metric_key'] === 'aqi' && $row['metric_value'] !== null) $summaryAqi[] = (float)$row['metric_value'];
-    if ($row['metric_key'] === 'pm25' && $row['metric_value'] !== null) $summaryPm25[] = (float)$row['metric_value'];
-    if (in_array($row['metric_key'], ['temperature', 'temp'], true) && $row['metric_value'] !== null) $summaryTemp[] = (float)$row['metric_value'];
+    if ($metricKey === 'aqi' && $rawValue !== null) $summaryAqi[] = $rawValue;
+    if ($metricKey === 'pm25' && $rawValue !== null) $summaryPm25[] = $rawValue;
+    if (in_array($metricKey, ['temperature', 'temp'], true) && $value !== null) $summaryTemp[] = $value;
   }
   foreach ($rows as $r) {
     $last = $r['last_seen_at'];

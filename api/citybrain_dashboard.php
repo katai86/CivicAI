@@ -93,15 +93,31 @@ $sensorsSummary['active'] = $sensorsSummary['total'] - $sensorsSummary['stale_co
 
 if (!empty($sensorIds)) {
   $in = implode(',', array_fill(0, count($sensorIds), '?'));
-  $mStmt = $pdo->prepare("SELECT virtual_sensor_id, metric_key, metric_value FROM virtual_sensor_metrics_latest WHERE virtual_sensor_id IN ($in)");
+  $mStmt = $pdo->prepare("SELECT virtual_sensor_id, metric_key, metric_value, metric_unit FROM virtual_sensor_metrics_latest WHERE virtual_sensor_id IN ($in)");
   $mStmt->execute($sensorIds);
   $aqi = []; $pm25 = []; $temp = [];
+  $normalizeTempCelsius = function (?float $value, ?string $unit): ?float {
+    if ($value === null) return null;
+    $u = strtolower(trim((string)($unit ?? '')));
+    if ($u === 'fahrenheit' || $u === 'degf' || $u === 'f' || strpos($u, 'fahrenheit') !== false || strpos($u, 'degf') !== false) {
+      return ($value - 32.0) * (5.0 / 9.0);
+    }
+    if ($u === 'kelvin' || $u === 'k' || $u === 'degk' || strpos($u, 'kelvin') !== false || strpos($u, 'degk') !== false) {
+      return $value - 273.15;
+    }
+    if ($value > 70 && $value <= 180) return ($value - 32.0) * (5.0 / 9.0);
+    if ($value > 180 && $value <= 400) return $value - 273.15;
+    return $value;
+  };
   while ($row = $mStmt->fetch(PDO::FETCH_ASSOC)) {
     $v = $row['metric_value'] !== null ? (float)$row['metric_value'] : null;
     if ($v === null) continue;
     if ($row['metric_key'] === 'aqi') $aqi[] = $v;
     if ($row['metric_key'] === 'pm25') $pm25[] = $v;
-    if (in_array($row['metric_key'], ['temperature', 'temp'], true)) $temp[] = $v;
+    if (in_array($row['metric_key'], ['temperature', 'temp'], true)) {
+      $tv = $normalizeTempCelsius($v, $row['metric_unit'] ?? null);
+      if ($tv !== null) $temp[] = $tv;
+    }
   }
   $avg = function ($arr) {
     if (empty($arr)) return null;

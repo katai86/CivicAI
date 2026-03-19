@@ -127,11 +127,26 @@ class WeatherXMAdapter extends AbstractProvider {
       'precipitation_rate' => ['key' => 'precipitation_rate', 'unit' => 'mm/h'],
       'solar_irradiance' => ['key' => 'solar_irradiance', 'unit' => 'W/m²'],
     ];
+    $normalizeTempCelsius = function (?float $value): ?float {
+      if ($value === null) return null;
+      // WeatherXM esetén előfordulhat, hogy Fahrenheit jellegű érték érkezik.
+      if ($value > 70 && $value <= 180) {
+        return ($value - 32.0) * (5.0 / 9.0);
+      }
+      // Biztonsági fallback Kelvin jellegű értékre.
+      if ($value > 180 && $value <= 400) {
+        return $value - 273.15;
+      }
+      return $value;
+    };
     foreach ($map as $apiKey => $def) {
       if (!array_key_exists($apiKey, $obs)) continue;
       $v = $obs[$apiKey];
       if ($v === null && $obs[$apiKey] !== 0) continue;
       $num = is_numeric($v) ? (float)$v : null;
+      if ($num !== null && in_array($def['key'], ['temperature', 'feels_like', 'dew_point'], true)) {
+        $num = $normalizeTempCelsius($num);
+      }
       if ($num !== null) {
         $normalized[] = [
           'metric_key' => $def['key'],
