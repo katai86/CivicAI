@@ -482,6 +482,8 @@ $govFmsUiEnabled = $isAdmin ? true : user_module_enabled($govUid, 'fms');
 $govSurveysEnabled = $isAdmin ? true : user_module_enabled($govUid, 'surveys');
 $govBudgetEnabled = $isAdmin ? true : user_module_enabled($govUid, 'budget');
 $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
+$adminCssVer = @filemtime(__DIR__ . '/../assets/admin.css') ?: time();
+$tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
 ?>
 <!doctype html>
 <html lang="<?= h($currentLang) ?>">
@@ -495,7 +497,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/dashboard/dist/css/adminlte.min.css'), ENT_QUOTES, 'UTF-8') ?>">
-  <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/admin.css'), ENT_QUOTES, 'UTF-8') ?>">
+  <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/assets/admin.css?v=' . $adminCssVer), ENT_QUOTES, 'UTF-8') ?>">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
 </head>
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
@@ -2671,6 +2673,6 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
 </script>
 <script>window.LANG = <?= json_encode(lang_array_for_js(), JSON_UNESCAPED_UNICODE) ?>;</script>
 <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
-<script src="<?= h(app_url('/assets/tour.js')) ?>"></script>
+<script src="<?= h(app_url('/assets/tour.js?v=' . $tourJsVer)) ?>"></script>
 <script>(function(){ var b = document.getElementById('btnStartTour'); if (b && window.civicaiTour) b.addEventListener('click', function(){ window.civicaiTour.start(); }); })();</script>
 </body></html>
