@@ -102,7 +102,7 @@ if ($action === 'create') {
     if ($authorityId > 0 && !in_array($authorityId, $scopeAids, true)) $authorityId = $firstAid;
   }
   if ($title === '') {
-    json_response(['ok' => false, 'error' => t('api.facility_name_required') ?: 'Cím kötelező.'], 400);
+    json_response(['ok' => false, 'error' => t('api.facility_name_required')], 400);
   }
   try {
     db()->prepare("
@@ -147,7 +147,7 @@ if ($action === 'update' || $action === 'set_status') {
     $budget = is_numeric($body['budget'] ?? null) ? (float)$body['budget'] : 0;
     $status = isset($body['status']) && in_array($body['status'], $allowedStatuses, true) ? $body['status'] : 'draft';
     if ($title === '') {
-      json_response(['ok' => false, 'error' => t('api.facility_name_required') ?: 'Cím kötelező.'], 400);
+      json_response(['ok' => false, 'error' => t('api.facility_name_required')], 400);
     }
     db()->prepare("UPDATE budget_projects SET title = ?, description = ?, budget = ?, status = ?, updated_at = NOW() WHERE id = ?")
       ->execute([$title, $description, $budget, $status, $id]);

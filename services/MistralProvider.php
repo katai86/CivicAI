@@ -15,7 +15,7 @@ class MistralProvider implements AiProviderInterface
     public function complete(string $model, string $prompt, array $options = []): array
     {
         if ($this->apiKey === '') {
-            return ['ok' => false, 'error' => 'Mistral API key missing'];
+            return ['ok' => false, 'error' => t('api.ai_disabled')];
         }
 
         $endpoint = 'https://api.mistral.ai/v1/chat/completions';
@@ -65,27 +65,27 @@ class MistralProvider implements AiProviderInterface
         curl_close($ch);
 
         if ($res === false) {
-            $msg = $err ?: 'Mistral request failed';
+            $msg = $err ?: t('api.ai_failed');
             if ($errno === CURLE_OPERATION_TIMEDOUT) {
-                $msg = 'Az AI válasz túl sokáig tartott (időtúllépés). Próbáld újra, vagy növeld a timeout-ot.';
+                $msg = t('common.error_try_later');
             } elseif ($errno === CURLE_COULDNT_CONNECT) {
-                $msg = 'Nem sikerült csatlakozni a Mistral API-hoz. Ellenőrizd a hálózatot és a tűzfalat.';
+                $msg = t('common.error_server');
             }
             return ['ok' => false, 'error' => $msg];
         }
 
         $json = json_decode($res, true);
         if (!is_array($json) || $code >= 400) {
-            $msg = 'Mistral API hiba.';
+            $msg = t('api.ai_failed');
             if (is_array($json)) {
                 $detail = $json['detail'] ?? $json['message'] ?? $json['error'] ?? null;
                 if (is_string($detail)) {
-                    $msg = $code === 401 ? 'Mistral API kulcs érvénytelen vagy hiányzik.' : $detail;
+                    $msg = $code === 401 ? t('api.ai_disabled') : $detail;
                 }
             } elseif ($code === 401) {
-                $msg = 'Mistral API kulcs érvénytelen vagy hiányzik.';
+                $msg = t('api.ai_disabled');
             } elseif ($code >= 500) {
-                $msg = 'Mistral szolgáltatás átmenetileg nem elérhető.';
+                $msg = t('common.error_try_later');
             }
             return ['ok' => false, 'error' => $msg];
         }

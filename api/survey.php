@@ -21,11 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
       $stmt->execute([$id]);
       $survey = $stmt->fetch(PDO::FETCH_ASSOC);
       if (!$survey) {
-        json_response(['ok' => false, 'error' => t('survey.not_found') ?: 'Felmérés nem található.']);
+        json_response(['ok' => false, 'error' => t('survey.not_found')]);
       }
       $now = date('Y-m-d H:i:s');
       if ($survey['starts_at'] > $now || $survey['ends_at'] < $now) {
-        json_response(['ok' => false, 'error' => t('survey.not_active') ?: 'A felmérés jelenleg nem aktív.']);
+        json_response(['ok' => false, 'error' => t('survey.not_active')]);
       }
       $stmt = db()->prepare("
         SELECT id, question_text, question_type, sort_order, options_json
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     start_secure_session();
     $uid = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
     if ($uid < 1) {
-      json_response(['ok' => false, 'error' => t('survey.login_required') ?: 'A kitöltéshez be kell jelentkezni.'], 403);
+      json_response(['ok' => false, 'error' => t('survey.login_required')], 403);
     }
     $surveyId = isset($input['survey_id']) ? (int)$input['survey_id'] : 0;
     $responses = $input['responses'] ?? [];
@@ -116,16 +116,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $stmt->execute([$surveyId]);
       $survey = $stmt->fetch(PDO::FETCH_ASSOC);
       if (!$survey || $survey['status'] !== 'active') {
-        json_response(['ok' => false, 'error' => t('survey.not_active') ?: 'A felmérés nem aktív.']);
+        json_response(['ok' => false, 'error' => t('survey.not_active')]);
       }
       $now = date('Y-m-d H:i:s');
       if ($survey['starts_at'] > $now || $survey['ends_at'] < $now) {
-        json_response(['ok' => false, 'error' => t('survey.not_active') ?: 'A felmérés nem aktív.']);
+        json_response(['ok' => false, 'error' => t('survey.not_active')]);
       }
       $stmt = db()->prepare("SELECT 1 FROM survey_responses WHERE survey_id = ? AND user_id = ? LIMIT 1");
       $stmt->execute([$surveyId, $uid]);
       if ($stmt->fetch()) {
-        json_response(['ok' => false, 'error' => t('survey.already_responded') ?: 'Már kitöltötte a felmérést.']);
+        json_response(['ok' => false, 'error' => t('survey.already_responded')]);
       }
       $stmt = db()->prepare("SELECT id FROM survey_questions WHERE survey_id = ?");
       $stmt->execute([$surveyId]);
@@ -140,14 +140,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $responseJson = json_encode($filtered, JSON_UNESCAPED_UNICODE);
       $stmt = db()->prepare("INSERT INTO survey_responses (survey_id, user_id, response_json) VALUES (?, ?, ?)");
       $stmt->execute([$surveyId, $uid, $responseJson]);
-      json_response(['ok' => true, 'message' => t('survey.thank_you') ?: 'Köszönjük a kitöltést!']);
+      json_response(['ok' => true, 'message' => t('survey.thank_you')]);
     } catch (Throwable $e) {
       log_error('survey submit: ' . $e->getMessage());
       json_response(['ok' => false, 'error' => t('common.error_server')], 500);
     }
   }
 
-  json_response(['ok' => false, 'error' => t('api.method_not_allowed') ?: 'Ismeretlen művelet.'], 400);
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 400);
 }
 
 json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);

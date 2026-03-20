@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $stmt->execute(array_merge([$id], $scopeParams));
     $survey = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$survey) {
-      json_response(['ok' => false, 'error' => t('survey.not_found') ?: 'Felmérés nem található.'], 404);
+      json_response(['ok' => false, 'error' => t('survey.not_found')], 404);
     }
     $stmt = db()->prepare("SELECT id, question_text, question_type, sort_order, options_json FROM survey_questions WHERE survey_id = ? ORDER BY sort_order, id");
     $stmt->execute([$id]);
@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
   json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
 }
 if (!gov_surveys_tables_exist()) {
-  json_response(['ok' => false, 'error' => t('survey.not_found') ?: 'Felmérések modul nem elérhető. Futtasd az SQL migrációt.'], 503);
+  json_response(['ok' => false, 'error' => t('survey.migration_required')], 503);
 }
 
 $input = $_POST;
@@ -170,7 +170,7 @@ if ($action === 'save') {
   $status = trim((string)($input['status'] ?? 'draft'));
   if (!in_array($status, ['draft', 'active', 'closed'], true)) $status = 'draft';
   if ($title === '') {
-    json_response(['ok' => false, 'error' => t('survey.title_required') ?: 'Cím kötelező.']);
+    json_response(['ok' => false, 'error' => t('survey.title_required')]);
   }
   if ($authorityId !== null && $authorityId > 0 && !in_array($authorityId, $authorityIds, true) && !in_array($role, ['admin', 'superadmin'], true)) {
     json_response(['ok' => false, 'error' => t('common.error_no_permission')], 403);

@@ -18,7 +18,7 @@ if (!$isAdmin && $role !== 'govuser') {
 if (!$isAdmin) {
   $uid = current_user_id();
   if (!function_exists('user_module_enabled') || !user_module_enabled($uid, 'mistral')) {
-    json_response(['ok' => false, 'error' => t('api.ai_disabled_user') ?: 'AI module disabled'], 403);
+    json_response(['ok' => false, 'error' => t('api.ai_disabled_user')], 403);
   }
 }
 
@@ -29,11 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $body = read_json_body();
 $question = isset($body['question']) ? trim((string)$body['question']) : '';
 if ($question === '') {
-  json_response(['ok' => false, 'error' => t('gov.copilot_question_required') ?: 'Question is required.']);
+  json_response(['ok' => false, 'error' => t('gov.copilot_question_required')]);
 }
 
 $authorityId = null;
-$scopeTitle = 'Terület';
+$scopeTitle = t('gov.scope_area');
 if ($isAdmin) {
   $authorityId = isset($body['authority_id']) ? (int)$body['authority_id'] : null;
   if ($authorityId > 0) {
@@ -41,10 +41,10 @@ if ($isAdmin) {
       $stmt = db()->prepare("SELECT name, city FROM authorities WHERE id = ? LIMIT 1");
       $stmt->execute([$authorityId]);
       $row = $stmt->fetch(PDO::FETCH_ASSOC);
-      $scopeTitle = $row ? (trim((string)($row['city'] ?? $row['name'] ?? '')) ?: $row['name']) : 'Terület';
+      $scopeTitle = $row ? (trim((string)($row['city'] ?? $row['name'] ?? '')) ?: $row['name']) : t('gov.scope_area');
     } catch (Throwable $e) {}
   } else {
-    $scopeTitle = 'Összes hatóság';
+    $scopeTitle = t('gov.scope_all_authorities');
   }
 } else {
   $uid = current_user_id();

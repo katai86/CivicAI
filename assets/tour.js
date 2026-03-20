@@ -56,18 +56,34 @@
 
   function getGovSteps() {
     var steps = [];
-    pushStep(steps, ['[data-tab="dashboard"]'], t('tour.step_gov_dashboard', 'Áttekintés: itt látod a városi egészség indexet, időjárást és fő statisztikákat.'), 'right', 'center');
-    pushStep(steps, ['[data-tab="reports"]'], t('tour.step_gov_reports', 'Bejelentések kezelése: státuszfrissítés, megjegyzések, követés.'), 'right', 'center');
-    pushStep(steps, ['[data-tab="ideas"]'], t('tour.step_gov_ideas', 'Ötletek: közösségi javaslatok és szavazatok áttekintése.'), 'right', 'center');
-    pushStep(steps, ['[data-tab="iot"]'], t('tour.step_gov_iot', 'Szenzorok (IoT): összesítő, térképes nézet, sync és export.'), 'right', 'center');
-    pushStep(steps, ['[data-tab="citybrain-live"]'], t('tour.step_gov_citybrain_live', 'City Brain / Live Intelligence: valós idejű állapotkép és gyors mutatók.'), 'right', 'center');
-    pushStep(steps, ['[data-tab="citybrain-predictive"]'], t('tour.step_gov_citybrain_predictive', 'Predictive AI: trend alapú előrejelzések és várható terhelések.'), 'right', 'center');
-    pushStep(steps, ['[data-tab="citybrain-hotspot"]'], t('tour.step_gov_citybrain_hotspot', 'Hotspot Detection: problémagócok térképes azonosítása.'), 'right', 'center');
-    pushStep(steps, ['[data-tab="citybrain-behavior"]'], t('tour.step_gov_citybrain_behavior', 'Behavior & Trends: viselkedési és aktivitási mintázatok.'), 'right', 'center');
-    pushStep(steps, ['[data-tab="citybrain-environmental"]'], t('tour.step_gov_citybrain_environmental', 'Environmental AI: levegő, hőmérséklet és környezeti mutatók elemzése.'), 'right', 'center');
-    pushStep(steps, ['[data-tab="citybrain-insights"]'], t('tour.step_gov_citybrain_insights', 'AI Insights: automatikus összefoglalók és kiemelt megállapítások.'), 'right', 'center');
-    pushStep(steps, ['[data-tab="citybrain-risk"]'], t('tour.step_gov_citybrain_risk', 'Risk & Alerts: kockázatok és riasztások prioritással.'), 'right', 'center');
-    pushStep(steps, ['[data-tab="modules"]'], t('tour.step_gov_modules', 'Modulok: funkciók be- és kikapcsolása jogosultság szerint.'), 'right', 'center');
+    var govTabSteps = [
+      { tab: 'dashboard', key: 'tour.step_gov_dashboard', fallback: 'Áttekintés: itt látod a városi egészség indexet, időjárást és fő statisztikákat.' },
+      { tab: 'reports', key: 'tour.step_gov_reports', fallback: 'Bejelentések kezelése: státuszfrissítés, megjegyzések, követés.' },
+      { tab: 'ideas', key: 'tour.step_gov_ideas', fallback: 'Ötletek: közösségi javaslatok és szavazatok áttekintése.' },
+      { tab: 'surveys', key: 'tour.step_gov_surveys', fallback: 'Felmérések: kérdőívek létrehozása, kezelése és eredmények megtekintése.' },
+      { tab: 'budget', key: 'tour.step_gov_budget', fallback: 'Részvételi költségvetés: projektek, szavazás és beállítások kezelése.' },
+      { tab: 'trees', key: 'tour.step_gov_trees', fallback: 'Fák: fa kataszter, állapot és karbantartási adatok kezelése.' },
+      { tab: 'ai', key: 'tour.step_gov_ai', fallback: 'AI: Copilot és automatikus elemzések a hatóság adatai alapján.' },
+      { tab: 'analytics', key: 'tour.step_gov_analytics', fallback: 'Elemzés: hőtérkép, statisztikák és trendek áttekintése.' },
+      { tab: 'iot', key: 'tour.step_gov_iot', fallback: 'Szenzorok (IoT): összesítő, térképes nézet, sync és export.' },
+      { tab: 'citybrain-live', key: 'tour.step_gov_citybrain_live', fallback: 'City Brain / Live Intelligence: valós idejű állapotkép és gyors mutatók.' },
+      { tab: 'citybrain-predictive', key: 'tour.step_gov_citybrain_predictive', fallback: 'Predictive AI: trend alapú előrejelzések és várható terhelések.' },
+      { tab: 'citybrain-hotspot', key: 'tour.step_gov_citybrain_hotspot', fallback: 'Hotspot Detection: problémagócok térképes azonosítása.' },
+      { tab: 'citybrain-behavior', key: 'tour.step_gov_citybrain_behavior', fallback: 'Behavior & Trends: viselkedési és aktivitási mintázatok.' },
+      { tab: 'citybrain-environmental', key: 'tour.step_gov_citybrain_environmental', fallback: 'Environmental AI: levegő, hőmérséklet és környezeti mutatók elemzése.' },
+      { tab: 'citybrain-insights', key: 'tour.step_gov_citybrain_insights', fallback: 'AI Insights: automatikus összefoglalók és kiemelt megállapítások.' },
+      { tab: 'citybrain-risk', key: 'tour.step_gov_citybrain_risk', fallback: 'Risk & Alerts: kockázatok és riasztások prioritással.' },
+      { tab: 'modules', key: 'tour.step_gov_modules', fallback: 'Modulok: funkciók be- és kikapcsolása jogosultság szerint.' }
+    ];
+    govTabSteps.forEach(function (stepDef) {
+      pushStep(
+        steps,
+        ['[data-tab="' + stepDef.tab + '"]'],
+        t(stepDef.key, stepDef.fallback),
+        'right',
+        'center'
+      );
+    });
 
     // Záró áttekintés a dashboard jelentéséről.
     pushStep(steps, ['#govCityHealthCard', '#tab-dashboard'], t('tour.step_gov_dashboard_explain', 'Zárásként: az Áttekintés menüpontban a Városi egészség index egy összesített mutató, az Időjárás kártya aktuális helyi adatokat ad, a státusz/kategória blokkok pedig a bejelentések eloszlását és trendjeit mutatják.'), 'bottom', 'start');
@@ -96,7 +112,20 @@
       prevBtnText: t('tour.prev', 'Előző'),
       doneBtnText: t('tour.done', 'Kész'),
       showButtons: ['previous', 'next', 'close'],
+      onHighlighted: function (element) {
+        try {
+          var active = document.querySelector('.nav-link.tab.civic-tour-sidebar-active');
+          if (active) active.classList.remove('civic-tour-sidebar-active');
+          if (element && element.classList && element.classList.contains('tab')) {
+            element.classList.add('civic-tour-sidebar-active');
+          }
+        } catch (_) {}
+      },
       onDestroyed: function () {
+        try {
+          var active = document.querySelector('.nav-link.tab.civic-tour-sidebar-active');
+          if (active) active.classList.remove('civic-tour-sidebar-active');
+        } catch (_) {}
         activeDriver = null;
         try { localStorage.setItem('civicai_tour_done', '1'); } catch (_) {}
       }

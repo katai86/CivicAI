@@ -581,7 +581,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="budget">
               <i class="nav-icon bi bi-wallet2"></i>
-              <p><?= h(t('gov.tab_budget') ?: 'Részvételi költségvetés') ?></p>
+              <p><?= h(t('gov.tab_budget')) ?></p>
             </a>
           </li>
           <?php endif; ?>
@@ -684,16 +684,16 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.city_health_index')) ?></h6>
               <div id="govCityHealthContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
               </div>
             </div>
           </div>
           <?php if (defined('WEATHER_ENABLED') && WEATHER_ENABLED): ?>
           <div class="card mb-3" id="govWeatherCard">
             <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('gov.weather_title') ?: 'Időjárás') ?></h6>
+              <h6 class="card-title mb-2"><?= h(t('gov.weather_title')) ?></h6>
               <div id="govWeatherContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
               </div>
             </div>
           </div>
@@ -707,7 +707,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
                     <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_today')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_1d'] ?></span></div></div>
                     <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_7d')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_7d'] ?></span></div></div>
                     <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_total')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_total'] ?></span></div></div>
-                    <div class="col-md-6"><div class="text-secondary small"><?= ($isAdmin ? h(t('gov.authorities')) . ': ' : h(t('gov.your_authority') ?: 'Saját hatóság') . ': ') ?><b><?= h($isAdmin ? implode(', ', array_map(fn($a)=>$a['name'], $authorities)) : ($authorities[0]['name'] ?? '—')) ?></b></div></div>
+                    <div class="col-md-6"><div class="text-secondary small"><?= ($isAdmin ? h(t('gov.authorities')) . ': ' : h(t('gov.your_authority')) . ': ') ?><b><?= h($isAdmin ? implode(', ', array_map(fn($a)=>$a['name'], $authorities)) : ($authorities[0]['name'] ?? '—')) ?></b></div></div>
                   </div>
                   <div class="row g-3 mt-2">
                     <div class="col-md-6">
@@ -768,14 +768,14 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
         </div>
 
         <div class="admin-tab-body" id="tab-ai" hidden>
-          <p class="text-secondary small mb-3"><?= h(t('gov.tab_ai_intro') ?: 'AI Copilot, összefoglalók és jelentések az adataid alapján.') ?></p>
+          <p class="text-secondary small mb-3"><?= h(t('gov.tab_ai_intro')) ?></p>
           <div class="card mb-3" id="govCopilotCard">
             <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('gov.copilot_title') ?: 'AI Copilot') ?></h6>
-              <p class="text-secondary small mb-2"><?= h(t('gov.copilot_desc') ?: 'Kérdezd az adataidról: kerületek, problémák, fák, változások.') ?></p>
+              <h6 class="card-title mb-2"><?= h(t('gov.copilot_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.copilot_desc')) ?></p>
               <div class="d-flex flex-column gap-2">
-                <textarea id="govCopilotQuestion" class="form-control" rows="2" placeholder="<?= h(t('gov.copilot_placeholder') ?: 'Pl. Mely kerületeknek van a legtöbb problémája?') ?>"></textarea>
-                <button type="button" class="btn btn-primary btn-sm align-self-start" id="govCopilotSend"><?= h(t('gov.copilot_send') ?: 'Küldés') ?></button>
+                <textarea id="govCopilotQuestion" class="form-control" rows="2" placeholder="<?= h(t('gov.copilot_placeholder')) ?>"></textarea>
+                <button type="button" class="btn btn-primary btn-sm align-self-start" id="govCopilotSend"><?= h(t('gov.copilot_send')) ?></button>
               </div>
               <div id="govCopilotAnswer" class="mt-3 p-2 rounded bg-light small" style="display:none; white-space: pre-wrap;"></div>
               <div id="govCopilotError" class="mt-2 text-danger small" style="display:none;"></div>
@@ -841,8 +841,8 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
         <div class="admin-tab-body" id="tab-trees" hidden>
           <div class="card mb-3">
             <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('gov.tree_cadastre_title') ?: 'Fa kataszter') ?></h6>
-              <p class="text-secondary small mb-2"><?= h(t('gov.tree_cadastre_desc') ?: 'A feltöltött, nyilvántartott fák megjelenítése a térképen.') ?></p>
+              <h6 class="card-title mb-2"><?= h(t('gov.tree_cadastre_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.tree_cadastre_desc')) ?></p>
               <div id="govTreeCadastreMap" style="height:420px; width:100%; border:1px solid #dee2e6; border-radius:0.375rem;"></div>
             </div>
           </div>
@@ -872,29 +872,29 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
                 <div class="modal-body">
                   <input type="hidden" id="govTreeEditId" value="">
                   <div class="row g-2">
-                    <div class="col-md-6"><label class="form-label small"><?= h(t('tree.species_label') ?: 'Fajta') ?></label><input type="text" id="govTreeSpecies" class="form-control form-control-sm" maxlength="120" placeholder="pl. kőris"></div>
-                    <div class="col-md-6"><label class="form-label small"><?= h(t('gov.tree_address') ?: 'Cím') ?></label><input type="text" id="govTreeAddress" class="form-control form-control-sm" maxlength="255"></div>
-                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.age') ?: 'Életkor (év)') ?></label><input type="number" id="govTreeEstimatedAge" class="form-control form-control-sm" min="0" max="500" placeholder="–"></div>
-                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_planting_year') ?: 'Ültetés éve') ?></label><input type="number" id="govTreePlantingYear" class="form-control form-control-sm" min="1900" max="2100" placeholder="–"></div>
-                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.trunk_label') ?: 'Törzsméret (cm)') ?></label><input type="number" id="govTreeTrunkDiameter" class="form-control form-control-sm" min="0" max="500" step="0.1" placeholder="–"></div>
-                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.canopy_label') ?: 'Koronaméret (m)') ?></label><input type="number" id="govTreeCanopyDiameter" class="form-control form-control-sm" min="0" max="50" step="0.1" placeholder="–"></div>
-                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.health') ?: 'Állapot') ?></label><select id="govTreeHealthStatus" class="form-select form-select-sm"><option value="">–</option><option value="good"><?= h(t('tree.health_good') ?: 'Jó') ?></option><option value="fair"><?= h(t('tree.health_fair') ?: 'Közepes') ?></option><option value="poor"><?= h(t('tree.health_poor') ?: 'Gyenge') ?></option><option value="critical"><?= h(t('tree.health_critical') ?: 'Kritikus') ?></option></select></div>
-                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.risk') ?: 'Kockázat') ?></label><select id="govTreeRiskLevel" class="form-select form-select-sm"><option value="">–</option><option value="low"><?= h(t('tree.risk_low') ?: 'Alacsony') ?></option><option value="medium"><?= h(t('tree.risk_medium') ?: 'Közepes') ?></option><option value="high"><?= h(t('tree.risk_high') ?: 'Magas') ?></option></select></div>
+                    <div class="col-md-6"><label class="form-label small"><?= h(t('tree.species_label')) ?></label><input type="text" id="govTreeSpecies" class="form-control form-control-sm" maxlength="120" placeholder="pl. kőris"></div>
+                    <div class="col-md-6"><label class="form-label small"><?= h(t('gov.tree_address')) ?></label><input type="text" id="govTreeAddress" class="form-control form-control-sm" maxlength="255"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.age')) ?></label><input type="number" id="govTreeEstimatedAge" class="form-control form-control-sm" min="0" max="500" placeholder="–"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_planting_year')) ?></label><input type="number" id="govTreePlantingYear" class="form-control form-control-sm" min="1900" max="2100" placeholder="–"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.trunk_label')) ?></label><input type="number" id="govTreeTrunkDiameter" class="form-control form-control-sm" min="0" max="500" step="0.1" placeholder="–"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.canopy_label')) ?></label><input type="number" id="govTreeCanopyDiameter" class="form-control form-control-sm" min="0" max="50" step="0.1" placeholder="–"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.health')) ?></label><select id="govTreeHealthStatus" class="form-select form-select-sm"><option value="">–</option><option value="good"><?= h(t('tree.health_good')) ?></option><option value="fair"><?= h(t('tree.health_fair')) ?></option><option value="poor"><?= h(t('tree.health_poor')) ?></option><option value="critical"><?= h(t('tree.health_critical')) ?></option></select></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('tree.risk')) ?></label><select id="govTreeRiskLevel" class="form-select form-select-sm"><option value="">–</option><option value="low"><?= h(t('tree.risk_low')) ?></option><option value="medium"><?= h(t('tree.risk_medium')) ?></option><option value="high"><?= h(t('tree.risk_high')) ?></option></select></div>
                     <div class="col-md-4"><label class="form-label small"><?= h(t('gov.trees_last_watered')) ?></label><input type="date" id="govTreeLastWatered" class="form-control form-control-sm"></div>
-                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_last_inspection') ?: 'Utolsó ellenőrzés') ?></label><input type="date" id="govTreeLastInspection" class="form-control form-control-sm"></div>
-                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_visible') ?: 'Látható') ?></label><select id="govTreePublicVisible" class="form-select form-select-sm"><option value="1"><?= h(t('common.yes') ?: 'Igen') ?></option><option value="0"><?= h(t('common.no') ?: 'Nem') ?></option></select></div>
-                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_validated') ?: 'Közig jóváhagyva') ?></label><select id="govTreeGovValidated" class="form-select form-select-sm"><option value="0"><?= h(t('common.no') ?: 'Nem') ?></option><option value="1"><?= h(t('common.yes') ?: 'Igen') ?></option></select></div>
-                    <div class="col-12"><label class="form-label small"><?= h(t('tree.note_placeholder') ?: 'Megjegyzés') ?></label><textarea id="govTreeNotes" class="form-control form-control-sm" rows="2" maxlength="2000"></textarea></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_last_inspection')) ?></label><input type="date" id="govTreeLastInspection" class="form-control form-control-sm"></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_visible')) ?></label><select id="govTreePublicVisible" class="form-select form-select-sm"><option value="1"><?= h(t('common.yes')) ?></option><option value="0"><?= h(t('common.no')) ?></option></select></div>
+                    <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_validated')) ?></label><select id="govTreeGovValidated" class="form-select form-select-sm"><option value="0"><?= h(t('common.no')) ?></option><option value="1"><?= h(t('common.yes')) ?></option></select></div>
+                    <div class="col-12"><label class="form-label small"><?= h(t('tree.note_placeholder')) ?></label><textarea id="govTreeNotes" class="form-control form-control-sm" rows="2" maxlength="2000"></textarea></div>
                   </div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= h(t('modal.cancel') ?: 'Mégse') ?></button><button type="button" class="btn btn-primary btn-sm" id="govTreeSaveBtn"><?= h(t('gov.tree_save')) ?></button></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= h(t('modal.cancel')) ?></button><button type="button" class="btn btn-primary btn-sm" id="govTreeSaveBtn"><?= h(t('gov.tree_save')) ?></button></div>
               </div>
             </div>
           </div>
         </div>
 
         <div class="admin-tab-body" id="tab-analytics" hidden>
-          <p class="text-secondary small mb-2"><?= h(t('gov.tab_analytics') ?: 'Elemzés') ?> – <?= h(t('gov.heatmap_widget_title')) ?>, <?= h(t('gov.statistics_tab_title')) ?></p>
+          <p class="text-secondary small mb-2"><?= h(t('gov.tab_analytics')) ?> – <?= h(t('gov.heatmap_widget_title')) ?>, <?= h(t('gov.statistics_tab_title')) ?></p>
           <div class="card mb-3">
             <div class="card-body">
               <h6 class="card-title mb-1"><?= h(t('gov.analytics_title')) ?></h6><br>
@@ -973,14 +973,14 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.statistics_tab_title')) ?></h6>
               <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
-                <label class="small mb-0"><?= h(t('gov.statistics_date_range') ?: 'Időszak') ?>:</label>
+                <label class="small mb-0"><?= h(t('gov.statistics_date_range')) ?>:</label>
                 <input type="date" id="govStatsDateFrom" class="form-control form-control-sm" style="max-width:140px">
                 <span class="small">–</span>
                 <input type="date" id="govStatsDateTo" class="form-control form-control-sm" style="max-width:140px">
                 <button type="button" id="govStatisticsRefresh" class="btn btn-sm btn-outline-primary"><?= h(t('gov.statistics_refresh')) ?></button>
               </div>
               <div id="govStatisticsContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
               </div>
             </div>
           </div>
@@ -988,7 +988,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.sentiment_title')) ?></h6>
               <div id="govSentimentContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
               </div>
             </div>
           </div>
@@ -996,7 +996,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.predictions_title')) ?></h6>
               <div id="govPredictionsContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
               </div>
             </div>
           </div>
@@ -1004,7 +1004,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.green_intelligence_title')) ?></h6>
               <div id="govGreenMetricsContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
               </div>
             </div>
           </div>
@@ -1013,7 +1013,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
               <h6 class="card-title mb-2"><?= h(t('gov.esg_command_center_title')) ?></h6>
               <p class="text-secondary small mb-2"><?= h(t('gov.esg_command_center_desc')) ?></p>
               <div id="govEsgMetricsContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading') ?: 'Betöltés...') ?></p>
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
               </div>
               <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
                 <a href="#" id="linkEsgCommandJson" class="btn btn-outline-primary btn-sm">JSON</a>
@@ -1057,8 +1057,8 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
         <div class="admin-tab-body" id="tab-ideas" hidden>
           <div class="card">
             <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('legend.ideas_section') ?: 'Ötletek') ?></h6>
-              <p class="text-secondary small mb-3"><?= h(t('gov.ideas_intro') ?: 'A hatóságodhoz beérkezett ötlet bejelentések. Státusz módosítható.') ?></p>
+              <h6 class="card-title mb-2"><?= h(t('legend.ideas_section')) ?></h6>
+              <p class="text-secondary small mb-3"><?= h(t('gov.ideas_intro')) ?></p>
               <?php if (empty($ideaReports)): ?>
                 <p class="text-secondary small mb-0"><?= h(t('gov.no_data')) ?></p>
               <?php else: ?>
@@ -1067,11 +1067,11 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
                     <thead>
                       <tr>
                         <th>#</th>
-                        <th><?= h(t('gov.reporter_name') ?: 'Bejelentő neve') ?></th>
-                        <th><?= h(t('gov.report_date') ?: 'Bejelentés ideje') ?></th>
-                        <th><?= h(t('gov.report_description') ?: 'Bejelentés leírása') ?></th>
-                        <th><?= h(t('gov.report_address') ?: 'Bejelentés címe') ?></th>
-                        <th><?= h(t('common.status') ?: 'Státusz') ?></th>
+                        <th><?= h(t('gov.reporter_name')) ?></th>
+                        <th><?= h(t('gov.report_date')) ?></th>
+                        <th><?= h(t('gov.report_description')) ?></th>
+                        <th><?= h(t('gov.report_address')) ?></th>
+                        <th><?= h(t('common.status')) ?></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1107,13 +1107,13 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
         <div class="admin-tab-body" id="tab-surveys" hidden>
           <div class="card">
             <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('gov.tab_surveys') ?: 'Felmérések') ?></h6>
-              <p class="text-secondary small mb-3"><?= h(t('gov.surveys_intro') ?: 'Aktív és lezárt felmérések, eredmények megtekintése.') ?></p>
-              <div id="govSurveysList"><?= h(t('gov.loading') ?: 'Betöltés...') ?></div>
+              <h6 class="card-title mb-2"><?= h(t('gov.tab_surveys')) ?></h6>
+              <p class="text-secondary small mb-3"><?= h(t('gov.surveys_intro')) ?></p>
+              <div id="govSurveysList"><?= h(t('gov.loading')) ?></div>
               <div id="govSurveyResults" class="mt-3" style="display:none">
-                <h6 class="mb-2"><?= h(t('gov.survey_results') ?: 'Eredmények') ?></h6>
+                <h6 class="mb-2"><?= h(t('gov.survey_results')) ?></h6>
                 <div id="govSurveyResultsContent"></div>
-                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="govSurveyResultsBack">← <?= h(t('nav.map') ?: 'Vissza') ?></button>
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="govSurveyResultsBack">← <?= h(t('common.back')) ?></button>
               </div>
             </div>
           </div>
@@ -1124,9 +1124,9 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
         <div class="admin-tab-body" id="tab-budget" hidden>
           <div class="card">
             <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('gov.tab_budget') ?: 'Részvételi költségvetés') ?></h6>
-              <p class="text-secondary small mb-3"><?= h(t('budget.intro') ?: 'Projektek a hatóságodhoz. Szavazat szám, költség, státusz.') ?></p>
-              <div id="govBudgetList"><?= h(t('gov.loading') ?: 'Betöltés...') ?></div>
+              <h6 class="card-title mb-2"><?= h(t('gov.tab_budget')) ?></h6>
+              <p class="text-secondary small mb-3"><?= h(t('budget.intro')) ?></p>
+              <div id="govBudgetList"><?= h(t('gov.loading')) ?></div>
             </div>
           </div>
         </div>
@@ -1150,7 +1150,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
                 <button type="button" class="btn btn-sm btn-outline-primary" id="govIotExportCsv"><?= h(t('iot.export_csv')) ?></button>
                 <button type="button" class="btn btn-sm btn-outline-primary" id="govIotExportJson"><?= h(t('iot.export_json')) ?></button>
                 <span class="small text-secondary">|</span>
-                <button type="button" class="btn btn-sm btn-success" id="govIotSyncBtn" title="<?= h(t('gov.iot_sync_scope_hint') ?: 'Csak a hatóságod területére húzza le a szenzorokat (pl. Budapest WeatherXM).') ?>"><?= h(t('gov.iot_sync_now') ?: 'Szinkronizálás') ?></button>
+                <button type="button" class="btn btn-sm btn-success" id="govIotSyncBtn" title="<?= h(t('gov.iot_sync_scope_hint')) ?>"><?= h(t('gov.iot_sync_now')) ?></button>
                 <span id="govIotSyncStatus" class="small text-muted"></span>
               </div>
               <div id="govIotCharts" class="mb-3"></div>
@@ -1176,8 +1176,8 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
           <div class="card">
             <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_live')) ?></h6></div>
             <div class="card-body">
-              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_live_desc') ?: 'Valós idejű összesítő: szenzorok, bejelentések, ötletek.') ?></p>
-              <div id="citybrainLiveContent"><p class="text-secondary small mb-0"><?= h(t('admin.load') ?: 'Betöltés...') ?></p></div>
+              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_live_desc')) ?></p>
+              <div id="citybrainLiveContent"><p class="text-secondary small mb-0"><?= h(t('admin.load')) ?></p></div>
             </div>
           </div>
         </div>
@@ -1185,8 +1185,8 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
           <div class="card">
             <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_predictive')) ?></h6></div>
             <div class="card-body">
-              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_predictive_desc') ?: 'Előrejelzett problémák, kockázati zónák, faegészség.') ?></p>
-              <div id="citybrainPredictiveContent"><p class="text-secondary small mb-0"><?= h(t('admin.load') ?: 'Betöltés...') ?></p></div>
+              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_predictive_desc')) ?></p>
+              <div id="citybrainPredictiveContent"><p class="text-secondary small mb-0"><?= h(t('admin.load')) ?></p></div>
             </div>
           </div>
         </div>
@@ -1195,11 +1195,11 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
             <div class="card-header d-flex flex-wrap align-items-center gap-2">
               <h6 class="card-title mb-0"><?= h(t('gov.city_brain_hotspot')) ?></h6>
               <select id="citybrainHotspotType" class="form-select form-select-sm" style="width:auto;">
-                <option value="issue_density"><?= h(t('gov.heatmap_issue_density') ?: 'Probléma sűrűség') ?></option>
-                <option value="unresolved_issues"><?= h(t('gov.heatmap_unresolved') ?: 'Nyitott ügyek') ?></option>
-                <option value="citizen_activity"><?= h(t('gov.heatmap_citizen_activity') ?: 'Polgári aktivitás') ?></option>
-                <option value="tree_health_risk"><?= h(t('gov.heatmap_tree_risk') ?: 'Fa egészség kockázat') ?></option>
-                <option value="esg_risk"><?= h(t('gov.heatmap_esg_risk') ?: 'ESG kockázat') ?></option>
+                <option value="issue_density"><?= h(t('gov.heatmap_issue_density')) ?></option>
+                <option value="unresolved_issues"><?= h(t('gov.heatmap_unresolved')) ?></option>
+                <option value="citizen_activity"><?= h(t('gov.heatmap_citizen_activity')) ?></option>
+                <option value="tree_health_risk"><?= h(t('gov.heatmap_tree_risk')) ?></option>
+                <option value="esg_risk"><?= h(t('gov.heatmap_esg_risk')) ?></option>
               </select>
             </div>
             <div class="card-body">
@@ -1213,11 +1213,11 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
               <h6 class="card-title mb-0"><?= h(t('gov.city_brain_behavior')) ?></h6>
               <input type="date" id="citybrainBehaviorDateFrom" class="form-control form-control-sm" style="width:auto;">
               <input type="date" id="citybrainBehaviorDateTo" class="form-control form-control-sm" style="width:auto;">
-              <button type="button" id="citybrainBehaviorRefresh" class="btn btn-sm btn-outline-primary"><?= h(t('common.refresh') ?: 'Frissítés') ?></button>
+              <button type="button" id="citybrainBehaviorRefresh" class="btn btn-sm btn-outline-primary"><?= h(t('common.refresh')) ?></button>
             </div>
             <div class="card-body">
-              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_behavior_desc') ?: 'Bejelentési trendek, feloldási arány, részvétel.') ?></p>
-              <div id="citybrainBehaviorContent"><p class="text-secondary small mb-0"><?= h(t('admin.load') ?: 'Betöltés...') ?></p></div>
+              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_behavior_desc')) ?></p>
+              <div id="citybrainBehaviorContent"><p class="text-secondary small mb-0"><?= h(t('admin.load')) ?></p></div>
             </div>
           </div>
         </div>
@@ -1225,8 +1225,8 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
           <div class="card">
             <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_environmental')) ?></h6></div>
             <div class="card-body">
-              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_environmental_desc') ?: 'Környezeti metrikák: levegőminőség, hőmérséklet, szenzorok providerek szerint.') ?></p>
-              <div id="citybrainEnvironmentalContent"><p class="text-secondary small mb-0"><?= h(t('admin.load') ?: 'Betöltés...') ?></p></div>
+              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_environmental_desc')) ?></p>
+              <div id="citybrainEnvironmentalContent"><p class="text-secondary small mb-0"><?= h(t('admin.load')) ?></p></div>
             </div>
           </div>
         </div>
@@ -1234,26 +1234,26 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
           <div class="card">
             <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_insights')) ?></h6></div>
             <div class="card-body">
-              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_insights_desc') ?: 'AI összefoglaló vagy ESG jelentés generálása a hatóság adatai alapján.') ?></p>
+              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_insights_desc')) ?></p>
               <div class="row g-2 mb-3">
                 <div class="col-auto">
                   <select id="citybrainInsightsType" class="form-select form-select-sm">
-                    <option value="summary"><?= h(t('gov.ai_summary') ?: 'Összefoglaló') ?></option>
-                    <option value="esg"><?= h(t('gov.ai_esg') ?: 'ESG') ?></option>
-                    <option value="maintenance"><?= h(t('gov.ai_maintenance') ?: 'Karbantartás') ?></option>
-                    <option value="engagement"><?= h(t('gov.ai_engagement') ?: 'Részvétel') ?></option>
-                    <option value="sustainability"><?= h(t('gov.ai_sustainability') ?: 'Fenntarthatóság') ?></option>
+                    <option value="summary"><?= h(t('gov.ai_summary')) ?></option>
+                    <option value="esg"><?= h(t('gov.ai_esg')) ?></option>
+                    <option value="maintenance"><?= h(t('gov.ai_maintenance')) ?></option>
+                    <option value="engagement"><?= h(t('gov.ai_engagement')) ?></option>
+                    <option value="sustainability"><?= h(t('gov.ai_sustainability')) ?></option>
                   </select>
                 </div>
                 <div class="col-auto">
                   <select id="citybrainInsightsTimeframe" class="form-select form-select-sm">
-                    <option value="last_30_days"><?= h(t('gov.last_30_days') ?: 'Utolsó 30 nap') ?></option>
-                    <option value="last_90_days" selected><?= h(t('gov.last_90_days') ?: 'Utolsó 90 nap') ?></option>
-                    <option value="last_year"><?= h(t('gov.last_year') ?: 'Elmúlt év') ?></option>
+                    <option value="last_30_days"><?= h(t('gov.last_30_days')) ?></option>
+                    <option value="last_90_days" selected><?= h(t('gov.last_90_days')) ?></option>
+                    <option value="last_year"><?= h(t('gov.last_year')) ?></option>
                   </select>
                 </div>
                 <div class="col-auto">
-                  <button type="button" id="citybrainInsightsGenerate" class="btn btn-sm btn-primary"><?= h(t('gov.generate') ?: 'Generálás') ?></button>
+                  <button type="button" id="citybrainInsightsGenerate" class="btn btn-sm btn-primary"><?= h(t('gov.generate')) ?></button>
                 </div>
               </div>
               <div id="citybrainInsightsResult" class="border rounded p-3 bg-light bg-opacity-50" style="min-height:80px; white-space:pre-wrap;"></div>
@@ -1264,8 +1264,8 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
           <div class="card">
             <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_risk')) ?></h6></div>
             <div class="card-body">
-              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_risk_desc') ?: 'Automatikus riasztások: magas AQI, elavult szenzorok, nagy nyitott backlog.') ?></p>
-              <div id="citybrainRiskContent"><p class="text-secondary small mb-0"><?= h(t('admin.load') ?: 'Betöltés...') ?></p></div>
+              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_risk_desc')) ?></p>
+              <div id="citybrainRiskContent"><p class="text-secondary small mb-0"><?= h(t('admin.load')) ?></p></div>
             </div>
           </div>
         </div>
@@ -1334,20 +1334,20 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     'tier_3' => t('iot.tier_3'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govIotMetricLabels = <?= json_encode([
-    'temperature' => t('iot.metric_temperature') ?: 'Temperature',
-    'feels_like' => t('iot.metric_feels_like') ?: 'Feels Like',
-    'dew_point' => t('iot.metric_dew_point') ?: 'Dew Point',
-    'humidity' => t('iot.metric_humidity') ?: 'Humidity',
-    'pressure' => t('iot.metric_pressure') ?: 'Pressure (abs)',
-    'wind_speed' => t('iot.metric_wind_speed') ?: 'Wind',
-    'wind_gust' => t('iot.metric_wind_gust') ?: 'Wind Gust',
-    'wind_direction' => t('iot.metric_wind_direction') ?: 'Direction',
-    'uv_index' => t('iot.metric_uv_index') ?: 'UV',
-    'precipitation_rate' => t('iot.metric_precipitation_rate') ?: 'Precip Rate',
-    'solar_irradiance' => t('iot.metric_solar_irradiance') ?: 'Solar Radiation',
-    'aqi' => t('iot.avg_aqi') ?: 'AQI',
-    'pm25' => t('iot.avg_pm25') ?: 'PM2.5',
-    'temp' => t('iot.metric_temperature') ?: 'Temperature',
+    'temperature' => t('iot.metric_temperature'),
+    'feels_like' => t('iot.metric_feels_like'),
+    'dew_point' => t('iot.metric_dew_point'),
+    'humidity' => t('iot.metric_humidity'),
+    'pressure' => t('iot.metric_pressure'),
+    'wind_speed' => t('iot.metric_wind_speed'),
+    'wind_gust' => t('iot.metric_wind_gust'),
+    'wind_direction' => t('iot.metric_wind_direction'),
+    'uv_index' => t('iot.metric_uv_index'),
+    'precipitation_rate' => t('iot.metric_precipitation_rate'),
+    'solar_irradiance' => t('iot.metric_solar_irradiance'),
+    'aqi' => t('iot.avg_aqi'),
+    'pm25' => t('iot.avg_pm25'),
+    'temp' => t('iot.metric_temperature'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govIotSensorHistoryUrl = <?= json_encode(app_url('/api/sensor_metric_history.php'), JSON_UNESCAPED_SLASHES) ?>;
   var heatmapUrl = <?= json_encode(app_url('/api/heatmap_data.php'), JSON_UNESCAPED_SLASHES) ?>;
@@ -1423,8 +1423,8 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   ], JSON_UNESCAPED_UNICODE) ?>;
   var mapCenterLat = <?= json_encode(defined('MAP_CENTER_LAT') ? (float)MAP_CENTER_LAT : 47.1625) ?>;
   var mapCenterLng = <?= json_encode(defined('MAP_CENTER_LNG') ? (float)MAP_CENTER_LNG : 19.5033) ?>;
-  var govWeatherHumidityLabel = <?= json_encode(t('gov.weather_humidity') ?: 'Humidity', JSON_UNESCAPED_UNICODE) ?>;
-  var govIotShowOnMap = <?= json_encode(t('gov.iot_show_on_map') ?: 'Show on map', JSON_UNESCAPED_UNICODE) ?>;
+  var govWeatherHumidityLabel = <?= json_encode(t('gov.weather_humidity'), JSON_UNESCAPED_UNICODE) ?>;
+  var govIotShowOnMap = <?= json_encode(t('gov.iot_show_on_map'), JSON_UNESCAPED_UNICODE) ?>;
   var appName = <?= json_encode(t('site.name'), JSON_UNESCAPED_UNICODE) ?>;
   var logoUrl = <?= json_encode(app_url('/assets/logo.png'), JSON_UNESCAPED_SLASHES) ?>;
   var govHeatmapMap = null;
@@ -1629,7 +1629,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
       errEl.style.display = 'none';
       errEl.textContent = '';
       ansEl.style.display = 'block';
-      ansEl.textContent = <?= json_encode(t('gov.generating') ?: 'Generating...', JSON_UNESCAPED_UNICODE) ?>;
+      ansEl.textContent = <?= json_encode(t('gov.generating'), JSON_UNESCAPED_UNICODE) ?>;
       btn.disabled = true;
       postJson(govCopilotUrl, { question: q }).then(function(x){
         btn.disabled = false;
@@ -2055,7 +2055,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     var statusEl = document.getElementById('govIotSyncStatus');
     if (!btn || !govIotSyncUrl) return;
     btn.disabled = true;
-    if (statusEl) statusEl.textContent = '<?= json_encode(t('gov.loading') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?>';
+    if (statusEl) statusEl.textContent = '<?= json_encode(t('gov.loading'), JSON_UNESCAPED_UNICODE) ?>';
     fetch(govIotSyncUrl, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(function(r){ return r.json(); }).then(function(j){
       btn.disabled = false;
       if (statusEl) {
@@ -2105,7 +2105,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     var toEl = document.getElementById('govStatsDateTo');
     var dateFrom = (fromEl && fromEl.value) ? fromEl.value : new Date(Date.now() - 30*24*60*60*1000).toISOString().slice(0, 10);
     var dateTo = (toEl && toEl.value) ? toEl.value : new Date().toISOString().slice(0, 10);
-    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('gov.loading') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?></p>';
+    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('gov.loading'), JSON_UNESCAPED_UNICODE) ?></p>';
     var params = 'date_from=' + encodeURIComponent(dateFrom) + '&date_to=' + encodeURIComponent(dateTo);
     fetch(govStatisticsUrl + '?' + params, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var L = govStatisticsLabels || {};
@@ -2147,7 +2147,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   function loadCitybrainLive(){
     var container = document.getElementById('citybrainLiveContent');
     if (!container || !citybrainDashboardUrl) return;
-    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?></p>';
+    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load'), JSON_UNESCAPED_UNICODE) ?></p>';
     fetch(citybrainDashboardUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok || !j.live) { container.innerHTML = '<p class="text-secondary small mb-0">—</p>'; return; }
       var L = govIotLabels || {};
@@ -2168,7 +2168,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   function loadCitybrainPredictive(){
     var container = document.getElementById('citybrainPredictiveContent');
     if (!container || !govPredictionsUrl) return;
-    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?></p>';
+    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load'), JSON_UNESCAPED_UNICODE) ?></p>';
     fetch(govPredictionsUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var L = govPredictionsLabels || {};
       var noData = (govStatisticsLabels && govStatisticsLabels.no_data) || '—';
@@ -2217,7 +2217,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     var dateTo = (toEl && toEl.value) ? toEl.value : new Date().toISOString().slice(0, 10);
     if (fromEl && !fromEl.value) fromEl.value = dateFrom;
     if (toEl && !toEl.value) toEl.value = dateTo;
-    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?></p>';
+    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load'), JSON_UNESCAPED_UNICODE) ?></p>';
     var params = 'date_from=' + encodeURIComponent(dateFrom) + '&date_to=' + encodeURIComponent(dateTo);
     if (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) params += '&authority_id=' + authorityIdForHeatmap;
     fetch(govStatisticsUrl + '?' + params, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
@@ -2247,7 +2247,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   function loadCitybrainEnvironmental(){
     var container = document.getElementById('citybrainEnvironmentalContent');
     if (!container || !citybrainDashboardUrl) return;
-    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?></p>';
+    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load'), JSON_UNESCAPED_UNICODE) ?></p>';
     fetch(citybrainDashboardUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok || !j.environmental) { container.innerHTML = '<p class="text-secondary small mb-0">—</p>'; return; }
       var L = govIotLabels || {};
@@ -2273,7 +2273,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
       var timeframeEl = document.getElementById('citybrainInsightsTimeframe');
       var type = (typeEl && typeEl.value) ? typeEl.value : 'summary';
       var timeframe = (timeframeEl && timeframeEl.value) ? timeframeEl.value : 'last_90_days';
-      resultEl.textContent = '<?= json_encode(t('gov.generating') ?: 'Generálás...', JSON_UNESCAPED_UNICODE) ?>';
+      resultEl.textContent = '<?= json_encode(t('gov.generating'), JSON_UNESCAPED_UNICODE) ?>';
       btn.disabled = true;
       postJson(aiUrl, { action: 'generate', type: type, timeframe: timeframe }).then(function(x){
         btn.disabled = false;
@@ -2285,7 +2285,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
   function loadCitybrainRisk(){
     var container = document.getElementById('citybrainRiskContent');
     if (!container || !citybrainDashboardUrl) return;
-    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?></p>';
+    container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load'), JSON_UNESCAPED_UNICODE) ?></p>';
     fetch(citybrainDashboardUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok || !Array.isArray(j.risks)) { container.innerHTML = '<p class="text-secondary small mb-0">—</p>'; return; }
       if (j.risks.length === 0) { container.innerHTML = '<p class="text-success small mb-0">Nincs aktív riasztás.</p>'; return; }
@@ -2341,7 +2341,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     var wrap = document.getElementById('govTreesList');
     var totalEl = document.getElementById('govTreesTotal');
     if (!wrap) return;
-    wrap.textContent = <?= json_encode(t('gov.loading') ?: 'Betöltés...', JSON_UNESCAPED_UNICODE) ?>;
+    wrap.textContent = <?= json_encode(t('gov.loading'), JSON_UNESCAPED_UNICODE) ?>;
     fetch(govTreesListUrl + '?limit=200&offset=0', { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok || !Array.isArray(j.data)) { wrap.textContent = <?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>; if (totalEl) totalEl.textContent = ''; return; }
       var total = j.total || j.data.length;
@@ -2503,17 +2503,17 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
         if (!j || !j.ok) { list.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; return; }
         var data = j.data || [];
         var firstAid = j.first_authority_id || 0;
-        var html = '<div class="mb-3"><button type="button" class="btn btn-sm btn-outline-primary" id="govSurveyNewBtn">' + (<?= json_encode(t('gov.survey_new') ?: 'Új felmérés', JSON_UNESCAPED_UNICODE) ?>) + '</button></div>';
+        var html = '<div class="mb-3"><button type="button" class="btn btn-sm btn-outline-primary" id="govSurveyNewBtn">' + (<?= json_encode(t('gov.survey_new'), JSON_UNESCAPED_UNICODE) ?>) + '</button></div>';
         if (!data.length) {
           list.innerHTML = html + '<p class="text-secondary small mb-0">' + (<?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>) + '</p>' +
-            '<p class="text-muted small mt-2 mb-0">' + (<?= json_encode(t('gov.surveys_empty_hint') ?: 'A felmérések táblák létrehozásához futtasd a migrációt (surveys).', JSON_UNESCAPED_UNICODE) ?>) + '</p>';
+            '<p class="text-muted small mt-2 mb-0">' + (<?= json_encode(t('gov.surveys_empty_hint'), JSON_UNESCAPED_UNICODE) ?>) + '</p>';
           document.getElementById('govSurveyNewBtn') && document.getElementById('govSurveyNewBtn').addEventListener('click', function(){ showGovSurveyNewForm(list, firstAid); });
           return;
         }
-        var statusLabels = { draft: <?= json_encode(t('survey.status_draft') ?: 'Piszkozat', JSON_UNESCAPED_UNICODE) ?>, active: <?= json_encode(t('survey.status_active') ?: 'Aktív', JSON_UNESCAPED_UNICODE) ?>, closed: <?= json_encode(t('survey.status_closed') ?: 'Lezárva', JSON_UNESCAPED_UNICODE) ?> };
-        html += '<table class="table table-sm table-hover"><thead><tr><th>#</th><th>' + (<?= json_encode(t('idea.title_placeholder') ?: 'Cím', JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('common.status'), JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('gov.survey_responses') ?: 'Válaszok', JSON_UNESCAPED_UNICODE) ?>) + '</th><th></th></tr></thead><tbody>' +
+        var statusLabels = { draft: <?= json_encode(t('survey.status_draft'), JSON_UNESCAPED_UNICODE) ?>, active: <?= json_encode(t('survey.status_active'), JSON_UNESCAPED_UNICODE) ?>, closed: <?= json_encode(t('survey.status_closed'), JSON_UNESCAPED_UNICODE) ?> };
+        html += '<table class="table table-sm table-hover"><thead><tr><th>#</th><th>' + (<?= json_encode(t('idea.title_placeholder'), JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('common.status'), JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('gov.survey_responses'), JSON_UNESCAPED_UNICODE) ?>) + '</th><th></th></tr></thead><tbody>' +
           data.map(function(s){
-            return '<tr><td>' + s.id + '</td><td><strong>' + (s.title||'').replace(/</g,'&lt;') + '</strong><br><span class="text-muted small">' + (s.authority_name||'').replace(/</g,'&lt;') + ' · ' + (s.starts_at||'').slice(0,16) + ' – ' + (s.ends_at||'').slice(0,16) + '</span></td><td>' + (statusLabels[s.status]||s.status) + '</td><td>' + (s.response_count||0) + '</td><td><button type="button" class="btn btn-sm btn-outline-primary gov-survey-results" data-id="' + s.id + '">' + (<?= json_encode(t('gov.survey_results') ?: 'Eredmények', JSON_UNESCAPED_UNICODE) ?>) + '</button></td></tr>';
+            return '<tr><td>' + s.id + '</td><td><strong>' + (s.title||'').replace(/</g,'&lt;') + '</strong><br><span class="text-muted small">' + (s.authority_name||'').replace(/</g,'&lt;') + ' · ' + (s.starts_at||'').slice(0,16) + ' – ' + (s.ends_at||'').slice(0,16) + '</span></td><td>' + (statusLabels[s.status]||s.status) + '</td><td>' + (s.response_count||0) + '</td><td><button type="button" class="btn btn-sm btn-outline-primary gov-survey-results" data-id="' + s.id + '">' + (<?= json_encode(t('gov.survey_results'), JSON_UNESCAPED_UNICODE) ?>) + '</button></td></tr>';
           }).join('') + '</tbody></table>';
         list.innerHTML = html;
         list.querySelectorAll('.gov-survey-results').forEach(function(btn){
@@ -2528,15 +2528,15 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
     var today = new Date().toISOString().slice(0, 16);
     var end = new Date(); end.setDate(end.getDate() + 30);
     var endStr = end.toISOString().slice(0, 16);
-    var statusL = { draft: <?= json_encode(t('survey.status_draft') ?: 'Piszkozat', JSON_UNESCAPED_UNICODE) ?>, active: <?= json_encode(t('survey.status_active') ?: 'Aktív', JSON_UNESCAPED_UNICODE) ?>, closed: <?= json_encode(t('survey.status_closed') ?: 'Lezárva', JSON_UNESCAPED_UNICODE) ?> };
-    var form = '<div class="card mb-3" id="govSurveyNewWrap"><div class="card-body"><h6 class="card-title">' + (<?= json_encode(t('gov.survey_new') ?: 'Új felmérés', JSON_UNESCAPED_UNICODE) ?>) + '</h6>';
-    form += '<input type="text" id="govSurveyTitle" class="form-control form-control-sm mb-2" placeholder="' + (<?= json_encode(t('idea.title_placeholder') ?: 'Cím', JSON_UNESCAPED_UNICODE) ?>) + '" required>';
-    form += '<textarea id="govSurveyDesc" class="form-control form-control-sm mb-2" rows="2" placeholder="' + (<?= json_encode(t('gov.report_description') ?: 'Leírás', JSON_UNESCAPED_UNICODE) ?>) + '"></textarea>';
-    form += '<label class="small">' + (<?= json_encode(t('gov.survey_starts') ?: 'Kezdés', JSON_UNESCAPED_UNICODE) ?>) + '</label><input type="datetime-local" id="govSurveyStarts" class="form-control form-control-sm mb-2" value="' + today + '">';
-    form += '<label class="small">' + (<?= json_encode(t('gov.survey_ends') ?: 'Befejezés', JSON_UNESCAPED_UNICODE) ?>) + '</label><input type="datetime-local" id="govSurveyEnds" class="form-control form-control-sm mb-2" value="' + endStr + '">';
+    var statusL = { draft: <?= json_encode(t('survey.status_draft'), JSON_UNESCAPED_UNICODE) ?>, active: <?= json_encode(t('survey.status_active'), JSON_UNESCAPED_UNICODE) ?>, closed: <?= json_encode(t('survey.status_closed'), JSON_UNESCAPED_UNICODE) ?> };
+    var form = '<div class="card mb-3" id="govSurveyNewWrap"><div class="card-body"><h6 class="card-title">' + (<?= json_encode(t('gov.survey_new'), JSON_UNESCAPED_UNICODE) ?>) + '</h6>';
+    form += '<input type="text" id="govSurveyTitle" class="form-control form-control-sm mb-2" placeholder="' + (<?= json_encode(t('idea.title_placeholder'), JSON_UNESCAPED_UNICODE) ?>) + '" required>';
+    form += '<textarea id="govSurveyDesc" class="form-control form-control-sm mb-2" rows="2" placeholder="' + (<?= json_encode(t('gov.report_description'), JSON_UNESCAPED_UNICODE) ?>) + '"></textarea>';
+    form += '<label class="small">' + (<?= json_encode(t('gov.survey_starts'), JSON_UNESCAPED_UNICODE) ?>) + '</label><input type="datetime-local" id="govSurveyStarts" class="form-control form-control-sm mb-2" value="' + today + '">';
+    form += '<label class="small">' + (<?= json_encode(t('gov.survey_ends'), JSON_UNESCAPED_UNICODE) ?>) + '</label><input type="datetime-local" id="govSurveyEnds" class="form-control form-control-sm mb-2" value="' + endStr + '">';
     form += '<label class="small">' + (<?= json_encode(t('common.status'), JSON_UNESCAPED_UNICODE) ?>) + '</label><select id="govSurveyStatus" class="form-select form-select-sm mb-2"><option value="draft">' + statusL.draft + '</option><option value="active">' + statusL.active + '</option><option value="closed">' + statusL.closed + '</option></select>';
-    form += '<p class="small mb-1">' + (<?= json_encode(t('gov.survey_questions') ?: 'Kérdések', JSON_UNESCAPED_UNICODE) ?>) + '</p><input type="text" id="govSurveyQ1" class="form-control form-control-sm mb-1" placeholder="1. ' + (<?= json_encode(t('gov.survey_question_placeholder') ?: 'kérdés', JSON_UNESCAPED_UNICODE) ?>) + '"><input type="text" id="govSurveyQ2" class="form-control form-control-sm mb-1" placeholder="2. ' + (<?= json_encode(t('gov.survey_question_placeholder') ?: 'kérdés', JSON_UNESCAPED_UNICODE) ?>) + '"><input type="text" id="govSurveyQ3" class="form-control form-control-sm mb-2" placeholder="3. ' + (<?= json_encode(t('gov.survey_question_placeholder') ?: 'kérdés', JSON_UNESCAPED_UNICODE) ?>) + '">';
-    form += '<button type="button" class="btn btn-sm btn-primary me-2" id="govSurveySubmit">' + (<?= json_encode(t('gov.save') ?: 'Mentés', JSON_UNESCAPED_UNICODE) ?>) + '</button><button type="button" class="btn btn-sm btn-outline-secondary" id="govSurveyCancel">' + (<?= json_encode(t('common.cancel') ?: 'Mégse', JSON_UNESCAPED_UNICODE) ?>) + '</button></div></div>';
+    form += '<p class="small mb-1">' + (<?= json_encode(t('gov.survey_questions'), JSON_UNESCAPED_UNICODE) ?>) + '</p><input type="text" id="govSurveyQ1" class="form-control form-control-sm mb-1" placeholder="1. ' + (<?= json_encode(t('gov.survey_question_placeholder'), JSON_UNESCAPED_UNICODE) ?>) + '"><input type="text" id="govSurveyQ2" class="form-control form-control-sm mb-1" placeholder="2. ' + (<?= json_encode(t('gov.survey_question_placeholder'), JSON_UNESCAPED_UNICODE) ?>) + '"><input type="text" id="govSurveyQ3" class="form-control form-control-sm mb-2" placeholder="3. ' + (<?= json_encode(t('gov.survey_question_placeholder'), JSON_UNESCAPED_UNICODE) ?>) + '">';
+    form += '<button type="button" class="btn btn-sm btn-primary me-2" id="govSurveySubmit">' + (<?= json_encode(t('gov.save'), JSON_UNESCAPED_UNICODE) ?>) + '</button><button type="button" class="btn btn-sm btn-outline-secondary" id="govSurveyCancel">' + (<?= json_encode(t('common.cancel'), JSON_UNESCAPED_UNICODE) ?>) + '</button></div></div>';
     var wrap = document.createElement('div');
     wrap.innerHTML = form;
     container.insertBefore(wrap, container.firstChild);
@@ -2566,7 +2566,7 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
       .then(function(r){ return r.json(); })
       .then(function(j){
         if (!j || !j.ok) { resultsContent.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; return; }
-        var h = '<p class="small text-secondary">' + (j.response_count||0) + ' ' + (<?= json_encode(t('gov.survey_responses') ?: 'válasz', JSON_UNESCAPED_UNICODE) ?>) + '</p>';
+        var h = '<p class="small text-secondary">' + (j.response_count||0) + ' ' + (<?= json_encode(t('gov.survey_responses_lowercase'), JSON_UNESCAPED_UNICODE) ?>) + '</p>';
         (j.aggregated||[]).forEach(function(a){
           h += '<div class="mb-3"><strong>' + (a.question_text||'').replace(/</g,'&lt;') + '</strong><ul class="small mb-0">';
           var ans = a.answers || {};
@@ -2597,17 +2597,17 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
         var projects = j.projects || [];
         var settings = j.settings || null;
         var firstAid = j.first_authority_id || 0;
-        var statusL = { draft: <?= json_encode(t('survey.status_draft') ?: 'Piszkozat', JSON_UNESCAPED_UNICODE) ?>, published: <?= json_encode(t('budget.status_published') ?: 'Közzétéve', JSON_UNESCAPED_UNICODE) ?>, closed: <?= json_encode(t('survey.status_closed') ?: 'Lezárva', JSON_UNESCAPED_UNICODE) ?> };
-        var html = '<p class="small text-muted mb-2"><a href="' + (<?= json_encode(app_url('/budget.php'), JSON_UNESCAPED_SLASHES) ?>) + '" target="_blank" rel="noopener">' + (<?= json_encode(t('gov.budget_public_page') ?: 'Nyilvános szavazási oldal', JSON_UNESCAPED_UNICODE) ?>) + '</a>';
-        if (firstAid > 0) html += ' | <a href="' + (<?= json_encode(app_url('/budget_announce.php'), JSON_UNESCAPED_SLASHES) ?>) + '?authority_id=' + firstAid + '" target="_blank" rel="noopener">' + (<?= json_encode(t('gov.budget_announce') ?: 'Kihirdetés', JSON_UNESCAPED_UNICODE) ?>) + '</a>';
+        var statusL = { draft: <?= json_encode(t('survey.status_draft'), JSON_UNESCAPED_UNICODE) ?>, published: <?= json_encode(t('budget.status_published'), JSON_UNESCAPED_UNICODE) ?>, closed: <?= json_encode(t('survey.status_closed'), JSON_UNESCAPED_UNICODE) ?> };
+        var html = '<p class="small text-muted mb-2"><a href="' + (<?= json_encode(app_url('/budget.php'), JSON_UNESCAPED_SLASHES) ?>) + '" target="_blank" rel="noopener">' + (<?= json_encode(t('gov.budget_public_page'), JSON_UNESCAPED_UNICODE) ?>) + '</a>';
+        if (firstAid > 0) html += ' | <a href="' + (<?= json_encode(app_url('/budget_announce.php'), JSON_UNESCAPED_SLASHES) ?>) + '?authority_id=' + firstAid + '" target="_blank" rel="noopener">' + (<?= json_encode(t('gov.budget_announce'), JSON_UNESCAPED_UNICODE) ?>) + '</a>';
         html += '</p>';
-        html += '<div class="card mb-3"><div class="card-body"><h6 class="card-title small">' + (<?= json_encode(t('gov.budget_settings') ?: 'Szavazás beállítások (keret, feltételek)', JSON_UNESCAPED_UNICODE) ?>) + '</h6>';
-        html += '<input type="number" id="govBudgetFrame" class="form-control form-control-sm mb-2" placeholder="' + (<?= json_encode(t('budget.frame_amount') ?: 'Keret összeg (Ft)', JSON_UNESCAPED_UNICODE) ?>) + '" min="0" step="1" value="' + (settings && settings.frame_amount != null ? settings.frame_amount : '') + '">';
-        html += '<textarea id="govBudgetConditions" class="form-control form-control-sm mb-2" rows="2" placeholder="' + (<?= json_encode(t('budget.conditions') ?: 'Feltételek, kizárások', JSON_UNESCAPED_UNICODE) ?>) + '">' + (settings && settings.conditions_text ? String(settings.conditions_text).replace(/</g,'&lt;') : '') + '</textarea>';
-        html += '<textarea id="govBudgetDescSettings" class="form-control form-control-sm mb-2" rows="2" placeholder="' + (<?= json_encode(t('gov.report_description') ?: 'Leírás (szavazási oldal első blokk)', JSON_UNESCAPED_UNICODE) ?>) + '">' + (settings && settings.description ? String(settings.description).replace(/</g,'&lt;') : '') + '</textarea>';
-        html += '<button type="button" class="btn btn-sm btn-primary me-2" id="govBudgetSaveSettings">' + (<?= json_encode(t('gov.save') ?: 'Mentés', JSON_UNESCAPED_UNICODE) ?>) + '</button>';
-        html += '<button type="button" class="btn btn-sm btn-outline-danger" id="govBudgetCloseVoting">' + (<?= json_encode(t('gov.budget_close_voting') ?: 'Lezárás (szavazás vége)', JSON_UNESCAPED_UNICODE) ?>) + '</button></div></div>';
-        html += '<div class="mb-3"><button type="button" class="btn btn-sm btn-outline-primary" id="govBudgetNewBtn">' + (<?= json_encode(t('gov.budget_new_project') ?: 'Új projekt', JSON_UNESCAPED_UNICODE) ?>) + '</button></div>';
+        html += '<div class="card mb-3"><div class="card-body"><h6 class="card-title small">' + (<?= json_encode(t('gov.budget_settings'), JSON_UNESCAPED_UNICODE) ?>) + '</h6>';
+        html += '<input type="number" id="govBudgetFrame" class="form-control form-control-sm mb-2" placeholder="' + (<?= json_encode(t('budget.frame_amount_placeholder'), JSON_UNESCAPED_UNICODE) ?>) + '" min="0" step="1" value="' + (settings && settings.frame_amount != null ? settings.frame_amount : '') + '">';
+        html += '<textarea id="govBudgetConditions" class="form-control form-control-sm mb-2" rows="2" placeholder="' + (<?= json_encode(t('budget.conditions'), JSON_UNESCAPED_UNICODE) ?>) + '">' + (settings && settings.conditions_text ? String(settings.conditions_text).replace(/</g,'&lt;') : '') + '</textarea>';
+        html += '<textarea id="govBudgetDescSettings" class="form-control form-control-sm mb-2" rows="2" placeholder="' + (<?= json_encode(t('gov.budget_voting_page_description_placeholder'), JSON_UNESCAPED_UNICODE) ?>) + '">' + (settings && settings.description ? String(settings.description).replace(/</g,'&lt;') : '') + '</textarea>';
+        html += '<button type="button" class="btn btn-sm btn-primary me-2" id="govBudgetSaveSettings">' + (<?= json_encode(t('gov.save'), JSON_UNESCAPED_UNICODE) ?>) + '</button>';
+        html += '<button type="button" class="btn btn-sm btn-outline-danger" id="govBudgetCloseVoting">' + (<?= json_encode(t('gov.budget_close_voting'), JSON_UNESCAPED_UNICODE) ?>) + '</button></div></div>';
+        html += '<div class="mb-3"><button type="button" class="btn btn-sm btn-outline-primary" id="govBudgetNewBtn">' + (<?= json_encode(t('gov.budget_new_project'), JSON_UNESCAPED_UNICODE) ?>) + '</button></div>';
         if (!projects.length) {
           list.innerHTML = html + '<p class="text-secondary small mb-0">' + (<?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>) + '</p>';
           document.getElementById('govBudgetNewBtn') && document.getElementById('govBudgetNewBtn').addEventListener('click', function(){ showGovBudgetNewForm(list); });
@@ -2616,12 +2616,12 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
             postJson(govBudgetUrl, { action: 'save_settings', frame_amount: frame ? (frame.value === '' ? null : parseFloat(frame.value)) : null, conditions_text: cond ? cond.value : '', description: desc ? desc.value : '' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); else alert((x && x.j && x.j.error) || (<?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>)); });
           });
           document.getElementById('govBudgetCloseVoting') && document.getElementById('govBudgetCloseVoting').addEventListener('click', function(){
-            if (!confirm(<?= json_encode(t('gov.budget_close_confirm') ?: 'Lezárja a szavazást?', JSON_UNESCAPED_UNICODE) ?>)) return;
+            if (!confirm(<?= json_encode(t('gov.budget_close_confirm'), JSON_UNESCAPED_UNICODE) ?>)) return;
             postJson(govBudgetUrl, { action: 'close_voting' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); else alert((x && x.j && x.j.error) || (<?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>)); });
           });
           return;
         }
-        html += '<table class="table table-sm table-hover"><thead><tr><th>#</th><th>' + (<?= json_encode(t('idea.title_placeholder') ?: 'Cím', JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('budget.budget_label') ?: 'Költségvetés', JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('idea.votes') ?: 'Szavazat', JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('common.status'), JSON_UNESCAPED_UNICODE) ?>) + '</th></tr></thead><tbody>';
+        html += '<table class="table table-sm table-hover"><thead><tr><th>#</th><th>' + (<?= json_encode(t('idea.title_placeholder'), JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('budget.budget_label'), JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('idea.votes'), JSON_UNESCAPED_UNICODE) ?>) + '</th><th>' + (<?= json_encode(t('common.status'), JSON_UNESCAPED_UNICODE) ?>) + '</th></tr></thead><tbody>';
         projects.forEach(function(p){
           html += '<tr><td>' + p.id + '</td><td><strong>' + String(p.title||'').replace(/</g,'&lt;') + '</strong>' + (p.description ? '<br><span class="text-muted small">' + String(p.description).replace(/</g,'&lt;').slice(0,80) + (p.description.length > 80 ? '…' : '') + '</span>' : '') + '</td><td>' + Number(p.budget).toLocaleString('hu-HU') + ' Ft</td><td>' + (p.vote_count||0) + '</td><td><select class="form-select form-select-sm gov-budget-status" data-id="' + p.id + '" style="min-width:100px">';
           ['draft','published','closed'].forEach(function(s){ html += '<option value="' + s + '"' + (p.status === s ? ' selected' : '') + '>' + (statusL[s]||s) + '</option>'; });
@@ -2643,15 +2643,15 @@ $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
           postJson(govBudgetUrl, { action: 'save_settings', frame_amount: frame ? (frame.value === '' ? null : parseFloat(frame.value)) : null, conditions_text: cond ? cond.value : '', description: desc ? desc.value : '' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); else alert((x && x.j && x.j.error) || (<?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>)); });
         });
         document.getElementById('govBudgetCloseVoting') && document.getElementById('govBudgetCloseVoting').addEventListener('click', function(){
-          if (!confirm(<?= json_encode(t('gov.budget_close_confirm') ?: 'Lezárja a szavazást? Ezután a felhasználók nem szavazhatnak.', JSON_UNESCAPED_UNICODE) ?>)) return;
+          if (!confirm(<?= json_encode(t('gov.budget_close_confirm'), JSON_UNESCAPED_UNICODE) ?>)) return;
           postJson(govBudgetUrl, { action: 'close_voting' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); else alert((x && x.j && x.j.error) || (<?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>)); });
         });
       })
       .catch(function(){ list.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; });
   }
   function showGovBudgetNewForm(container){
-    var statusL = { draft: <?= json_encode(t('survey.status_draft') ?: 'Piszkozat', JSON_UNESCAPED_UNICODE) ?>, published: <?= json_encode(t('budget.status_published') ?: 'Közzétéve', JSON_UNESCAPED_UNICODE) ?> };
-    var form = '<div class="card mb-3"><div class="card-body"><h6 class="card-title">' + (<?= json_encode(t('gov.budget_new_project') ?: 'Új projekt', JSON_UNESCAPED_UNICODE) ?>) + '</h6><input type="text" id="govBudgetTitle" class="form-control form-control-sm mb-2" placeholder="' + (<?= json_encode(t('idea.title_placeholder') ?: 'Cím', JSON_UNESCAPED_UNICODE) ?>) + '"><textarea id="govBudgetDesc" class="form-control form-control-sm mb-2" rows="2" placeholder="' + (<?= json_encode(t('gov.report_description') ?: 'Leírás', JSON_UNESCAPED_UNICODE) ?>) + '"></textarea><input type="number" id="govBudgetAmount" class="form-control form-control-sm mb-2" placeholder="' + (<?= json_encode(t('budget.budget_label') ?: 'Összeg (Ft)', JSON_UNESCAPED_UNICODE) ?>) + '" min="0" step="1"><button type="button" class="btn btn-sm btn-primary" id="govBudgetSubmit">' + (<?= json_encode(t('gov.save') ?: 'Mentés', JSON_UNESCAPED_UNICODE) ?>) + '</button> <button type="button" class="btn btn-sm btn-outline-secondary" id="govBudgetCancel">' + (<?= json_encode(t('common.cancel') ?: 'Mégse', JSON_UNESCAPED_UNICODE) ?>) + '</button></div></div>';
+    var statusL = { draft: <?= json_encode(t('survey.status_draft'), JSON_UNESCAPED_UNICODE) ?>, published: <?= json_encode(t('budget.status_published'), JSON_UNESCAPED_UNICODE) ?> };
+    var form = '<div class="card mb-3"><div class="card-body"><h6 class="card-title">' + (<?= json_encode(t('gov.budget_new_project'), JSON_UNESCAPED_UNICODE) ?>) + '</h6><input type="text" id="govBudgetTitle" class="form-control form-control-sm mb-2" placeholder="' + (<?= json_encode(t('idea.title_placeholder'), JSON_UNESCAPED_UNICODE) ?>) + '"><textarea id="govBudgetDesc" class="form-control form-control-sm mb-2" rows="2" placeholder="' + (<?= json_encode(t('gov.report_description'), JSON_UNESCAPED_UNICODE) ?>) + '"></textarea><input type="number" id="govBudgetAmount" class="form-control form-control-sm mb-2" placeholder="' + (<?= json_encode(t('budget.amount_placeholder'), JSON_UNESCAPED_UNICODE) ?>) + '" min="0" step="1"><button type="button" class="btn btn-sm btn-primary" id="govBudgetSubmit">' + (<?= json_encode(t('gov.save'), JSON_UNESCAPED_UNICODE) ?>) + '</button> <button type="button" class="btn btn-sm btn-outline-secondary" id="govBudgetCancel">' + (<?= json_encode(t('common.cancel'), JSON_UNESCAPED_UNICODE) ?>) + '</button></div></div>';
     var wrap = document.createElement('div');
     wrap.id = 'govBudgetNewWrap';
     wrap.innerHTML = form;

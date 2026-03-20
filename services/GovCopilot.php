@@ -20,7 +20,7 @@ class GovCopilot
     public function __construct(?int $authorityId, string $scopeTitle = '')
     {
         $this->authorityId = $authorityId > 0 ? $authorityId : null;
-        $this->scopeTitle = trim($scopeTitle) ?: 'Terület';
+        $this->scopeTitle = trim($scopeTitle) ?: t('gov.scope_area');
     }
 
     /**
@@ -100,12 +100,12 @@ class GovCopilot
     {
         $question = trim($question);
         if ($question === '') {
-            return ['ok' => false, 'error' => 'Question is empty'];
+            return ['ok' => false, 'error' => t('gov.copilot_question_required')];
         }
 
         $router = new \AiRouter();
         if (!$router->isEnabled()) {
-            return ['ok' => false, 'error' => 'AI disabled or not configured'];
+            return ['ok' => false, 'error' => t('api.ai_disabled')];
         }
 
         $context = $this->buildContext();
@@ -143,7 +143,7 @@ class GovCopilot
             }
         }
 
-        $answer = $answer ?: 'No answer generated.';
+        $answer = $answer ?: t('gov.copilot_no_answer');
         $modelName = (string)($resp['model'] ?? '');
         $inputHash = hash('sha256', 'gov_copilot|' . $this->scopeTitle . '|' . $question);
         if (function_exists('ai_store_result')) {

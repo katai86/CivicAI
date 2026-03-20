@@ -125,5 +125,5 @@ try {
   json_response(['ok' => true, 'data' => $out]);
 } catch (Throwable $e) {
   if (function_exists('log_error')) log_error('esg_metrics: ' . $e->getMessage());
-  json_response(['ok' => false, 'error' => t('common.error_load') ?: 'Betöltési hiba']);
+  json_response(['ok' => false, 'error' => t('common.error_load')]);
 }

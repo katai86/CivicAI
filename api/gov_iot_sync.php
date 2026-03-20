@@ -14,7 +14,7 @@ if ($uid <= 0 || ($role !== 'govuser' && !in_array($role, ['admin', 'superadmin'
 }
 
 if (get_module_setting('iot', 'enabled') !== '1') {
-  json_response(['ok' => false, 'error' => t('gov.iot_module_disabled') ?: 'IoT modul nincs bekapcsolva']);
+  json_response(['ok' => false, 'error' => t('gov.iot_module_disabled')]);
 }
 
 $tablesOk = false;
@@ -26,7 +26,7 @@ try {
 } catch (Throwable $e) {}
 
 if (!$tablesOk) {
-  json_response(['ok' => false, 'error' => t('gov.iot_tables_missing') ?: 'IoT táblák hiányoznak.']);
+  json_response(['ok' => false, 'error' => t('gov.iot_tables_missing')]);
 }
 
 $authorityId = null;
@@ -40,7 +40,7 @@ if (in_array($role, ['admin', 'superadmin'], true)) {
 }
 
 if ($authorityId <= 0) {
-  json_response(['ok' => false, 'error' => t('gov.no_authority_assigned') ?: 'Nincs hozzárendelt hatóság.']);
+  json_response(['ok' => false, 'error' => t('gov.no_authority_assigned')]);
 }
 
 require_once __DIR__ . '/iot/run_sync.php';
