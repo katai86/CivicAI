@@ -67,6 +67,15 @@ $authorityCities = array_values(array_filter(array_unique(array_map(function($a)
   return trim((string)($a['city'] ?? ''));
 }, $authorities))));
 
+$showEurostatCountryHint = false;
+if (!empty($authorities) && function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled()
+    && function_exists('eu_open_data_feature_enabled') && eu_open_data_feature_enabled('eurostat_enabled')) {
+  $fa = $authorities[0];
+  if (trim((string)($fa['country'] ?? '')) === '') {
+    $showEurostatCountryHint = true;
+  }
+}
+
 $statusFilter = isset($_GET['status_filter']) ? trim((string)$_GET['status_filter']) : '';
 $allowedStatuses = ['pending','approved','rejected','new','needs_info','forwarded','waiting_reply','in_progress','solved','closed'];
 if ($statusFilter !== '' && !in_array($statusFilter, $allowedStatuses, true)) {
@@ -199,10 +208,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
       $err = t('common.error_invalid_data');
     } else {
       try {
-        $stmt = db()->prepare("UPDATE ideas SET status = ?, updated_at = NOW() WHERE id = ?");
-        $stmt->execute([$ideaStatus, $ideaId]);
-        if ($stmt->rowCount() > 0) {
+        if ($isAdmin) {
+          $stmt = db()->prepare("UPDATE ideas SET status = ?, updated_at = NOW() WHERE id = ?");
+          $stmt->execute([$ideaStatus, $ideaId]);
+        } else {
+          if (empty($authorityIds)) {
+            $err = t('common.error_no_permission');
+            $stmt = null;
+          } else {
+            $placeholders = implode(',', array_fill(0, count($authorityIds), '?'));
+            $sql = "UPDATE ideas SET status = ?, updated_at = NOW() WHERE id = ? AND authority_id IN ($placeholders)";
+            $stmt = db()->prepare($sql);
+            $params = array_merge([$ideaStatus, $ideaId], array_map('intval', $authorityIds));
+            $stmt->execute($params);
+          }
+        }
+        if (!isset($err) && isset($stmt) && $stmt->rowCount() > 0) {
           $ok = t('gov.status_updated');
+        } elseif (!isset($err) && isset($stmt) && $stmt->rowCount() === 0) {
+          $err = $isAdmin ? t('gov.idea_not_found') : t('common.error_no_permission');
         }
       } catch (Throwable $e) {
         $err = t('common.error_save_failed');
@@ -536,6 +560,9 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
           <a class="nav-link" href="<?= h(app_url('/')) ?>"><?= h(t('nav.map')) ?></a>
         </li>
         <li class="nav-item">
+          <a class="nav-link" href="<?= h(app_url('/user/settings.php')) ?>"><?= h(t('nav.settings')) ?></a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="<?= h(app_url('/user/logout.php?from_gov=1')) ?>"><?= h(t('nav.logout')) ?></a>
         </li>
       </ul>
@@ -623,7 +650,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
           </li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="citybrain-predictive">
-              <i class="nav-icon bi bi-graph-up-arrow"></i>
+              <i class="nav-icon bi bi-diagram-3"></i>
               <p><?= h(t('gov.city_brain_predictive')) ?></p>
             </a>
           </li>
@@ -670,6 +697,17 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   </aside>
 
   <main class="app-main">
+    <?php
+    $ctxAuth0 = $authorities[0] ?? null;
+    $civicDashboardContext = [
+      'role' => $role,
+      'primary_authority_id' => $ctxAuth0 ? (int)$ctxAuth0['id'] : null,
+      'primary_authority_name' => $ctxAuth0['name'] ?? null,
+      'country' => $ctxAuth0 ? (trim((string)($ctxAuth0['country'] ?? '')) ?: null) : null,
+      'city' => $ctxAuth0 ? (trim((string)($ctxAuth0['city'] ?? '')) ?: null) : null,
+    ];
+    ?>
+    <script>window.CIVIC_DASHBOARD_CONTEXT = <?= json_encode($civicDashboardContext, JSON_UNESCAPED_UNICODE) ?>;</script>
     <div class="app-content">
       <div class="container-fluid">
         <?php if($ok): ?><div class="alert alert-success py-2"><?= h($ok) ?></div><?php endif; ?>
@@ -897,6 +935,9 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
 
         <div class="admin-tab-body" id="tab-analytics" hidden>
           <p class="text-secondary small mb-2"><?= h(t('gov.tab_analytics')) ?> – <?= h(t('gov.heatmap_widget_title')) ?>, <?= h(t('gov.statistics_tab_title')) ?></p>
+          <?php if (!empty($showEurostatCountryHint)): ?>
+          <div class="alert alert-warning py-2 small mb-3" role="status"><?= h(t('gov.eurostat_country_hint')) ?></div>
+          <?php endif; ?>
           <div class="card mb-3">
             <div class="card-body">
               <h6 class="card-title mb-1"><?= h(t('gov.analytics_title')) ?></h6><br>
@@ -1049,6 +1090,17 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
               <h6 class="card-title mb-1"><?= h(t('gov.eu_country_context_title')) ?></h6>
               <p class="text-secondary small mb-2"><?= h(t('gov.eu_country_context_hint')) ?></p>
               <div id="govEuCountryContextContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
+          <?php if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled() && function_exists('eu_open_data_feature_enabled') && (eu_open_data_feature_enabled('eea_enabled') || eu_open_data_feature_enabled('inspire_enabled'))): ?>
+          <div class="card mb-3 border-secondary border-opacity-50">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.eu_eea_inspire_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.eu_eea_inspire_hint')) ?></p>
+              <div id="govEuEeaInspireContent">
                 <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
               </div>
             </div>
@@ -1398,6 +1450,10 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   var govIotSensorHistoryUrl = <?= json_encode(app_url('/api/sensor_metric_history.php'), JSON_UNESCAPED_SLASHES) ?>;
   var heatmapUrl = <?= json_encode(app_url('/api/heatmap_data.php'), JSON_UNESCAPED_SLASHES) ?>;
   var authorityIdForHeatmap = <?= !empty($authorityIds) ? (int)$authorityIds[0] : '0' ?>;
+  function govEuAuthorityQuery(){
+    return (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0)
+      ? ('?authority_id=' + encodeURIComponent(String(authorityIdForHeatmap))) : '';
+  }
   var govStatisticsUrl = <?= json_encode(app_url('/api/gov_statistics.php'), JSON_UNESCAPED_SLASHES) ?>;
   var citybrainDashboardUrl = <?= json_encode(app_url('/api/citybrain_dashboard.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govStatisticsLabels = <?= json_encode([
@@ -1447,6 +1503,14 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     'response_transparency' => t('gov.esg_metric_response_transparency'),
     'resolution_rate' => t('gov.esg_metric_resolution_rate'),
   ], JSON_UNESCAPED_UNICODE) ?>;
+  var govAiFormatLabels = <?= json_encode([
+    'top_problems' => t('gov.ai_top_problems'),
+    'esg_metrics' => t('gov.ai_esg_block'),
+    'citizen_engagement' => t('gov.ai_citizen_engagement'),
+    'next_step' => t('gov.ai_next_step'),
+    'how_to_measure' => t('gov.ai_how_to_measure'),
+    'format_failed' => t('gov.ai_format_failed'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
   var govGreenMetricsUrl = <?= json_encode(app_url('/api/green_metrics.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govGreenMetricsLabels = <?= json_encode([
     'canopy_coverage' => t('gov.green_canopy_coverage'),
@@ -1477,6 +1541,14 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     'year' => t('gov.eu_country_year'),
     'population' => t('gov.eu_country_population'),
     'unemployment' => t('gov.eu_country_unemployment'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govEuEeaInspireUrl = <?= json_encode(app_url('/api/eu_eea_inspire_context.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govEuEeaInspireLabels = <?= json_encode([
+    'eea_headline' => t('gov.eu_eea_headlines'),
+    'inspire_headline' => t('gov.eu_inspire_links'),
+    'geoportal' => t('gov.eu_inspire_geoportal'),
+    'registry' => t('gov.eu_inspire_registry'),
+    'center' => t('gov.eu_inspire_center'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govEuGreenLabels = <?= json_encode([
     'ndvi' => t('gov.eu_ndvi_proxy'),
@@ -1553,6 +1625,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   }
 
   function formatAiData(data){
+    var L = (typeof govAiFormatLabels !== 'undefined' && govAiFormatLabels) ? govAiFormatLabels : {};
     if (!data) return '';
     var text = (data.text || data.summary || '').trim();
     if (text) {
@@ -1572,7 +1645,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     if (text) parts.push(text);
     if (raw && raw.top_problems && Array.isArray(raw.top_problems) && raw.top_problems.length > 0) {
       parts.push('');
-      parts.push('Fő problémák:');
+      parts.push(L.top_problems || '');
       raw.top_problems.forEach(function(p){
         parts.push('• ' + (p.category || p.category_name || '') + (p.why_now ? ': ' + p.why_now : ''));
       });
@@ -1581,16 +1654,16 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     if (raw && (raw.esg_metrics || raw.citizen_engagement)) {
       if (raw.esg_metrics && Array.isArray(raw.esg_metrics)) {
         if (parts.length) parts.push('');
-        parts.push('Fenntarthatósági mutatók:');
+        parts.push(L.esg_metrics || '');
         raw.esg_metrics.forEach(function(m){
-          parts.push('• ' + (m.metric || m.name || '') + ': ' + (m.current_signal != null ? m.current_signal : '') + (m.next_step ? ' – Következő lépés: ' + m.next_step : ''));
+          parts.push('• ' + (m.metric || m.name || '') + ': ' + (m.current_signal != null ? m.current_signal : '') + (m.next_step ? ' – ' + (L.next_step || '') + ': ' + m.next_step : ''));
         });
       }
       if (raw.citizen_engagement && Array.isArray(raw.citizen_engagement)) {
         parts.push('');
-        parts.push('Polgári részvétel:');
+        parts.push(L.citizen_engagement || '');
         raw.citizen_engagement.forEach(function(c){
-          parts.push('• ' + (c.idea || c.title || '') + (c.how_to_measure ? ' – Mérés: ' + c.how_to_measure : ''));
+          parts.push('• ' + (c.idea || c.title || '') + (c.how_to_measure ? ' – ' + (L.how_to_measure || '') + ': ' + c.how_to_measure : ''));
         });
       }
     }
@@ -1602,7 +1675,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   function renderResult(container, pdfBtn, title, data){
     if (!container) return;
     var html = formatAiData(data);
-    if (!html) { container.textContent = (data && (data.text || data.raw)) ? 'Nem sikerült formázni.' : ''; if (pdfBtn) pdfBtn.classList.add('d-none'); return; }
+    if (!html) { var Lf = (typeof govAiFormatLabels !== 'undefined' && govAiFormatLabels) ? govAiFormatLabels : {}; container.textContent = (data && (data.text || data.raw)) ? (Lf.format_failed || '') : ''; if (pdfBtn) pdfBtn.classList.add('d-none'); return; }
     container.innerHTML = html.replace(/\n/g, '<br>');
     container.setAttribute('data-pdf-title', title);
     container.setAttribute('data-pdf-content', html.replace(/<br\s*\/?>/gi, '\n'));
@@ -1672,7 +1745,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       if (key === 'budget') loadGovBudget();
       if (key === 'trees') { initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
       if (key === 'iot') loadGovIotDevices();
-      if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); loadGovEsgMetrics(); }
+      if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); loadGovEuEeaInspire(); loadGovEsgMetrics(); }
       if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); }
       if (key === 'citybrain-live') loadCitybrainLive();
       if (key === 'citybrain-predictive') loadCitybrainPredictive();
@@ -1824,7 +1897,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     var container = document.getElementById('govGreenMetricsContent');
     var euBox = document.getElementById('govEuGreenSatelliteContent');
     if (!container || !govGreenMetricsUrl) return;
-    fetch(govGreenMetricsUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+    fetch(govGreenMetricsUrl + govEuAuthorityQuery(), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var L = govGreenMetricsLabels || {};
       var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
       if (!j.ok || !j.data) {
@@ -1884,7 +1957,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   function loadGovEuAirQuality(){
     var box = document.getElementById('govEuAirQualityContent');
     if (!box || !govEuAirQualityUrl) return;
-    fetch(govEuAirQualityUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+    fetch(govEuAirQualityUrl + govEuAuthorityQuery(), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var L = govEuAirQualityLabels || {};
       var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
       if (!j.ok || !j.data || !j.data.ok) { box.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
@@ -1911,7 +1984,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   function loadGovEuClimate(){
     var box = document.getElementById('govEuClimateContent');
     if (!box || !govEuClimateUrl) return;
-    fetch(govEuClimateUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+    fetch(govEuClimateUrl + govEuAuthorityQuery(), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var L = govEuClimateLabels || {};
       var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
       if (!j.ok || !j.data || !j.data.ok) { box.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
@@ -1934,7 +2007,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   function loadGovEuCountryContext(){
     var box = document.getElementById('govEuCountryContextContent');
     if (!box || !govEuCountryContextUrl) return;
-    fetch(govEuCountryContextUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+    fetch(govEuCountryContextUrl + govEuAuthorityQuery(), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var L = govEuCountryContextLabels || {};
       var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
       if (!j.ok || !j.data || !j.data.ok) { box.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
@@ -1949,6 +2022,45 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       html += '</div>';
       box.innerHTML = html;
     }).catch(function(){ var b = document.getElementById('govEuCountryContextContent'); if (b) b.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  function loadGovEuEeaInspire(){
+    var box = document.getElementById('govEuEeaInspireContent');
+    if (!box || !govEuEeaInspireUrl) return;
+    function escAttr(s){
+      return String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function escText(s){
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    fetch(govEuEeaInspireUrl + govEuAuthorityQuery(), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var L = govEuEeaInspireLabels || {};
+      var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
+      if (!j.ok || !j.data || !j.data.ok) { box.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
+      var d = j.data;
+      var html = '';
+      if (Array.isArray(d.eea_highlights) && d.eea_highlights.length > 0) {
+        html += '<p class="small fw-semibold mb-1">' + escText(L.eea_headline || 'EEA') + '</p><ul class="small mb-3 ps-3">';
+        d.eea_highlights.forEach(function(it){
+          var t = escText(it.title || '');
+          var u = escAttr(it.link || '#');
+          html += '<li class="mb-1"><a href="' + u + '" target="_blank" rel="noopener noreferrer">' + t + '</a></li>';
+        });
+        html += '</ul>';
+      }
+      if (d.inspire && d.inspire.geoportal_url) {
+        html += '<p class="small fw-semibold mb-1">' + escText(L.inspire_headline || 'INSPIRE') + '</p>';
+        html += '<p class="small mb-1"><a href="' + escAttr(d.inspire.geoportal_url) + '" target="_blank" rel="noopener noreferrer">' + escText(L.geoportal || 'Geoportal') + '</a>';
+        if (d.inspire.registry_url) {
+          html += ' · <a href="' + escAttr(d.inspire.registry_url) + '" target="_blank" rel="noopener noreferrer">' + escText(L.registry || 'Registry') + '</a>';
+        }
+        html += '</p>';
+        if (d.inspire.center_lat != null && d.inspire.center_lng != null) {
+          html += '<p class="text-secondary small mb-0">' + escText(L.center || '') + ': ' + escText(String(d.inspire.center_lat)) + ', ' + escText(String(d.inspire.center_lng)) + '</p>';
+        }
+      }
+      if (!html) { box.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
+      box.innerHTML = html;
+    }).catch(function(){ var b = document.getElementById('govEuEeaInspireContent'); if (b) b.innerHTML = '<p class="text-danger small">—</p>'; });
   }
   function loadGovEsgMetrics(){
     var container = document.getElementById('govEsgMetricsContent');

@@ -150,7 +150,7 @@ $LANG_JS = lang_array_for_js();
     <a href="<?= htmlspecialchars($uid > 0 ? app_url('/user/profile.php?id=' . (int)$uid) : app_url('/user/login.php'), ENT_QUOTES, 'UTF-8') ?>" class="item">
       <div class="col">
         <i class="bi bi-person"></i>
-        <strong class="name"><?= htmlspecialchars($uid > 0 ? 'Profil' : t('nav.login'), ENT_QUOTES, 'UTF-8') ?></strong>
+        <strong class="name"><?= htmlspecialchars($uid > 0 ? t('nav.profile') : t('nav.login'), ENT_QUOTES, 'UTF-8') ?></strong>
       </div>
     </a>
     <?php endif; ?>

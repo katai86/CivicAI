@@ -8,23 +8,22 @@ if (!function_exists('db')) {
 }
 
 function level_from_xp(int $xp): array {
-    $levels = [
-        1 => ['name' => 'Katyuvadasz Tanonc',      'min' => 0],
-        2 => ['name' => 'Szemfules Szomszed',      'min' => 100],
-        3 => ['name' => 'Helyi Vagany',           'min' => 250],
-        4 => ['name' => 'Tombfelelos',            'min' => 500],
-        5 => ['name' => 'Jardaszegely-lovag',     'min' => 800],
-        6 => ['name' => 'Keruleti Kiskiraly',     'min' => 1200],
-        7 => ['name' => 'Varosi Vagyonor',        'min' => 1700],
-        8 => ['name' => 'Aszfaltbetyar Fejedelem','min' => 2300],
-        9 => ['name' => 'Varosgazda Fomagus',     'min' => 3000],
-        10 => ['name' => 'A Varos Lelkiismerete', 'min' => 4000],
-    ];
+    $mins = [1 => 0, 2 => 100, 3 => 250, 4 => 500, 5 => 800, 6 => 1200, 7 => 1700, 8 => 2300, 9 => 3000, 10 => 4000];
     $current = 1;
-    foreach ($levels as $lvl => $meta) {
-        if ($xp >= $meta['min']) $current = $lvl;
+    foreach ($mins as $lvl => $min) {
+        if ($xp >= $min) {
+            $current = $lvl;
+        }
     }
-    return ['level' => $current, 'name' => $levels[$current]['name']];
+    $name = 'Level ' . $current;
+    if (function_exists('t')) {
+        $tk = 'level.lvl' . $current;
+        $tr = t($tk);
+        if ($tr !== $tk) {
+            $name = $tr;
+        }
+    }
+    return ['level' => $current, 'name' => $name];
 }
 
 function add_user_xp(int $userId, int $points, string $reason, ?int $reportId = null): void {

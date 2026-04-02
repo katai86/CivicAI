@@ -11,13 +11,13 @@ if ($userId <= 0) {
 }
 $role = current_user_role() ?: '';
 
-$stmt = db()->prepare("SELECT email, display_name, total_xp, level, streak_days FROM users WHERE id=:id LIMIT 1");
+$stmt = db()->prepare("SELECT email, display_name, total_xp, level, streak_days, address_city, address_zip FROM users WHERE id=:id LIMIT 1");
 $stmt->execute([':id' => $userId]);
 $u = $stmt->fetch();
 
 $xp = (int)($u['total_xp'] ?? 0);
 $lvlInfo = level_from_xp($xp);
-$lvlName = $lvlInfo['name'] ?? 'Szint';
+$lvlName = $lvlInfo['name'] ?? t('user.level_fallback');
 $lvlNum = (int)($u['level'] ?? $lvlInfo['level'] ?? 1);
 $streak = (int)($u['streak_days'] ?? 0);
 
@@ -91,14 +91,14 @@ $rankMonth = get_user_rank('month', (int)$userId);
 $rankAll = get_user_rank('all', (int)$userId);
 
 $categories = [
-  'road' => 'Úthiba / kátyú',
-  'sidewalk' => 'Járda / burkolat hiba',
-  'lighting' => 'Közvilágítás',
-  'trash' => 'Szemét / illegális',
-  'green' => 'Zöldterület / veszélyes fa',
-  'traffic' => 'Közlekedés / tábla',
-  'idea' => 'Ötlet / javaslat',
-  'civil_event' => 'Civil esemény',
+  'road' => t('cat.road_desc'),
+  'sidewalk' => t('cat.sidewalk_desc'),
+  'lighting' => t('cat.lighting_desc'),
+  'trash' => t('cat.trash_desc'),
+  'green' => t('cat.green_desc'),
+  'traffic' => t('cat.traffic_desc'),
+  'idea' => t('cat.idea_desc'),
+  'civil_event' => t('cat.civil_event_desc'),
 ];
 $cat = isset($_GET['cat']) ? (string)$_GET['cat'] : 'road';
 if (!isset($categories[$cat])) $cat = 'road';
@@ -131,9 +131,11 @@ $statusLabel = [
   'new' => t('status.new'), 'needs_info' => t('status.needs_info'), 'forwarded' => t('status.forwarded'),
   'waiting_reply' => t('status.waiting_reply'), 'in_progress' => t('status.in_progress'), 'solved' => t('status.solved'), 'closed' => t('status.closed'),
 ];
-$catLabel = [
-  'road'=>t('cat.road_desc'), 'sidewalk'=>t('cat.sidewalk_desc'), 'lighting'=>t('cat.lighting_desc'), 'trash'=>t('cat.trash_desc'),
-  'green'=>t('cat.green_desc'), 'traffic'=>t('cat.traffic_desc'), 'idea'=>t('cat.idea_desc'), 'civil_event'=>t('cat.civil_event_desc'),
+$catLabel = $categories;
+$civicDashboardContext = [
+  'role' => $role,
+  'address_city' => trim((string)($u['address_city'] ?? '')) ?: null,
+  'address_zip' => trim((string)($u['address_zip'] ?? '')) ?: null,
 ];
 ?>
 <!doctype html>
@@ -150,6 +152,7 @@ $catLabel = [
   <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/css/style.css'), ENT_QUOTES, 'UTF-8') ?>">
   <?php endif; ?>
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
+  <script>window.CIVIC_DASHBOARD_CONTEXT = <?= json_encode($civicDashboardContext, JSON_UNESCAPED_UNICODE) ?>;</script>
   <?php if ($isMobile): ?>
   <link rel="stylesheet" href="<?php echo htmlspecialchars(app_url('/assets/mobilekit_civicai.css'), ENT_QUOTES, 'UTF-8'); ?>">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" crossorigin="anonymous">
@@ -170,7 +173,7 @@ $catLabel = [
         <div class="row" style="margin-top:6px">
           <span class="pill"><?= h(t('user.level')) ?>: <b><?php echo h($lvlName); ?></b> (#<?php echo (int)$lvlNum; ?>)</span>
           <span class="pill">XP: <b><?php echo (int)$xp; ?></b></span>
-          <span class="pill">Streak: <b><?php echo (int)$streak; ?></b> <?= h(t('user.streak_days')) ?></span>
+          <span class="pill"><?= h(t('user.streak_label')) ?>: <b><?php echo (int)$streak; ?></b> <?= h(t('user.streak_days')) ?></span>
         </div>
       </div>
       <div class="row">
@@ -181,12 +184,12 @@ $catLabel = [
 
   <?php if (!empty($myTrees)): ?>
     <div class="card" style="margin-bottom:12px">
-      <div class="title"><?= h(t('user.my_trees') ?: 'Fáim (örökbe fogadott)') ?></div>
-      <div class="muted small"><?= h(t('user.my_trees_hint') ?: 'Ezeket a fákat örökbe fogadtad a térképen.') ?></div>
+      <div class="title"><?= h(t('user.my_trees')) ?></div>
+      <div class="muted small"><?= h(t('user.my_trees_hint')) ?></div>
       <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:8px">
         <?php foreach ($myTrees as $tr): ?>
           <a class="pill" href="<?= h(app_url('/?lat=' . (float)$tr['lat'] . '&lng=' . (float)$tr['lng'] . '&zoom=18')) ?>" style="display:inline-flex;align-items:center;gap:6px">
-            🌳 <?= h($tr['species'] ?: (t('tree.unknown_species') ?: 'Fa')) ?>
+            🌳 <?= h($tr['species'] ?: t('tree.label_generic')) ?>
             <?php if (!empty($tr['address'])): ?><span class="muted">– <?= h(mb_substr($tr['address'], 0, 40)) ?><?= mb_strlen($tr['address']) > 40 ? '…' : '' ?></span><?php endif; ?>
           </a>
         <?php endforeach; ?>
@@ -252,7 +255,7 @@ $catLabel = [
                   <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
                 <?php endif; ?>
                 <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
-                  <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                  <?= h($row['display_name'] ?: sprintf(t('user.user_number'), (int)$row['id'])) ?>
                 </a>
                 <span class="muted">(<?= (int)$row['points'] ?> XP)</span>
               </div>
@@ -275,7 +278,7 @@ $catLabel = [
                   <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
                 <?php endif; ?>
                 <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
-                  <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                  <?= h($row['display_name'] ?: sprintf(t('user.user_number'), (int)$row['id'])) ?>
                 </a>
                 <span class="muted">(<?= (int)$row['points'] ?> XP)</span>
               </div>
@@ -298,7 +301,7 @@ $catLabel = [
                   <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
                 <?php endif; ?>
                 <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
-                  <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                  <?= h($row['display_name'] ?: sprintf(t('user.user_number'), (int)$row['id'])) ?>
                 </a>
                 <span class="muted">(<?= (int)$row['points'] ?> XP)</span>
               </div>
@@ -318,9 +321,9 @@ $catLabel = [
         <?php endforeach; ?>
       </div>
       <div class="row" style="gap:8px;margin:8px 0 0 0;flex-wrap:wrap">
-        <span class="pill"><?= h(t('user.rank_week')) ?>: <?= $rankCatWeek ? ('#' . (int)$rankCatWeek['rank'] . ' • ' . (int)$rankCatWeek['count'] . ' db') : t('user.no_rank') ?></span>
-        <span class="pill"><?= h(t('user.rank_month')) ?>: <?= $rankCatMonth ? ('#' . (int)$rankCatMonth['rank'] . ' • ' . (int)$rankCatMonth['count'] . ' db') : t('user.no_rank') ?></span>
-        <span class="pill"><?= h(t('user.rank_all')) ?>: <?= $rankCatAll ? ('#' . (int)$rankCatAll['rank'] . ' • ' . (int)$rankCatAll['count'] . ' db') : t('user.no_rank') ?></span>
+        <span class="pill"><?= h(t('user.rank_week')) ?>: <?= $rankCatWeek ? ('#' . (int)$rankCatWeek['rank'] . ' • ' . (int)$rankCatWeek['count'] . ' ' . h(t('user.count_unit'))) : t('user.no_rank') ?></span>
+        <span class="pill"><?= h(t('user.rank_month')) ?>: <?= $rankCatMonth ? ('#' . (int)$rankCatMonth['rank'] . ' • ' . (int)$rankCatMonth['count'] . ' ' . h(t('user.count_unit'))) : t('user.no_rank') ?></span>
+        <span class="pill"><?= h(t('user.rank_all')) ?>: <?= $rankCatAll ? ('#' . (int)$rankCatAll['rank'] . ' • ' . (int)$rankCatAll['count'] . ' ' . h(t('user.count_unit'))) : t('user.no_rank') ?></span>
       </div>
       <div class="row" style="gap:8px;margin-top:8px">
         <div style="min-width:220px">
@@ -339,9 +342,9 @@ $catLabel = [
                   <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
                 <?php endif; ?>
                 <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
-                  <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                  <?= h($row['display_name'] ?: sprintf(t('user.user_number'), (int)$row['id'])) ?>
                 </a>
-                <span class="muted">(<?= (int)$row['count'] ?> db)</span>
+                <span class="muted">(<?= (int)$row['count'] ?> <?= h(t('user.count_unit')) ?>)</span>
               </div>
             <?php endforeach; ?>
           <?php endif; ?>
@@ -362,9 +365,9 @@ $catLabel = [
                   <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
                 <?php endif; ?>
                 <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
-                  <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                  <?= h($row['display_name'] ?: sprintf(t('user.user_number'), (int)$row['id'])) ?>
                 </a>
-                <span class="muted">(<?= (int)$row['count'] ?> db)</span>
+                <span class="muted">(<?= (int)$row['count'] ?> <?= h(t('user.count_unit')) ?>)</span>
               </div>
             <?php endforeach; ?>
           <?php endif; ?>
@@ -385,9 +388,9 @@ $catLabel = [
                   <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
                 <?php endif; ?>
                 <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
-                  <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                  <?= h($row['display_name'] ?: sprintf(t('user.user_number'), (int)$row['id'])) ?>
                 </a>
-                <span class="muted">(<?= (int)$row['count'] ?> db)</span>
+                <span class="muted">(<?= (int)$row['count'] ?> <?= h(t('user.count_unit')) ?>)</span>
               </div>
             <?php endforeach; ?>
           <?php endif; ?>

@@ -12,7 +12,7 @@ if ($uid <= 0) {
     exit;
   }
   http_response_code(400);
-  echo 'Hibás felhasználó.';
+  echo htmlspecialchars(t('user.profile_error_bad_id'), ENT_QUOTES, 'UTF-8');
   exit;
 }
 
@@ -26,18 +26,18 @@ $stmt->execute([':id' => $uid]);
 $u = $stmt->fetch();
 if (!$u) {
   http_response_code(404);
-  echo 'Felhasznalo nem talalhato.';
+  echo htmlspecialchars(t('user.profile_error_not_found'), ENT_QUOTES, 'UTF-8');
   exit;
 }
 if ((int)$u['profile_public'] !== 1) {
   http_response_code(403);
-  echo 'Ez a profil nem nyilvanos.';
+  echo htmlspecialchars(t('user.profile_error_private'), ENT_QUOTES, 'UTF-8');
   exit;
 }
 
 $xp = (int)($u['total_xp'] ?? 0);
 $lvlInfo = level_from_xp($xp);
-$lvlName = $lvlInfo['name'] ?? 'Szint';
+$lvlName = $lvlInfo['name'] ?? t('user.level_fallback');
 $lvlNum = (int)($u['level'] ?? $lvlInfo['level'] ?? 1);
 $streak = (int)($u['streak_days'] ?? 0);
 
@@ -94,14 +94,14 @@ if ($viewerId && $viewerId !== (int)$u['id']) {
 }
 
 $categories = [
-  'road' => 'Úthiba / kátyú',
-  'sidewalk' => 'Járda / burkolat hiba',
-  'lighting' => 'Közvilágítás',
-  'trash' => 'Szemét / illegális',
-  'green' => 'Zöldterület / veszélyes fa',
-  'traffic' => 'Közlekedés / tábla',
-  'idea' => 'Ötlet / javaslat',
-  'civil_event' => 'Civil esemény',
+  'road' => t('cat.road_desc'),
+  'sidewalk' => t('cat.sidewalk_desc'),
+  'lighting' => t('cat.lighting_desc'),
+  'trash' => t('cat.trash_desc'),
+  'green' => t('cat.green_desc'),
+  'traffic' => t('cat.traffic_desc'),
+  'idea' => t('cat.idea_desc'),
+  'civil_event' => t('cat.civil_event_desc'),
 ];
 $cat = isset($_GET['cat']) ? (string)$_GET['cat'] : 'road';
 if (!isset($categories[$cat])) $cat = 'road';
@@ -163,7 +163,7 @@ function avatar_url($filename){
         e.preventDefault();
         const btn = frm.querySelector('button[type="submit"]');
         const origText = btn ? btn.textContent : '';
-        if (btn) { btn.disabled = true; btn.textContent = '...'; }
+        if (btn) { btn.disabled = true; btn.textContent = <?= json_encode(t('common.loading_ellipsis'), JSON_UNESCAPED_UNICODE) ?>; }
         const fd = new FormData(frm);
         const body = {};
         fd.forEach(function(v,k){ body[k]=v; });
@@ -186,7 +186,7 @@ function avatar_url($filename){
 </head>
 <body class="page<?= $isMobile ? ' civicai-mobile' : '' ?>">
 <?php if ($isMobile): ?>
-  <?php $uid = $viewerId; $role = function_exists('current_user_role') ? (current_user_role() ?: 'guest') : 'guest'; $mobilePageTitle = $u['display_name'] ?: ('User #' . $u['id']); $mobileActiveTab = ''; $mobileBackUrl = app_url('/leaderboard.php'); require __DIR__ . '/../inc_mobile_header.php'; ?>
+  <?php $uid = $viewerId; $role = function_exists('current_user_role') ? (current_user_role() ?: 'guest') : 'guest'; $mobilePageTitle = $u['display_name'] ?: sprintf(t('user.user_number'), (int)$u['id']); $mobileActiveTab = ''; $mobileBackUrl = app_url('/leaderboard.php'); require __DIR__ . '/../inc_mobile_header.php'; ?>
 <?php else: ?>
   <?php $uid = $viewerId; $role = function_exists('current_user_role') ? (current_user_role() ?: 'guest') : 'guest'; require __DIR__ . '/../inc_desktop_topbar.php'; ?>
 <?php endif; ?>
@@ -195,16 +195,16 @@ function avatar_url($filename){
   <div class="card">
     <div class="row">
       <?php if (!empty($u['avatar_filename'])): ?>
-        <img src="<?= h(app_url('/uploads/avatars/' . $u['avatar_filename'])) ?>" alt="avatar" style="width:72px;height:72px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
+        <img src="<?= h(app_url('/uploads/avatars/' . $u['avatar_filename'])) ?>" alt="<?= h(t('user.avatar_alt')) ?>" style="width:72px;height:72px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
       <?php else: ?>
         <div style="width:72px;height:72px;border-radius:999px;border:1px solid #e5e7eb;background:#f3f4f6;display:grid;place-items:center;color:#6b7280">?</div>
       <?php endif; ?>
       <div>
-        <div style="font-weight:900;font-size:18px"><?= h($u['display_name'] ?: ('User #' . $u['id'])) ?></div>
+        <div style="font-weight:900;font-size:18px"><?= h($u['display_name'] ?: sprintf(t('user.user_number'), (int)$u['id'])) ?></div>
         <div class="row" style="margin-top:6px">
-          <span class="pill">Szint: <b><?= h($lvlName) ?></b> (#<?= (int)$lvlNum ?>)</span>
+          <span class="pill"><?= h(t('user.level')) ?>: <b><?= h($lvlName) ?></b> (#<?= (int)$lvlNum ?>)</span>
           <span class="pill">XP: <b><?= (int)$xp ?></b></span>
-          <span class="pill">Streak: <b><?= (int)$streak ?></b> nap</span>
+          <span class="pill"><?= h(t('user.streak_label')) ?>: <b><?= (int)$streak ?></b> <?= h(t('user.streak_days')) ?></span>
         </div>
         <?php if ($viewerId && $viewerId !== (int)$u['id']): ?>
           <div class="actions" style="margin-top:10px">
@@ -212,32 +212,32 @@ function avatar_url($filename){
               <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
                 <input type="hidden" name="action" value="send">
                 <input type="hidden" name="target_id" value="<?= (int)$u['id'] ?>">
-                <button class="btn primary" type="submit">Barát kérése</button>
+                <button class="btn primary" type="submit"><?= h(t('friends.request_send')) ?></button>
               </form>
             <?php elseif ($friendState === 'outgoing'): ?>
-              <span class="pill">Kérés elküldve</span>
+              <span class="pill"><?= h(t('friends.request_sent')) ?></span>
               <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
                 <input type="hidden" name="action" value="cancel">
                 <input type="hidden" name="target_id" value="<?= (int)$u['id'] ?>">
-                <button class="btn soft" type="submit">Visszavonás</button>
+                <button class="btn soft" type="submit"><?= h(t('user.cancel')) ?></button>
               </form>
             <?php elseif ($friendState === 'incoming'): ?>
               <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
                 <input type="hidden" name="action" value="accept">
                 <input type="hidden" name="request_id" value="<?= (int)$friendReqId ?>">
-                <button class="btn primary" type="submit">Elfogadás</button>
+                <button class="btn primary" type="submit"><?= h(t('user.accept')) ?></button>
               </form>
               <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
                 <input type="hidden" name="action" value="decline">
                 <input type="hidden" name="request_id" value="<?= (int)$friendReqId ?>">
-                <button class="btn soft" type="submit">Elutasítás</button>
+                <button class="btn soft" type="submit"><?= h(t('user.decline')) ?></button>
               </form>
             <?php else: ?>
-              <span class="pill">Barátok vagytok</span>
+              <span class="pill"><?= h(t('friends.you_are_friends')) ?></span>
               <form method="post" action="<?= h(app_url('/api/friend_request.php')) ?>">
                 <input type="hidden" name="action" value="remove">
                 <input type="hidden" name="target_id" value="<?= (int)$u['id'] ?>">
-                <button class="btn soft" type="submit">Eltávolítás</button>
+                <button class="btn soft" type="submit"><?= h(t('user.remove')) ?></button>
               </form>
             <?php endif; ?>
           </div>
@@ -247,17 +247,17 @@ function avatar_url($filename){
   </div>
 
   <div class="card" style="margin-top:12px">
-    <div class="title">Toplista (Top 10)</div>
+    <div class="title"><?= h(t('user.leaderboard_top')) ?></div>
     <div class="row" style="gap:8px;margin:8px 0 0 0;flex-wrap:wrap">
-      <span class="pill">Helyezésem (heti): <?= $rankWeek ? ('#' . (int)$rankWeek['rank'] . ' • ' . (int)$rankWeek['points'] . ' XP') : 'nincs adat' ?></span>
-      <span class="pill">Helyezésem (havi): <?= $rankMonth ? ('#' . (int)$rankMonth['rank'] . ' • ' . (int)$rankMonth['points'] . ' XP') : 'nincs adat' ?></span>
-      <span class="pill">Helyezésem (összes): <?= $rankAll ? ('#' . (int)$rankAll['rank'] . ' • ' . (int)$rankAll['points'] . ' XP') : 'nincs adat' ?></span>
+      <span class="pill"><?= h(t('user.rank_week')) ?>: <?= $rankWeek ? ('#' . (int)$rankWeek['rank'] . ' • ' . (int)$rankWeek['points'] . ' XP') : h(t('user.no_rank')) ?></span>
+      <span class="pill"><?= h(t('user.rank_month')) ?>: <?= $rankMonth ? ('#' . (int)$rankMonth['rank'] . ' • ' . (int)$rankMonth['points'] . ' XP') : h(t('user.no_rank')) ?></span>
+      <span class="pill"><?= h(t('user.rank_all')) ?>: <?= $rankAll ? ('#' . (int)$rankAll['rank'] . ' • ' . (int)$rankAll['points'] . ' XP') : h(t('user.no_rank')) ?></span>
     </div>
     <div class="row" style="gap:8px;margin-top:8px">
       <div style="min-width:220px">
-        <div class="small"><b>Heti</b></div>
+        <div class="small"><b><?= h(t('user.period_week')) ?></b></div>
         <?php if (!$lbWeek): ?>
-          <div class="muted">Nincs adat.</div>
+          <div class="muted"><?= h(t('gov.no_data')) ?></div>
         <?php else: ?>
           <?php foreach ($lbWeek as $i => $row): ?>
             <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
@@ -270,7 +270,7 @@ function avatar_url($filename){
                 <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
               <?php endif; ?>
               <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
-                <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                <?= h($row['display_name'] ?: sprintf(t('user.user_number'), (int)$row['id'])) ?>
               </a>
               <span class="muted">(<?= (int)$row['points'] ?> XP)</span>
             </div>
@@ -278,9 +278,9 @@ function avatar_url($filename){
         <?php endif; ?>
       </div>
       <div style="min-width:220px">
-        <div class="small"><b>Havi</b></div>
+        <div class="small"><b><?= h(t('user.period_month')) ?></b></div>
         <?php if (!$lbMonth): ?>
-          <div class="muted">Nincs adat.</div>
+          <div class="muted"><?= h(t('gov.no_data')) ?></div>
         <?php else: ?>
           <?php foreach ($lbMonth as $i => $row): ?>
             <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
@@ -293,7 +293,7 @@ function avatar_url($filename){
                 <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
               <?php endif; ?>
               <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
-                <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                <?= h($row['display_name'] ?: sprintf(t('user.user_number'), (int)$row['id'])) ?>
               </a>
               <span class="muted">(<?= (int)$row['points'] ?> XP)</span>
             </div>
@@ -301,9 +301,9 @@ function avatar_url($filename){
         <?php endif; ?>
       </div>
       <div style="min-width:220px">
-        <div class="small"><b>Összesített</b></div>
+        <div class="small"><b><?= h(t('user.period_all')) ?></b></div>
         <?php if (!$lbAll): ?>
-          <div class="muted">Nincs adat.</div>
+          <div class="muted"><?= h(t('gov.no_data')) ?></div>
         <?php else: ?>
           <?php foreach ($lbAll as $i => $row): ?>
             <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
@@ -316,7 +316,7 @@ function avatar_url($filename){
                 <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
               <?php endif; ?>
               <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
-                <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                <?= h($row['display_name'] ?: sprintf(t('user.user_number'), (int)$row['id'])) ?>
               </a>
               <span class="muted">(<?= (int)$row['points'] ?> XP)</span>
             </div>
@@ -327,7 +327,7 @@ function avatar_url($filename){
   </div>
 
   <div class="card" style="margin-top:12px">
-    <div class="title">Kategória toplista (Top 10)</div>
+    <div class="title"><?= h(t('user.category_top')) ?></div>
     <div class="row" style="gap:6px;margin:8px 0 0 0;flex-wrap:wrap">
       <?php foreach ($categories as $key => $label): ?>
         <a class="pill" href="<?= h(app_url('/user/profile.php?id=' . (int)$u['id'] . '&cat=' . $key)) ?>" style="<?= $key === $cat ? 'border-color:#c7d2fe;background:#eef2ff;color:#1e3a8a' : '' ?>">
@@ -336,15 +336,15 @@ function avatar_url($filename){
       <?php endforeach; ?>
     </div>
     <div class="row" style="gap:8px;margin:8px 0 0 0;flex-wrap:wrap">
-      <span class="pill">Helyezésem (heti): <?= $rankCatWeek ? ('#' . (int)$rankCatWeek['rank'] . ' • ' . (int)$rankCatWeek['count'] . ' db') : 'nincs adat' ?></span>
-      <span class="pill">Helyezésem (havi): <?= $rankCatMonth ? ('#' . (int)$rankCatMonth['rank'] . ' • ' . (int)$rankCatMonth['count'] . ' db') : 'nincs adat' ?></span>
-      <span class="pill">Helyezésem (összes): <?= $rankCatAll ? ('#' . (int)$rankCatAll['rank'] . ' • ' . (int)$rankCatAll['count'] . ' db') : 'nincs adat' ?></span>
+      <span class="pill"><?= h(t('user.rank_week')) ?>: <?= $rankCatWeek ? ('#' . (int)$rankCatWeek['rank'] . ' • ' . (int)$rankCatWeek['count'] . ' ' . h(t('user.count_unit'))) : h(t('user.no_rank')) ?></span>
+      <span class="pill"><?= h(t('user.rank_month')) ?>: <?= $rankCatMonth ? ('#' . (int)$rankCatMonth['rank'] . ' • ' . (int)$rankCatMonth['count'] . ' ' . h(t('user.count_unit'))) : h(t('user.no_rank')) ?></span>
+      <span class="pill"><?= h(t('user.rank_all')) ?>: <?= $rankCatAll ? ('#' . (int)$rankCatAll['rank'] . ' • ' . (int)$rankCatAll['count'] . ' ' . h(t('user.count_unit'))) : h(t('user.no_rank')) ?></span>
     </div>
     <div class="row" style="gap:8px;margin-top:8px">
       <div style="min-width:220px">
-        <div class="small"><b>Heti</b></div>
+        <div class="small"><b><?= h(t('user.period_week')) ?></b></div>
         <?php if (!$lbCatWeek): ?>
-          <div class="muted">Nincs adat.</div>
+          <div class="muted"><?= h(t('gov.no_data')) ?></div>
         <?php else: ?>
           <?php foreach ($lbCatWeek as $i => $row): ?>
             <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
@@ -357,17 +357,17 @@ function avatar_url($filename){
                 <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
               <?php endif; ?>
               <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
-                <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                <?= h($row['display_name'] ?: sprintf(t('user.user_number'), (int)$row['id'])) ?>
               </a>
-              <span class="muted">(<?= (int)$row['count'] ?> db)</span>
+              <span class="muted">(<?= (int)$row['count'] ?> <?= h(t('user.count_unit')) ?>)</span>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>
       </div>
       <div style="min-width:220px">
-        <div class="small"><b>Havi</b></div>
+        <div class="small"><b><?= h(t('user.period_month')) ?></b></div>
         <?php if (!$lbCatMonth): ?>
-          <div class="muted">Nincs adat.</div>
+          <div class="muted"><?= h(t('gov.no_data')) ?></div>
         <?php else: ?>
           <?php foreach ($lbCatMonth as $i => $row): ?>
             <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
@@ -380,17 +380,17 @@ function avatar_url($filename){
                 <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
               <?php endif; ?>
               <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
-                <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                <?= h($row['display_name'] ?: sprintf(t('user.user_number'), (int)$row['id'])) ?>
               </a>
-              <span class="muted">(<?= (int)$row['count'] ?> db)</span>
+              <span class="muted">(<?= (int)$row['count'] ?> <?= h(t('user.count_unit')) ?>)</span>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>
       </div>
       <div style="min-width:220px">
-        <div class="small"><b>Összesített</b></div>
+        <div class="small"><b><?= h(t('user.period_all')) ?></b></div>
         <?php if (!$lbCatAll): ?>
-          <div class="muted">Nincs adat.</div>
+          <div class="muted"><?= h(t('gov.no_data')) ?></div>
         <?php else: ?>
           <?php foreach ($lbCatAll as $i => $row): ?>
             <?php $lvlBadge = badge_icon_url('level_' . (int)$row['level']); ?>
@@ -403,9 +403,9 @@ function avatar_url($filename){
                 <img src="<?= h($lvlBadge) ?>" alt="" style="width:22px;height:22px;object-fit:cover">
               <?php endif; ?>
               <a href="<?= h(app_url('/user/profile.php?id=' . (int)$row['id'])) ?>" target="_blank">
-                <?= h($row['display_name'] ?: ('User #' . $row['id'])) ?>
+                <?= h($row['display_name'] ?: sprintf(t('user.user_number'), (int)$row['id'])) ?>
               </a>
-              <span class="muted">(<?= (int)$row['count'] ?> db)</span>
+              <span class="muted">(<?= (int)$row['count'] ?> <?= h(t('user.count_unit')) ?>)</span>
             </div>
           <?php endforeach; ?>
         <?php endif; ?>
@@ -415,9 +415,9 @@ function avatar_url($filename){
 
   <div class="grid cols-2" style="margin-top:12px">
     <div class="card">
-      <div class="title">Jelvenyek</div>
+      <div class="title"><?= h(t('user.badges')) ?></div>
       <?php if (!$badges): ?>
-        <div class="muted">Meg nincs jelvenye.</div>
+        <div class="muted"><?= h(t('user.no_badges_profile')) ?></div>
       <?php else: ?>
         <div class="row" style="margin-top:8px">
           <?php foreach ($badges as $b): ?>
@@ -443,9 +443,9 @@ function avatar_url($filename){
     </div>
 
     <div class="card">
-      <div class="title">Utolso bejelentesek</div>
+      <div class="title"><?= h(t('user.recent_reports')) ?></div>
       <?php if (!$reports): ?>
-        <div class="muted">Nincs megjelenitheto bejelentes.</div>
+        <div class="muted"><?= h(t('user.no_reports_on_profile')) ?></div>
       <?php else: ?>
         <?php foreach ($reports as $r): ?>
           <div style="margin-bottom:10px">

@@ -13,7 +13,7 @@ if ($userId <= 0) {
 $rid = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($rid <= 0) {
   http_response_code(400);
-  echo 'Hibás ügyazonosító.';
+  echo htmlspecialchars(t('report.error_bad_id'), ENT_QUOTES, 'UTF-8');
   exit;
 }
 
@@ -23,33 +23,33 @@ $r = $stmt->fetch();
 
 if (!$r) {
   http_response_code(404);
-  echo 'Nem található ilyen ügy (vagy nem a tied).';
+  echo htmlspecialchars(t('report.error_not_found'), ENT_QUOTES, 'UTF-8');
   exit;
 }
 
 $caseNo = case_number((int)$r['id'], (string)$r['created_at']);
 
 $statusLabel = [
-  'pending' => 'Ellenőrzés alatt',
-  'approved' => 'Publikálva',
-  'rejected' => 'Elutasítva',
-  'new' => 'Új',
-  'needs_info' => 'Kiegészítésre vár',
-  'forwarded' => 'Továbbítva',
-  'waiting_reply' => 'Válaszra vár',
-  'in_progress' => 'Folyamatban',
-  'solved' => 'Megoldva',
-  'closed' => 'Lezárva',
+  'pending' => t('status.pending'),
+  'approved' => t('status.approved'),
+  'rejected' => t('status.rejected'),
+  'new' => t('status.new'),
+  'needs_info' => t('status.needs_info'),
+  'forwarded' => t('status.forwarded'),
+  'waiting_reply' => t('status.waiting_reply'),
+  'in_progress' => t('status.in_progress'),
+  'solved' => t('status.solved'),
+  'closed' => t('status.closed'),
 ];
 $catLabel = [
-  'road'=>'Úthiba / kátyú',
-  'sidewalk'=>'Járda / burkolat hiba',
-  'lighting'=>'Közvilágítás',
-  'trash'=>'Szemét / illegális',
-  'green'=>'Zöldterület / veszélyes fa',
-  'traffic'=>'Közlekedés / tábla',
-  'idea'=>'Ötlet / javaslat',
-  'civil_event'=>'Civil esemény',
+  'road' => t('cat.road_desc'),
+  'sidewalk' => t('cat.sidewalk_desc'),
+  'lighting' => t('cat.lighting_desc'),
+  'trash' => t('cat.trash_desc'),
+  'green' => t('cat.green_desc'),
+  'traffic' => t('cat.traffic_desc'),
+  'idea' => t('cat.idea_desc'),
+  'civil_event' => t('cat.civil_event_desc'),
 ];
 
 $st = (string)$r['status'];
@@ -114,48 +114,48 @@ $role = function_exists('current_user_role') ? (current_user_role() ?: 'user') :
   <div class="card">
     <div class="top">
       <div>
-        <h1>Saját ügy – <?= h($caseNo) ?></h1>
+        <h1><?= h(t('report.heading')) ?> – <?= h($caseNo) ?></h1>
         <div class="meta">
-          Bejelentés ID: <b>#<?= (int)$rid ?></b> • Kategória: <b><?= h($catHuman) ?></b><br>
-          Létrehozva: <b><?= h($r['created_at']) ?></b> • Frissítve: <b><?= h($updatedAt) ?></b>
+          <?= h(t('report.meta_id')) ?>: <b>#<?= (int)$rid ?></b> • <?= h(t('report.meta_category')) ?>: <b><?= h($catHuman) ?></b><br>
+          <?= h(t('report.meta_created')) ?>: <b><?= h($r['created_at']) ?></b> • <?= h(t('report.meta_updated')) ?>: <b><?= h($updatedAt) ?></b>
         </div>
       </div>
-      <div class="pill">Státusz: <b><?= h($stHuman) ?></b></div>
+      <div class="pill"><?= h(t('report.status_label')) ?>: <b><?= h($stHuman) ?></b></div>
     </div>
 
     <div class="grid cols-split" style="margin-top:12px">
       <div class="card" style="box-shadow:none">
-        <div style="font-weight:900;margin-bottom:6px">Leírás</div>
+        <div style="font-weight:900;margin-bottom:6px"><?= h(t('report.section_description')) ?></div>
         <div><?= nl2br(h($r['description'])) ?></div>
 
         <?php if (!empty($r['title'])): ?>
-          <div style="margin-top:10px" class="small"><b>Rövid cím:</b> <?= h($r['title']) ?></div>
+          <div style="margin-top:10px" class="small"><b><?= h(t('user.short_title')) ?>:</b> <?= h($r['title']) ?></div>
         <?php endif; ?>
       </div>
 
       <div class="card" style="box-shadow:none">
-        <div style="font-weight:900;margin-bottom:6px">Helyszín</div>
-        <div class="small"><b>Cím (csak neked):</b><br><?= h($r['address_approx'] ?: '—') ?></div>
+        <div style="font-weight:900;margin-bottom:6px"><?= h(t('report.section_location')) ?></div>
+        <div class="small"><b><?= h(t('report.address_private')) ?>:</b><br><?= h($r['address_approx'] ?: '—') ?></div>
         <div class="actions">
-          <a class="btn" href="<?= h($osmUrl) ?>" target="_blank" rel="noopener">Megnyitás térképen</a>
-          <a class="btn" href="<?= h(app_url('/user/my.php')) ?>">Vissza a listához</a>
+          <a class="btn" href="<?= h($osmUrl) ?>" target="_blank" rel="noopener"><?= h(t('report.open_map')) ?></a>
+          <a class="btn" href="<?= h(app_url('/user/my.php')) ?>"><?= h(t('report.back_list')) ?></a>
         </div>
 
-        <div style="margin-top:12px;font-weight:900">Értesítések</div>
-        <div class="small"><?= ((int)$r['notify_enabled'] === 1) ? 'Bekapcsolva' : 'Kikapcsolva' ?></div>
+        <div style="margin-top:12px;font-weight:900"><?= h(t('report.notifications')) ?></div>
+        <div class="small"><?= ((int)$r['notify_enabled'] === 1) ? h(t('report.notify_on')) : h(t('report.notify_off')) ?></div>
         <?php if ($trackUrl): ?>
           <div class="actions">
-            <a class="btn primary" href="<?= h($trackUrl) ?>">Követő link (token)</a>
-            <a class="btn" href="<?= h(app_url('/api/notify_unsubscribe.php?token=' . rawurlencode((string)$r['notify_token']))) ?>">Leiratkozás</a>
+            <a class="btn primary" href="<?= h($trackUrl) ?>"><?= h(t('report.track_link')) ?></a>
+            <a class="btn" href="<?= h(app_url('/api/notify_unsubscribe.php?token=' . rawurlencode((string)$r['notify_token']))) ?>"><?= h(t('report.unsubscribe')) ?></a>
           </div>
         <?php endif; ?>
 
-        <div style="margin-top:12px;font-weight:900">Képcsatolmányok</div>
-        <div class="small">Csak te (és az admin) látja. JPG/PNG/WebP, max. 6 MB.</div>
+        <div style="margin-top:12px;font-weight:900"><?= h(t('report.attachments')) ?></div>
+        <div class="small"><?= h(t('report.attachments_hint')) ?></div>
 
         <div class="urow" style="margin-top:8px">
           <input id="file" type="file" accept="image/*">
-          <button id="uploadBtn" class="btn primary" type="button">Feltöltés</button>
+          <button id="uploadBtn" class="btn primary" type="button"><?= h(t('report.upload')) ?></button>
           <span id="upMsg" class="small"></span>
         </div>
 
@@ -165,16 +165,16 @@ $role = function_exists('current_user_role') ? (current_user_role() ?: 'user') :
   </div>
 
   <div class="card">
-    <div style="font-weight:900;margin-bottom:8px">Státusz-napló</div>
+    <div style="font-weight:900;margin-bottom:8px"><?= h(t('report.status_log')) ?></div>
     <?php if (!$logs): ?>
-      <div class="small">Még nincs státuszváltozás rögzítve.</div>
+      <div class="small"><?= h(t('report.status_log_empty')) ?></div>
     <?php else: ?>
       <table>
         <thead>
           <tr>
-            <th>Időpont</th>
-            <th>Változás</th>
-            <th>Megjegyzés</th>
+            <th><?= h(t('report.col_time')) ?></th>
+            <th><?= h(t('report.col_change')) ?></th>
+            <th><?= h(t('report.col_note')) ?></th>
           </tr>
         </thead>
         <tbody>
@@ -203,6 +203,19 @@ $role = function_exists('current_user_role') ? (current_user_role() ?: 'user') :
   <script src="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/js/lib/bootstrap.min.js')) ?>"></script>
   <script src="<?= h(app_url('/Mobilekit_v2-9-1/HTML/assets/js/base.js')) ?>"></script>
 <?php endif; ?>
+<script>
+window.REPORT_PAGE_I18N = <?= json_encode([
+  'no_attachments' => t('report.js_no_attachments'),
+  'delete' => t('report.js_delete'),
+  'delete_confirm' => t('report.js_delete_confirm'),
+  'delete_error' => t('report.js_delete_error'),
+  'load_error' => t('report.js_load_error'),
+  'pick_file' => t('report.js_pick_file'),
+  'uploading' => t('report.js_uploading'),
+  'upload_error' => t('report.js_upload_error'),
+  'upload_ok' => t('report.js_upload_ok'),
+], JSON_UNESCAPED_UNICODE) ?>;
+</script>
 <script src="<?= h(app_url('/assets/user/report.js')) ?>"></script>
 </body>
 </html>

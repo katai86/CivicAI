@@ -1,6 +1,7 @@
 (() => {
   const root = document.body;
   if (!root) return;
+  const I18N = (typeof window.REPORT_PAGE_I18N === 'object' && window.REPORT_PAGE_I18N) ? window.REPORT_PAGE_I18N : {};
   const rid = Number(root.dataset.reportId || 0);
   const apiList = root.dataset.apiAttachments || '';
   const apiDelete = root.dataset.apiDelete || '';
@@ -25,7 +26,7 @@
       const r = await fetch(`${apiList}?id=${encodeURIComponent(rid)}`, {credentials:'same-origin'});
       const j = await r.json();
       if(!j.ok || !j.data || !j.data.length){
-        gallery.innerHTML = '<div class="small">Nincs csatolmány.</div>';
+        gallery.innerHTML = '<div class="small">' + esc(I18N.no_attachments || '') + '</div>';
         return;
       }
       gallery.innerHTML = j.data.map(a => `
@@ -36,7 +37,7 @@
           <div class="cap">
             ${esc(a.filename)}<br><span class="small">${esc(a.created_at)}</span>
             <div class="actions">
-              <button class="btn" data-del="${a.id}" type="button">Törlés</button>
+              <button class="btn" data-del="${a.id}" type="button">${esc(I18N.delete || '')}</button>
             </div>
           </div>
         </div>
@@ -46,7 +47,7 @@
         delBtn.addEventListener('click', async () => {
           const id = Number(delBtn.getAttribute('data-del'));
           if (!id) return;
-          if (!confirm('Biztos törlöd a képet?')) return;
+          if (!confirm(I18N.delete_confirm || '')) return;
           delBtn.disabled = true;
 
           try{
@@ -58,27 +59,27 @@
             });
             const j2 = await r.json().catch(() => null);
             if(!j2 || !j2.ok){
-              alert((j2 && j2.error) ? j2.error : 'Törlési hiba.');
+              alert((j2 && j2.error) ? j2.error : (I18N.delete_error || ''));
             }else{
               await load();
             }
           }catch(e){
-            alert('Törlési hiba.');
+            alert(I18N.delete_error || '');
           }finally{
             delBtn.disabled = false;
           }
         });
       });
     }catch(e){
-      gallery.innerHTML = '<div class="small">Hiba a csatolmányok betöltésekor.</div>';
+      gallery.innerHTML = '<div class="small">' + esc(I18N.load_error || '') + '</div>';
     }
   }
 
   btn.addEventListener('click', async () => {
     msg.textContent = '';
-    if(!file.files || !file.files[0]){ msg.textContent = 'Válassz ki egy képet!'; return; }
+    if(!file.files || !file.files[0]){ msg.textContent = I18N.pick_file || ''; return; }
     btn.disabled = true;
-    msg.textContent = 'Feltöltés...';
+    msg.textContent = I18N.uploading || '';
 
     const fd = new FormData();
     fd.append('report_id', String(rid));
@@ -88,14 +89,14 @@
       const r = await fetch(apiUpload, {method:'POST', body:fd, credentials:'same-origin'});
       const j = await r.json().catch(() => null);
       if(!j || !j.ok){
-        msg.textContent = (j && j.error) ? j.error : 'Feltöltési hiba.';
+        msg.textContent = (j && j.error) ? j.error : (I18N.upload_error || '');
       }else{
-        msg.textContent = 'Sikeres feltöltés.';
+        msg.textContent = I18N.upload_ok || '';
         file.value = '';
         await load();
       }
     }catch(e){
-      msg.textContent = 'Feltöltési hiba.';
+      msg.textContent = I18N.upload_error || '';
     }finally{
       btn.disabled = false;
       setTimeout(()=>{ msg.textContent=''; }, 2500);

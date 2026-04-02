@@ -191,6 +191,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 function checked($v): string { return ((int)$v) === 1 ? 'checked' : ''; }
 $currentLang = current_lang();
 $isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : (function_exists('is_mobile_device') && is_mobile_device());
+$civicDashboardContext = [
+  'role' => $role,
+  'address_city' => trim((string)($u['address_city'] ?? '')) ?: null,
+  'address_zip' => trim((string)($u['address_zip'] ?? '')) ?: null,
+];
 ?>
 <!doctype html>
 <html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>"><head>
@@ -200,6 +205,7 @@ $isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : (functi
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0f1721">
 <title><?= htmlspecialchars(t('site.name'), ENT_QUOTES, 'UTF-8') ?> – <?= htmlspecialchars(t('user.settings'), ENT_QUOTES, 'UTF-8') ?></title>
+<script>window.CIVIC_DASHBOARD_CONTEXT = <?= json_encode($civicDashboardContext, JSON_UNESCAPED_UNICODE) ?>;</script>
 <script>try{var t=localStorage.getItem('civicai_theme');var u=<?= json_encode(($u['preferred_theme'] ?? null) === 'light' || ($u['preferred_theme'] ?? null) === 'dark' ? $u['preferred_theme'] : null, JSON_UNESCAPED_UNICODE) ?>;if(u){localStorage.setItem('civicai_theme',u);t=u;}t=(t==='light'||t==='dark')?t:'dark';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-bs-theme',t);}catch(_){document.documentElement.setAttribute('data-theme','dark');document.documentElement.setAttribute('data-bs-theme','dark');}</script>
 <?php if ($isMobile): ?>
 <link rel="stylesheet" href="<?= htmlspecialchars(app_url('/Mobilekit_v2-9-1/HTML/assets/css/style.css'), ENT_QUOTES, 'UTF-8') ?>">
@@ -259,19 +265,19 @@ $isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : (functi
     <div class="hr"></div>
 
     <label><b><?= htmlspecialchars(t('user.prefix'), ENT_QUOTES, 'UTF-8') ?></b></label>
-    <input type="text" name="prefix" value="<?= htmlspecialchars($u['prefix'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Pl. Dr., Prof., Mr, Mrs">
+    <input type="text" name="prefix" value="<?= htmlspecialchars($u['prefix'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(t('user.placeholder_prefix'), ENT_QUOTES, 'UTF-8') ?>">
 
     <label><b><?= htmlspecialchars(t('user.last_name'), ENT_QUOTES, 'UTF-8') ?></b></label>
-    <input type="text" name="last_name" value="<?= htmlspecialchars($u['last_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Pl. Kovács">
+    <input type="text" name="last_name" value="<?= htmlspecialchars($u['last_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(t('user.placeholder_last_name'), ENT_QUOTES, 'UTF-8') ?>">
 
     <label><b><?= htmlspecialchars(t('user.first_name'), ENT_QUOTES, 'UTF-8') ?></b></label>
-    <input type="text" name="first_name" value="<?= htmlspecialchars($u['first_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Pl. Anna">
+    <input type="text" name="first_name" value="<?= htmlspecialchars($u['first_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(t('user.placeholder_first_name'), ENT_QUOTES, 'UTF-8') ?>">
 
     <label><b><?= htmlspecialchars(t('user.birthdate'), ENT_QUOTES, 'UTF-8') ?></b></label>
-    <input type="text" name="birthdate" value="<?= htmlspecialchars($u['birthdate'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="YYYY-MM-DD">
+    <input type="text" name="birthdate" value="<?= htmlspecialchars($u['birthdate'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(t('user.placeholder_birthdate'), ENT_QUOTES, 'UTF-8') ?>">
 
     <label><b><?= htmlspecialchars(t('user.phone'), ENT_QUOTES, 'UTF-8') ?></b></label>
-    <input type="text" name="phone" value="<?= htmlspecialchars($u['phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="+36...">
+    <input type="text" name="phone" value="<?= htmlspecialchars($u['phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="<?= htmlspecialchars(t('user.placeholder_phone'), ENT_QUOTES, 'UTF-8') ?>">
 
     <div class="hr"></div>
 
@@ -316,7 +322,7 @@ $isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : (functi
     <b><?= htmlspecialchars(t('user.avatar'), ENT_QUOTES, 'UTF-8') ?></b>
     <div class="row" style="margin-top:8px;align-items:center">
       <?php if (!empty($u['avatar_filename'])): ?>
-        <img src="<?= htmlspecialchars(app_url('/uploads/avatars/' . $u['avatar_filename']), ENT_QUOTES, 'UTF-8') ?>" alt="avatar" style="width:64px;height:64px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
+        <img src="<?= htmlspecialchars(app_url('/uploads/avatars/' . $u['avatar_filename']), ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars(t('user.avatar_alt'), ENT_QUOTES, 'UTF-8') ?>" style="width:64px;height:64px;border-radius:999px;object-fit:cover;border:1px solid #e5e7eb">
       <?php else: ?>
         <div style="width:64px;height:64px;border-radius:999px;border:1px solid #e5e7eb;background:#f3f4f6;display:grid;place-items:center;color:#6b7280">?</div>
       <?php endif; ?>
