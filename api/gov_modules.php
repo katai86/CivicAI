@@ -1,0 +1,95 @@
+<?php
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../util.php';
+
+start_secure_session();
+require_user();
+
+$role = current_user_role() ?: '';
+$allowedRoles = ['admin', 'superadmin', 'govuser'];
+if (!in_array($role, $allowedRoles, true)) {
+  json_response(['ok' => false, 'error' => t('api.unauthorized')], 401);
+}
+
+$uid = current_user_id();
+if (!$uid) {
+  json_response(['ok' => false, 'error' => t('api.unauthorized')], 401);
+}
+
+$defs = [
+  ['key' => 'mistral', 'label' => 'AI (Mistral)', 'description' => 'AI panel a közig dashboardon (összefoglaló, ESG).'],
+  ['key' => 'openai', 'label' => 'AI (OpenAI/ChatGPT)', 'description' => 'AI panel – OpenAI provider (ha be van kapcsolva az adminban).'],
+  ['key' => 'fms', 'label' => 'FixMyStreet / Open311', 'description' => 'Külső Open311 / FixMyStreet integráció UI elemei.'],
+  ['key' => 'budget', 'label' => 'Részvételi költségvetés', 'description' => 'RK projektek, szavazás lezárása, kihirdetés.'],
+  ['key' => 'surveys', 'label' => 'Felmérések', 'description' => 'Kérdőívek létrehozása, eredmények megtekintése.'],
+  ['key' => 'iot', 'label' => 'IoT / Szenzorok', 'description' => 'Virtuális szenzorok (légszennyezés, időjárás), térkép és City Brain.'],
+];
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+  $out = [];
+  foreach ($defs as $d) {
+    $enabled = user_module_enabled($uid, $d['key']);
+    $out[] = [
+      'key' => $d['key'],
+      'label' => $d['label'],
+      'description' => $d['description'],
+      'enabled' => $enabled ? 1 : 0,
+    ];
+    // Szinkron a nyilvános menühöz: surveys és budget kapcsoló állapota → module_settings (így a külső oldal is naprakész)
+    $globalKey = ($d['key'] === 'surveys') ? 'surveys' : (($d['key'] === 'budget') ? 'participatory_budget' : null);
+    if ($globalKey !== null) {
+      try {
+        $val = $enabled ? '1' : '0';
+        db()->prepare("
+          INSERT INTO module_settings (module_key, setting_key, value) VALUES (?, 'enabled', ?)
+          ON DUPLICATE KEY UPDATE value = VALUES(value)
+        ")->execute([$globalKey, $val]);
+      } catch (Throwable $e) { /* ignore */ }
+    }
+  }
+  json_response(['ok' => true, 'modules' => $out]);
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+  json_response(['ok' => false, 'error' => t('api.method_not_allowed')], 405);
+}
+
+$body = read_json_body();
+if ((string)($body['action'] ?? '') !== 'save') {
+  json_response(['ok' => false, 'error' => t('api.invalid_action')], 400);
+}
+$key = safe_str($body['module_key'] ?? null, 64);
+$enabled = !empty($body['enabled']) ? 1 : 0;
+if (!$key) json_response(['ok' => false, 'error' => t('api.missing_module_key')], 400);
+if (!in_array($key, array_column($defs, 'key'), true)) {
+  json_response(['ok' => false, 'error' => t('api.unknown_module')], 400);
+}
+
+db()->prepare("
+  INSERT INTO user_module_toggles (user_id, module_key, is_enabled)
+  VALUES (?, ?, ?)
+  ON DUPLICATE KEY UPDATE is_enabled = VALUES(is_enabled)
+")->execute([$uid, $key, $enabled]);
+
+// Szinkron: Felmérések és RK gov kapcsolója vezérli a nyilvános menüt is (module_settings)
+$globalModuleKey = null;
+if ($key === 'surveys') {
+  $globalModuleKey = 'surveys';
+} elseif ($key === 'budget') {
+  $globalModuleKey = 'participatory_budget';
+}
+if ($globalModuleKey !== null) {
+  try {
+    $val = $enabled ? '1' : '0';
+    $pdo = db();
+    $pdo->prepare("
+      INSERT INTO module_settings (module_key, setting_key, value) VALUES (?, 'enabled', ?)
+      ON DUPLICATE KEY UPDATE value = VALUES(value)
+    ")->execute([$globalModuleKey, $val]);
+  } catch (Throwable $e) {
+    // module_settings tábla hiányozhat
+  }
+}
+
+json_response(['ok' => true]);
+

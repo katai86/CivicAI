@@ -1,0 +1,129 @@
+# CivicAI – Útmutató és milestone-ok
+
+Ez a dokumentum a három prioritásos területet milestone-okra bontja. **Csak ezek kielégítően működnek után** érdemes további fejlesztésekre lépni.
+
+---
+
+## A. Topbar és designok – AdminLTE (web) + Mobilekit (mobil)
+
+**Cél:** Két keretrendszer egységes használata: **AdminLTE** a webes (desktop) felületen, **Mobilekit** a mobil felületen; minden létező oldalon egységes megjelenés és topbar.
+
+### Jelenlegi állapot (rövid)
+- **AdminLTE:** admin/index.php, gov/index.php (dashboard/dist/css|js/adminlte)
+- **Mobilekit:** mobile/index.php, user/my.php, user/settings.php, user/login.php, leaderboard.php (Mobilekit_v2-9-1 + mobilekit_civicai.css) – mobil detektálásnál
+- **Egyedi topbar:** index.php (térkép), leaderboard, user/login, user/register, user/settings – részben inc_topbar_tools, részben csak topbar-links
+- **Bootstrap 5:** gov, admin; Mobilekit saját Bootstrap – konfliktusok elkerülendők
+
+### Milestone A1 – Inventár és szabályok
+- [x] **A1.1** Összes belépési oldal listázása → docs/DESIGN_INVENTORY.md
+- [x] **A1.2** Minden oldalhoz rögzítni: desktop = AdminLTE vagy „sima” (style.css), mobil = Mobilekit (igen/nem).
+- [x] **A1.3** Egy rövid belső doc → docs/DESIGN_RULES.md
+
+### Milestone A2 – Desktop (web) egységesítés
+- [x] **A2.1** Közös desktop topbar: inc_desktop_topbar.php (brand, téma, nyelv, navigáció); opcionális kereső (index).
+- [x] **A2.2** index, leaderboard, user/login, register, settings, my, profile, friends, report, case – desktop részen inc_desktop_topbar.
+- [x] **A2.3** Admin és Gov: AdminLTE (dashboard/dist) – nem módosítva, konzisztens.
+
+### Milestone A3 – Mobil egységesítés
+- [x] **A3.1** Mobil detektálás egy helyen: `use_mobile_layout()` (util.php) – `?desktop=1` vagy cookie `force_desktop` kikapcsolja a mobil layoutot.
+- [x] **A3.2** my, settings, login, leaderboard: ugyanaz a Mobilekit shell (inc_mobile_header + inc_mobile_footer), konzisztens appBottomMenu.
+- [x] **A3.3** case.php, user/report.php, user/profile.php, user/friends.php: mobilra Mobilekit shell (header + footer + ugyanaz a tartalom).
+
+### Milestone A4 – Tisztítás és teszt
+- [x] **A4.1** Egy desktop topbar (inc_desktop_topbar.php), egy mobil shell (inc_mobile_header + inc_mobile_footer); duplikált topbar eltávolítva.
+- [ ] **A4.2** Böngészőben teszt: desktop + mobil minden felsorolt oldalon; téma és nyelv mindkét layouton (kézi ellenőrzés – fejlesztés kész).
+
+---
+
+## B. Beépülő modulok – AI (Mistral/ChatGPT), FixMyStreet, Open311
+
+**Cél:** Mistral, ChatGPT, FixMyStreet, Open311 egységes kezelése az admin és a government (gov) felületekkel; ki-/bekapcsolás, API kulcsok; **AI-nál az admin felületen beállítható hívási maximum** (napi limit), hogy ne legyen túlköltés és kevesebb hiba teszt alatt.
+
+### Jelenlegi állapot (rövid)
+- **admin_modules.php:** csak **fms** (FixMyStreet/Open311) és **mistral** – enabled + api_key (és fms-nél base_url, jurisdiction). Nincs ChatGPT, nincs AI limit mező az admin UI-ban.
+- **config.php:** AI_MAX_REPORTS_PER_DAY, AI_SUMMARY_LIMIT, AI_IMAGE_ANALYSIS_LIMIT – jelenleg csak env/.env, nincs admin felületen szerkeszthető.
+- **Mistral:** API kulcs a module_settings-ből vagy MISTRAL_API_KEY env – „valamiért nem működik” – érdemes logolni a 401/502 választ és az adminban megjeleníteni egy rövid állapotot (pl. „Mistral: OK” / „Mistral: hibás kulcs”).
+- **gov_modules.php:** gov user számára user_module_toggles (mistral, fms) ki/be – ez maradjon és legyen összehangolva az admin modulokkal.
+
+### Milestone B1 – Admin: AI limitek beállíthatóvá tétele
+- [x] **B1.1** module_settings (mistral): ai_summary_limit, ai_max_reports_per_day, ai_image_analysis_limit.
+- [x] **B1.2** admin_modules.php: Mistral modulhoz szám inputok (placeholder 20, 1000, 300); admin.js type=number.
+- [x] **B1.3** util.php: get_ai_limit('summary'|'reports_per_day'|'image_analysis') – module_settings, majd env; AiRouter withinLimit() ezt használja.
+- [x] **B1.4** Admin Beépülő modulok: limit mezők megjelenítése és mentése.
+
+### Milestone B2 – Mistral működés és diagnosztika
+- [x] **B2.1** gov_ai.php: egyértelmű JSON hiba + nyers válasz fallback; AiRouter/MistralProvider üzenetek (limit, kulcs).
+- [x] **B2.2** Admin Beépülő modulok: „Teszt Mistral” gomb (api/admin_modules.php action=test_mistral), eredmény a kártyán.
+- [x] **B2.3** docs/AI_SETUP.md: API kulcs (admin vs .env), limitek, teszt gomb.
+
+### Milestone B3 – ChatGPT és FMS/Open311 modul definíció
+- [x] **B3.1** admin_modules.php: **openai** modul (OpenAI/ChatGPT) – enabled, api_key; csak beállítási felület.
+- [x] **B3.2** FMS: gov_modules felirat „FixMyStreet / Open311”; admin már FixMyStreet / Open311.
+- [x] **B3.3** gov_modules.php: openai opció hozzáadva, gov felületen megjelenik (user_module_toggles).
+
+### Milestone B4 – AI provider választás (Mistral vs ChatGPT)
+- [x] **B4.1** Ha a ChatGPT modul be van kapcsolva és van kulcs, az AiRouter vagy a report_create választhasson providert (pl. config vagy module_settings: „default_ai_provider” = mistral | openai).
+- [x] **B4.2** OpenAI/ChatGPT provider osztály (OpenAIProvider.php) – hasonló a MistralProvider-hez; a hívási limitek ugyanazokkal a mezőkkel (ai_summary_limit stb.) vonatkozzanak rá is.
+- [x] **B4.3** Admin UI: AI limitek egy helyen, és „Mistral” / „OpenAI” külön modulként vagy egy „AI” modul alatt mindkét kulcs + limit megadható.
+
+---
+
+## C. Fa örökbe fogadás, fa feltöltő, klaszter térkép, fa öntözős beépülő
+
+**Cél:** A fa réteg, fa feltöltés („fa feltöltés” vagy kreatív név), örökbe fogadás és öntözés végre működjön; a felhasználó **bejelentéskor** tudjon választani fa-hoz kapcsolódó akciót (pl. „Fa feltöltés” / „Új fa” / „Fa bejelentés”) – ne maradjon félbe a flow.
+
+### Jelenlegi állapot (rövid)
+- **DB:** trees tábla, tree_adopt, tree_watering, tree_create API-k; layers tábla (trees layer).
+- **app.js:** trees_list, tree_adopt, tree_create, tree_watering; „Új fa felvitele” gomb a legendában; loadTrees, addTreeMode, öntözős űrlap.
+- **Jelmagyarázat:** adatbázisban/langban van fa réteg; a bejelentési flow-ban (report_create, kategóriák) nincs külön „fa feltöltés” vagy „fa bejelentés” típus, amit a user kiválaszthat.
+
+### Milestone C1 – Fa réteg és adatmodell
+- [x] **C1.1** Rögzíteni: trees tábla mezői, layer_key = 'trees' (vagy layer_type) – admin_layers és layers_public konzisztencia; a térképen a fa réteg látható és betöltődik. (→ docs/TREE_LAYER.md)
+- [x] **C1.2** Jelmagyarázat (legend): „Fa örökbe fogadás” / „Fa feltöltés” / „Fa öntözés” szövegek a lang fájlokban és a frontend legendában egyértelműen; link a fa réteghez. (legend.tree_section, legend.tree_adopt_title, legend.tree_upload_title, legend.tree_water_title)
+- [x] **C1.3** Ha hiányzik: migráció vagy default layer a trees réteghez (aktív/inaktív), hogy minden környezetben legyen fa réteg. (sql/2026-17-trees-layer-default.sql; 00_run_all_migrations_safe.sql már tartalmazza.)
+
+### Milestone C2 – „Fa feltöltés” a bejelentési flow-ban
+- [x] **C2.1** Kategória vagy „típus” bővítés: a felhasználó a térképen / bejelentési űrlapon tudjon választani egy „Fa feltöltés” (vagy „Új fa”, „Fa bejelentés”) opciót – akár új kategória (pl. `tree_upload`), akár a meglévő „green” alatti speciális típus. (app.js: CAT_LABEL + buildCategoryOptions tree_upload; lang: modal.tree_upload.)
+- [x] **C2.2** Ha „Fa feltöltés” van kiválasztva: a submit ne a klasszikus report_create legyen, hanem a tree_create API hívása (ugyanazzal a helyszínnel + opcionális adatokkal), vagy a report_create kapjon egy flag-et (report_type = tree) és a backend a trees táblába is írjon – egyértelmű spec kell. (Frontend: category === 'tree_upload' → FormData POST api/tree_create.php; bejelentkezés kötelező.)
+- [x] **C2.3** Sikeres „fa feltöltés” után: visszajelzés (pl. „Fa rögzítve”), és a térképen megjelenik az új fa (refresh vagy push marker). (tree.submit_success; closeModal(); loadTrees().)
+
+### Milestone C3 – Fa örökbe fogadás (adopt)
+- [x] **C3.1** Térképen: fa markerre kattintva legyen lehetőség „Örökbe fogadom” – ha be van jelentkezve a user, tree_adopt API hívás; ha nincs, átirányítás loginra. (app.js: popup „Örökbe fogadom” / „Örökbefogadás lemondása”; nem bejelentkezettnek tree.login_to_adopt + Belépés link.)
+- [x] **C3.2** tree_adopt.php: ellenőrizni jogosultságot, dupla adopt elkerülése, és a trees tábla adopted_by_user_id (vagy kapcsolótábla) frissítése; sikeres válasz és frontend frissítés (pl. marker szín vagy felirat változik). (tree_adoptions UNIQUE(tree_id, user_id): 2026-14, 2026-18, 00_run_all; API adopt/cancel, popup szöveg frissül.)
+- [x] **C3.3** „Saját örökbe fogadott fák” megjelenítése valahol (pl. user/my vagy külön „Fáim” blokk) – opcionális, de ajánlott a teljes flowhoz. (user/my.php: „Fáim” kártya, link a térképre lat/lng-vel; trees_list.php?my_adopted=1 opció.)
+
+### Milestone C4 – Fa öntözés (watering)
+- [x] **C4.1** Térképen: örökbe fogadott fához (vagy bármely fához) „Öntözöm” gomb/űrlap – tree_watering API hívás; adatbázisban watering log (ha van ilyen tábla/mező). (Már megvan: tree-water-form a fa popupban, tree_watering_logs + trees.last_watered.)
+- [x] **C4.2** tree_watering.php: auth, rate limit (pl. naponta X öntözés/fa), és a frontend üzenet („Öntözve”) + opcionálisan szintén „Saját öntözések” lista. (Rate limit: 5/fá/nap/user; tree.watered_success / tree.water_error; popup frissül.)
+- [x] **C4.3** Jelmagyarázat és mobil: ha a fa funkciók mobilra is kellenek, a Mobilekit layouton is legyen lehetőség fa feltöltésre / örökbe fogadásra (ugyanaz az API, más UI). (Térkép (index) ugyanaz desktop és mobilnál – fa réteg, legend, popup adopt/water; mobilnál use_mobile_layout() shell, de a térkép és app.js közös.)
+
+### Milestone C5 – Klaszter térkép és teszt
+- [x] **C5.1** Sok fa esetén: marker clustering (pl. Leaflet.markercluster) a trees rétegre, hogy a térkép olvasható maradjon. (Leaflet.markercluster@1.5.3 index + mobile; app.js: treeClusterGroup, loadTrees/clearTreeMarkers; fallback ha nincs cluster lib.)
+- [ ] **C5.2** Végteszt: desktop + mobil – fa réteg be, új fa felvitele, örökbe fogadás, öntözés; adatbázisban és a térképen minden konzisztens. (Kézi ellenőrzés – fejlesztés kész.)
+
+---
+
+## Sorrendjavaslat
+
+1. **Először:** A (Topbar/design) A1–A2 – hogy minden oldal konzisztens legyen, utána könnyebb a többi feladat.
+2. **Majd:** B (Plugins) B1–B2 – AI limitek adminban + Mistral működés és diagnosztika; ez csökkenti a túlköltést és a „nem működik” problémát.
+3. **Utána:** C (Fa) C1–C2–C3 – fa réteg, „Fa feltöltés” a bejelentési flow-ban, örökbe fogadás.
+4. **Végül:** A3–A4, B3–B4, C4–C5 – mobil finomítás, ChatGPT/FMS egységesítés, fa öntözés és klaszter.
+
+---
+
+## Rövid összefoglaló
+
+| Terület | Milestone-ok | Legfontosabb eredmény |
+|--------|--------------|------------------------|
+| **A. Topbar / design** | A1 inventár → A2 desktop egységes topbar → A3 mobil egységes shell → A4 tisztítás | Minden oldal: web = AdminLTE/sima, mobil = Mobilekit, egy topbar/include |
+| **B. Plugins** | B1 AI limitek admin UI → B2 Mistral javítás + teszt gomb → B3 ChatGPT + FMS definíció → B4 provider választás | Adminban beállítható AI napi limit; Mistral működik; később ChatGPT/FMS egy helyen |
+| **C. Fa** | C1 réteg + legend → C2 „Fa feltöltés” a bejelentésnél → C3 örökbe fogadás → C4 öntözés → C5 klaszter + teszt | User bejelentéskor választhat fa feltöltést; örökbe fogadás és öntözés működik |
+
+Ezt a fájlt érdemes verziókezelni (git) és minden milestone-nál pipálni a kész feladatokat.
+
+---
+
+## Fejlesztés állapota (milestone-ok szerint)
+
+**Implementáció kész:** A1–A3, A4.1; B1–B4; C1–C5.1. Az egyetlen nyitott feladat a **kézi teszt**: A4.2 (desktop + mobil minden oldalon), C5.2 (fa réteg, feltöltés, örökbe fogadás, öntözés végteszt). A B4 (AI provider választás) befejeződött: adminban Mistral modulnál „Alapértelmezett AI provider” (Mistral / OpenAI), OpenAI modulnál modell mező, „Teszt OpenAI” gomb; AiRouter a kiválasztott providerrel és a megfelelő modellel hív.

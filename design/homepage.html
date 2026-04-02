@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>KÖZ.TÉR – Landing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="intro-overlay" aria-hidden="true">
+    <div class="intro-logo"></div>
+  </div>
+
+  <div class="app">
+    <aside class="panel left-panel" aria-label="Felhasználói panel">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>KÖZ.TÉR</div>
+      </div>
+      <div class="card">
+        <div class="avatar" aria-hidden="true"></div>
+        <div class="rank-title">Kátyúvadász Tanonc</div>
+        <div class="xp-wrap">
+          <div class="xp-bar"><span></span></div>
+          <div class="xp-value">850 XP</div>
+        </div>
+        <div class="badge-row">
+          <div class="badge" aria-hidden="true"></div>
+          <div class="badge" aria-hidden="true"></div>
+          <div class="badge" aria-hidden="true"></div>
+          <div class="badge" aria-hidden="true"></div>
+        </div>
+      </div>
+      <a class="cta" href="#">+ ÚJ BEJELENTÉS</a>
+    </aside>
+
+    <main class="panel map-panel" aria-label="Térkép">
+      <div class="map-controls">
+        <div class="control">Szűrők</div>
+        <div class="control">Térkép</div>
+      </div>
+      <div id="map" class="map-canvas" aria-label="Térkép vászon">
+        <div class="marker pos-1"></div>
+        <div class="marker light pos-2"></div>
+        <div class="marker tree pos-3"></div>
+      </div>
+    </main>
+
+    <aside class="panel right-panel" aria-label="Élő események">
+      <div class="tagline">LÁTOD A VÁROST. MOST FORMÁLD IS.</div>
+      <div class="subline">Közösségi problématérkép Orosházának.</div>
+      <div class="live-title">ÉLŐ ESEMÉNYEK</div>
+      <div class="feed">
+        <div class="feed-item"><span class="feed-dot"></span><div class="feed-text">Szemfüles Szomszéd jelentett egy kátyút</div></div>
+        <div class="feed-item"><span class="feed-dot"></span><div class="feed-text">Helyi Vagány XP-t szerzett</div></div>
+        <div class="feed-item"><span class="feed-dot"></span><div class="feed-text">Zöld Őr fogadott örökbe egy fát</div></div>
+      </div>
+      <div class="mini-preview" aria-hidden="true"></div>
+    </aside>
+  </div>
+</body>
+</html>

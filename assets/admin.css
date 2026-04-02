@@ -1,0 +1,162 @@
+/* Téma váltó ikon: sötét módban nap, világosban hold */
+.theme-icon.theme-moon{display:none}
+[data-theme="light"] .theme-icon.theme-sun{display:none}
+[data-theme="light"] .theme-icon.theme-moon{display:inline}
+
+/* CivicAI logo by theme (admin/gov): dark theme = logo_light.png, light theme = logo_dark.png */
+.civic-brand-img--light{display:block!important;}
+.civic-brand-img--dark{display:none!important;}
+[data-theme="light"] .civic-brand-img--light{display:none!important;}
+[data-theme="light"] .civic-brand-img--dark{display:block!important;}
+[data-bs-theme="light"] .civic-brand-img--light{display:none!important;}
+[data-bs-theme="light"] .civic-brand-img--dark{display:block!important;}
+
+/* Admin light theme: form controls, inputs, navbar, sidebar */
+[data-theme="light"] .form-control,[data-theme="light"] .form-select,[data-theme="light"] .app-wrapper input,[data-theme="light"] .app-wrapper select,[data-theme="light"] .app-wrapper textarea{
+  background-color:#fff!important;border-color:rgba(0,0,0,.12);color:#0f172a;
+}
+[data-theme="light"] .form-control::placeholder,[data-theme="light"] .app-wrapper input::placeholder{color:#64748b}
+[data-theme="light"] .navbar{background:#fff!important;border-color:rgba(0,0,0,.08)}
+[data-theme="light"] .app-sidebar{background:#f8fafc!important}
+[data-theme="light"] .app-wrapper .dropdown-menu{background:#fff;border-color:rgba(0,0,0,.12)}
+[data-theme="light"] .app-wrapper .btn{background:#f1f5f9;border-color:rgba(0,0,0,.12);color:#0f172a}
+[data-theme="light"] .app-wrapper .btn:hover{background:#e2e8f0}
+[data-theme="light"] .bg-body-tertiary{background:#f1f5f9!important}
+
+/* Light: card és szöveges blokkok mindig olvashatók */
+[data-theme="light"] .card,[data-theme="light"] .card .card-body{
+  background-color:#fff!important;color:#0f172a!important;
+}
+[data-theme="light"] .card .card-title,[data-theme="light"] .card .text-secondary,[data-theme="light"] .card .small{
+  color:#334155!important;
+}
+[data-theme="light"] .card .text-secondary{color:#64748b!important}
+/* AI eredmény dobozok és bg-light blokkok – világos téma */
+[data-theme="light"] .gov-ai-result,[data-theme="light"] .app-wrapper .bg-light{
+  background-color:#f1f5f9!important;color:#0f172a!important;border-color:rgba(0,0,0,.1)!important;
+}
+/* Sötét téma: AI doboz és bg-light is olvasható maradjon */
+.app-wrapper .gov-ai-result{
+  color:var(--bs-body-color);
+  background-color:var(--bs-secondary-bg);
+}
+.app-wrapper .gov-ai-result.bg-light{background-color:var(--bs-secondary-bg)!important}
+.app-wrapper .card .card-body,.app-wrapper .card .card-title{color:var(--bs-body-color)}
+.app-wrapper .admin-chart-bar .label,.app-wrapper .admin-chart-bar .val{color:var(--bs-body-color)}
+.app-wrapper .border.rounded.p-2.bg-light{background-color:var(--bs-secondary-bg)!important;color:var(--bs-body-color)!important;border-color:var(--bs-border-color)!important}
+.app-wrapper .border.rounded.p-2.bg-light .small,.app-wrapper .border.rounded.p-2.bg-light ul{color:var(--bs-body-color)!important}
+
+.admin-map{height:calc(100vh - 260px);min-height:420px}
+.admin-list{max-height:52vh;overflow:auto;display:grid;gap:10px}
+.admin-item{overflow:hidden}
+.counts{display:flex;gap:8px;flex-wrap:wrap}
+.counts .pill{font-size:12px}
+.badge-emoji{font-size:16px;line-height:1}
+.admin-chart{min-height:140px}
+.admin-chart-bar{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13px}
+.admin-chart-bar .label{min-width:100px}
+.admin-chart-bar .bar-wrap{flex:1;height:22px;background:var(--bs-secondary-bg);border-radius:4px;overflow:hidden}
+.admin-chart-bar .bar{height:100%;border-radius:4px;transition:width .3s}
+.admin-chart-bar .val{min-width:28px;text-align:right;font-weight:600}
+@media (max-width: 992px){
+  .admin-map{height:55vh;min-height:360px}
+}
+
+/* Sidebar görgethető (gov/admin): ne csússzon a menü a monitor alá */
+.app-sidebar .sidebar-wrapper {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100vh - 4.5rem);
+  -webkit-overflow-scrolling: touch;
+}
+.app-sidebar .sidebar-wrapper::-webkit-scrollbar { width: 6px; }
+.app-sidebar .sidebar-wrapper::-webkit-scrollbar-track { background: transparent; }
+.app-sidebar .sidebar-wrapper::-webkit-scrollbar-thumb { background: rgba(128,128,128,.35); border-radius: 3px; }
+
+/* Összecsukható menüszekciók (sidebar-section-header) */
+.sidebar-section-header {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sidebar-section-header:hover { opacity: .9; }
+.sidebar-section-header .nav-section-chevron {
+  transition: transform .2s ease;
+  opacity: .7;
+}
+.sidebar-section-collapsed .nav-section-chevron { transform: rotate(-90deg); }
+.sidebar-section-item-hidden { display: none !important; }
+
+/* Guided tour (Driver.js) - CivicAI visual style */
+.driver-overlay {
+  background: rgba(3, 10, 20, 0.66) !important;
+}
+.driver-popover.civic-tour-popover {
+  background: linear-gradient(180deg, #152334 0%, #0f1b29 100%);
+  border: 1px solid rgba(86, 137, 255, 0.45);
+  border-radius: 14px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+  color: #e7edf7;
+  min-width: 300px;
+  max-width: 420px;
+}
+.driver-popover.civic-tour-popover .driver-popover-title {
+  color: #f3f7ff;
+  font-weight: 700;
+}
+.driver-popover.civic-tour-popover .driver-popover-description {
+  color: #c6d3e8;
+  line-height: 1.45;
+  padding-right: 28px;
+  padding-top: 6px;
+}
+.driver-popover.civic-tour-popover .driver-popover-footer {
+  border-top: 1px solid rgba(137, 169, 231, 0.25);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.driver-popover.civic-tour-popover .driver-popover-next-btn,
+.driver-popover.civic-tour-popover .driver-popover-prev-btn,
+.driver-popover.civic-tour-popover .driver-popover-close-btn {
+  border-radius: 10px;
+  border: 1px solid rgba(133, 171, 255, 0.35);
+  background: #1a2a40;
+  color: #eaf2ff;
+  text-shadow: none;
+}
+.driver-popover.civic-tour-popover .driver-popover-next-btn:hover,
+.driver-popover.civic-tour-popover .driver-popover-prev-btn:hover,
+.driver-popover.civic-tour-popover .driver-popover-close-btn:hover {
+  background: #234067;
+  color: #ffffff;
+}
+.driver-popover.civic-tour-popover .driver-popover-progress-text {
+  color: #9fb5d8;
+}
+.driver-popover.civic-tour-popover .driver-popover-close-btn {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.driver-popover.civic-tour-popover,
+.driver-popover.civic-tour-popover * {
+  pointer-events: auto;
+}
+
+/* Tour közben a bal oldali aktuális menüpont erős kiemelést kapjon. */
+.app-sidebar .nav-link.tab.driver-active-element,
+.app-sidebar .nav-link.tab.civic-tour-sidebar-active {
+  background: linear-gradient(90deg, rgba(60, 130, 246, 0.42), rgba(41, 86, 170, 0.18)) !important;
+  border: 1px solid rgba(116, 167, 255, 0.72) !important;
+  box-shadow: 0 0 0 2px rgba(54, 114, 220, 0.28), 0 8px 18px rgba(0, 0, 0, 0.25);
+  color: #eef4ff !important;
+}
