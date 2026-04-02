@@ -333,6 +333,11 @@ if (!empty($authorityIds)) {
 }
 $baseWhere = $isAdmin ? '1=1' : $govWhere;
 $baseParams = $isAdmin ? [] : $govParams;
+$adminRequestAuthorityId = ($isAdmin && isset($_GET['authority_id'])) ? (int)$_GET['authority_id'] : 0;
+if ($adminRequestAuthorityId > 0) {
+  $baseWhere = 'r.authority_id = ?';
+  $baseParams = [$adminRequestAuthorityId];
+}
 
 $where = $baseWhere;
 $params = $baseParams;
@@ -399,91 +404,18 @@ if ($isAdmin || $authorityIds) {
       $stats['by_category'][(string)$row['category']] = (int)$row['cnt'];
     }
   } catch (Throwable $e) { /* ignore */ }
-  // Environment stats (fák + zöld bejelentések)
-  $env = [
-    'trees_total' => 0,
-    'trees_needing_inspection' => 0,
-    'trees_needing_water' => 0,
-    'trees_dangerous' => 0,
-    'green_reports' => 0,
-  ];
-  try {
-    $env['trees_total'] = (int)db()->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1")->fetchColumn();
-  } catch (Throwable $e) {}
-  try {
-    $env['trees_needing_inspection'] = (int)db()->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND (last_inspection IS NULL OR last_inspection < DATE_SUB(CURDATE(), INTERVAL 365 DAY))")->fetchColumn();
-  } catch (Throwable $e) {}
-  try {
-    $env['trees_needing_water'] = (int)db()->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND (last_watered IS NULL OR last_watered < DATE_SUB(CURDATE(), INTERVAL 7 DAY))")->fetchColumn();
-  } catch (Throwable $e) {}
-  try {
-    $env['trees_dangerous'] = (int)db()->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND risk_level = 'high'")->fetchColumn();
-  } catch (Throwable $e) {}
-  try {
-    $qg = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $baseWhere AND r.category = 'green'");
-    $qg->execute($baseParams);
-    $env['green_reports'] = (int)$qg->fetchColumn();
-  } catch (Throwable $e) {}
-  $stats['environment'] = $env;
-
-  // Social stats – aktív polgárok, örökbefogadók, zöld események, öntözések
-  $soc = [
-    'active_citizens_30d' => 0,
-    'tree_adopters' => 0,
-    'green_events_active' => 0,
-    'watering_actions_30d' => 0,
-  ];
-  try {
-    $qsoc = $pdo->prepare("SELECT COUNT(DISTINCT r.user_id) FROM reports r WHERE $baseWhere AND r.user_id IS NOT NULL AND r.created_at >= (NOW() - INTERVAL 30 DAY)");
-    $qsoc->execute($baseParams);
-    $soc['active_citizens_30d'] = (int)$qsoc->fetchColumn();
-  } catch (Throwable $e) {}
-  try {
-    $soc['tree_adopters'] = (int)db()->query("SELECT COUNT(DISTINCT user_id) FROM tree_adoptions WHERE status = 'active'")->fetchColumn();
-  } catch (Throwable $e) {}
-  try {
-    $soc['green_events_active'] = (int)db()->query("SELECT COUNT(*) FROM civil_events WHERE is_active = 1 AND event_type = 'green_action' AND end_date >= CURDATE()")->fetchColumn();
-  } catch (Throwable $e) {}
-  try {
-    $soc['watering_actions_30d'] = (int)db()->query("SELECT COUNT(*) FROM tree_watering_logs WHERE created_at >= (NOW() - INTERVAL 30 DAY)")->fetchColumn();
-  } catch (Throwable $e) {}
-  $stats['social'] = $soc;
-
-  // Governance stats – nyitott ügyek, megoldott 30 napban, átlagos megoldási idő (nap)
-  $gov = [
-    'reports_total' => $stats['reports_total'],
-    'reports_open' => 0,
-    'reports_solved_30d' => 0,
-    'avg_resolution_days' => null,
-  ];
-  try {
-    $qo = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $baseWhere AND r.status NOT IN ('solved','closed','rejected')");
-    $qo->execute($baseParams);
-    $gov['reports_open'] = (int)$qo->fetchColumn();
-  } catch (Throwable $e) {}
-  try {
-    $qs30 = $pdo->prepare("
-      SELECT COUNT(*) FROM reports r
-      JOIN report_status_log l ON l.report_id = r.id AND l.new_status IN ('solved','closed')
-      WHERE $baseWhere AND l.changed_at >= (NOW() - INTERVAL 30 DAY)
-    ");
-    $qs30->execute($baseParams);
-    $gov['reports_solved_30d'] = (int)$qs30->fetchColumn();
-  } catch (Throwable $e) {}
-  try {
-    $qa = $pdo->prepare("
-      SELECT AVG(DATEDIFF(l.changed_at, r.created_at)) AS avg_days
-      FROM reports r
-      JOIN report_status_log l ON l.report_id = r.id AND l.new_status IN ('solved','closed')
-      WHERE $baseWhere
-    ");
-    $qa->execute($baseParams);
-    $avg = $qa->fetchColumn();
-    if ($avg !== false && $avg !== null) {
-      $gov['avg_resolution_days'] = (float)$avg;
-    }
-  } catch (Throwable $e) {}
-  $stats['governance'] = $gov;
+  // Environment + ESG kártya (Elemzés, Zöld fül): gov_compute_esg_snapshot – fa scope mint gov_trees_list
+  $treeScopeIdsForStats = [];
+  if (!empty($authorityIds)) {
+    $treeScopeIdsForStats = array_values(array_filter(array_map('intval', $authorityIds), static fn ($x) => $x > 0));
+  }
+  if ($adminRequestAuthorityId > 0) {
+    $treeScopeIdsForStats = [$adminRequestAuthorityId];
+  }
+  $snap = gov_compute_esg_snapshot($pdo, $treeScopeIdsForStats, $baseWhere, $baseParams);
+  $stats['environment'] = $snap['environment'];
+  $stats['social'] = $snap['social'];
+  $stats['governance'] = array_merge($snap['governance'], ['reports_total' => $stats['reports_total']]);
 } else {
   $stats['environment'] = ['trees_total' => 0, 'trees_needing_inspection' => 0, 'trees_needing_water' => 0, 'trees_dangerous' => 0, 'green_reports' => 0];
   $stats['social'] = ['active_citizens_30d' => 0, 'tree_adopters' => 0, 'green_events_active' => 0, 'watering_actions_30d' => 0];
@@ -982,7 +914,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
             <div class="card-body">
               <h6 class="card-title mb-1"><?= h(t('gov.trees_needing_water_title')) ?></h6><br>
               <p class="text-secondary small mb-2"><?= h(t('gov.trees_needing_water_desc')) ?></p>
-              <p class="mb-2"><strong><?= (int)($stats['environment']['trees_needing_water'] ?? 0) ?></strong> <?= h(t('gov.esg_trees_water')) ?></p>
+              <p class="mb-2"><strong data-esg-metric="environment.trees_needing_water"><?= (int)($stats['environment']['trees_needing_water'] ?? 0) ?></strong> <?= h(t('gov.esg_trees_water')) ?></p>
               <button type="button" class="btn btn-outline-primary btn-sm" id="btnTreesNeedingWater"><?= h(t('gov.trees_needing_water_list')) ?></button>
               <div id="treesNeedingWaterList" class="mt-2 small" style="max-height:240px;overflow:auto;" hidden></div>
             </div>
@@ -1044,9 +976,9 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
                   <div class="border rounded p-2 bg-light">
                     <div class="fw-semibold small text-success"><?= h(t('gov.esg_env')) ?></div>
                     <ul class="small mb-0 ps-3">
-                      <li><?= h(t('gov.esg_trees_total')) ?>: <strong><?= (int)($stats['environment']['trees_total'] ?? 0) ?></strong></li>
-                      <li><?= h(t('gov.esg_green_reports')) ?>: <strong><?= (int)($stats['environment']['green_reports'] ?? 0) ?></strong></li>
-                      <li><?= h(t('gov.esg_trees_water')) ?>: <?= (int)($stats['environment']['trees_needing_water'] ?? 0) ?></li>
+                      <li><?= h(t('gov.esg_trees_total')) ?>: <strong data-esg-metric="environment.trees_total"><?= (int)($stats['environment']['trees_total'] ?? 0) ?></strong></li>
+                      <li><?= h(t('gov.esg_green_reports')) ?>: <strong data-esg-metric="environment.green_reports"><?= (int)($stats['environment']['green_reports'] ?? 0) ?></strong></li>
+                      <li><?= h(t('gov.esg_trees_water')) ?>: <span data-esg-metric="environment.trees_needing_water"><?= (int)($stats['environment']['trees_needing_water'] ?? 0) ?></span></li>
                     </ul>
                   </div>
                 </div>
@@ -1054,9 +986,9 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
                   <div class="border rounded p-2 bg-light">
                     <div class="fw-semibold small text-primary"><?= h(t('gov.esg_social')) ?></div>
                     <ul class="small mb-0 ps-3">
-                      <li><?= h(t('gov.esg_active_citizens')) ?>: <strong><?= (int)($stats['social']['active_citizens_30d'] ?? 0) ?></strong></li>
-                      <li><?= h(t('gov.esg_tree_adopters')) ?>: <strong><?= (int)($stats['social']['tree_adopters'] ?? 0) ?></strong></li>
-                      <li><?= h(t('gov.esg_watering_30d')) ?>: <?= (int)($stats['social']['watering_actions_30d'] ?? 0) ?></li>
+                      <li><?= h(t('gov.esg_active_citizens')) ?>: <strong data-esg-metric="social.active_citizens_30d"><?= (int)($stats['social']['active_citizens_30d'] ?? 0) ?></strong></li>
+                      <li><?= h(t('gov.esg_tree_adopters')) ?>: <strong data-esg-metric="social.tree_adopters"><?= (int)($stats['social']['tree_adopters'] ?? 0) ?></strong></li>
+                      <li><?= h(t('gov.esg_watering_30d')) ?>: <span data-esg-metric="social.watering_actions_30d"><?= (int)($stats['social']['watering_actions_30d'] ?? 0) ?></span></li>
                     </ul>
                   </div>
                 </div>
@@ -1064,9 +996,9 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
                   <div class="border rounded p-2 bg-light">
                     <div class="fw-semibold small text-secondary"><?= h(t('gov.esg_gov')) ?></div>
                     <ul class="small mb-0 ps-3">
-                      <li><?= h(t('gov.esg_open')) ?>: <strong><?= (int)($stats['governance']['reports_open'] ?? 0) ?></strong></li>
-                      <li><?= h(t('gov.esg_solved_30d')) ?>: <?= (int)($stats['governance']['reports_solved_30d'] ?? 0) ?></li>
-                      <li><?= h(t('gov.esg_avg_days')) ?>: <?= $stats['governance']['avg_resolution_days'] !== null ? round($stats['governance']['avg_resolution_days'], 1) : '—' ?></li>
+                      <li><?= h(t('gov.esg_open')) ?>: <strong data-esg-metric="governance.reports_open"><?= (int)($stats['governance']['reports_open'] ?? 0) ?></strong></li>
+                      <li><?= h(t('gov.esg_solved_30d')) ?>: <span data-esg-metric="governance.reports_solved_30d"><?= (int)($stats['governance']['reports_solved_30d'] ?? 0) ?></span></li>
+                      <li><?= h(t('gov.esg_avg_days')) ?>: <span data-esg-metric="governance.avg_resolution_days"><?= $stats['governance']['avg_resolution_days'] !== null ? round($stats['governance']['avg_resolution_days'], 1) : '—' ?></span></li>
                     </ul>
                   </div>
                 </div>
@@ -1610,6 +1542,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     return url + sep + 'authority_id=' + encodeURIComponent(String(authorityIdForHeatmap));
   }
   var govStatisticsUrl = <?= json_encode(app_url('/api/gov_statistics.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govEsgSnapshotUrl = <?= json_encode(app_url('/api/gov_esg_snapshot.php'), JSON_UNESCAPED_SLASHES) ?>;
   var citybrainDashboardUrl = <?= json_encode(app_url('/api/citybrain_dashboard.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govStatisticsLabels = <?= json_encode([
     'issue_trend' => t('gov.statistics_issue_trend'),
@@ -1925,7 +1858,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       if (key === 'modules') loadGovModules();
       if (key === 'surveys') loadGovSurveys();
       if (key === 'budget') loadGovBudget();
-      if (key === 'trees') { initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
+      if (key === 'trees') { loadGovEsgSnapshot(); initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
       if (key === 'iot') loadGovIotDevices();
       if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovEsgMetrics(); }
       if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
@@ -2702,6 +2635,28 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     if (sensors.length === 0) return;
     var a = document.createElement('a'); a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify({ sensors: sensors })); a.download = 'virtual_sensors.json'; a.click();
   });
+  function applyGovEsgSnapshotMetrics(d){
+    if (!d) return;
+    document.querySelectorAll('[data-esg-metric]').forEach(function(el){
+      var path = el.getAttribute('data-esg-metric');
+      if (!path) return;
+      var parts = path.split('.');
+      var v = d;
+      for (var i = 0; i < parts.length && v != null; i++) v = v[parts[i]];
+      if (path === 'governance.avg_resolution_days') {
+        el.textContent = (v != null && v !== '' && !isNaN(Number(v))) ? String(Math.round(Number(v) * 10) / 10) : '—';
+        return;
+      }
+      el.textContent = (v !== undefined && v !== null) ? String(v) : '—';
+    });
+  }
+  function loadGovEsgSnapshot(){
+    if (!govEsgSnapshotUrl) return;
+    var q = (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) ? ('?authority_id=' + encodeURIComponent(String(authorityIdForHeatmap))) : '';
+    fetch(govEsgSnapshotUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (j.ok && j.data) applyGovEsgSnapshotMetrics(j.data);
+    }).catch(function(){});
+  }
   function initGovStatisticsTab(){
     var fromEl = document.getElementById('govStatsDateFrom');
     var toEl = document.getElementById('govStatsDateTo');
@@ -2711,6 +2666,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       fromEl.value = from.toISOString().slice(0, 10);
     }
     if (toEl && !toEl.value) toEl.value = new Date().toISOString().slice(0, 10);
+    loadGovEsgSnapshot();
     loadGovStatistics();
   }
   function loadGovStatistics(){
@@ -2758,7 +2714,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       container.innerHTML = html;
     }).catch(function(){ var container = document.getElementById('govStatisticsContent'); var Le = govStatisticsLabels || {}; if (container) container.innerHTML = '<p class="text-danger small">' + (Le.load_error || '') + '</p>'; });
   }
-  document.getElementById('govStatisticsRefresh') && document.getElementById('govStatisticsRefresh').addEventListener('click', loadGovStatistics);
+  document.getElementById('govStatisticsRefresh') && document.getElementById('govStatisticsRefresh').addEventListener('click', function(){ loadGovEsgSnapshot(); loadGovStatistics(); });
 
   function loadCitybrainLive(){
     var container = document.getElementById('citybrainLiveContent');
@@ -3361,6 +3317,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   }
   function govReloadDataForCurrentScope(){
     govPanOpenMapsToCurrentAuthority();
+    loadGovEsgSnapshot();
     updateGovDashboardContextForAuthority();
     syncGovEurostatHint();
     updateEsgExportLinks();
@@ -3369,7 +3326,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     if (key === 'modules') loadGovModules();
     if (key === 'surveys') loadGovSurveys();
     if (key === 'budget') loadGovBudget();
-    if (key === 'trees') { initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
+    if (key === 'trees') { loadGovEsgSnapshot(); initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
     if (key === 'iot') loadGovIotDevices();
     if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovEsgMetrics(); }
     if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }

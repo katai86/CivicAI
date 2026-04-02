@@ -1096,3 +1096,111 @@ function heatmap_tree_scope_authority_ids(PDO $pdo, int $authorityId, ?string $r
   }
   return [];
 }
+
+/**
+ * Urban ESG kártya (Elemzés + Zöld fül): fa metrikák hatósági fa-scope-pal, report metrikák $reportWhere szerint.
+ *
+ * @param int[] $treeScopeIds
+ * @return array{environment: array, social: array, governance: array}
+ */
+function gov_compute_esg_snapshot(PDO $pdo, array $treeScopeIds, string $reportWhere, array $reportParams): array {
+  $env = [
+    'trees_total' => 0,
+    'trees_needing_inspection' => 0,
+    'trees_needing_water' => 0,
+    'trees_dangerous' => 0,
+    'green_reports' => 0,
+  ];
+  if (!empty($treeScopeIds)) {
+    try {
+      [$tsc, $tsp] = gov_trees_scope_where_sql($pdo, $treeScopeIds, 't');
+      $st = $pdo->prepare("SELECT COUNT(*) FROM trees t WHERE t.public_visible = 1 AND ($tsc)");
+      $st->execute($tsp);
+      $env['trees_total'] = (int) $st->fetchColumn();
+      $st = $pdo->prepare("SELECT COUNT(*) FROM trees t WHERE t.public_visible = 1 AND ($tsc) AND (t.last_inspection IS NULL OR t.last_inspection < DATE_SUB(CURDATE(), INTERVAL 365 DAY))");
+      $st->execute($tsp);
+      $env['trees_needing_inspection'] = (int) $st->fetchColumn();
+      $st = $pdo->prepare("SELECT COUNT(*) FROM trees t WHERE t.public_visible = 1 AND ($tsc) AND (t.last_watered IS NULL OR t.last_watered < DATE_SUB(CURDATE(), INTERVAL 7 DAY))");
+      $st->execute($tsp);
+      $env['trees_needing_water'] = (int) $st->fetchColumn();
+      $st = $pdo->prepare("SELECT COUNT(*) FROM trees t WHERE t.public_visible = 1 AND ($tsc) AND t.risk_level = 'high'");
+      $st->execute($tsp);
+      $env['trees_dangerous'] = (int) $st->fetchColumn();
+    } catch (Throwable $e) { /* ignore */ }
+  }
+  try {
+    $qg = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $reportWhere AND r.category = 'green'");
+    $qg->execute($reportParams);
+    $env['green_reports'] = (int) $qg->fetchColumn();
+  } catch (Throwable $e) { /* ignore */ }
+
+  $soc = [
+    'active_citizens_30d' => 0,
+    'tree_adopters' => 0,
+    'green_events_active' => 0,
+    'watering_actions_30d' => 0,
+  ];
+  try {
+    $qsoc = $pdo->prepare("SELECT COUNT(DISTINCT r.user_id) FROM reports r WHERE $reportWhere AND r.user_id IS NOT NULL AND r.created_at >= (NOW() - INTERVAL 30 DAY)");
+    $qsoc->execute($reportParams);
+    $soc['active_citizens_30d'] = (int) $qsoc->fetchColumn();
+  } catch (Throwable $e) { /* ignore */ }
+  try {
+    if (!empty($treeScopeIds)) {
+      [$tsc2, $tsp2] = gov_trees_scope_where_sql($pdo, $treeScopeIds, 't');
+      $qta = $pdo->prepare("SELECT COUNT(DISTINCT ta.user_id) FROM tree_adoptions ta INNER JOIN trees t ON t.id = ta.tree_id WHERE ta.status = 'active' AND ($tsc2)");
+      $qta->execute($tsp2);
+      $soc['tree_adopters'] = (int) $qta->fetchColumn();
+    }
+  } catch (Throwable $e) { /* ignore */ }
+  try {
+    $soc['green_events_active'] = (int) $pdo->query("SELECT COUNT(*) FROM civil_events WHERE is_active = 1 AND event_type = 'green_action' AND end_date >= CURDATE()")->fetchColumn();
+  } catch (Throwable $e) { /* ignore */ }
+  try {
+    if (!empty($treeScopeIds)) {
+      [$tsc3, $tsp3] = gov_trees_scope_where_sql($pdo, $treeScopeIds, 't');
+      $qtw = $pdo->prepare("SELECT COUNT(*) FROM tree_watering_logs tw INNER JOIN trees t ON t.id = tw.tree_id WHERE ($tsc3) AND tw.created_at >= (NOW() - INTERVAL 30 DAY)");
+      $qtw->execute($tsp3);
+      $soc['watering_actions_30d'] = (int) $qtw->fetchColumn();
+    }
+  } catch (Throwable $e) { /* ignore */ }
+
+  $gov = [
+    'reports_open' => 0,
+    'reports_solved_30d' => 0,
+    'avg_resolution_days' => null,
+  ];
+  try {
+    $qo = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $reportWhere AND r.status NOT IN ('solved','closed','rejected')");
+    $qo->execute($reportParams);
+    $gov['reports_open'] = (int) $qo->fetchColumn();
+  } catch (Throwable $e) { /* ignore */ }
+  try {
+    $qs30 = $pdo->prepare("
+      SELECT COUNT(*) FROM reports r
+      JOIN report_status_log l ON l.report_id = r.id AND l.new_status IN ('solved','closed')
+      WHERE $reportWhere AND l.changed_at >= (NOW() - INTERVAL 30 DAY)
+    ");
+    $qs30->execute($reportParams);
+    $gov['reports_solved_30d'] = (int) $qs30->fetchColumn();
+  } catch (Throwable $e) { /* ignore */ }
+  try {
+    $qa = $pdo->prepare("
+      SELECT AVG(DATEDIFF(l.changed_at, r.created_at)) AS avg_days
+      FROM reports r
+      JOIN report_status_log l ON l.report_id = r.id AND l.new_status IN ('solved','closed')
+      WHERE $reportWhere
+    ");
+    $qa->execute($reportParams);
+    $avg = $qa->fetchColumn();
+    if ($avg !== false && $avg !== null) {
+      $gov['avg_resolution_days'] = (float) $avg;
+    }
+  } catch (Throwable $e) { /* ignore */ }
+
+  return [
+    'environment' => $env,
+    'social' => $soc,
+    'governance' => $gov,
+  ];
+}

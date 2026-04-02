@@ -190,12 +190,23 @@ try {
     ? round($out['citizen_participation_rate']['reports_7d'] / $out['citizen_participation_rate']['active_users_7d'], 1) . ' report/fő (7 nap)'
     : '-';
 
-  // tree_maintenance_stats
+  // tree_maintenance_stats – hatósági fa-scope (gov_trees_scope), mint gov_trees_list
   try {
-    $out['tree_maintenance_stats']['total_trees'] = (int)$pdo->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1")->fetchColumn();
-    $out['tree_maintenance_stats']['watered_7d'] = (int)$pdo->query("SELECT COUNT(DISTINCT tree_id) FROM tree_watering_logs WHERE created_at >= (NOW() - INTERVAL 7 DAY)")->fetchColumn();
-    $out['tree_maintenance_stats']['adopted'] = (int)$pdo->query("SELECT COUNT(DISTINCT tree_id) FROM tree_adoptions WHERE status = 'active'")->fetchColumn();
-    $out['tree_maintenance_stats']['health_at_risk_count'] = (int)$pdo->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND (risk_level = 'high' OR risk_level = 'medium')")->fetchColumn();
+    if (!empty($authorityIds)) {
+      [$tsc, $tsp] = gov_trees_scope_where_sql($pdo, $authorityIds, 't');
+      $st = $pdo->prepare("SELECT COUNT(*) FROM trees t WHERE t.public_visible = 1 AND ($tsc)");
+      $st->execute($tsp);
+      $out['tree_maintenance_stats']['total_trees'] = (int)$st->fetchColumn();
+      $st = $pdo->prepare("SELECT COUNT(DISTINCT tw.tree_id) FROM tree_watering_logs tw INNER JOIN trees t ON t.id = tw.tree_id WHERE ($tsc) AND tw.created_at >= (NOW() - INTERVAL 7 DAY)");
+      $st->execute($tsp);
+      $out['tree_maintenance_stats']['watered_7d'] = (int)$st->fetchColumn();
+      $st = $pdo->prepare("SELECT COUNT(DISTINCT ta.tree_id) FROM tree_adoptions ta INNER JOIN trees t ON t.id = ta.tree_id WHERE ta.status = 'active' AND ($tsc)");
+      $st->execute($tsp);
+      $out['tree_maintenance_stats']['adopted'] = (int)$st->fetchColumn();
+      $st = $pdo->prepare("SELECT COUNT(*) FROM trees t WHERE t.public_visible = 1 AND ($tsc) AND (t.risk_level = 'high' OR t.risk_level = 'medium')");
+      $st->execute($tsp);
+      $out['tree_maintenance_stats']['health_at_risk_count'] = (int)$st->fetchColumn();
+    }
   } catch (Throwable $e) {}
 
   // engagement_rate
