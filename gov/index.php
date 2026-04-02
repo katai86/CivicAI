@@ -67,6 +67,38 @@ $authorityCities = array_values(array_filter(array_unique(array_map(function($a)
   return trim((string)($a['city'] ?? ''));
 }, $authorities))));
 
+$govMapCenterLat = defined('MAP_CENTER_LAT') ? (float) MAP_CENTER_LAT : 47.1625;
+$govMapCenterLng = defined('MAP_CENTER_LNG') ? (float) MAP_CENTER_LNG : 19.5033;
+$govMapDefaultZoom = 11;
+$govAuthorityBboxJs = null;
+if (!empty($authorities)) {
+  $fa0 = $authorities[0];
+  $mla = $fa0['min_lat'] ?? null;
+  $mlaX = $fa0['max_lat'] ?? null;
+  $mln = $fa0['min_lng'] ?? null;
+  $mlnX = $fa0['max_lng'] ?? null;
+  if ($mla !== null && $mla !== '' && $mlaX !== null && $mlaX !== '' && $mln !== null && $mln !== '' && $mlnX !== null && $mlnX !== '') {
+    $govMapCenterLat = ((float) $mla + (float) $mlaX) / 2;
+    $govMapCenterLng = ((float) $mln + (float) $mlnX) / 2;
+    $govAuthorityBboxJs = [
+      'min_lat' => (float) $mla,
+      'max_lat' => (float) $mlaX,
+      'min_lng' => (float) $mln,
+      'max_lng' => (float) $mlnX,
+    ];
+    $span = max(abs((float) $mlaX - (float) $mla), abs((float) $mlnX - (float) $mln));
+    if ($span >= 0.4) {
+      $govMapDefaultZoom = 10;
+    } elseif ($span >= 0.15) {
+      $govMapDefaultZoom = 11;
+    } elseif ($span >= 0.06) {
+      $govMapDefaultZoom = 12;
+    } else {
+      $govMapDefaultZoom = 13;
+    }
+  }
+}
+
 $govEurostatFeatureOn = function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled()
   && function_exists('eu_open_data_feature_enabled') && eu_open_data_feature_enabled('eurostat_enabled');
 $showEurostatCountryHint = false;
@@ -1066,6 +1098,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
                 </select>
                 <button type="button" id="govHeatmapRefresh" class="btn btn-sm btn-outline-primary"><?= h(t('admin.refresh')) ?></button>
               </div>
+              <p id="govHeatmapEmpty" class="text-secondary small mb-2 d-none" role="status"></p>
               <div id="govHeatmapMap" style="height:500px;width:100%;border:1px solid #dee2e6;border-radius:0.375rem;"></div>
             </div>
           </div>
@@ -1547,10 +1580,19 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     }
     $cCity = trim((string)($a['city'] ?? ''));
     $cCountry = trim((string)($a['country'] ?? ''));
+    $mnLa = $a['min_lat'] ?? null;
+    $mxLa = $a['max_lat'] ?? null;
+    $mnL = $a['min_lng'] ?? null;
+    $mxL = $a['max_lng'] ?? null;
+    $hasBbox = $mnLa !== null && $mnLa !== '' && $mxLa !== null && $mxLa !== '' && $mnL !== null && $mnL !== '' && $mxL !== null && $mxL !== '';
     $govAuthMetaJs[(string)$aidM] = [
       'name' => (string)($a['name'] ?? ''),
       'city' => $cCity !== '' ? $cCity : null,
       'country' => $cCountry !== '' ? $cCountry : null,
+      'min_lat' => $hasBbox ? (float) $mnLa : null,
+      'max_lat' => $hasBbox ? (float) $mxLa : null,
+      'min_lng' => $hasBbox ? (float) $mnL : null,
+      'max_lng' => $hasBbox ? (float) $mxL : null,
     ];
   }
   ?>
@@ -1711,8 +1753,12 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     'engagement' => t('gov.city_health_engagement'),
     'maintenance' => t('gov.city_health_maintenance'),
   ], JSON_UNESCAPED_UNICODE) ?>;
-  var mapCenterLat = <?= json_encode(defined('MAP_CENTER_LAT') ? (float)MAP_CENTER_LAT : 47.1625) ?>;
-  var mapCenterLng = <?= json_encode(defined('MAP_CENTER_LNG') ? (float)MAP_CENTER_LNG : 19.5033) ?>;
+  var mapCenterLat = <?= json_encode($govMapCenterLat) ?>;
+  var mapCenterLng = <?= json_encode($govMapCenterLng) ?>;
+  var govMapDefaultZoom = <?= (int) $govMapDefaultZoom ?>;
+  var govAuthorityBbox = <?= json_encode($govAuthorityBboxJs, JSON_UNESCAPED_UNICODE) ?>;
+  var govHeatmapEmptyText = <?= json_encode(t('gov.heatmap_empty'), JSON_UNESCAPED_UNICODE) ?>;
+  var govCityHealthSparseHint = <?= json_encode(t('gov.city_health_sparse_hint'), JSON_UNESCAPED_UNICODE) ?>;
   var govWeatherHumidityLabel = <?= json_encode(t('gov.weather_humidity'), JSON_UNESCAPED_UNICODE) ?>;
   var govIotShowOnMap = <?= json_encode(t('gov.iot_show_on_map'), JSON_UNESCAPED_UNICODE) ?>;
   var appName = <?= json_encode(t('site.name'), JSON_UNESCAPED_UNICODE) ?>;
@@ -1946,17 +1992,66 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     });
   })();
 
+  function govZoomFromBboxSpan(span){
+    if (span >= 0.4) return 10;
+    if (span >= 0.15) return 11;
+    if (span >= 0.06) return 12;
+    return 13;
+  }
+  function govMapViewFromAuthorityId(aid){
+    var id = (aid != null && aid > 0) ? String(aid) : '';
+    var a = id && typeof govAuthoritiesById !== 'undefined' && govAuthoritiesById ? govAuthoritiesById[id] : null;
+    if (a && a.min_lat != null && a.max_lat != null && a.min_lng != null && a.max_lng != null) {
+      var mnLa = Number(a.min_lat), mxLa = Number(a.max_lat), mnL = Number(a.min_lng), mxL = Number(a.max_lng);
+      return {
+        lat: (mnLa + mxLa) / 2,
+        lng: (mnL + mxL) / 2,
+        zoom: govZoomFromBboxSpan(Math.max(Math.abs(mxLa - mnLa), Math.abs(mxL - mnL))),
+        bbox: { min_lat: mnLa, max_lat: mxLa, min_lng: mnL, max_lng: mxL }
+      };
+    }
+    return {
+      lat: typeof mapCenterLat !== 'undefined' ? mapCenterLat : 47.5,
+      lng: typeof mapCenterLng !== 'undefined' ? mapCenterLng : 19,
+      zoom: typeof govMapDefaultZoom !== 'undefined' ? govMapDefaultZoom : 11,
+      bbox: (typeof govAuthorityBbox !== 'undefined' && govAuthorityBbox) ? govAuthorityBbox : null
+    };
+  }
+  function govAppendBboxToQueryString(params, bbox){
+    if (!bbox || bbox.min_lat == null || bbox.max_lat == null || bbox.min_lng == null || bbox.max_lng == null) return params;
+    return params + '&minLat=' + encodeURIComponent(String(bbox.min_lat)) + '&maxLat=' + encodeURIComponent(String(bbox.max_lat)) + '&minLng=' + encodeURIComponent(String(bbox.min_lng)) + '&maxLng=' + encodeURIComponent(String(bbox.max_lng));
+  }
+  function govHeatmapLayerOptions(){
+    return {
+      radius: 28,
+      blur: 18,
+      maxZoom: 18,
+      max: 0.82,
+      minOpacity: 0.38,
+      gradient: { 0.0: 'rgba(255,230,120,0.45)', 0.22: '#ffc107', 0.42: '#fd7e14', 0.62: '#e03131', 0.82: '#c92a2a', 1.0: '#5c0a0a' }
+    };
+  }
+  function govPanOpenMapsToCurrentAuthority(){
+    var v = govMapViewFromAuthorityId(typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0);
+    if (typeof govHeatmapMap !== 'undefined' && govHeatmapMap) govHeatmapMap.setView([v.lat, v.lng], v.zoom);
+    if (typeof govEuGreenMapInstance !== 'undefined' && govEuGreenMapInstance) govEuGreenMapInstance.setView([v.lat, v.lng], Math.min(14, v.zoom + 1));
+    if (typeof govTreeCadastreMap !== 'undefined' && govTreeCadastreMap) govTreeCadastreMap.setView([v.lat, v.lng], Math.max(12, v.zoom));
+    if (typeof citybrainHotspotMap !== 'undefined' && citybrainHotspotMap) citybrainHotspotMap.setView([v.lat, v.lng], v.zoom);
+  }
   function initGovHeatmapTab(){
     var container = document.getElementById('govHeatmapMap');
     if (!container || typeof L === 'undefined') return;
     if (!govHeatmapMap) {
-      govHeatmapMap = L.map('govHeatmapMap').setView([mapCenterLat, mapCenterLng], 11);
+      var v0 = govMapViewFromAuthorityId(typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0);
+      govHeatmapMap = L.map('govHeatmapMap').setView([v0.lat, v0.lng], v0.zoom);
       L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OSM' }).addTo(govHeatmapMap);
     }
     loadGovHeatmap();
   }
   function loadGovHeatmap(){
     if (!govHeatmapMap || !heatmapUrl || typeof L === 'undefined') return;
+    var emptyEl = document.getElementById('govHeatmapEmpty');
+    if (emptyEl) { emptyEl.classList.add('d-none'); emptyEl.textContent = ''; }
     var typeSel = document.getElementById('govHeatmapType');
     var type = typeSel ? typeSel.value : 'issue_density';
     var from = new Date();
@@ -1964,14 +2059,24 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     var to = new Date();
     var params = 'type=' + encodeURIComponent(type) + '&date_from=' + from.toISOString().slice(0, 10) + '&date_to=' + to.toISOString().slice(0, 10);
     if (authorityIdForHeatmap > 0) params += '&authority_id=' + authorityIdForHeatmap;
+    var v = govMapViewFromAuthorityId(authorityIdForHeatmap);
+    params = govAppendBboxToQueryString(params, v.bbox);
     fetch(heatmapUrl + '?' + params, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (govHeatmapLayer) { govHeatmapMap.removeLayer(govHeatmapLayer); govHeatmapLayer = null; }
-      if (!j.ok || !Array.isArray(j.data) || j.data.length === 0) return;
+      if (!j.ok || !Array.isArray(j.data) || j.data.length === 0) {
+        if (emptyEl) { emptyEl.textContent = (typeof govHeatmapEmptyText !== 'undefined' && govHeatmapEmptyText) ? govHeatmapEmptyText : ''; emptyEl.classList.remove('d-none'); }
+        return;
+      }
       var points = j.data.map(function(p){ return [Number(p.lat), Number(p.lng), Number(p.weight) || 1]; });
       if (typeof L.heatLayer !== 'undefined') {
-        govHeatmapLayer = L.heatLayer(points, { radius: 25, blur: 15, maxZoom: 17, max: 1, gradient: { 0.2: 'blue', 0.5: 'lime', 0.8: 'red' } }).addTo(govHeatmapMap);
+        govHeatmapLayer = L.heatLayer(points, govHeatmapLayerOptions()).addTo(govHeatmapMap);
       }
-    }).catch(function(){});
+      if (v.bbox && v.bbox.min_lat != null) {
+        try {
+          govHeatmapMap.fitBounds([[v.bbox.min_lat, v.bbox.min_lng], [v.bbox.max_lat, v.bbox.max_lng]], { maxZoom: 16, padding: [28, 28] });
+        } catch (_) {}
+      }
+    }).catch(function(){ if (emptyEl) { emptyEl.textContent = (typeof govHeatmapEmptyText !== 'undefined' && govHeatmapEmptyText) ? govHeatmapEmptyText : ''; emptyEl.classList.remove('d-none'); } });
   }
   document.getElementById('govHeatmapRefresh') && document.getElementById('govHeatmapRefresh').addEventListener('click', loadGovHeatmap);
   document.getElementById('govHeatmapType') && document.getElementById('govHeatmapType').addEventListener('change', loadGovHeatmap);
@@ -2218,7 +2323,8 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       govEuGreenMapInstance.invalidateSize();
       return;
     }
-    govEuGreenMapInstance = L.map('govEuGreenMap').setView([mapCenterLat, mapCenterLng], 12);
+    var ev = govMapViewFromAuthorityId(typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0);
+    govEuGreenMapInstance = L.map('govEuGreenMap').setView([ev.lat, ev.lng], Math.min(14, ev.zoom + 1));
     var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
     var esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri' });
     esri.addTo(govEuGreenMapInstance);
@@ -2301,6 +2407,10 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
         html += '<div class="admin-chart-bar"><span class="label">' + label + '</span><div class="bar-wrap"><div class="bar" style="width:' + Math.min(100, score) + '%;background:#0d6efd"></div></div><span class="val">' + score + '</span></div>';
       });
       html += '</div>';
+      var sig = d.signals || {};
+      if (typeof govCityHealthSparseHint === 'string' && govCityHealthSparseHint && Number(sig.reports_last_90d) === 0 && Number(sig.trees_in_scope_public) === 0) {
+        html += '<p class="text-secondary small mt-2 mb-0">' + govCityHealthSparseHint.replace(/</g, '&lt;') + '</p>';
+      }
       container.innerHTML = html;
     }).catch(function(){ var c = document.getElementById('govCityHealthContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
   }
@@ -2699,9 +2809,10 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     var mapEl = document.getElementById('citybrainHotspotMap');
     if (!mapEl || typeof L === 'undefined' || typeof L.heatLayer === 'undefined') return;
     if (!citybrainHotspotMap) {
-      citybrainHotspotMap = L.map('citybrainHotspotMap').setView([typeof mapCenterLat !== 'undefined' ? mapCenterLat : 47.5, typeof mapCenterLng !== 'undefined' ? mapCenterLng : 19], 11);
+      var hv = govMapViewFromAuthorityId(typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0);
+      citybrainHotspotMap = L.map('citybrainHotspotMap').setView([hv.lat, hv.lng], hv.zoom);
       L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OSM' }).addTo(citybrainHotspotMap);
-      citybrainHotspotLayer = L.heatLayer([], { radius: 25, blur: 15 }).addTo(citybrainHotspotMap);
+      citybrainHotspotLayer = L.heatLayer([], govHeatmapLayerOptions()).addTo(citybrainHotspotMap);
     }
     loadCitybrainHotspot();
     document.getElementById('citybrainHotspotType') && document.getElementById('citybrainHotspotType').addEventListener('change', loadCitybrainHotspot);
@@ -2711,10 +2822,17 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     var type = (document.getElementById('citybrainHotspotType') && document.getElementById('citybrainHotspotType').value) || 'issue_density';
     var params = 'type=' + encodeURIComponent(type);
     if (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) params += '&authority_id=' + authorityIdForHeatmap;
+    var hv = govMapViewFromAuthorityId(typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0);
+    params = govAppendBboxToQueryString(params, hv.bbox);
     fetch(heatmapUrl + '?' + params, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok || !Array.isArray(j.data)) { citybrainHotspotLayer.setLatLngs([]); return; }
       var points = j.data.map(function(p){ return [parseFloat(p.lat), parseFloat(p.lng), parseFloat(p.weight) || 1]; });
       citybrainHotspotLayer.setLatLngs(points);
+      if (citybrainHotspotMap && hv.bbox && hv.bbox.min_lat != null) {
+        try {
+          citybrainHotspotMap.fitBounds([[hv.bbox.min_lat, hv.bbox.min_lng], [hv.bbox.max_lat, hv.bbox.max_lng]], { maxZoom: 16, padding: [28, 28] });
+        } catch (_) {}
+      }
     }).catch(function(){ if (citybrainHotspotLayer) citybrainHotspotLayer.setLatLngs([]); });
   }
   function loadCitybrainBehavior(){
@@ -2786,7 +2904,8 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       var timeframe = (timeframeEl && timeframeEl.value) ? timeframeEl.value : 'last_90_days';
       resultEl.textContent = '<?= json_encode(t('gov.generating'), JSON_UNESCAPED_UNICODE) ?>';
       btn.disabled = true;
-      postJson(aiUrl, { action: 'generate', type: type, timeframe: timeframe }).then(function(x){
+      var aidBody = (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) ? { authority_id: authorityIdForHeatmap } : {};
+      postJson(aiUrl, Object.assign({ action: 'generate', type: type, timeframe: timeframe }, aidBody)).then(function(x){
         btn.disabled = false;
         if (x.ok && x.j && x.j.ok && x.j.data && x.j.data.text) { resultEl.textContent = x.j.data.text; }
         else { resultEl.textContent = (x.j && x.j.error) ? x.j.error : '—'; }
@@ -2826,7 +2945,8 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       govTreeCadastreMap.invalidateSize();
       return;
     }
-    govTreeCadastreMap = L.map('govTreeCadastreMap').setView([mapCenterLat, mapCenterLng], 13);
+    var tv = govMapViewFromAuthorityId(typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0);
+    govTreeCadastreMap = L.map('govTreeCadastreMap').setView([tv.lat, tv.lng], Math.max(12, tv.zoom));
     govTreeBaseOsm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
     govTreeBaseEsri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri' });
     govTreeBaseOsm.addTo(govTreeCadastreMap);
@@ -3240,6 +3360,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     el.classList.toggle('d-none', !missing);
   }
   function govReloadDataForCurrentScope(){
+    govPanOpenMapsToCurrentAuthority();
     updateGovDashboardContextForAuthority();
     syncGovEurostatHint();
     updateEsgExportLinks();

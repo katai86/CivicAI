@@ -55,6 +55,8 @@ $limit = 2000; // max pont a válaszban (zoom-függő intenzitás: kliens decim�
 $out = [];
 try {
   $pdo = db();
+  $treeScopeIds = heatmap_tree_scope_authority_ids($pdo, $authorityId, $role);
+  [$treeScopeWhere, $treeScopeParams] = gov_trees_scope_where_sql($pdo, $treeScopeIds, 't');
 
   // Dátum szűrés SQL
   $dateWhere = '';
@@ -123,10 +125,10 @@ try {
       }
       $twDateWhere = str_replace('r.created_at', 'tw.created_at', $dateWhere);
       $twDateParams = $dateParams;
-      $sql2 = "SELECT t.lat AS lat, t.lng AS lng, 0.5 AS w FROM tree_watering_logs tw JOIN trees t ON t.id = tw.tree_id WHERE t.lat IS NOT NULL AND t.lng IS NOT NULL $twDateWhere LIMIT " . (int)($limit / 2);
+      $sql2 = "SELECT t.lat AS lat, t.lng AS lng, 0.5 AS w FROM tree_watering_logs tw JOIN trees t ON t.id = tw.tree_id WHERE ($treeScopeWhere) AND t.lat IS NOT NULL AND t.lng IS NOT NULL $twDateWhere LIMIT " . (int)($limit / 2);
       try {
         $stmt2 = $pdo->prepare($sql2);
-        $stmt2->execute($twDateParams);
+        $stmt2->execute(array_merge($treeScopeParams, $twDateParams));
         while ($row = $stmt2->fetch(PDO::FETCH_ASSOC)) {
           $out[] = ['lat' => (float)$row['lat'], 'lng' => (float)$row['lng'], 'weight' => 0.5];
         }
@@ -142,10 +144,10 @@ try {
       }
       $sql = "SELECT t.lat AS lat, t.lng AS lng,
               CASE WHEN t.risk_level = 'high' THEN 2.0 WHEN t.risk_level = 'medium' THEN 1.2 ELSE 0.5 END AS w
-              FROM trees t WHERE t.public_visible = 1 AND t.lat IS NOT NULL AND t.lng IS NOT NULL $tBbox LIMIT $limit";
+              FROM trees t WHERE ($treeScopeWhere) AND t.lat IS NOT NULL AND t.lng IS NOT NULL $tBbox LIMIT $limit";
       try {
         $stmt = $pdo->prepare($sql);
-        $stmt->execute($tBboxParams);
+        $stmt->execute(array_merge($treeScopeParams, $tBboxParams));
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
           $out[] = ['lat' => (float)$row['lat'], 'lng' => (float)$row['lng'], 'weight' => (float)$row['w']];
         }
@@ -171,9 +173,9 @@ try {
           $tBbox = " AND t.lat BETWEEN ? AND ? AND t.lng BETWEEN ? AND ?";
           $tBboxParams = [$minLat, $maxLat, $minLng, $maxLng];
         }
-        $sql2 = "SELECT t.lat AS lat, t.lng AS lng, 1.5 AS w FROM trees t WHERE t.public_visible = 1 AND t.risk_level = 'high' AND t.lat IS NOT NULL AND t.lng IS NOT NULL $tBbox LIMIT " . (int)($limit / 2);
+        $sql2 = "SELECT t.lat AS lat, t.lng AS lng, 1.5 AS w FROM trees t WHERE ($treeScopeWhere) AND t.risk_level = 'high' AND t.lat IS NOT NULL AND t.lng IS NOT NULL $tBbox LIMIT " . (int)($limit / 2);
         $stmt2 = $pdo->prepare($sql2);
-        $stmt2->execute($tBboxParams);
+        $stmt2->execute(array_merge($treeScopeParams, $tBboxParams));
         while ($row = $stmt2->fetch(PDO::FETCH_ASSOC)) {
           $out[] = ['lat' => (float)$row['lat'], 'lng' => (float)$row['lng'], 'weight' => 1.5];
         }

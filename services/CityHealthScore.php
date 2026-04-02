@@ -5,10 +5,11 @@
  * Szabályalapú számítás; opcionálisan AI kiegészítheti (később).
  */
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../util.php';
 
 class CityHealthScore
 {
-    /** authority_id = null vagy 0: összes adat; >0: csak az adott hatóság reportjai (fák globális) */
+    /** authority_id = null: admin összesített (reportok + fák minden hatóság scope); >0: egy hatóság */
     public function compute(?int $authorityId = null): array
     {
         $pdo = db();
@@ -18,6 +19,10 @@ class CityHealthScore
             'environment_score' => 50,
             'engagement_score' => 50,
             'maintenance_score' => 50,
+            'signals' => [
+                'trees_in_scope_public' => 0,
+                'reports_last_90d' => 0,
+            ],
         ];
 
         $reportWhere = '1=1';
@@ -36,6 +41,7 @@ class CityHealthScore
             $stmt = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $reportWhere AND r.created_at >= (NOW() - INTERVAL 90 DAY)");
             $stmt->execute($reportParams);
             $total = (int)$stmt->fetchColumn();
+            $out['signals']['reports_last_90d'] = $total;
             $stmt = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $reportWhere AND r.created_at >= (NOW() - INTERVAL 90 DAY) AND r.status IN ('solved','closed')");
             $stmt->execute($reportParams);
             $resolved = (int)$stmt->fetchColumn();
@@ -57,15 +63,36 @@ class CityHealthScore
         $out['infrastructure_score'] = (int)round(($infraFromResolution * 0.6 + $infraFromBacklog * 0.4));
         $out['infrastructure_score'] = max(0, min(100, $out['infrastructure_score']));
 
-        // Environment: fa egészség (globális fák)
+        // Environment: fa egészség (hatósági scope, nyilvános fák)
+        $treeScopeIds = [];
+        if ($authorityId !== null && $authorityId > 0) {
+            $treeScopeIds = [(int) $authorityId];
+        } else {
+            try {
+                $raw = $pdo->query('SELECT id FROM authorities ORDER BY name')->fetchAll(PDO::FETCH_COLUMN);
+                $treeScopeIds = array_values(array_filter(array_map('intval', $raw ?: []), static fn ($x) => $x > 0));
+            } catch (Throwable $e) {
+                $treeScopeIds = [];
+            }
+        }
         $treeTotal = 0;
         $treeGood = 0;
         $treeRisk = 0;
-        try {
-            $treeTotal = (int)$pdo->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1")->fetchColumn();
-            $treeGood = (int)$pdo->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND (health_status IN ('good','fair') OR health_status IS NULL) AND (risk_level IS NULL OR risk_level = 'low')")->fetchColumn();
-            $treeRisk = (int)$pdo->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND (risk_level = 'high' OR risk_level = 'medium')")->fetchColumn();
-        } catch (Throwable $e) {}
+        if (!empty($treeScopeIds)) {
+            try {
+                [$tw, $tp] = gov_trees_scope_where_sql($pdo, $treeScopeIds, 't');
+                $st = $pdo->prepare("SELECT COUNT(*) FROM trees t WHERE t.public_visible = 1 AND ($tw)");
+                $st->execute($tp);
+                $treeTotal = (int) $st->fetchColumn();
+                $out['signals']['trees_in_scope_public'] = $treeTotal;
+                $st = $pdo->prepare("SELECT COUNT(*) FROM trees t WHERE t.public_visible = 1 AND ($tw) AND (t.health_status IN ('good','fair') OR t.health_status IS NULL) AND (t.risk_level IS NULL OR t.risk_level = 'low')");
+                $st->execute($tp);
+                $treeGood = (int) $st->fetchColumn();
+                $st = $pdo->prepare("SELECT COUNT(*) FROM trees t WHERE t.public_visible = 1 AND ($tw) AND (t.risk_level = 'high' OR t.risk_level = 'medium')");
+                $st->execute($tp);
+                $treeRisk = (int) $st->fetchColumn();
+            } catch (Throwable $e) {}
+        }
 
         if ($treeTotal > 0) {
             $ratioGood = $treeGood / $treeTotal;

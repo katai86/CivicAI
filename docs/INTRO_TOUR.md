@@ -1,54 +1,81 @@
-# Bemutató túra (Start intro) – megvalósítási terv
+# Bemutató túra (Start intro / Quick tour)
 
 ## Cél
-Egy „Bemutató indítása” / „Start intro” gombra kattintva a weblap lépésről lépésre bemutatja a fő elemeket: a térképet, a bejelentés gombot, a jelmagyarzatot, menüpontokat stb. A kijelölt elem highlightolódik, mellette megjelenik egy rövid szöveg (tipp/súgó).
 
-## Ajánlott megoldás: Driver.js
-- **Driver.js** (https://driverjs.com/): könnyű, függőség nélküli, CDN-nel használható, jól testreszabható.
-- Alternatívák: Intro.js, Shepherd.js – nagyobb méret vagy bonyolultabb API.
+A **„Bemutató indítása”** / **„Start intro”** gombra kattintva a weblap lépésről lépésre bemutatja a fő elemeket. A kijelölt elem kiemelődik, mellette megjelenik egy rövid szöveg. Az első lépés egy **bevezető** (cím + hosszabb leírás), a **lépésszámláló** szövege nyelvenként fordított (`tour.progress`).
 
-### CDN
-```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
-<script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
-```
+## Megvalósítás: Driver.js
 
-## Túra lépések
+- **Driver.js** (https://driverjs.com/) – CDN-nel betöltve az érintett oldalakon.
+- **Szövegek:** `window.LANG` (a `lang/*.php` teljes tömbje JSON-ként), kulcsok: `tour.intro_title`, `tour.intro_body_gov`, `tour.intro_body_map`, `tour.progress`, `tour.next`, `tour.prev`, `tour.done`, `tour.step_*`.
+- **Logika:** `assets/tour.js` → `window.civicaiTour.start()`.
 
-### Térkép oldal (desktop: index.php)
-| Sor | Cél elem (selector) | Szöveg (lang kulcs) | Megjegyzés |
-|-----|----------------------|---------------------|------------|
-| 1 | `#mapWrap` | tour.step_map | A térkép – itt láthatod a bejelentéseket, ötleteket, fákat. |
-| 2 | `#btnNewReport` vagy `.fab-report-desktop` | tour.step_report | Új bejelentés: kattints ide vagy a térképre. |
-| 3 | `#legendMenuBtn` | tour.step_legend | Jelmagyarzat: kategóriák, ötletek, fák szűrése, új fa/ötlet. |
-| 4 | `#mapSearchForm` vagy `.topbar-search` | tour.step_search | Keresés cím vagy hely szerint. |
-| 5 | `.topbar-links` (vagy első topbtn link) | tour.step_menu | Menü: GYIK, költségvetés, felmérések, bejelentkezés. |
+## Első lépés (bevezető)
 
-### Gov dashboard (gov/index.php)
-| Sor | Cél elem | Szöveg (lang kulcs) | Megjegyzés |
-|-----|----------|---------------------|------------|
-| 1 | `[data-tab="dashboard"]` | tour.step_gov_dashboard | Áttekintés: statisztikák, legutóbbi tevékenység. |
-| 2 | `[data-tab="reports"]` | tour.step_gov_reports | Bejelentések kezelése, státusz módosítás. |
-| 3 | `[data-tab="ideas"]` | tour.step_gov_ideas | Ötletek és szavazatok. |
-| 4 | `[data-tab="iot"]` | tour.step_gov_iot | Szenzorok (IoT) szinkron és listák. |
-| 5 | `[data-tab="citybrain-live"]` vagy első City Brain tab | tour.step_gov_citybrain | City Brain: élő adatok, előrejelzés, hotspotok, AI. |
-| 6 | `[data-tab="modules"]` | tour.step_gov_modules | Modulok be-/kikapcsolása. |
+| Oldal | Célelem (sorrendben) | Cím kulcs | Szöveg kulcs |
+|--------|----------------------|-----------|---------------|
+| Térkép (`index.php`) | `#btnStartTour`, ha nincs: `#mapWrap` | `tour.intro_title` | `tour.intro_body_map` |
+| Gov (`gov/index.php`) | `#btnStartTour`, ha nincs: `.sidebar-menu`, `.app-sidebar` | `tour.intro_title` | `tour.intro_body_gov` |
 
-## Nyelvesítés
-Minden lépés szövegét a `lang/*.php` fájlokban tároljuk: `tour.start`, `tour.next`, `tour.prev`, `tour.done`, `tour.step_map`, `tour.step_report`, … (lásd a hozzáadott kulcsokat).
+## Lépésszámláló
+
+- Globális beállítás: `progressText: t('tour.progress', …)` – a `{{current}}` és `{{total}}` helyőrzőket a Driver.js tölti ki.
+- Példa magyarul: `{{current}}. / {{total}}. lépés`
+- Példa angolul: `Step {{current}} of {{total}}`
+
+## Térkép oldal (desktop: `index.php`)
+
+| Sor | Cél elem | Lang kulcs |
+|-----|----------|------------|
+| 1 | Bevezető (lásd fent) | `tour.intro_title`, `tour.intro_body_map` |
+| 2 | `#mapWrap` | `tour.step_map` |
+| 3 | `#btnNewReport` / `.fab-report-desktop` / `.fab-report` | `tour.step_report` |
+| 4 | `#legendMenuBtn` / `#legendToggle` | `tour.step_legend` |
+| 5 | `#mapSearchForm` / `.topbar-search` | `tour.step_search` |
+| 6 | `.topbar-links` | `tour.step_menu` |
+
+## Gov dashboard (`gov/index.php`)
+
+A menü **sorrendje** megegyezik a bal oldali navigációval. A `[data-tab="…"]` elem csak akkor létezik, ha a modul/fül megjelenik (pl. felmérés, költségvetés, EU adatok, IoT) – hiányzó elemeket a túra kihagyja.
+
+| Sor | `data-tab` | Lang kulcs |
+|-----|------------|------------|
+| 1 | Bevezető (lásd fent) | `tour.intro_title`, `tour.intro_body_gov` |
+| 2 | `dashboard` | `tour.step_gov_dashboard` |
+| 3 | `reports` | `tour.step_gov_reports` |
+| 4 | `ideas` | `tour.step_gov_ideas` |
+| 5 | `surveys` | `tour.step_gov_surveys` |
+| 6 | `budget` | `tour.step_gov_budget` |
+| 7 | `trees` | `tour.step_gov_trees` |
+| 8 | `ai` | `tour.step_gov_ai` |
+| 9 | `analytics` | `tour.step_gov_analytics` |
+| 10 | `eu-open-data` | `tour.step_gov_eu_open_data` |
+| 11 | `iot` | `tour.step_gov_iot` |
+| 12 | `citybrain-live` | `tour.step_gov_citybrain_live` |
+| 13 | `citybrain-predictive` | `tour.step_gov_citybrain_predictive` |
+| 14 | `citybrain-hotspot` | `tour.step_gov_citybrain_hotspot` |
+| 15 | `citybrain-behavior` | `tour.step_gov_citybrain_behavior` |
+| 16 | `citybrain-environmental` | `tour.step_gov_citybrain_environmental` |
+| 17 | `citybrain-insights` | `tour.step_gov_citybrain_insights` |
+| 18 | `citybrain-risk` | `tour.step_gov_citybrain_risk` |
+| 19 | `modules` | `tour.step_gov_modules` |
+| 20 | `#govCityHealthCard` / `#tab-dashboard` | `tour.step_gov_dashboard_explain` |
+
+Megjegyzés: a `tour.step_gov_citybrain` kulcs a nyelvi fájlokban összefoglaló szöveghez maradhat (pl. GYIK), a túra lépéssora a fenti részletes City Brain kulcsokat használja.
 
 ## Gomb elhelyezése
-- **Térkép oldal:** topbar-ban, pl. a GYIK mellett: „Bemutató” / „Start intro” gomb (pl. `id="btnStartTour"`).
-- **Gov oldal:** a dashboard fejlécében vagy a sidebar alján: „Bemutató indítása”.
-- Opcionális: csak első látogatáskor mutatni (pl. `localStorage.getItem('civicai_tour_done')`), vagy mindig elérhetően.
 
-## Technikai lépések
-1. Driver.js betöltése (CDN) csak azokon az oldalakon, ahol a túra elérhető (pl. index, gov/index).
-2. `assets/tour.js`: inicializálás, lépéssor definíció (selector + `description` a `window.LANG['tour.step_*']`-ból).
-3. „Bemutató indítása” gomb: `document.getElementById('btnStartTour').addEventListener('click', () => window.civicaiTour.start())`.
-4. Túra végén opcionálisan: `localStorage.setItem('civicai_tour_done', '1')` és a driver `onDestroy` callback.
+- **Térkép:** `inc_desktop_topbar.php` – `id="btnStartTour"`, `aria-label` és felirat: `t('tour.start')`.
+- **Gov:** `gov/index.php` – ugyanígy `btnStartTour`.
+- Mindkét oldalon: `window.LANG = …` után betöltött `tour.js`, majd a gomb `click` → `civicaiTour.start()`.
+
+## Egyéb
+
+- Túra végén: `localStorage.civicai_tour_done` (lásd `tour.js` `onDestroyed`).
+- **Nyelvek:** `hu`, `en`, `de`, `fr`, `it`, `es`, `sl` – minden `tour.*` kulcsot érdemes szinkronban tartani.
 
 ## Fájlok
-- **Nyelv:** `lang/hu.php`, `lang/en.php`, … – `tour.*` kulcsok.
-- **Túra logika:** `assets/tour.js` (lépéssor, Driver.js konfig).
-- **Gomb:** `inc_desktop_topbar.php` (térkép), `gov/index.php` (gov oldal) – egy-egy gomb, ami meghívja a túrát.
+
+- `lang/*.php` – `tour.*` kulcsok
+- `assets/tour.js` – lépéssor, Driver.js konfig, `progressText`
+- `docs/INTRO_TOUR.md` – ez a dokumentum

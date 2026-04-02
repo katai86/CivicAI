@@ -137,15 +137,19 @@ if (!empty($sensorIds)) {
 }
 
 // Reports: authority scope (authority_id IN + city IN for null authority_id)
-$reportWhere = '1=1';
+$reportWhere = '1=0';
 $reportParams = [];
+$reportParts = [];
 if (!empty($authorityIds)) {
-  $reportWhere = "r.authority_id IN (" . implode(',', array_fill(0, count($authorityIds), '?')) . ")";
-  $reportParams = $authorityIds;
+  $reportParts[] = "r.authority_id IN (" . implode(',', array_fill(0, count($authorityIds), '?')) . ")";
+  $reportParams = array_merge($reportParams, $authorityIds);
 }
 if (!empty($cities)) {
-  $reportWhere .= " OR (r.authority_id IS NULL AND r.city IN (" . implode(',', array_fill(0, count($cities), '?')) . "))";
+  $reportParts[] = "(r.authority_id IS NULL AND r.city IN (" . implode(',', array_fill(0, count($cities), '?')) . "))";
   $reportParams = array_merge($reportParams, $cities);
+}
+if (!empty($reportParts)) {
+  $reportWhere = '(' . implode(' OR ', $reportParts) . ')';
 }
 
 $reports_24h = 0;

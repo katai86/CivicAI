@@ -1055,3 +1055,44 @@ function gov_trees_scope_where_sql(PDO $pdo, array $authorityIds, string $alias 
 
   return ['(' . implode(' OR ', $parts) . ')', $params];
 }
+
+/**
+ * Fák száma a gov_trees_scope-ban (opcionálisan csak public_visible = 1).
+ *
+ * @param int[] $authorityIds
+ */
+function gov_trees_count_in_scope(PDO $pdo, array $authorityIds, bool $publicOnly = false): int {
+  if (empty($authorityIds)) {
+    return 0;
+  }
+  [$scopeWhere, $scopeParams] = gov_trees_scope_where_sql($pdo, $authorityIds, 't');
+  $pub = $publicOnly ? 't.public_visible = 1 AND ' : '';
+  try {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM trees t WHERE {$pub}($scopeWhere)");
+    $stmt->execute($scopeParams);
+    return (int) $stmt->fetchColumn();
+  } catch (Throwable $e) {
+    return 0;
+  }
+}
+
+/**
+ * Heatmap fa-rétegek: mely hatóság-id-k határozzák meg a scope-ot (gov: egy; admin 0 param: mind).
+ *
+ * @return int[]
+ */
+function heatmap_tree_scope_authority_ids(PDO $pdo, int $authorityId, ?string $role = null): array {
+  if ($authorityId > 0) {
+    return [$authorityId];
+  }
+  $role = $role ?? (current_user_role() ?: '');
+  if (in_array($role, ['admin', 'superadmin'], true)) {
+    try {
+      $raw = $pdo->query('SELECT id FROM authorities ORDER BY name')->fetchAll(PDO::FETCH_COLUMN);
+      return array_values(array_filter(array_map('intval', $raw ?: []), static fn ($x) => $x > 0));
+    } catch (Throwable $e) {
+      return [];
+    }
+  }
+  return [];
+}

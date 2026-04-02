@@ -59,7 +59,7 @@ if (in_array($role, ['admin', 'superadmin'], true)) {
   if (empty($authorityIds)) {
     $baseWhere = '1=0';
   } else {
-    $baseWhere = "r.authority_id IN (" . implode(',', array_fill(0, count($authorityIds), '?')) . ")";
+    $baseWhere = "(r.authority_id IN (" . implode(',', array_fill(0, count($authorityIds), '?')) . "))";
     $baseParams = $authorityIds;
     if (!empty($authorityCities)) {
       $baseWhere .= " OR (r.authority_id IS NULL AND r.city IN (" . implode(',', array_fill(0, count($authorityCities), '?')) . "))";
@@ -97,8 +97,17 @@ try {
 } catch (Throwable $e) {}
 
 try {
-  $adopters = (int)$pdo->query("SELECT COUNT(DISTINCT user_id) FROM tree_adoptions WHERE status = 'active'")->fetchColumn();
-  $watering = (int)$pdo->query("SELECT COUNT(*) FROM tree_watering_logs WHERE created_at >= (NOW() - INTERVAL 30 DAY)")->fetchColumn();
+  $adopters = 0;
+  $watering = 0;
+  if (!empty($authorityIds)) {
+    [$tsc, $tsp] = gov_trees_scope_where_sql($pdo, $authorityIds, 't');
+    $qa = $pdo->prepare("SELECT COUNT(DISTINCT ta.user_id) FROM tree_adoptions ta INNER JOIN trees t ON t.id = ta.tree_id WHERE ta.status = 'active' AND ($tsc)");
+    $qa->execute($tsp);
+    $adopters = (int) $qa->fetchColumn();
+    $qw = $pdo->prepare("SELECT COUNT(*) FROM tree_watering_logs tw INNER JOIN trees t ON t.id = tw.tree_id WHERE ($tsc) AND tw.created_at >= (NOW() - INTERVAL 30 DAY)");
+    $qw->execute($tsp);
+    $watering = (int) $qw->fetchColumn();
+  }
   $volunteer = min(1.0, ($adopters / 50.0) * 0.5 + ($watering / 100.0) * 0.5);
   $out['social']['volunteer_engagement'] = round($volunteer, 2);
 } catch (Throwable $e) {}

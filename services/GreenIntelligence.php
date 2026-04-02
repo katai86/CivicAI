@@ -6,6 +6,7 @@
  * M3 EU: opcionális CLMS Urban Atlas 2018 (terület-súlyozott megoszlás a bbox-ban) ha `clms_enabled`.
  */
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../util.php';
 
 class GreenIntelligence
 {
@@ -15,7 +16,7 @@ class GreenIntelligence
     private const CO2_KG_PER_M2_YEAR = 0.5;
 
     /**
-     * @param int|null $authorityId null = all trees, no bbox; >0 = trees in authority bbox if available
+     * @param int|null $authorityId null = admin: összes hatóság fa-scope; >0 = adott hatóság (gov_trees_scope)
      */
     public function compute(?int $authorityId = null): array
     {
@@ -28,33 +29,27 @@ class GreenIntelligence
 
         $pdo = db();
 
-        $bbox = null;
-        if ($authorityId > 0) {
+        $scopeAuthIds = [];
+        if ($authorityId !== null && $authorityId > 0) {
+            $scopeAuthIds = [(int) $authorityId];
+        } else {
             try {
-                $stmt = $pdo->prepare("SELECT min_lat, max_lat, min_lng, max_lng FROM authorities WHERE id = ? LIMIT 1");
-                $stmt->execute([$authorityId]);
-                $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                if ($row && $row['min_lat'] !== null && $row['max_lat'] !== null && $row['min_lng'] !== null && $row['max_lng'] !== null) {
-                    $bbox = [
-                        'min_lat' => (float)$row['min_lat'],
-                        'max_lat' => (float)$row['max_lat'],
-                        'min_lng' => (float)$row['min_lng'],
-                        'max_lng' => (float)$row['max_lng'],
-                    ];
-                }
-            } catch (Throwable $e) {}
+                $raw = $pdo->query('SELECT id FROM authorities ORDER BY name')->fetchAll(PDO::FETCH_COLUMN);
+                $scopeAuthIds = array_values(array_filter(array_map('intval', $raw ?: []), static fn ($x) => $x > 0));
+            } catch (Throwable $e) {
+                $scopeAuthIds = [];
+            }
+        }
+        if (empty($scopeAuthIds)) {
+            return $out;
         }
 
-        $treeWhere = 'public_visible = 1 AND lat IS NOT NULL AND lng IS NOT NULL';
-        $treeParams = [];
-        if ($bbox) {
-            $treeWhere .= ' AND lat >= ? AND lat <= ? AND lng >= ? AND lng <= ?';
-            $treeParams = [$bbox['min_lat'], $bbox['max_lat'], $bbox['min_lng'], $bbox['max_lng']];
-        }
+        [$treeScopeWhere, $treeScopeParams] = gov_trees_scope_where_sql($pdo, $scopeAuthIds, 't');
+        $bbox = $this->mergedAuthorityBbox($pdo, $scopeAuthIds);
 
         try {
-            $stmt = $pdo->prepare("SELECT id, species, canopy_diameter, trunk_diameter, last_watered FROM trees WHERE $treeWhere");
-            $stmt->execute($treeParams);
+            $stmt = $pdo->prepare("SELECT t.id, t.species, t.canopy_diameter, t.trunk_diameter, t.last_watered FROM trees t WHERE t.public_visible = 1 AND t.lat IS NOT NULL AND t.lng IS NOT NULL AND ($treeScopeWhere)");
+            $stmt->execute($treeScopeParams);
             $trees = $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Throwable $e) {
             return $out;
@@ -130,6 +125,48 @@ class GreenIntelligence
         }
 
         return $out;
+    }
+
+    /** @param int[] $authorityIds */
+    private function mergedAuthorityBbox(PDO $pdo, array $authorityIds): ?array
+    {
+        if (empty($authorityIds)) {
+            return null;
+        }
+        try {
+            $stmt = $pdo->prepare('SELECT min_lat, max_lat, min_lng, max_lng FROM authorities WHERE id = ?');
+            $minLa = null;
+            $maxLa = null;
+            $minL = null;
+            $maxL = null;
+            foreach ($authorityIds as $id) {
+                $stmt->execute([(int) $id]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if (!$row || $row['min_lat'] === null || $row['max_lat'] === null || $row['min_lng'] === null || $row['max_lng'] === null) {
+                    continue;
+                }
+                $a = (float) $row['min_lat'];
+                $b = (float) $row['max_lat'];
+                $c = (float) $row['min_lng'];
+                $d = (float) $row['max_lng'];
+                $minLa = $minLa === null ? $a : min($minLa, $a);
+                $maxLa = $maxLa === null ? $b : max($maxLa, $b);
+                $minL = $minL === null ? $c : min($minL, $c);
+                $maxL = $maxL === null ? $d : max($maxL, $d);
+            }
+            if ($minLa === null) {
+                return null;
+            }
+
+            return [
+                'min_lat' => $minLa,
+                'max_lat' => $maxLa,
+                'min_lng' => $minL,
+                'max_lng' => $maxL,
+            ];
+        } catch (Throwable $e) {
+            return null;
+        }
     }
 
     private function loadSpeciesWateringIntervals(PDO $pdo): array

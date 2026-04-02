@@ -54,6 +54,22 @@ $dateWhere = ' AND r.created_at >= ? AND r.created_at <= ?';
 
 $pdo = db();
 
+$treeAuthorityIds = [];
+if ($isAdmin) {
+  if ($authorityId !== null && $authorityId > 0) {
+    $treeAuthorityIds = [(int) $authorityId];
+  } else {
+    try {
+      $raw = $pdo->query('SELECT id FROM authorities ORDER BY name')->fetchAll(PDO::FETCH_COLUMN);
+      $treeAuthorityIds = array_values(array_filter(array_map('intval', $raw ?: []), static fn ($x) => $x > 0));
+    } catch (Throwable $e) {
+      $treeAuthorityIds = [];
+    }
+  }
+} elseif ($authorityId !== null && $authorityId > 0) {
+  $treeAuthorityIds = [(int) $authorityId];
+}
+
 // ---------- Environment ----------
 $environment = [
   'trees_total' => 0,
@@ -63,12 +79,15 @@ $environment = [
   'co2_estimate_kg' => null,
 ];
 try {
-  $environment['trees_total'] = (int)$pdo->query("SELECT COUNT(*) FROM trees WHERE public_visible = 1")->fetchColumn();
+  $environment['trees_total'] = gov_trees_count_in_scope($pdo, $treeAuthorityIds, false);
 } catch (Throwable $e) {}
 try {
-  $stmt = $pdo->prepare("SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND (planting_year = ? OR (planting_year IS NULL AND YEAR(created_at) = ?))");
-  $stmt->execute([$year, $year]);
-  $environment['trees_planted_in_year'] = (int)$stmt->fetchColumn();
+  if (!empty($treeAuthorityIds)) {
+    [$tsc, $tsp] = gov_trees_scope_where_sql($pdo, $treeAuthorityIds, 't');
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM trees t WHERE ($tsc) AND (t.planting_year = ? OR (t.planting_year IS NULL AND YEAR(t.created_at) = ?))");
+    $stmt->execute(array_merge($tsp, [$year, $year]));
+    $environment['trees_planted_in_year'] = (int) $stmt->fetchColumn();
+  }
 } catch (Throwable $e) {}
 try {
   $q = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $where $dateWhere AND r.category = 'green'");
@@ -104,12 +123,20 @@ try {
   $social['new_reports_in_year'] = (int)$q->fetchColumn();
 } catch (Throwable $e) {}
 try {
-  $social['tree_adopters'] = (int)$pdo->query("SELECT COUNT(DISTINCT user_id) FROM tree_adoptions WHERE status = 'active'")->fetchColumn();
+  if (!empty($treeAuthorityIds)) {
+    [$tsc, $tsp] = gov_trees_scope_where_sql($pdo, $treeAuthorityIds, 't');
+    $q = $pdo->prepare("SELECT COUNT(DISTINCT ta.user_id) FROM tree_adoptions ta INNER JOIN trees t ON t.id = ta.tree_id WHERE ta.status = 'active' AND ($tsc)");
+    $q->execute($tsp);
+    $social['tree_adopters'] = (int) $q->fetchColumn();
+  }
 } catch (Throwable $e) {}
 try {
-  $q = $pdo->prepare("SELECT COUNT(*) FROM tree_watering_logs WHERE created_at >= ? AND created_at <= ?");
-  $q->execute([$yearStart, $yearEnd]);
-  $social['watering_actions_in_year'] = (int)$q->fetchColumn();
+  if (!empty($treeAuthorityIds)) {
+    [$tsc, $tsp] = gov_trees_scope_where_sql($pdo, $treeAuthorityIds, 't');
+    $q = $pdo->prepare("SELECT COUNT(*) FROM tree_watering_logs tw INNER JOIN trees t ON t.id = tw.tree_id WHERE ($tsc) AND tw.created_at >= ? AND tw.created_at <= ?");
+    $q->execute(array_merge($tsp, [$yearStart, $yearEnd]));
+    $social['watering_actions_in_year'] = (int) $q->fetchColumn();
+  }
 } catch (Throwable $e) {}
 try {
   $q = $pdo->prepare("SELECT COUNT(*) FROM report_likes rl INNER JOIN reports r ON r.id = rl.report_id WHERE $where $dateWhere");
