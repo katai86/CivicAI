@@ -147,6 +147,7 @@ if ($action === 'update_authority') {
   $id = (int)($body['id'] ?? 0);
   if ($id <= 0) json_response(['ok' => false, 'error' => t('api.invalid_id')], 400);
   $name = safe_str($body['name'] ?? null, 160);
+  $country = safe_str($body['country'] ?? null, 80);
   $city = safe_str($body['city'] ?? null, 80);
   $address = safe_str($body['address'] ?? null, 255);
   $email = safe_str($body['contact_email'] ?? null, 190);
@@ -157,8 +158,18 @@ if ($action === 'update_authority') {
   $maxLng = array_key_exists('max_lng', $body) ? (is_numeric($body['max_lng']) ? (float)$body['max_lng'] : null) : null;
   try {
     $pdo = db();
-    $pdo->prepare("UPDATE authorities SET name = ?, city = ?, contact_email = ?, contact_phone = ?, min_lat = ?, max_lat = ?, min_lng = ?, max_lng = ? WHERE id = ?")
-      ->execute([$name, $city, $email, $phone, $minLat, $maxLat, $minLng, $maxLng, $id]);
+    try {
+      $pdo->prepare("UPDATE authorities SET name = ?, country = ?, city = ?, contact_email = ?, contact_phone = ?, min_lat = ?, max_lat = ?, min_lng = ?, max_lng = ? WHERE id = ?")
+        ->execute([$name, $country, $city, $email, $phone, $minLat, $maxLat, $minLng, $maxLng, $id]);
+    } catch (Throwable $e) {
+      $msg = $e->getMessage();
+      if (strpos($msg, 'Unknown column') !== false && strpos($msg, 'country') !== false) {
+        $pdo->prepare("UPDATE authorities SET name = ?, city = ?, contact_email = ?, contact_phone = ?, min_lat = ?, max_lat = ?, min_lng = ?, max_lng = ? WHERE id = ?")
+          ->execute([$name, $city, $email, $phone, $minLat, $maxLat, $minLng, $maxLng, $id]);
+      } else {
+        throw $e;
+      }
+    }
     if ($address !== null && $address !== '') {
       try {
         $pdo->prepare("UPDATE authorities SET address = ? WHERE id = ?")->execute([$address, $id]);

@@ -263,6 +263,7 @@ $LANG_JS = lang_array_for_js();
                   <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
                     <input id="authorityName" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_name'), ENT_QUOTES, 'UTF-8') ?>">
                     <input id="authorityCity" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_city'), ENT_QUOTES, 'UTF-8') ?>">
+                    <input id="authorityCountry" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_country'), ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(t('admin.authority_country_hint'), ENT_QUOTES, 'UTF-8') ?>" style="width:120px">
                     <input id="authorityAddress" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_address'), ENT_QUOTES, 'UTF-8') ?>" style="min-width:220px">
                     <input id="authorityEmail" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_email'), ENT_QUOTES, 'UTF-8') ?>">
                     <input id="authorityPhone" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.authority_phone'), ENT_QUOTES, 'UTF-8') ?>">

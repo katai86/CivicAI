@@ -473,6 +473,8 @@ return [
     'admin.authority_create_title' => 'Behörde erstellen',
     'admin.authority_name' => 'Name',
     'admin.authority_city' => 'Stadt',
+    'admin.authority_country' => 'Land',
+    'admin.authority_country_hint' => 'z. B. DE, Germany (Eurostat / EU-Module)',
     'admin.authority_address' => 'Adresse (z. B. Hauptstr. 1)',
     'admin.authority_email' => 'E-Mail',
     'admin.authority_phone' => 'Telefon',

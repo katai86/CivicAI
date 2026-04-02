@@ -473,6 +473,8 @@ return [
     'admin.authority_create_title' => 'Ustvari pristojnost',
     'admin.authority_name' => 'Ime',
     'admin.authority_city' => 'Mesto',
+    'admin.authority_country' => 'Država',
+    'admin.authority_country_hint' => 'npr. SI, Slovenia (Eurostat / EU moduli)',
     'admin.authority_address' => 'Naslov (npr. Glavna 1)',
     'admin.authority_email' => 'Email',
     'admin.authority_phone' => 'Telefon',

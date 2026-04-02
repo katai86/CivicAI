@@ -473,6 +473,8 @@ return [
     'admin.authority_create_title' => 'Créer une autorité',
     'admin.authority_name' => 'Nom',
     'admin.authority_city' => 'Ville',
+    'admin.authority_country' => 'Pays',
+    'admin.authority_country_hint' => 'ex. FR, France (Eurostat / modules UE)',
     'admin.authority_address' => 'Adresse (ex. 1 rue Principale)',
     'admin.authority_email' => 'Email',
     'admin.authority_phone' => 'Téléphone',

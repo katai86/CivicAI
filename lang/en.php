@@ -392,6 +392,8 @@ return [
     'admin.authority_create_title' => 'Create authority',
     'admin.authority_name' => 'Name',
     'admin.authority_city' => 'City',
+    'admin.authority_country' => 'Country',
+    'admin.authority_country_hint' => 'e.g. HU, Hungary (Eurostat / EU modules)',
     'admin.authority_address' => 'Address (e.g. Main St 1)',
     'admin.authority_email' => 'Email',
     'admin.authority_phone' => 'Phone',

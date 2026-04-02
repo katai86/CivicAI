@@ -394,6 +394,8 @@ return [
     'admin.authority_create_title' => 'Hatóság létrehozása',
     'admin.authority_name' => 'Név',
     'admin.authority_city' => 'Város',
+    'admin.authority_country' => 'Ország',
+    'admin.authority_country_hint' => 'Pl. HU, Hungary vagy Magyarország (Eurostat / EU modulok)',
     'admin.authority_address' => 'Cím (pl. Orosháza, Szabadság u. 1)',
     'admin.authority_email' => 'Email',
     'admin.authority_phone' => 'Telefon',

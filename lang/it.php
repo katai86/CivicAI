@@ -473,6 +473,8 @@ return [
     'admin.authority_create_title' => 'Crea autorità',
     'admin.authority_name' => 'Nome',
     'admin.authority_city' => 'Città',
+    'admin.authority_country' => 'Paese',
+    'admin.authority_country_hint' => 'es. IT, Italy (Eurostat / moduli UE)',
     'admin.authority_address' => 'Indirizzo (es. Via Roma 1)',
     'admin.authority_email' => 'Email',
     'admin.authority_phone' => 'Telefono',

@@ -820,13 +820,14 @@ async function loadAuthorities(){
         return `
         <div class="admin-item auth-row" data-id="${a.id}">
           <div class="meta">
-            <b>${esc(a.name)}</b> • ${esc(a.city || '')}${boundsStr}
+            <b>${esc(a.name)}</b> • ${esc(a.city || '')}${a.country ? ` • ${esc(a.country)}` : ''}${boundsStr}
           </div>
           <div class="text-secondary">${esc(a.contact_email || '')} ${esc(a.contact_phone || '')}</div>
           <div class="auth-edit-fields d-none border rounded p-2 mt-2 bg-light">
             <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
               <input class="form-control form-control-sm auth-edit-name" placeholder="${esc(t('admin.authority_name'))}" value="${esc(a.name || '')}" style="min-width:140px">
               <input class="form-control form-control-sm auth-edit-city" placeholder="${esc(t('admin.authority_city'))}" value="${esc(a.city || '')}" style="width:100px">
+              <input class="form-control form-control-sm auth-edit-country" placeholder="${esc(t('admin.authority_country'))}" title="${esc(t('admin.authority_country_hint'))}" value="${esc(a.country || '')}" style="width:110px">
               <input class="form-control form-control-sm auth-edit-address" placeholder="${esc(t('admin.authority_address'))}" value="${esc(a.address || '')}" style="min-width:180px">
               <input class="form-control form-control-sm auth-edit-email" placeholder="${esc(t('admin.authority_email'))}" value="${esc(a.contact_email || '')}" style="width:140px">
               <input class="form-control form-control-sm auth-edit-phone" placeholder="${esc(t('admin.authority_phone'))}" value="${esc(a.contact_phone || '')}" style="width:100px">
@@ -878,6 +879,7 @@ async function loadAuthorities(){
             id,
             name: row.querySelector('.auth-edit-name')?.value?.trim() || '',
             city: row.querySelector('.auth-edit-city')?.value?.trim() || '',
+            country: row.querySelector('.auth-edit-country')?.value?.trim() || '',
             address: row.querySelector('.auth-edit-address')?.value?.trim() || '',
             contact_email: row.querySelector('.auth-edit-email')?.value?.trim() || '',
             contact_phone: row.querySelector('.auth-edit-phone')?.value?.trim() || '',
@@ -1423,6 +1425,7 @@ document.getElementById('createAuthority')?.addEventListener('click', async () =
     action:'create_authority',
     name: document.getElementById('authorityName').value.trim(),
     city: document.getElementById('authorityCity').value.trim(),
+    country: document.getElementById('authorityCountry')?.value?.trim() || '',
     address: document.getElementById('authorityAddress')?.value?.trim() || '',
     contact_email: document.getElementById('authorityEmail').value.trim(),
     contact_phone: document.getElementById('authorityPhone').value.trim(),
@@ -1440,6 +1443,7 @@ document.getElementById('createAuthority')?.addEventListener('click', async () =
     await fetchJson(API_AUTHORITIES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     document.getElementById('authorityName').value = '';
     document.getElementById('authorityCity').value = '';
+    if (document.getElementById('authorityCountry')) document.getElementById('authorityCountry').value = '';
     document.getElementById('authorityAddress').value = '';
     document.getElementById('authorityEmail').value = '';
     document.getElementById('authorityPhone').value = '';
