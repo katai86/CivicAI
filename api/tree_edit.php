@@ -103,6 +103,16 @@ foreach ($govOnlyFields as $key => $type) {
   }
 }
 
+if (db_table_has_column($pdo, 'trees', 'authority_id') && $isGov && !$isAdmin) {
+  $stAid = $pdo->prepare('SELECT authority_id FROM authority_users WHERE user_id = ? ORDER BY authority_id LIMIT 1');
+  $stAid->execute([$uid]);
+  $gaid = (int) $stAid->fetchColumn();
+  if ($gaid > 0) {
+    $updates[] = 'authority_id = COALESCE(authority_id, ?)';
+    $params[] = $gaid;
+  }
+}
+
 if (empty($updates)) {
   json_response(['ok' => true, 'message' => t('api.tree_no_change')]);
 }

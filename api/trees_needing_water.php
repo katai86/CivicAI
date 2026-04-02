@@ -1,7 +1,7 @@
 <?php
 /**
  * M7 – Öntözendő fák lista (last_watered + tree_species_care alapján).
- * GET: limit. Jog: admin vagy gov user (mindig teljes lista – nincs authority scope a fáknál).
+ * GET: limit, authority_id (admin). Jog: admin vagy gov user; hatóság scope mint gov_trees_list.
  */
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
@@ -18,11 +18,14 @@ if ($uid <= 0 || (!$role || !in_array($role, ['admin', 'superadmin', 'govuser'],
 }
 
 $limit = (int)($_GET['limit'] ?? 50);
-if ($limit < 1 || $limit > 200) $limit = 50;
+if ($limit < 1 || $limit > 200) {
+  $limit = 50;
+}
 
 $rows = [];
 try {
   $pdo = db();
+  [$scopeWhere, $scopeParams] = gov_trees_scope_where_sql($pdo, gov_tree_list_scope_authority_ids(), 't');
   // Ugyanaz a szabály, mint a dashboard számánál: 7 napnál régebben öntözött vagy még soha
   $sql = "
     SELECT t.id, t.lat, t.lng, t.species, t.last_watered, t.adopted_by_user_id,
@@ -31,11 +34,12 @@ try {
     LEFT JOIN users u ON u.id = t.adopted_by_user_id
     WHERE t.public_visible = 1
       AND (t.last_watered IS NULL OR t.last_watered < DATE_SUB(CURDATE(), INTERVAL 7 DAY))
+      AND ($scopeWhere)
     ORDER BY t.last_watered IS NULL ASC, t.last_watered ASC
     LIMIT ?
   ";
   $stmt = $pdo->prepare($sql);
-  $stmt->execute([$limit]);
+  $stmt->execute(array_merge($scopeParams, [$limit]));
   $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
   // Opcionálisan fajta alapú ajánlás (tree_species_care), ha létezik – csak megjelenítéshez
   $hasSpeciesCare = false;

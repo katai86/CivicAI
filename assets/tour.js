@@ -65,6 +65,7 @@
       { tab: 'trees', key: 'tour.step_gov_trees', fallback: 'Fák: fa kataszter, állapot és karbantartási adatok kezelése.' },
       { tab: 'ai', key: 'tour.step_gov_ai', fallback: 'AI: Copilot és automatikus elemzések a hatóság adatai alapján.' },
       { tab: 'analytics', key: 'tour.step_gov_analytics', fallback: 'Elemzés: hőtérkép, statisztikák és trendek áttekintése.' },
+      { tab: 'eu-open-data', key: 'tour.step_gov_eu_open_data', fallback: 'EU nyílt adatok: Copernicus, műhold, levegő, klíma, Eurostat – hatóság szerint.' },
       { tab: 'iot', key: 'tour.step_gov_iot', fallback: 'Szenzorok (IoT): összesítő, térképes nézet, sync és export.' },
       { tab: 'citybrain-live', key: 'tour.step_gov_citybrain_live', fallback: 'City Brain / Live Intelligence: valós idejű állapotkép és gyors mutatók.' },
       { tab: 'citybrain-predictive', key: 'tour.step_gov_citybrain_predictive', fallback: 'Predictive AI: trend alapú előrejelzések és várható terhelések.' },

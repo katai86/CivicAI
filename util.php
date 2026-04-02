@@ -940,3 +940,118 @@ function virtual_sensors_scope_for_authority(array $cities, array $bounds): arra
   }
   return [$where, $params];
 }
+
+/**
+ * Van-e adott oszlop a táblában (MySQL / MariaDB).
+ */
+function db_table_has_column(PDO $pdo, string $table, string $column): bool {
+  try {
+    $t = str_replace('`', '``', $table);
+    $st = $pdo->query('SHOW COLUMNS FROM `' . $t . '` LIKE ' . $pdo->quote($column));
+    return $st && $st->rowCount() > 0;
+  } catch (Throwable $e) {
+    return false;
+  }
+}
+
+/**
+ * Gov/admin fa-lista: mely authority_id-k tartoznak a kéréshez (GET authority_id vagy user hatóságai).
+ * @return int[]
+ */
+function gov_tree_list_scope_authority_ids(): array {
+  $role = current_user_role() ?: '';
+  $uid = current_user_id() ? (int)current_user_id() : 0;
+  $ids = [];
+  if (in_array($role, ['admin', 'superadmin'], true)) {
+    $aid = isset($_GET['authority_id']) ? (int)$_GET['authority_id'] : 0;
+    if ($aid > 0) {
+      $ids = [$aid];
+    } else {
+      try {
+        $ids = array_map('intval', db()->query('SELECT id FROM authorities ORDER BY name')->fetchAll(PDO::FETCH_COLUMN));
+      } catch (Throwable $e) {
+        $ids = [];
+      }
+    }
+  } elseif ($uid > 0) {
+    try {
+      $stmt = db()->prepare('SELECT authority_id FROM authority_users WHERE user_id = ? ORDER BY authority_id');
+      $stmt->execute([$uid]);
+      $ids = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    } catch (Throwable $e) {
+      $ids = [];
+    }
+  }
+  return array_values(array_filter($ids, static fn($x) => $x > 0));
+}
+
+/**
+ * SQL WHERE fragment a fakataszter listához: explicit authority_id VAGY (NULL + bbox/város illeszkedés).
+ * @return array{0:string,1:array}
+ */
+function gov_trees_scope_where_sql(PDO $pdo, array $authorityIds, string $alias = 't'): array {
+  if (empty($authorityIds)) {
+    return ['1=0', []];
+  }
+  $a = $alias;
+  $hasAuthCol = db_table_has_column($pdo, 'trees', 'authority_id');
+  $parts = [];
+  $params = [];
+
+  if ($hasAuthCol) {
+    $inPh = implode(',', array_fill(0, count($authorityIds), '?'));
+    $parts[] = "$a.authority_id IN ($inPh)";
+    $params = array_merge($params, $authorityIds);
+  }
+
+  $nullParts = [];
+  foreach ($authorityIds as $aid) {
+    try {
+      $st = $pdo->prepare('SELECT min_lat, max_lat, min_lng, max_lng, city FROM authorities WHERE id = ? LIMIT 1');
+      $st->execute([$aid]);
+      $row = $st->fetch(PDO::FETCH_ASSOC);
+      if (!$row) {
+        continue;
+      }
+      $minLa = $row['min_lat'];
+      $maxLa = $row['max_lat'];
+      $minL = $row['min_lng'];
+      $maxL = $row['max_lng'];
+      $city = trim((string)($row['city'] ?? ''));
+      if ($minLa !== null && $maxLa !== null && $minL !== null && $maxL !== null) {
+        if ($hasAuthCol) {
+          $nullParts[] = "($a.authority_id IS NULL AND $a.lat >= ? AND $a.lat <= ? AND $a.lng >= ? AND $a.lng <= ?)";
+        } else {
+          $nullParts[] = "($a.lat >= ? AND $a.lat <= ? AND $a.lng >= ? AND $a.lng <= ?)";
+        }
+        $params[] = (float) $minLa;
+        $params[] = (float) $maxLa;
+        $params[] = (float) $minL;
+        $params[] = (float) $maxL;
+      } elseif ($city !== '') {
+        if ($hasAuthCol) {
+          $nullParts[] = "($a.authority_id IS NULL AND $a.address LIKE ?)";
+        } else {
+          $nullParts[] = "($a.address LIKE ?)";
+        }
+        $params[] = '%' . $city . '%';
+      }
+    } catch (Throwable $e) {
+      continue;
+    }
+  }
+
+  if (!empty($nullParts)) {
+    $parts[] = '(' . implode(' OR ', $nullParts) . ')';
+  }
+
+  if (empty($parts)) {
+    $role = current_user_role() ?: '';
+    if (!$hasAuthCol && in_array($role, ['admin', 'superadmin'], true)) {
+      return ['1=1', []];
+    }
+    return ['1=0', []];
+  }
+
+  return ['(' . implode(' OR ', $parts) . ')', $params];
+}

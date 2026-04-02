@@ -30,9 +30,11 @@ Ha a gov usernek nincs hatósága, a `$stats['environment']` stb. nincs beállí
 
 ---
 
-## 5. lépés: Analytics bővítmények (Predictions, Green, ESG Command Center)
-- **HTML:** Az analytics tab-ban a Sentiment kártya után: Predictions kártya (govPredictionsContent), Green Intelligence kártya (govGreenMetricsContent), ESG Command Center kártya (govEsgMetricsContent + linkEsgCommandJson, linkEsgCommandCsv).
-- **JS:** `govPredictionsUrl`, `govPredictionsLabels`, `govGreenMetricsUrl`, `govGreenMetricsLabels`, `govEsgMetricsUrl`, `govEsgMetricsLabels`. Tab váltáskor analytics: meghívni még `loadGovPredictions(); loadGovGreenMetrics(); loadGovEsgMetrics();`. A három függvény implementációja (fetch + megjelenítés). A loadGovEsgMetrics végén: linkEsgCommandJson/Csv href frissítése esgExportUrl-ra.
+## 5. lépés: Analytics + EU nyílt adatok + előrejelzések + ESG
+- **Analytics tab (`tab-analytics`):** Hőtérkép, statisztika, sentiment, **Predictions** (`govPredictionsContent`), **ESG Command Center** (`govEsgMetricsContent` + linkEsgCommandJson, linkEsgCommandCsv). A zöld (Copernicus) mutatók és műhold/EU rétegek **nem** ide tartoznak.
+- **EU nyílt adatok tab (`tab-eu-open-data`):** Zöld intelligencia kártya `govEuTabGreenMetrics`, Copernicus / műhold blokk (`govEuGreenSatelliteContent`), EU térkép `govEuGreenMap` + `loadGovEuGreenMapOverlay`, levegő/klíma/Eurostat kártyák. Tab váltáskor: `loadGovGreenMetrics`, `loadGovEuAirQuality`, `loadGovEuClimate`, `loadGovEuCountryContext`, `initGovEuGreenMap`, `loadGovEuGreenMapOverlay`.
+- **Áttekintés (dashboard):** EEA & INSPIRE blokk: `govDashboardEeaInspireContent`, `loadGovEuEeaInspire`.
+- **JS:** `govPredictionsUrl`, `govPredictionsLabels`, `govGreenMetricsUrl`, `govGreenMetricsLabels`, `govEsgMetricsUrl`, `govEsgMetricsLabels`, `govEuGreenOverlayUrl`, `govMapJsLabels` (OSM/Esri rétegcímkék), stb. Analytics fülön: `loadGovPredictions(); loadGovEsgMetrics();` (és a meglévő statisztika/sentiment). A `loadGovEsgMetrics` végén: linkEsgCommandJson/Csv href frissítése esgExportUrl-ra.
 
 ---
 
@@ -41,4 +43,4 @@ Ha a gov usernek nincs hatósága, a `$stats['environment']` stb. nincs beállí
 
 ---
 
-**Javasolt sorrend:** 1 → 2 → 3 → 4 → 5. Ha 3-nál jön a 500, a Surveys blokk a gond; ha 4-nél, a Copilot; ha 5-nél, valamelyik analytics bővítmény.
+**Javasolt sorrend:** 1 → 2 → 3 → 4 → 5. Ha 3-nál jön a 500, a Surveys blokk a gond; ha 4-nél, a Copilot; ha 5-nél, valamelyik analytics/EU bővítmény.

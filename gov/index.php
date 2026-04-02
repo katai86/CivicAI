@@ -77,6 +77,19 @@ if (!empty($authorities) && $govEurostatFeatureOn) {
   }
 }
 
+$govEeaInspireForDashboard = function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled()
+  && function_exists('eu_open_data_feature_enabled')
+  && (eu_open_data_feature_enabled('eea_enabled') || eu_open_data_feature_enabled('inspire_enabled'));
+$govEuOpenDataTabEnabled = function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled()
+  && function_exists('eu_open_data_feature_enabled')
+  && (
+    eu_open_data_feature_enabled('copernicus_enabled')
+    || eu_open_data_feature_enabled('clms_enabled')
+    || eu_open_data_feature_enabled('cams_enabled')
+    || eu_open_data_feature_enabled('cds_enabled')
+    || eu_open_data_feature_enabled('eurostat_enabled')
+  );
+
 $statusFilter = isset($_GET['status_filter']) ? trim((string)$_GET['status_filter']) : '';
 $allowedStatuses = ['pending','approved','rejected','new','needs_info','forwarded','waiting_reply','in_progress','solved','closed'];
 if ($statusFilter !== '' && !in_array($statusFilter, $allowedStatuses, true)) {
@@ -617,8 +630,8 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
           <?php endif; ?>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="trees">
-              <i class="nav-icon bi bi-tree-fill"></i>
-              <p><?= h(t('gov.tab_trees')) ?></p>
+              <i class="nav-icon bi bi-globe-americas"></i>
+              <p><?= h(t('gov.tab_canopy')) ?></p>
             </a>
           </li>
           <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= h(t('gov.nav_section_insights')) ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
@@ -634,6 +647,14 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
               <p><?= h(t('gov.tab_analytics')) ?></p>
             </a>
           </li>
+          <?php if ($govEuOpenDataTabEnabled): ?>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="eu-open-data">
+              <i class="nav-icon bi bi-globe2"></i>
+              <p><?= h(t('gov.tab_eu_open_data')) ?></p>
+            </a>
+          </li>
+          <?php endif; ?>
           <?php if ($govIotEnabled): ?>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="iot">
@@ -818,6 +839,17 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
               </div>
             </div>
           </div>
+          <?php if ($govEeaInspireForDashboard): ?>
+          <div class="card mb-3 border-secondary border-opacity-50">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.eu_eea_inspire_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.eu_eea_inspire_hint')) ?></p>
+              <div id="govDashboardEeaInspireContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
 
         </div>
 
@@ -893,11 +925,25 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
         </div>
 
         <div class="admin-tab-body" id="tab-trees" hidden>
+          <p class="text-secondary small mb-2"><?= h(t('gov.tab_canopy_intro')) ?></p>
           <div class="card mb-3">
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.tree_cadastre_title')) ?></h6>
               <p class="text-secondary small mb-2"><?= h(t('gov.tree_cadastre_desc')) ?></p>
-              <div id="govTreeCadastreMap" style="height:420px; width:100%; border:1px solid #dee2e6; border-radius:0.375rem;"></div>
+              <p class="text-secondary small mb-2"><?= h(t('gov.tree_map_layers_hint')) ?></p>
+              <?php if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled() && function_exists('eu_open_data_feature_enabled') && (eu_open_data_feature_enabled('copernicus_enabled') || eu_open_data_feature_enabled('clms_enabled'))): ?>
+              <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                <label class="small mb-0"><?= h(t('gov.eu_map_layer_label')) ?>:</label>
+                <select id="govTreeEuLayerType" class="form-select form-select-sm" style="max-width:260px">
+                  <option value="planting_priority"><?= h(t('gov.eu_layer_planting')) ?></option>
+                  <option value="green_deficit"><?= h(t('gov.eu_layer_deficit')) ?></option>
+                  <option value="vegetation_health"><?= h(t('gov.eu_layer_vegetation')) ?></option>
+                  <option value="ndvi"><?= h(t('gov.eu_layer_ndvi')) ?></option>
+                </select>
+                <button type="button" class="btn btn-sm btn-outline-success" id="govTreeEuLayerRefresh"><?= h(t('admin.refresh')) ?></button>
+              </div>
+              <?php endif; ?>
+              <div id="govTreeCadastreMap" style="height:480px; width:100%; border:1px solid #dee2e6; border-radius:0.375rem;"></div>
             </div>
           </div>
           <div class="card mb-3">
@@ -911,7 +957,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
           </div>
           <div class="card">
             <div class="card-body">
-              <h6 class="card-title"><?= h(t('gov.tab_trees')) ?></h6>
+              <h6 class="card-title"><?= h(t('gov.canopy_registry_title')) ?></h6>
               <p class="text-secondary small mb-3"><?= h(t('gov.trees_intro')) ?></p>
               <div id="govTreesListWrap">
                 <div id="govTreesList" class="admin-list" style="max-height:55vh;overflow:auto"></div>
@@ -948,10 +994,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
         </div>
 
         <div class="admin-tab-body" id="tab-analytics" hidden>
-          <p class="text-secondary small mb-2"><?= h(t('gov.tab_analytics')) ?> – <?= h(t('gov.heatmap_widget_title')) ?>, <?= h(t('gov.statistics_tab_title')) ?></p>
-          <?php if ($govEurostatFeatureOn): ?>
-          <div id="govEurostatCountryHint" class="alert alert-warning py-2 small mb-3<?= $showEurostatCountryHint ? '' : ' d-none' ?>" role="status"><?= h(t('gov.eurostat_country_hint')) ?></div>
-          <?php endif; ?>
+          <p class="text-secondary small mb-2"><?= h(t('gov.tab_analytics_intro')) ?></p>
           <div class="card mb-3">
             <div class="card-body">
               <h6 class="card-title mb-1"><?= h(t('gov.analytics_title')) ?></h6><br>
@@ -1059,8 +1102,29 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
           </div>
           <div class="card mb-3">
             <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.esg_command_center_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.esg_command_center_desc')) ?></p>
+              <div id="govEsgMetricsContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+              <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+                <a href="#" id="linkEsgCommandJson" class="btn btn-outline-primary btn-sm">JSON</a>
+                <a href="#" id="linkEsgCommandCsv" class="btn btn-outline-secondary btn-sm" download>CSV</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <?php if ($govEuOpenDataTabEnabled): ?>
+        <div class="admin-tab-body" id="tab-eu-open-data" hidden>
+          <p class="text-secondary small mb-2"><?= h(t('gov.tab_eu_open_data_intro')) ?></p>
+          <?php if ($govEurostatFeatureOn): ?>
+          <div id="govEurostatCountryHint" class="alert alert-warning py-2 small mb-3<?= $showEurostatCountryHint ? '' : ' d-none' ?>" role="status"><?= h(t('gov.eurostat_country_hint')) ?></div>
+          <?php endif; ?>
+          <div class="card mb-3">
+            <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.green_intelligence_title')) ?></h6>
-              <div id="govGreenMetricsContent">
+              <div id="govEuTabGreenMetrics">
                 <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
               </div>
             </div>
@@ -1070,9 +1134,20 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
             <div class="card-body">
               <h6 class="card-title mb-1"><?= h(t('gov.eu_green_card_title')) ?></h6>
               <p class="text-secondary small mb-2"><?= h(t('gov.eu_satellite_hint')) ?></p>
-              <div id="govEuGreenSatelliteContent">
+              <div id="govEuGreenSatelliteContent" class="mb-3 small">
                 <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
               </div>
+              <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                <label class="small mb-0"><?= h(t('gov.eu_map_layer_label')) ?>:</label>
+                <select id="govEuGreenLayerType" class="form-select form-select-sm" style="max-width:260px">
+                  <option value="planting_priority"><?= h(t('gov.eu_layer_planting')) ?></option>
+                  <option value="green_deficit"><?= h(t('gov.eu_layer_deficit')) ?></option>
+                  <option value="vegetation_health"><?= h(t('gov.eu_layer_vegetation')) ?></option>
+                  <option value="ndvi"><?= h(t('gov.eu_layer_ndvi')) ?></option>
+                </select>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="govEuGreenMapRefresh"><?= h(t('admin.refresh')) ?></button>
+              </div>
+              <div id="govEuGreenMap" style="height:420px;width:100%;border:1px solid #dee2e6;border-radius:0.375rem;"></div>
             </div>
           </div>
           <?php endif; ?>
@@ -1109,31 +1184,8 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
             </div>
           </div>
           <?php endif; ?>
-          <?php if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled() && function_exists('eu_open_data_feature_enabled') && (eu_open_data_feature_enabled('eea_enabled') || eu_open_data_feature_enabled('inspire_enabled'))): ?>
-          <div class="card mb-3 border-secondary border-opacity-50">
-            <div class="card-body">
-              <h6 class="card-title mb-1"><?= h(t('gov.eu_eea_inspire_title')) ?></h6>
-              <p class="text-secondary small mb-2"><?= h(t('gov.eu_eea_inspire_hint')) ?></p>
-              <div id="govEuEeaInspireContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
-              </div>
-            </div>
-          </div>
-          <?php endif; ?>
-          <div class="card mb-3">
-            <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('gov.esg_command_center_title')) ?></h6>
-              <p class="text-secondary small mb-2"><?= h(t('gov.esg_command_center_desc')) ?></p>
-              <div id="govEsgMetricsContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
-              </div>
-              <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
-                <a href="#" id="linkEsgCommandJson" class="btn btn-outline-primary btn-sm">JSON</a>
-                <a href="#" id="linkEsgCommandCsv" class="btn btn-outline-secondary btn-sm" download>CSV</a>
-              </div>
-            </div>
-          </div>
         </div>
+        <?php endif; ?>
 
         <div class="admin-tab-body" id="tab-reports" hidden>
           <div class="card">
@@ -1444,6 +1496,28 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     'tier_1' => t('iot.tier_1'),
     'tier_2' => t('iot.tier_2'),
     'tier_3' => t('iot.tier_3'),
+    'loading_text' => t('gov.loading'),
+    'detail_provider' => t('gov.iot_detail_provider'),
+    'detail_municipality' => t('gov.iot_detail_municipality'),
+    'detail_last_seen' => t('gov.iot_detail_last_seen'),
+    'detail_coordinates' => t('gov.iot_detail_coordinates'),
+    'trend_7d' => t('gov.iot_trend_7d'),
+    'trend_empty' => t('gov.iot_trend_empty'),
+    'trend_loading' => t('gov.loading'),
+    'sync_done' => t('gov.iot_sync_done'),
+    'sync_sensor_single' => t('gov.iot_sync_sensor_single'),
+    'sync_sensor_multi' => t('gov.iot_sync_sensor_multi'),
+    'sync_metric_single' => t('gov.iot_sync_metric_single'),
+    'sync_metric_multi' => t('gov.iot_sync_metric_multi'),
+    'popup_details' => t('gov.iot_popup_details'),
+    'col_name' => t('iot.col_name'),
+    'col_provider' => t('iot.col_provider'),
+    'col_ownership' => t('iot.col_ownership'),
+    'col_municipality' => t('iot.col_municipality'),
+    'col_last_seen' => t('iot.col_last_seen'),
+    'col_freshness' => t('iot.col_freshness'),
+    'col_aqi' => t('iot.col_aqi'),
+    'col_pm25' => t('iot.col_pm25'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govIotMetricLabels = <?= json_encode([
     'temperature' => t('iot.metric_temperature'),
@@ -1520,6 +1594,26 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     'trees_risk' => t('gov.statistics_trees_risk'),
     'new_users_7d' => t('gov.statistics_new_users_7d'),
     'no_data' => t('gov.no_data'),
+    'load_error' => t('admin.load_error'),
+    'district_col_authority' => t('gov.statistics_district_col_authority'),
+    'district_col_issues' => t('gov.statistics_district_col_issues'),
+    'issue_plural' => t('gov.statistics_issue_plural'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govMapJsLabels = <?= json_encode([
+    'layer_osm' => t('gov.map_layer_osm'),
+    'layer_satellite' => t('gov.map_layer_satellite'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govCitybrainLabels = <?= json_encode([
+    'live_reports_24h' => t('gov.citybrain_live_reports_24h'),
+    'live_ideas_24h' => t('gov.citybrain_live_ideas_24h'),
+    'live_open_reports' => t('gov.citybrain_live_open_reports'),
+    'live_active' => t('gov.citybrain_live_active'),
+    'predictive_summary' => t('gov.citybrain_predictive_summary'),
+    'predictive_issues_title' => t('gov.citybrain_predictive_issues_title'),
+    'predictive_tree_title' => t('gov.citybrain_predictive_tree_title'),
+    'predictive_more' => t('gov.citybrain_predictive_more'),
+    'risk_no_alerts' => t('gov.citybrain_risk_no_alerts'),
+    'environmental_by_provider' => t('iot.sensors_by_provider'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govSentimentUrl = <?= json_encode(app_url('/api/sentiment_analysis.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govSentimentLabels = <?= json_encode([
@@ -1551,11 +1645,13 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     'format_failed' => t('gov.ai_format_failed'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govGreenMetricsUrl = <?= json_encode(app_url('/api/green_metrics.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govEuGreenOverlayUrl = <?= json_encode(app_url('/api/eu_green_overlay.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govGreenMetricsLabels = <?= json_encode([
     'canopy_coverage' => t('gov.green_canopy_coverage'),
     'carbon_absorption' => t('gov.green_carbon_absorption'),
     'biodiversity_index' => t('gov.green_biodiversity_index'),
     'drought_risk' => t('gov.green_drought_risk'),
+    'carbon_unit' => t('gov.green_carbon_unit'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govEuAirQualityUrl = <?= json_encode(app_url('/api/eu_air_quality.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govEuAirQualityLabels = <?= json_encode([
@@ -1640,7 +1736,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   var treesNeedingWaterList = document.getElementById('treesNeedingWaterList');
   if (btnTreesNeedingWater && treesNeedingWaterList) {
     btnTreesNeedingWater.addEventListener('click', function(){
-      var url = <?= json_encode(app_url('/api/trees_needing_water.php?limit=50'), JSON_UNESCAPED_SLASHES) ?>;
+      var url = govAppendAuthorityQuery(<?= json_encode(app_url('/api/trees_needing_water.php?limit=50'), JSON_UNESCAPED_SLASHES) ?>);
       btnTreesNeedingWater.disabled = true;
       fetch(url, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
         btnTreesNeedingWater.disabled = false;
@@ -1776,7 +1872,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       e.preventDefault();
       var key = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
-      ['dashboard','ai','reports','ideas','surveys','budget','trees','analytics','iot','citybrain-live','citybrain-predictive','citybrain-hotspot','citybrain-behavior','citybrain-environmental','citybrain-insights','citybrain-risk','modules'].forEach(function(k){
+      ['dashboard','ai','reports','ideas','surveys','budget','trees','analytics','eu-open-data','iot','citybrain-live','citybrain-predictive','citybrain-hotspot','citybrain-behavior','citybrain-environmental','citybrain-insights','citybrain-risk','modules'].forEach(function(k){
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
       });
@@ -1785,8 +1881,9 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       if (key === 'budget') loadGovBudget();
       if (key === 'trees') { initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
       if (key === 'iot') loadGovIotDevices();
-      if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); loadGovEuEeaInspire(); loadGovEsgMetrics(); }
-      if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); }
+      if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovEsgMetrics(); }
+      if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
+      if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); }
       if (key === 'citybrain-live') loadCitybrainLive();
       if (key === 'citybrain-predictive') loadCitybrainPredictive();
       if (key === 'citybrain-hotspot') initCitybrainHotspot();
@@ -1812,6 +1909,9 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
 
   loadGovCityHealth();
   loadGovWeather();
+  if (document.getElementById('govDashboardEeaInspireContent')) {
+    loadGovEuEeaInspire('govDashboardEeaInspireContent');
+  }
 
   (function initGovCopilot(){
     var btn = document.getElementById('govCopilotSend');
@@ -1936,7 +2036,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     }).catch(function(){ var c = document.getElementById('govPredictionsContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
   }
   function loadGovGreenMetrics(){
-    var container = document.getElementById('govGreenMetricsContent');
+    var container = document.getElementById('govEuTabGreenMetrics');
     var euBox = document.getElementById('govEuGreenSatelliteContent');
     if (!container || !govGreenMetricsUrl) return;
     fetch(govGreenMetricsUrl + govEuAuthorityQuery(), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
@@ -1954,7 +2054,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       var drought = (d.drought_risk != null) ? Math.round(parseFloat(d.drought_risk) * 100) : 0;
       var html = '<div class="row g-2 small">';
       html += '<div class="col-6"><span class="text-secondary">' + (L.canopy_coverage || 'Canopy') + '</span><br><b>' + canopy + '%</b></div>';
-      html += '<div class="col-6"><span class="text-secondary">' + (L.carbon_absorption || 'CO2') + '</span><br><b>' + carbon + ' t/év</b></div>';
+      html += '<div class="col-6"><span class="text-secondary">' + (L.carbon_absorption || 'CO2') + '</span><br><b>' + carbon + ' ' + (L.carbon_unit || '') + '</b></div>';
       html += '<div class="col-6"><span class="text-secondary">' + (L.biodiversity_index || 'Biodiverzitás') + '</span><br><b>' + bio + '%</b></div>';
       html += '<div class="col-6"><span class="text-secondary">' + (L.drought_risk || 'Szárazság kockázat') + '</span><br><b>' + drought + '%</b></div>';
       html += '</div>';
@@ -1989,7 +2089,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
         euBox.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>';
       }
     }).catch(function(){
-      var c = document.getElementById('govGreenMetricsContent');
+      var c = document.getElementById('govEuTabGreenMetrics');
       if (c) c.innerHTML = '<p class="text-danger small">—</p>';
       var e = document.getElementById('govEuGreenSatelliteContent');
       if (e) e.innerHTML = '<p class="text-danger small">—</p>';
@@ -2065,8 +2165,8 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       box.innerHTML = html;
     }).catch(function(){ var b = document.getElementById('govEuCountryContextContent'); if (b) b.innerHTML = '<p class="text-danger small">—</p>'; });
   }
-  function loadGovEuEeaInspire(){
-    var box = document.getElementById('govEuEeaInspireContent');
+  function loadGovEuEeaInspire(targetId){
+    var box = document.getElementById(targetId || 'govDashboardEeaInspireContent');
     if (!box || !govEuEeaInspireUrl) return;
     function escAttr(s){
       return String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -2102,7 +2202,54 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       }
       if (!html) { box.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
       box.innerHTML = html;
-    }).catch(function(){ var b = document.getElementById('govEuEeaInspireContent'); if (b) b.innerHTML = '<p class="text-danger small">—</p>'; });
+    }).catch(function(){ var b = document.getElementById(targetId || 'govDashboardEeaInspireContent'); if (b) b.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  function govEuOverlayQueryParams(layerType){
+    var q = govEuAuthorityQuery();
+    var base = '?layer_type=' + encodeURIComponent(layerType || 'planting_priority');
+    return base + (q ? '&' + q.substring(1) : '');
+  }
+  var govEuGreenMapInstance = null;
+  var govEuGreenOverlayLeaflet = null;
+  function initGovEuGreenMap(){
+    var el = document.getElementById('govEuGreenMap');
+    if (!el || typeof L === 'undefined') return;
+    if (govEuGreenMapInstance) {
+      govEuGreenMapInstance.invalidateSize();
+      return;
+    }
+    govEuGreenMapInstance = L.map('govEuGreenMap').setView([mapCenterLat, mapCenterLng], 12);
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
+    var esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri' });
+    esri.addTo(govEuGreenMapInstance);
+    var mapLayers = govMapJsLabels || {};
+    L.control.layers({ [(mapLayers.layer_satellite || 'Satellite')]: esri, [(mapLayers.layer_osm || 'Map')]: osm }, {}).addTo(govEuGreenMapInstance);
+    document.getElementById('govEuGreenMapRefresh') && document.getElementById('govEuGreenMapRefresh').addEventListener('click', loadGovEuGreenMapOverlay);
+    document.getElementById('govEuGreenLayerType') && document.getElementById('govEuGreenLayerType').addEventListener('change', loadGovEuGreenMapOverlay);
+  }
+  function loadGovEuGreenMapOverlay(){
+    if (!govEuGreenMapInstance || !govEuGreenOverlayUrl) return;
+    var sel = document.getElementById('govEuGreenLayerType');
+    var lt = (sel && sel.value) ? sel.value : 'planting_priority';
+    if (govEuGreenOverlayLeaflet) {
+      govEuGreenMapInstance.removeLayer(govEuGreenOverlayLeaflet);
+      govEuGreenOverlayLeaflet = null;
+    }
+    fetch(govEuGreenOverlayUrl + govEuOverlayQueryParams(lt), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.data || j.data.type !== 'FeatureCollection') return;
+      govEuGreenOverlayLeaflet = L.geoJSON(j.data, {
+        pointToLayer: function(_f, latlng){
+          return L.circleMarker(latlng, { radius: 6, color: '#198754', fillColor: '#20c997', fillOpacity: 0.55, weight: 1 });
+        },
+        style: function(){
+          return { color: '#0d6efd', weight: 2, fillOpacity: 0.15 };
+        }
+      }).addTo(govEuGreenMapInstance);
+      try {
+        var b = govEuGreenOverlayLeaflet.getBounds();
+        if (b.isValid()) govEuGreenMapInstance.fitBounds(b, { maxZoom: 14, padding: [24, 24] });
+      } catch (_) {}
+    }).catch(function(){});
   }
   function loadGovEsgMetrics(){
     var container = document.getElementById('govEsgMetricsContent');
@@ -2219,11 +2366,11 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     var L = govIotLabels || {};
     var M = govIotMetricLabels || {};
     var rows = [];
-    rows.push('<p class="mb-1"><strong>Provider:</strong> ' + (sensor.source_provider || '—').replace(/</g,'&lt;') + ' <span class="badge bg-secondary ms-1">' + getGovIotOwnershipLabel(sensor).replace(/</g,'&lt;') + '</span></p>');
-    rows.push('<p class="mb-1"><strong>Municipality:</strong> ' + (sensor.municipality || '—').replace(/</g,'&lt;') + '</p>');
-    rows.push('<p class="mb-1"><strong>Last seen:</strong> ' + (sensor.last_seen_at || '—').replace(/</g,'&lt;') + '</p>');
+    rows.push('<p class="mb-1"><strong>' + (L.detail_provider || 'Provider') + ':</strong> ' + (sensor.source_provider || '—').replace(/</g,'&lt;') + ' <span class="badge bg-secondary ms-1">' + getGovIotOwnershipLabel(sensor).replace(/</g,'&lt;') + '</span></p>');
+    rows.push('<p class="mb-1"><strong>' + (L.detail_municipality || 'Municipality') + ':</strong> ' + (sensor.municipality || '—').replace(/</g,'&lt;') + '</p>');
+    rows.push('<p class="mb-1"><strong>' + (L.detail_last_seen || 'Last seen') + ':</strong> ' + (sensor.last_seen_at || '—').replace(/</g,'&lt;') + '</p>');
     var fr = getGovIotFreshness(sensor.last_seen_at); rows.push('<p class="mb-1"><strong>' + (L.freshness || 'Freshness') + ':</strong> <span class="' + fr.class + '">' + fr.label.replace(/</g,'&lt;') + '</span></p>');
-    if (sensor.lat != null && sensor.lng != null) rows.push('<p class="mb-1"><strong>Coordinates:</strong> ' + sensor.lat + ', ' + sensor.lng + '</p>');
+    if (sensor.lat != null && sensor.lng != null) rows.push('<p class="mb-1"><strong>' + (L.detail_coordinates || 'Coordinates') + ':</strong> ' + sensor.lat + ', ' + sensor.lng + '</p>');
     var m = sensor.metrics || {};
     var getVal = function(k){ var v = m[k]; return (v && typeof v === 'object' && v.value != null) ? v.value : null; };
     var getUnit = function(k){ var v = m[k]; return (v && typeof v === 'object' && v.unit) ? v.unit : ''; };
@@ -2243,7 +2390,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       });
       rows.push('</div>');
       if (sensor.id && govIotSensorHistoryUrl) {
-        rows.push('<h6 class="small mt-3 mb-2">Trend (7 nap)</h6><div id="govIotDetailTrend" class="admin-chart" data-sensor-id="' + sensor.id + '"><p class="text-secondary small mb-0">Betöltés...</p></div>');
+        rows.push('<h6 class="small mt-3 mb-2">' + (L.trend_7d || '') + '</h6><div id="govIotDetailTrend" class="admin-chart" data-sensor-id="' + sensor.id + '"><p class="text-secondary small mb-0">' + (L.trend_loading || '') + '</p></div>');
       }
     }
     bodyEl.innerHTML = rows.join('');
@@ -2253,9 +2400,10 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   function loadGovIotDetailTrend(sensorId){
     var container = document.getElementById('govIotDetailTrend');
     if (!container || !sensorId) return;
+    var Ltr = govIotLabels || {};
     var days = 7;
     fetch(govIotSensorHistoryUrl + '?sensor_id=' + sensorId + '&days=' + days + '&metric_key=temperature', { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
-      if (!j.ok || !Array.isArray(j.data) || j.data.length === 0) { container.innerHTML = '<p class="text-secondary small mb-0">Nincs trend adat.</p>'; return; }
+      if (!j.ok || !Array.isArray(j.data) || j.data.length === 0) { container.innerHTML = '<p class="text-secondary small mb-0">' + (Ltr.trend_empty || '') + '</p>'; return; }
       var data = j.data;
       var maxV = Math.max.apply(null, data.map(function(x){ var n = normalizeUiTempCelsius(parseFloat(x.value)); return n != null ? n : 0; }));
       if (maxV <= 0) maxV = 1;
@@ -2315,7 +2463,8 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       chartsEl.innerHTML = chartHtml;
     }
     if (tableEl && tableEl.style.display !== 'none') {
-      var tb = '<table class="table table-sm"><thead><tr><th>Name</th><th>Provider</th><th>Ownership</th><th>Municipality</th><th>Last seen</th><th>Freshness</th><th>AQI</th><th>PM2.5</th></tr></thead><tbody>';
+      var C = govIotLabels || {};
+      var tb = '<table class="table table-sm"><thead><tr><th>' + (C.col_name || '') + '</th><th>' + (C.col_provider || '') + '</th><th>' + (C.col_ownership || '') + '</th><th>' + (C.col_municipality || '') + '</th><th>' + (C.col_last_seen || '') + '</th><th>' + (C.col_freshness || '') + '</th><th>' + (C.col_aqi || '') + '</th><th>' + (C.col_pm25 || '') + '</th></tr></thead><tbody>';
       sensors.forEach(function(s){
         var aqi = (s.metrics && s.metrics.aqi && s.metrics.aqi.value != null) ? s.metrics.aqi.value : '—';
         var pm25 = (s.metrics && s.metrics.pm25 && s.metrics.pm25.value != null) ? s.metrics.pm25.value : '—';
@@ -2344,7 +2493,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
           var mk = L.marker([s.lat, s.lng]).addTo(govIotMap);
           var pop = (s.name || s.source_provider).replace(/</g,'&lt;') + '<br><small>' + (s.municipality || '') + '</small><br><span class="badge bg-secondary">' + getGovIotOwnershipLabel(s).replace(/</g,'&lt;') + '</span>';
           if (s.metrics && s.metrics.aqi && s.metrics.aqi.value != null) pop += '<br>AQI: ' + s.metrics.aqi.value;
-          pop += '<br><a href="#" class="gov-iot-detail-link" data-index="' + govIotSensorsCache.indexOf(s) + '">Details</a>';
+          pop += '<br><a href="#" class="gov-iot-detail-link" data-index="' + govIotSensorsCache.indexOf(s) + '">' + ((govIotLabels && govIotLabels.popup_details) ? govIotLabels.popup_details : 'Details') + '</a>';
           mk.bindPopup(pop);
           mk.on('popupopen', function(){
             var wrapper = mk.getPopup().getElement();
@@ -2367,7 +2516,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     var url = virtualSensorsListUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : '');
     if (!listEl) return;
     if (summaryEl) summaryEl.innerHTML = '';
-    listEl.innerHTML = '<p class="text-secondary small mb-0">' + (govIotLabels && govIotLabels.no_data ? govIotLabels.no_data : '') + '</p>';
+    listEl.innerHTML = '<p class="text-secondary small mb-0">' + ((govIotLabels && govIotLabels.loading_text) ? govIotLabels.loading_text : '') + '</p>';
     fetch(url, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok) {
         listEl.innerHTML = '<p class="text-danger small">' + (j && j.error ? String(j.error).replace(/</g,'&lt;') : '—') + '</p>';
@@ -2407,8 +2556,17 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       btn.disabled = false;
       if (statusEl) {
         if (j.ok && j.providers) {
-          var parts = []; for (var p in j.providers) { var x = j.providers[p]; parts.push(p + ': ' + (x.imported || 0) + ' szenzor' + (x.updated ? ', ' + x.updated + ' metrika' : '')); }
-          statusEl.textContent = 'Kész. ' + parts.join('; ');
+          var Lbl = govIotLabels || {};
+          var parts = [];
+          for (var p in j.providers) {
+            var x = j.providers[p];
+            var imp = x.imported || 0;
+            var sLab = imp === 1 ? (Lbl.sync_sensor_single || '') : (Lbl.sync_sensor_multi || '');
+            var upd = x.updated || 0;
+            var mLab = upd === 1 ? (Lbl.sync_metric_single || '') : (Lbl.sync_metric_multi || '');
+            parts.push(p + ': ' + imp + ' ' + sLab + (upd ? ', ' + upd + ' ' + mLab : ''));
+          }
+          statusEl.textContent = (Lbl.sync_done || '') + ' ' + parts.join('; ');
           statusEl.className = 'small text-success';
         } else { statusEl.textContent = j.error || '—'; statusEl.className = 'small text-danger'; }
       }
@@ -2474,7 +2632,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.trees || 'Trees') + '</h6><p class="mb-0 small">' + (L.trees_total || 'Total') + ': ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.total_trees) + ' · ' + (L.trees_watered || 'Watered 7d') + ': ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.watered_7d) + ' · ' + (L.trees_adopted || 'Adopted') + ': ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.adopted) + '</p></div></div></div>';
       html += '</div>';
       if (d.issue_trend_per_district && d.issue_trend_per_district.length > 0) {
-        html += '<h6 class="small mt-2">' + (L.districts || 'Districts') + '</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Hatóság</th><th>Ügyek</th></tr></thead><tbody>';
+        html += '<h6 class="small mt-2">' + (L.districts || 'Districts') + '</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>' + (L.district_col_authority || '') + '</th><th>' + (L.district_col_issues || '') + '</th></tr></thead><tbody>';
         d.issue_trend_per_district.forEach(function(row){ html += '<tr><td>' + (row.name || row.authority_id) + '</td><td>' + row.count + '</td></tr>'; });
         html += '</tbody></table></div>';
       }
@@ -2488,7 +2646,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
         html += '</div>';
       }
       container.innerHTML = html;
-    }).catch(function(){ var container = document.getElementById('govStatisticsContent'); if (container) container.innerHTML = '<p class="text-danger small">Hiba a betöltéskor.</p>'; });
+    }).catch(function(){ var container = document.getElementById('govStatisticsContent'); var Le = govStatisticsLabels || {}; if (container) container.innerHTML = '<p class="text-danger small">' + (Le.load_error || '') + '</p>'; });
   }
   document.getElementById('govStatisticsRefresh') && document.getElementById('govStatisticsRefresh').addEventListener('click', loadGovStatistics);
 
@@ -2499,16 +2657,18 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     fetch(citybrainDashboardUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok || !j.live) { container.innerHTML = '<p class="text-secondary small mb-0">—</p>'; return; }
       var L = govIotLabels || {};
+      var CB = govCitybrainLabels || {};
       var s = j.live.sensors_summary || {};
+      var actLabel = (CB.live_active || '%n').replace('%n', String(s.active || 0));
       var html = '<div class="row g-3">';
-      html += '<div class="col-md-3"><div class="card border-primary"><div class="card-body py-2"><h6 class="small text-muted">' + (L.total_sensors || 'Szenzorok') + '</h6><p class="mb-0 fs-5">' + (s.total || 0) + '</p><small class="text-success">' + (s.active || 0) + ' aktív</small></div></div></div>';
+      html += '<div class="col-md-3"><div class="card border-primary"><div class="card-body py-2"><h6 class="small text-muted">' + (L.total_sensors || 'Szenzorok') + '</h6><p class="mb-0 fs-5">' + (s.total || 0) + '</p><small class="text-success">' + actLabel + '</small></div></div></div>';
       html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_aqi || 'Átlag AQI') + '</h6><p class="mb-0 fs-5">' + (s.avg_aqi != null ? s.avg_aqi : '—') + '</p></div></div></div>';
       html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_pm25 || 'PM2.5') + '</h6><p class="mb-0 fs-5">' + (s.avg_pm25 != null ? s.avg_pm25 + ' µg/m³' : '—') + '</p></div></div></div>';
       html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_temperature || 'Hőmérséklet') + '</h6><p class="mb-0 fs-5">' + (normalizeUiTempCelsius(s.avg_temperature) != null ? normalizeUiTempCelsius(s.avg_temperature) + ' °C' : '—') + '</p></div></div></div>';
       html += '</div><div class="row g-3 mt-1">';
-      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">Bejelentések (24h)</h6><p class="mb-0">' + (j.live.reports_24h || 0) + '</p></div></div></div>';
-      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">Ötletek (24h)</h6><p class="mb-0">' + (j.live.ideas_24h || 0) + '</p></div></div></div>';
-      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">Nyitott bejelentések</h6><p class="mb-0">' + (j.live.open_reports || 0) + '</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (CB.live_reports_24h || '') + '</h6><p class="mb-0">' + (j.live.reports_24h || 0) + '</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (CB.live_ideas_24h || '') + '</h6><p class="mb-0">' + (j.live.ideas_24h || 0) + '</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (CB.live_open_reports || '') + '</h6><p class="mb-0">' + (j.live.open_reports || 0) + '</p></div></div></div>';
       html += '</div>';
       container.innerHTML = html;
     }).catch(function(){ if (container) container.innerHTML = '<p class="text-danger small">—</p>'; });
@@ -2518,16 +2678,17 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     if (!container || !govPredictionsUrl) return;
     container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load'), JSON_UNESCAPED_UNICODE) ?></p>';
     fetch(govPredictionsUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
-      var L = govPredictionsLabels || {};
       var noData = (govStatisticsLabels && govStatisticsLabels.no_data) || '—';
       if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
       var d = j.data;
+      var P = govCitybrainLabels || {};
       var issues = Array.isArray(d.predicted_issues) ? d.predicted_issues : [];
       var zones = Array.isArray(d.risk_zones) ? d.risk_zones : [];
       var trees = Array.isArray(d.predicted_tree_failures) ? d.predicted_tree_failures : [];
-      var html = '<p class="small mb-2">Előrejelzett ügyek: <b>' + issues.length + '</b> · Kockázati zónák: <b>' + zones.length + '</b> · Fa kockázat: <b>' + trees.length + '</b></p>';
-      if (issues.length > 0) { html += '<p class="small fw-semibold">Előrejelzett ügyek</p><ul class="small mb-2">'; issues.slice(0, 5).forEach(function(x){ html += '<li>' + (x.category || '') + ' ' + (x.risk_level || '') + '</li>'; }); if (issues.length > 5) html += '<li class="text-secondary">… +' + (issues.length - 5) + '</li>'; html += '</ul>'; }
-      if (trees.length > 0) { html += '<p class="small fw-semibold">Fa kockázat</p><ul class="small mb-0">'; trees.slice(0, 5).forEach(function(x){ html += '<li>#' + (x.tree_id || '') + ' ' + (x.risk || '') + '</li>'; }); if (trees.length > 5) html += '<li class="text-secondary">… +' + (trees.length - 5) + '</li>'; html += '</ul>'; }
+      var summ = (P.predictive_summary || '').replace('%1', String(issues.length)).replace('%2', String(zones.length)).replace('%3', String(trees.length));
+      var html = '<p class="small mb-2">' + summ + '</p>';
+      if (issues.length > 0) { html += '<p class="small fw-semibold">' + (P.predictive_issues_title || '') + '</p><ul class="small mb-2">'; issues.slice(0, 5).forEach(function(x){ html += '<li>' + (x.category || '') + ' ' + (x.risk_level || '') + '</li>'; }); if (issues.length > 5) html += '<li class="text-secondary">' + (P.predictive_more || '').replace('%n', String(issues.length - 5)) + '</li>'; html += '</ul>'; }
+      if (trees.length > 0) { html += '<p class="small fw-semibold">' + (P.predictive_tree_title || '') + '</p><ul class="small mb-0">'; trees.slice(0, 5).forEach(function(x){ html += '<li>#' + (x.tree_id || '') + ' ' + (x.risk || '') + '</li>'; }); if (trees.length > 5) html += '<li class="text-secondary">' + (P.predictive_more || '').replace('%n', String(trees.length - 5)) + '</li>'; html += '</ul>'; }
       if (issues.length === 0 && trees.length === 0) html += '<p class="text-secondary small mb-0">' + noData + '</p>';
       container.innerHTML = html;
     }).catch(function(){ if (container) container.innerHTML = '<p class="text-danger small">—</p>'; });
@@ -2573,23 +2734,24 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + (L.no_data || '—') + '</p>'; return; }
       var d = j.data;
       var html = '<div class="row g-3 mb-3">';
-      html += '<div class="col-md-6"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.resolution_rate || 'Feloldási arány') + '</h6><p class="mb-0 small">Feloldva: <b>' + (d.resolution_rate && d.resolution_rate.resolved) + '</b> / ' + (d.resolution_rate && d.resolution_rate.total) + ' (' + (d.resolution_rate ? (d.resolution_rate.rate * 100).toFixed(0) + '%' : '') + ')</p></div></div></div>';
-      html += '<div class="col-md-6"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.resolution_time || 'Reakcióidő') + '</h6><p class="mb-0 small">Átlag: <b>' + (d.response_times && d.response_times.avg_hours) + ' h</b> · Medián: ' + (d.response_times && d.response_times.median_hours) + ' h</p></div></div></div>';
+      html += '<div class="col-md-6"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.resolution_rate || 'Resolution rate') + '</h6><p class="mb-0 small">' + (L.resolved || 'Resolved') + ': <b>' + (d.resolution_rate && d.resolution_rate.resolved) + '</b> / ' + (d.resolution_rate && d.resolution_rate.total) + ' (' + (d.resolution_rate && (d.resolution_rate.rate * 100).toFixed(0) + '%)') + '</p></div></div></div>';
+      html += '<div class="col-md-6"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.resolution_time || 'Resolution time') + '</h6><p class="mb-0 small">' + (L.avg_hours || 'Avg') + ': <b>' + (d.response_times && d.response_times.avg_hours) + ' h</b> · ' + (L.median_hours || 'Median') + ': ' + (d.response_times && d.response_times.median_hours) + ' h</p></div></div></div>';
       html += '</div><div class="row g-3 mb-3">';
-      var trendLabel = (d.backlog_growth && d.backlog_growth.trend === 'up') ? (L.trend_up || '↑') : (d.backlog_growth && d.backlog_growth.trend === 'down') ? (L.trend_down || '↓') : (L.trend_stable || '→');
-      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.backlog || 'Backlog') + '</h6><p class="mb-0 small">Nyitott: <b>' + (d.backlog_growth && d.backlog_growth.current_open) + '</b> (' + trendLabel + ')</p></div></div></div>';
-      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.participation || 'Részvétel') + '</h6><p class="mb-0 small">Aktív 7 nap: <b>' + (d.citizen_participation_rate && d.citizen_participation_rate.active_users_7d) + '</b> · Bejelentések 7d: ' + (d.citizen_participation_rate && d.citizen_participation_rate.reports_7d) + '</p></div></div></div>';
-      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.trees || 'Fák') + '</h6><p class="mb-0 small">Összes: ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.total_trees) + ' · Öntözve 7d: ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.watered_7d) + ' · Örökbefogadott: ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.adopted) + '</p></div></div></div>';
+      var trendLabel = (d.backlog_growth && d.backlog_growth.trend === 'up') ? (L.trend_up || 'up') : (d.backlog_growth && d.backlog_growth.trend === 'down') ? (L.trend_down || 'down') : (L.trend_stable || 'stable');
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.backlog || 'Backlog') + '</h6><p class="mb-0 small">' + (L.open_issues || 'Open') + ': <b>' + (d.backlog_growth && d.backlog_growth.current_open) + '</b> (' + trendLabel + ')</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.participation || 'Participation') + '</h6><p class="mb-0 small">' + (L.active_users_7d || 'Active 7d') + ': <b>' + (d.citizen_participation_rate && d.citizen_participation_rate.active_users_7d) + '</b> · ' + (L.reports_7d || 'Reports 7d') + ': ' + (d.citizen_participation_rate && d.citizen_participation_rate.reports_7d) + '</p></div></div></div>';
+      html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.trees || 'Trees') + '</h6><p class="mb-0 small">' + (L.trees_total || 'Total') + ': ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.total_trees) + ' · ' + (L.trees_watered || 'Watered 7d') + ': ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.watered_7d) + ' · ' + (L.trees_adopted || 'Adopted') + ': ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.adopted) + '</p></div></div></div>';
       html += '</div>';
       if (Array.isArray(d.issue_trends) && d.issue_trends.length > 0) {
-        html += '<h6 class="small mt-2">' + (L.issue_trend || 'Ügy trend') + '</h6><ul class="small list-unstyled mb-0">';
+        html += '<h6 class="small mt-2">' + (L.issue_trend || 'Issue trend') + '</h6><ul class="small list-unstyled mb-0">';
         var byDate = {};
         d.issue_trends.forEach(function(t){ byDate[t.date] = (byDate[t.date] || 0) + t.count; });
-        Object.keys(byDate).sort().slice(-14).forEach(function(date){ html += '<li>' + date + ': <b>' + byDate[date] + '</b> ügy</li>'; });
+        var issueWord = L.issue_plural || '';
+        Object.keys(byDate).sort().slice(-14).forEach(function(date){ html += '<li>' + date + ': <b>' + byDate[date] + '</b> ' + issueWord + '</li>'; });
         html += '</ul>';
       }
       container.innerHTML = html;
-    }).catch(function(){ if (container) container.innerHTML = '<p class="text-danger small">—</p>'; });
+    }).catch(function(){ var Le = govStatisticsLabels || {}; if (container) container.innerHTML = '<p class="text-danger small">' + (Le.load_error || '—') + '</p>'; });
   }
   document.getElementById('citybrainBehaviorRefresh') && document.getElementById('citybrainBehaviorRefresh').addEventListener('click', loadCitybrainBehavior);
   function loadCitybrainEnvironmental(){
@@ -2599,13 +2761,14 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     fetch(citybrainDashboardUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok || !j.environmental) { container.innerHTML = '<p class="text-secondary small mb-0">—</p>'; return; }
       var L = govIotLabels || {};
+      var CB = govCitybrainLabels || {};
       var s = j.environmental.summary || {};
       var byProvider = j.environmental.by_provider || {};
       var html = '<div class="row g-3 mb-3">';
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_aqi || 'Átlag AQI') + '</h6><p class="mb-0 fs-5">' + (s.avg_aqi != null ? s.avg_aqi : '—') + '</p></div></div></div>';
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_pm25 || 'PM2.5') + '</h6><p class="mb-0 fs-5">' + (s.avg_pm25 != null ? s.avg_pm25 + ' µg/m³' : '—') + '</p></div></div></div>';
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_temperature || 'Hőmérséklet') + '</h6><p class="mb-0 fs-5">' + (normalizeUiTempCelsius(s.avg_temperature) != null ? normalizeUiTempCelsius(s.avg_temperature) + ' °C' : '—') + '</p></div></div></div>';
-      html += '</div><h6 class="small">Szenzorok providerek szerint</h6><ul class="small list-unstyled mb-0">';
+      html += '</div><h6 class="small">' + (CB.environmental_by_provider || '') + '</h6><ul class="small list-unstyled mb-0">';
       Object.keys(byProvider).sort().forEach(function(p){ html += '<li>' + p + ': <b>' + byProvider[p] + '</b></li>'; });
       if (Object.keys(byProvider).length === 0) html += '<li class="text-secondary">—</li>';
       html += '</ul>';
@@ -2636,7 +2799,8 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load'), JSON_UNESCAPED_UNICODE) ?></p>';
     fetch(citybrainDashboardUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok || !Array.isArray(j.risks)) { container.innerHTML = '<p class="text-secondary small mb-0">—</p>'; return; }
-      if (j.risks.length === 0) { container.innerHTML = '<p class="text-success small mb-0">Nincs aktív riasztás.</p>'; return; }
+      var R = govCitybrainLabels || {};
+      if (j.risks.length === 0) { container.innerHTML = '<p class="text-success small mb-0">' + (R.risk_no_alerts || '') + '</p>'; return; }
       var html = '<ul class="list-group list-group-flush">';
       j.risks.forEach(function(r){
         var severityClass = (r.severity === 'high') ? 'list-group-item-danger' : 'list-group-item-warning';
@@ -2651,6 +2815,10 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   var treeEditUrl = <?= json_encode(app_url('/api/tree_edit.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govTreeCadastreMap = null;
   var govTreeCadastreLayer = null;
+  var govTreeBaseOsm = null;
+  var govTreeBaseEsri = null;
+  var govTreeEuGeoLayer = null;
+  var govTreeEuOverlayBoundOnce = false;
   function initGovTreeCadastreMap(){
     var container = document.getElementById('govTreeCadastreMap');
     if (!container || typeof L === 'undefined') return;
@@ -2659,13 +2827,51 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       return;
     }
     govTreeCadastreMap = L.map('govTreeCadastreMap').setView([mapCenterLat, mapCenterLng], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OSM' }).addTo(govTreeCadastreMap);
+    govTreeBaseOsm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
+    govTreeBaseEsri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri' });
+    govTreeBaseOsm.addTo(govTreeCadastreMap);
+    var mapLayersTr = govMapJsLabels || {};
+    L.control.layers({ [(mapLayersTr.layer_osm || 'Map')]: govTreeBaseOsm, [(mapLayersTr.layer_satellite || 'Satellite')]: govTreeBaseEsri }, {}).addTo(govTreeCadastreMap);
     govTreeCadastreLayer = L.layerGroup().addTo(govTreeCadastreMap);
+    var tr = document.getElementById('govTreeEuLayerRefresh');
+    var ts = document.getElementById('govTreeEuLayerType');
+    if (tr) tr.addEventListener('click', function(){ loadGovTreeEuOverlayLayer(); });
+    if (ts) ts.addEventListener('change', function(){ loadGovTreeEuOverlayLayer(); });
+  }
+  function loadGovTreeEuOverlayLayer(){
+    if (!govTreeCadastreMap || !govEuGreenOverlayUrl) return;
+    var sel = document.getElementById('govTreeEuLayerType');
+    if (!sel) return;
+    var lt = sel.value || 'planting_priority';
+    if (govTreeEuGeoLayer) {
+      govTreeCadastreMap.removeLayer(govTreeEuGeoLayer);
+      govTreeEuGeoLayer = null;
+    }
+    fetch(govEuGreenOverlayUrl + govEuOverlayQueryParams(lt), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.data || j.data.type !== 'FeatureCollection') return;
+      govTreeEuGeoLayer = L.geoJSON(j.data, {
+        pointToLayer: function(_f, latlng){
+          return L.circleMarker(latlng, { radius: 5, color: '#198754', fillColor: '#20c997', fillOpacity: 0.5, weight: 1 });
+        },
+        style: function(){
+          return { color: '#0d6efd', weight: 2, fillOpacity: 0.12 };
+        }
+      }).addTo(govTreeCadastreMap);
+      if (!govTreeEuOverlayBoundOnce) {
+        try {
+          var b = govTreeEuGeoLayer.getBounds();
+          if (b.isValid()) govTreeCadastreMap.fitBounds(b, { maxZoom: 14, padding: [28, 28] });
+          govTreeEuOverlayBoundOnce = true;
+        } catch (_) {}
+      }
+    }).catch(function(){});
   }
   function loadGovTreesMap(){
     if (!govTreeCadastreMap || !govTreeCadastreLayer || !govTreesListUrl) return;
     govTreeCadastreLayer.clearLayers();
-    fetch(govTreesListUrl + '?limit=500&offset=0', { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+    govTreeEuOverlayBoundOnce = false;
+    var listUrl = govAppendAuthorityQuery(govTreesListUrl + '?limit=500&offset=0');
+    fetch(listUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok || !Array.isArray(j.data)) return;
       var bounds = [];
       j.data.forEach(function(t){
@@ -2682,6 +2888,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
         bounds.push([lat, lng]);
       });
       if (bounds.length > 0 && govTreeCadastreMap) govTreeCadastreMap.fitBounds(bounds, { maxZoom: 15, padding: [30, 30] });
+      loadGovTreeEuOverlayLayer();
     }).catch(function(){});
   }
   function escStr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -2690,7 +2897,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     var totalEl = document.getElementById('govTreesTotal');
     if (!wrap) return;
     wrap.textContent = <?= json_encode(t('gov.loading'), JSON_UNESCAPED_UNICODE) ?>;
-    fetch(govTreesListUrl + '?limit=200&offset=0', { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+    fetch(govAppendAuthorityQuery(govTreesListUrl + '?limit=200&offset=0'), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok || !Array.isArray(j.data)) { wrap.textContent = <?= json_encode(t('gov.no_data'), JSON_UNESCAPED_UNICODE) ?>; if (totalEl) totalEl.textContent = ''; return; }
       var total = j.total || j.data.length;
       if (totalEl) totalEl.textContent = total + ' fa';
@@ -3043,8 +3250,9 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     if (key === 'budget') loadGovBudget();
     if (key === 'trees') { initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
     if (key === 'iot') loadGovIotDevices();
-    if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); loadGovEuEeaInspire(); loadGovEsgMetrics(); }
-    if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); }
+    if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovEsgMetrics(); }
+    if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
+    if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); }
     if (key === 'citybrain-live') loadCitybrainLive();
     if (key === 'citybrain-predictive') loadCitybrainPredictive();
     if (key === 'citybrain-hotspot') { if (typeof citybrainHotspotMap !== 'undefined' && citybrainHotspotMap) loadCitybrainHotspot(); else initCitybrainHotspot(); }
