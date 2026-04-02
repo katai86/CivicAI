@@ -83,4 +83,85 @@ class ExternalHttpClient
         $ok = $status >= 200 && $status < 300;
         return ['ok' => $ok, 'status' => $status, 'body' => (string)$body, 'error' => $ok ? null : ('http_' . $status), 'url' => $url];
     }
+
+    /**
+     * POST JSON (pl. STAC / OData).
+     *
+     * @return array{ok:bool,status:int,body:string,error:?string,url:string}
+     */
+    public static function postJson(string $url, array $body, ?int $timeoutSeconds = null): array
+    {
+        $timeout = $timeoutSeconds ?? self::defaultTimeoutSeconds();
+        $payload = json_encode($body, JSON_UNESCAPED_UNICODE);
+        if ($payload === false) {
+            $payload = '{}';
+        }
+        if (!function_exists('curl_init')) {
+            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_required', 'url' => $url];
+        }
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_init_failed', 'url' => $url];
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_CONNECTTIMEOUT => min(15, $timeout),
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_USERAGENT => self::userAgent(),
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Accept: application/geo+json, application/json',
+            ],
+        ]);
+        $resp = curl_exec($ch);
+        $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if ($resp === false) {
+            return ['ok' => false, 'status' => $status, 'body' => '', 'error' => $err !== '' ? $err : 'curl_exec_failed', 'url' => $url];
+        }
+        $ok = $status >= 200 && $status < 300;
+        return ['ok' => $ok, 'status' => $status, 'body' => (string)$resp, 'error' => $ok ? null : ('http_' . $status), 'url' => $url];
+    }
+
+    /**
+     * POST application/x-www-form-urlencoded (OAuth token).
+     *
+     * @return array{ok:bool,status:int,body:string,error:?string,url:string}
+     */
+    public static function postForm(string $url, array $fields, ?int $timeoutSeconds = null): array
+    {
+        $timeout = $timeoutSeconds ?? self::defaultTimeoutSeconds();
+        $payload = http_build_query($fields, '', '&', PHP_QUERY_RFC1738);
+        if (!function_exists('curl_init')) {
+            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_required', 'url' => $url];
+        }
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_init_failed', 'url' => $url];
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_CONNECTTIMEOUT => min(15, $timeout),
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_USERAGENT => self::userAgent(),
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/x-www-form-urlencoded',
+                'Accept: application/json',
+            ],
+        ]);
+        $resp = curl_exec($ch);
+        $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if ($resp === false) {
+            return ['ok' => false, 'status' => $status, 'body' => '', 'error' => $err !== '' ? $err : 'curl_exec_failed', 'url' => $url];
+        }
+        $ok = $status >= 200 && $status < 300;
+        return ['ok' => $ok, 'status' => $status, 'body' => (string)$resp, 'error' => $ok ? null : ('http_' . $status), 'url' => $url];
+    }
 }

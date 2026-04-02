@@ -11,9 +11,35 @@ Ez a dokumentum a **CivicAI** hivatalos EU-forrású adatintegrációjának alap
   - `services/ExternalDataCache.php` – cache olvasás/írás, lejárt törlés, provider napló.
 - **Segédfüggvények** (`util.php`): `eu_open_data_module_enabled()`, `eu_open_data_feature_enabled($key)`, `eu_open_data_request_timeout_seconds()`, `eu_open_data_cache_ttl_minutes()`, `eu_open_data_sync_enabled()`.
 
+## Milestone 2 (kész – Copernicus zöld / NDVI kontextus)
+
+- **`services/CopernicusDataService.php`** – CDSE OAuth (client credentials, cache), **STAC** `POST https://stac.dataspace.copernicus.eu/v1/search` (Sentinel-2 L2A tételek száma a bbox-ban), helyi rács: zöld hiány / ültetési prioritás, NDVI-szerű és felszín proxy a fakataszter + bejelentések alapján.
+- **`services/GreenIntelligence.php`** – ha `eu_open_data` + `copernicus_enabled`: kiegészítés `ndvi_score`, `green_deficit_score`, `sealed_surface_pressure`, `vegetation_health_score`, `planting_priority_zones`, `data_sources`, stb.
+- **`api/green_metrics.php`** – válasz: `source`, `scope`, `data`, `meta` (confidence, data_sources).
+- **`api/eu_green_overlay.php`** – GeoJSON pontok (`layer_type`: `ndvi`, `green_deficit`, `planting_priority`, `vegetation_health`), csak gov/admin.
+- **Gov dashboard:** új kártya (EU / műholdas zöld), a meglévő Green Intelligence betöltőfüggvény bővítve.
+- **Nyilvános térkép (desktop):** jelmagyarázat panelben EU réteg (csak govuser/admin/superadmin, ha Copernicus részmodul be van kapcsolva) – `inc_desktop_topbar.php` + `assets/app.js`.
+
+Valós **pixel NDVI / Process API** nem kötelező ehhez a lépéshez; a struktúra és a cache készen áll a későbbi bővítésre.
+
+## Milestone 3 (kész – CLMS Urban Atlas 2018)
+
+- **`services/ClmsUrbanAtlasService.php`** – EEA Discomap ArcGIS REST: `UA_UrbanAtlas_2018` / „Land Use vector” réteg, **group statistics** (`Shape_Area` összeg `code_2018` szerint), bbox metszés EPSG:4326-ben.
+- **Megoszlás** (terület-súlyozott, 0–1): `ua_built_share`, `ua_green_urban_share`, `ua_pervious_green_share`, `ua_water_share`, plusz `ua_reference_year` = 2018, `ua_class_rows`.
+- **Cache** / napló: `source_key` = `clms`, provider log; TTL az EU modul cache beállítása szerint.
+- **Korlát:** a hatóság bbox területe legfeljebb **~3500 km²** (FU-skála); nagyobb bboxnál nem hívjuk az EEA-t (`bbox_area_out_of_range`).
+- **`GreenIntelligence` + `api/green_metrics.php`:** ha `clms_enabled` és van authority bbox, a mutatók kiegészülnek; `sealed_surface_pressure` enyhén összeolvad a beépített aránnyal, ha már létezik Copernicus-réteg. Forrás jelölés: `source` = `clms` | `eu_mixed` | `copernicus` | `local`; `data_sources` tartalmazza a `clms_urban_atlas_2018_eea` kulcsot.
+- **Gov:** az EU / műholdas kártya **Copernicus vagy CLMS** bekapcsolásakor látszik; Urban Atlas sorok a zöld metrikák EU dobozában.
+
+## Milestone 4 (kész – CAMS levegőminőség)
+
+- **`services/CamsAirQualityService.php`** – ECMWF CAMS publikus WMS (`token=public`), `GetFeatureInfo` lekérdezés a hatóság bbox **középpontjára**: `PM2.5`, `PM10`, `NO₂`, `O₃` (µg/m³). Konzervatív, 0–1 skálás **`air_quality_index`** és `level` (`good|moderate|poor`).
+- **`api/eu_air_quality.php`** – GET, csak gov/admin, válasz: `source/scope/data/meta` a már használt EU API formátumban.
+- **Gov UI** – új „EU / air quality (CAMS)” kártya az Analytics oldalon (csak ha `cams_enabled`).
+
 ## Következő lépések (roadmap)
 
-A részletes ütemtervet a projektben integrált **EU Open Data** prompt írja le (M2: Copernicus / NDVI, M3: CLMS, M4: CAMS, M5: CDS, M6: Eurostat, M7: EEA/INSPIRE, M8: Gov UI, M9: tesztelés és dokumentáció).
+M5: CDS, M6: Eurostat, M7: EEA/INSPIRE, M8–M9: további gov UI és tesztek.
 
 ## Konfiguráció
 

@@ -1010,6 +1010,28 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
               </div>
             </div>
           </div>
+          <?php if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled() && function_exists('eu_open_data_feature_enabled') && (eu_open_data_feature_enabled('copernicus_enabled') || eu_open_data_feature_enabled('clms_enabled'))): ?>
+          <div class="card mb-3 border-success border-opacity-25">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.eu_green_card_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.eu_satellite_hint')) ?></p>
+              <div id="govEuGreenSatelliteContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
+          <?php if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled() && function_exists('eu_open_data_feature_enabled') && eu_open_data_feature_enabled('cams_enabled')): ?>
+          <div class="card mb-3 border-info border-opacity-25">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.eu_air_quality_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.eu_air_quality_hint')) ?></p>
+              <div id="govEuAirQualityContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
           <div class="card mb-3">
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.esg_command_center_title')) ?></h6>
@@ -1410,6 +1432,27 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     'biodiversity_index' => t('gov.green_biodiversity_index'),
     'drought_risk' => t('gov.green_drought_risk'),
   ], JSON_UNESCAPED_UNICODE) ?>;
+  var govEuAirQualityUrl = <?= json_encode(app_url('/api/eu_air_quality.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govEuAirQualityLabels = <?= json_encode([
+    'pm25' => t('gov.eu_pm25'),
+    'pm10' => t('gov.eu_pm10'),
+    'no2' => t('gov.eu_no2'),
+    'o3' => t('gov.eu_o3'),
+    'index' => t('gov.eu_air_index'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govEuGreenLabels = <?= json_encode([
+    'ndvi' => t('gov.eu_ndvi_proxy'),
+    'deficit' => t('gov.eu_green_deficit'),
+    'planting' => t('gov.eu_planting_zones'),
+    'vegetation' => t('gov.eu_vegetation_health'),
+    'sources' => t('gov.eu_sources_label'),
+    'confidence' => t('gov.eu_confidence'),
+    'ua_year' => t('gov.eu_ua_year'),
+    'ua_built' => t('gov.eu_ua_built'),
+    'ua_green_urban' => t('gov.eu_ua_green_urban'),
+    'ua_pervious' => t('gov.eu_ua_pervious'),
+    'ua_water' => t('gov.eu_ua_water'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
   var govPredictionsUrl = <?= json_encode(app_url('/api/predictions.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govPredictionsLabels = <?= json_encode([
     'predicted_issues' => t('gov.predictions_predicted_issues'),
@@ -1591,7 +1634,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       if (key === 'budget') loadGovBudget();
       if (key === 'trees') { initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
       if (key === 'iot') loadGovIotDevices();
-      if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovGreenMetrics(); loadGovEsgMetrics(); }
+      if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEsgMetrics(); }
       if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); }
       if (key === 'citybrain-live') loadCitybrainLive();
       if (key === 'citybrain-predictive') loadCitybrainPredictive();
@@ -1741,11 +1784,16 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   }
   function loadGovGreenMetrics(){
     var container = document.getElementById('govGreenMetricsContent');
+    var euBox = document.getElementById('govEuGreenSatelliteContent');
     if (!container || !govGreenMetricsUrl) return;
     fetch(govGreenMetricsUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var L = govGreenMetricsLabels || {};
       var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
-      if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
+      if (!j.ok || !j.data) {
+        container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>';
+        if (euBox) euBox.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>';
+        return;
+      }
       var d = j.data;
       var canopy = (d.canopy_coverage != null) ? Math.round(parseFloat(d.canopy_coverage) * 100) : 0;
       var carbon = (d.carbon_absorption != null) ? parseFloat(d.carbon_absorption) : 0;
@@ -1758,7 +1806,69 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       html += '<div class="col-6"><span class="text-secondary">' + (L.drought_risk || 'Szárazság kockázat') + '</span><br><b>' + drought + '%</b></div>';
       html += '</div>';
       container.innerHTML = html;
-    }).catch(function(){ var c = document.getElementById('govGreenMetricsContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
+      if (euBox && (d.ndvi_score != null || d.ua_built_share != null)) {
+        var EL = govEuGreenLabels || {};
+        var euHtml = '<div class="row g-2 small">';
+        if (d.ndvi_score != null) {
+          var ndviP = Math.round(parseFloat(d.ndvi_score) * 100);
+          var defP = (d.green_deficit_score != null) ? Math.round(parseFloat(d.green_deficit_score) * 100) : 0;
+          var vegP = (d.vegetation_health_score != null) ? Math.round(parseFloat(d.vegetation_health_score) * 100) : 0;
+          var pz = Array.isArray(d.planting_priority_zones) ? d.planting_priority_zones.length : 0;
+          euHtml += '<div class="col-6"><span class="text-secondary">' + (EL.ndvi || 'NDVI proxy') + '</span><br><b>' + ndviP + '%</b></div>';
+          euHtml += '<div class="col-6"><span class="text-secondary">' + (EL.deficit || 'Deficit') + '</span><br><b>' + defP + '%</b></div>';
+          euHtml += '<div class="col-6"><span class="text-secondary">' + (EL.planting || 'Ültetés') + '</span><br><b>' + pz + '</b></div>';
+          euHtml += '<div class="col-6"><span class="text-secondary">' + (EL.vegetation || 'Növényzet') + '</span><br><b>' + vegP + '%</b></div>';
+        }
+        if (d.ua_built_share != null) {
+          var y = (d.ua_reference_year != null) ? String(d.ua_reference_year) : '2018';
+          euHtml += '<div class="col-12 mt-1"><span class="text-secondary fw-semibold">' + (EL.ua_year || 'Urban Atlas') + ' (' + y + ')</span></div>';
+          euHtml += '<div class="col-6"><span class="text-secondary">' + (EL.ua_built || 'Built') + '</span><br><b>' + Math.round(parseFloat(d.ua_built_share) * 100) + '%</b></div>';
+          euHtml += '<div class="col-6"><span class="text-secondary">' + (EL.ua_green_urban || 'Green urban') + '</span><br><b>' + Math.round(parseFloat(d.ua_green_urban_share) * 100) + '%</b></div>';
+          euHtml += '<div class="col-6"><span class="text-secondary">' + (EL.ua_pervious || 'Pervious / green') + '</span><br><b>' + Math.round(parseFloat(d.ua_pervious_green_share) * 100) + '%</b></div>';
+          euHtml += '<div class="col-6"><span class="text-secondary">' + (EL.ua_water || 'Water') + '</span><br><b>' + Math.round(parseFloat(d.ua_water_share) * 100) + '%</b></div>';
+        }
+        euHtml += '</div>';
+        var src = (j.meta && j.meta.data_sources) ? j.meta.data_sources.join(', ') : '';
+        var conf = (j.meta && j.meta.confidence) ? j.meta.confidence : '';
+        if (src) euHtml += '<p class="text-secondary small mt-2 mb-0"><span class="text-muted">' + (EL.sources || '') + ':</span> ' + String(src).replace(/</g,'&lt;') + (conf ? ' · ' + (EL.confidence || '') + ': ' + conf : '') + '</p>';
+        euBox.innerHTML = euHtml;
+      } else if (euBox) {
+        euBox.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>';
+      }
+    }).catch(function(){
+      var c = document.getElementById('govGreenMetricsContent');
+      if (c) c.innerHTML = '<p class="text-danger small">—</p>';
+      var e = document.getElementById('govEuGreenSatelliteContent');
+      if (e) e.innerHTML = '<p class="text-danger small">—</p>';
+    });
+  }
+
+  function loadGovEuAirQuality(){
+    var box = document.getElementById('govEuAirQualityContent');
+    if (!box || !govEuAirQualityUrl) return;
+    fetch(govEuAirQualityUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var L = govEuAirQualityLabels || {};
+      var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
+      if (!j.ok || !j.data || !j.data.ok) { box.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
+      var d = j.data;
+      var unit = d.unit || 'µg/m3';
+      function fmt(v){ return (v == null || isNaN(Number(v))) ? '—' : (Math.round(Number(v) * 10) / 10); }
+      var idx = (d.air_quality_index != null) ? Math.round(Number(d.air_quality_index) * 100) : null;
+      var lvl = d.level || '';
+      var badge = '';
+      if (idx != null) {
+        var cls = (lvl === 'good') ? 'success' : (lvl === 'moderate' ? 'warning' : 'danger');
+        badge = ' <span class=\"badge bg-' + cls + '\">' + idx + '/100</span>';
+      }
+      var html = '<div class=\"row g-2 small\">';
+      html += '<div class=\"col-6\"><span class=\"text-secondary\">' + (L.pm25 || 'PM2.5') + '</span><br><b>' + fmt(d.pm25) + ' ' + unit + '</b></div>';
+      html += '<div class=\"col-6\"><span class=\"text-secondary\">' + (L.pm10 || 'PM10') + '</span><br><b>' + fmt(d.pm10) + ' ' + unit + '</b></div>';
+      html += '<div class=\"col-6\"><span class=\"text-secondary\">' + (L.no2 || 'NO2') + '</span><br><b>' + fmt(d.no2) + ' ' + unit + '</b></div>';
+      html += '<div class=\"col-6\"><span class=\"text-secondary\">' + (L.o3 || 'O3') + '</span><br><b>' + fmt(d.o3) + ' ' + unit + '</b></div>';
+      html += '<div class=\"col-12 mt-1\"><span class=\"text-secondary fw-semibold\">' + (L.index || 'Index') + ':</span>' + badge + '</div>';
+      html += '</div>';
+      box.innerHTML = html;
+    }).catch(function(){ var b = document.getElementById('govEuAirQualityContent'); if (b) b.innerHTML = '<p class=\"text-danger small\">—</p>'; });
   }
   function loadGovEsgMetrics(){
     var container = document.getElementById('govEsgMetricsContent');

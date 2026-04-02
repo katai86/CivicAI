@@ -1679,3 +1679,40 @@ document.getElementById('btnNewReport')?.addEventListener('click', () => {
   `;
   document.body.appendChild(ov);
 })();
+
+// ====== EU Green overlay (közig / admin: Copernicus + helyi rács) ======
+(function initEuGreenOverlay(){
+  const role = USER_ROLE || '';
+  if (!['govuser', 'admin', 'superadmin'].includes(role)) return;
+  const toggle = document.getElementById('euGreenOverlayToggle');
+  const sel = document.getElementById('euGreenOverlayLayer');
+  if (!toggle || !sel) return;
+  let euLayer = null;
+  async function loadEuLayer(){
+    if (euLayer) {
+      map.removeLayer(euLayer);
+      euLayer = null;
+    }
+    if (!toggle.checked) return;
+    const lt = sel.value || 'planting_priority';
+    const url = `${BASE}/api/eu_green_overlay.php?layer_type=${encodeURIComponent(lt)}`;
+    try {
+      const res = await fetch(url, { credentials: 'include' });
+      const j = await res.json();
+      if (!j.ok || !j.data || j.data.type !== 'FeatureCollection') return;
+      euLayer = L.geoJSON(j.data, {
+        pointToLayer(feature, latlng) {
+          const w = (feature.properties && feature.properties.weight != null) ? parseFloat(String(feature.properties.weight)) : 0.3;
+          const r = 4 + Math.min(14, (isFinite(w) ? w : 0.3) * 12);
+          const c = w > 0.55 ? '#e74c3c' : (w > 0.35 ? '#f39c12' : '#27ae60');
+          return L.circleMarker(latlng, { radius: r, color: c, fillColor: c, fillOpacity: 0.42, weight: 1 });
+        }
+      });
+      euLayer.addTo(map);
+    } catch (e) {
+      console.warn('EU green overlay', e);
+    }
+  }
+  toggle.addEventListener('change', loadEuLayer);
+  sel.addEventListener('change', () => { if (toggle.checked) loadEuLayer(); });
+})();

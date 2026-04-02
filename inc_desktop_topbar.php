@@ -75,6 +75,22 @@ $rankAll = isset($rankAll) ? $rankAll : null;
                     </div>
                   </div>
                 </div>
+                <?php if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled() && function_exists('eu_open_data_feature_enabled') && eu_open_data_feature_enabled('copernicus_enabled') && in_array($role, ['govuser', 'admin', 'superadmin'], true)): ?>
+                <div class="legend-eu-section px-2 py-2 border-top border-secondary border-opacity-25">
+                  <div class="small text-secondary mb-1"><?= htmlspecialchars(t('legend.eu_data_badge'), ENT_QUOTES, 'UTF-8') ?></div>
+                  <label class="legend-item d-flex align-items-center gap-2 mb-2 small">
+                    <input type="checkbox" id="euGreenOverlayToggle" style="margin:0">
+                    <span><?= htmlspecialchars(t('legend.eu_green_priority'), ENT_QUOTES, 'UTF-8') ?></span>
+                  </label>
+                  <label class="small d-block mb-0"><?= htmlspecialchars(t('legend.eu_green_layer'), ENT_QUOTES, 'UTF-8') ?></label>
+                  <select id="euGreenOverlayLayer" class="mt-1" style="width:100%;font-size:12px;padding:4px;border-radius:4px;">
+                    <option value="planting_priority"><?= htmlspecialchars(t('legend.eu_layer_planting'), ENT_QUOTES, 'UTF-8') ?></option>
+                    <option value="green_deficit"><?= htmlspecialchars(t('legend.eu_layer_deficit'), ENT_QUOTES, 'UTF-8') ?></option>
+                    <option value="ndvi"><?= htmlspecialchars(t('legend.eu_layer_ndvi'), ENT_QUOTES, 'UTF-8') ?></option>
+                    <option value="vegetation_health"><?= htmlspecialchars(t('legend.eu_layer_vegetation'), ENT_QUOTES, 'UTF-8') ?></option>
+                  </select>
+                </div>
+                <?php endif; ?>
                 <div class="legend-foot muted"><?= htmlspecialchars(t('legend.foot'), ENT_QUOTES, 'UTF-8') ?></div>
               </div>
             </div>

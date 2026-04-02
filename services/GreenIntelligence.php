@@ -2,6 +2,8 @@
 /**
  * M6 – Green Intelligence Module.
  * canopy_coverage, carbon_absorption, biodiversity_index, drought_risk.
+ * M2 EU: opcionális Copernicus/STAC + helyi rács (ndvi_score, green_deficit_score, …) ha be van kapcsolva az EU modul.
+ * M3 EU: opcionális CLMS Urban Atlas 2018 (terület-súlyozott megoszlás a bbox-ban) ha `clms_enabled`.
  */
 require_once __DIR__ . '/../db.php';
 
@@ -107,6 +109,25 @@ class GreenIntelligence
         $out['biodiversity_index'] = round(min(1.0, $speciesCount / 15.0), 2);
 
         $out['drought_risk'] = round($droughtCount / $totalTrees, 2);
+
+        if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled()) {
+            require_once __DIR__ . '/CopernicusDataService.php';
+            $cop = new CopernicusDataService();
+            if ($cop->isActive()) {
+                $extra = $cop->augmentGreenMetrics($out, $authorityId, $bbox, $pdo);
+                if (!empty($extra)) {
+                    $out = array_merge($out, $extra);
+                }
+            }
+            require_once __DIR__ . '/ClmsUrbanAtlasService.php';
+            $clms = new ClmsUrbanAtlasService();
+            if ($clms->isActive() && $bbox) {
+                $uaExtra = $clms->augmentMetrics($out, $bbox);
+                if (!empty($uaExtra)) {
+                    $out = array_merge($out, $uaExtra);
+                }
+            }
+        }
 
         return $out;
     }
