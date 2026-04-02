@@ -205,6 +205,7 @@ return [
     'popup.details' => 'Details',
     'popup.liked' => 'Gefällt dir',
     'popup.sender' => 'Melder',
+    'popup.subcity_context' => 'Lokaler Bereich',
     'cat.tree_upload' => 'Baum hochladen',
     'cat.tree_upload_desc' => 'Baum hochladen',
     'modal.address_required' => 'Bitte mindestens Stadt oder Straße angeben.',

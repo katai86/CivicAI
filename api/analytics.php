@@ -69,6 +69,7 @@ $issues = [
   'resolved' => 0,
   'by_category' => [],
   'by_district' => [],
+  'by_subcity' => [],
   'by_month' => [],
   'avg_resolution_days' => null,
 ];
@@ -114,6 +115,30 @@ try {
     $issues['by_district'][(string)$row['district']] = (int)$row['cnt'];
   }
 } catch (Throwable $e) {}
+
+$useSubcity = admin_subdivision_analytics_use_subcity($authorityId > 0 ? $authorityId : null);
+if ($useSubcity) {
+  try {
+    $q = $pdo->prepare("
+      SELECT COALESCE(
+        NULLIF(TRIM(JSON_UNQUOTE(JSON_EXTRACT(r.admin_subdivision_json, '\$.subcity_name'))), ''),
+        NULLIF(TRIM(r.suburb), ''),
+        NULLIF(TRIM(r.city), ''),
+        '—'
+      ) AS subcity, COUNT(*) AS cnt
+      FROM reports r
+      WHERE $where $dateWhere
+      GROUP BY subcity
+      ORDER BY cnt DESC
+    ");
+    $q->execute($allParams);
+    foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $row) {
+      $issues['by_subcity'][(string)$row['subcity']] = (int)$row['cnt'];
+    }
+  } catch (Throwable $e) {
+    $issues['by_subcity'] = [];
+  }
+}
 
 // By month (last 12 months)
 try {
@@ -262,6 +287,9 @@ if ($format === 'csv') {
   }
   foreach ($issues['by_district'] as $dist => $cnt) {
     fputcsv($out, ['district_' . $dist, $cnt], ';');
+  }
+  foreach ($issues['by_subcity'] as $sc => $cnt) {
+    fputcsv($out, ['subcity_' . $sc, $cnt], ';');
   }
   foreach ($urban as $k => $v) {
     fputcsv($out, [$k, $v], ';');

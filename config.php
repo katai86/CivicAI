@@ -102,6 +102,18 @@ define('AI_IMAGE_ANALYSIS_LIMIT', (int)(getenv('AI_IMAGE_ANALYSIS_LIMIT') ?: 300
 // Időjárás API (Gov dashboard) – Open-Meteo használata, API kulcs nem kell
 define('WEATHER_ENABLED', filter_var(getenv('WEATHER_ENABLED'), FILTER_VALIDATE_BOOLEAN) ?: true);
 
+// --- EU admin subdivisions (district / borough / arrondissement / sublocality / ward, provider-first) ---
+// Ha true: minden ország/város számára érvényes (analytics + UI relevancia szűrőkhez).
+define('SUBDIVISION_AWARE_DEFAULT', filter_var(getenv('SUBDIVISION_AWARE_DEFAULT'), FILTER_VALIDATE_BOOLEAN) ?: false);
+// Vesszővel: ISO-3166-1 alpha-2 (pl. HU,DE,FR,AT).
+define('SUBDIVISION_AWARE_COUNTRY_CODES', strtoupper(preg_replace('/\s+/', '', (string)(getenv('SUBDIVISION_AWARE_COUNTRY_CODES') ?: ''))));
+// Opcionális városlista (kisbetű, vesszővel) – pl. budapest,wien,berlin
+define('SUBDIVISION_AWARE_CITIES', strtolower(preg_replace('/\s+/', '', (string)(getenv('SUBDIVISION_AWARE_CITIES') ?: ''))));
+// Analytics: JSON subcity_name szerinti bontás (ha hatóságon subdivision_aware vagy ez true)
+define('SUBDIVISION_ANALYTICS_USE_SUBCITY', filter_var(getenv('SUBDIVISION_ANALYTICS_USE_SUBCITY'), FILTER_VALIDATE_BOOLEAN) ?: false);
+// Beküldő JSON admin_subdivision egyesítése (TomTom/HERE/Google/Geoapify kliens oldali válaszból)
+define('SUBDIVISION_ALLOW_CLIENT_SNAPSHOT', filter_var(getenv('SUBDIVISION_ALLOW_CLIENT_SNAPSHOT'), FILTER_VALIDATE_BOOLEAN) ?: false);
+
 // Production bootstrap: kritikus beállítások ellenőrzése (nem blokkol, csak jelzés)
 if (!defined('DB_HOST') || !defined('DB_NAME') || !defined('APP_BASE_URL')) {
   throw new RuntimeException('Kritikus config hiányzik: DB_HOST, DB_NAME vagy APP_BASE_URL.');

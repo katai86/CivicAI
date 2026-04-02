@@ -42,7 +42,8 @@ $sql = "
     u.profile_public AS reporter_profile_public,
     u.level AS reporter_level,
     COALESCE((SELECT COUNT(*) FROM report_likes rl WHERE rl.report_id = r.id), 0) AS like_count,
-    (SELECT 1 FROM report_likes rl WHERE rl.report_id = r.id AND rl.user_id = ? LIMIT 1) AS liked_by_me
+    (SELECT 1 FROM report_likes rl WHERE rl.report_id = r.id AND rl.user_id = ? LIMIT 1) AS liked_by_me,
+    r.admin_subdivision_json AS admin_subdivision_json
   FROM reports r
   LEFT JOIN users u ON u.id = r.user_id
   WHERE r.status IN ($in)
@@ -78,6 +79,60 @@ if (is_numeric($minLat) && is_numeric($maxLat) && is_numeric($minLng) && is_nume
 $stmt->execute($exec);
 $rows = $stmt->fetchAll();
 } catch (Throwable $e) {
+  if (strpos($e->getMessage(), 'admin_subdivision_json') !== false) {
+    $sql = "
+      SELECT
+        r.id, r.category, r.title, r.description, r.lat, r.lng,
+        r.status,
+        r.created_at,
+        r.created_at AS updated_at,
+        r.reporter_is_anonymous,
+        CASE
+          WHEN r.reporter_is_anonymous = 0 THEN r.reporter_name
+          ELSE NULL
+        END AS reporter_name_public,
+        u.id AS reporter_user_id,
+        u.display_name AS reporter_display_name,
+        u.profile_public AS reporter_profile_public,
+        u.level AS reporter_level,
+        COALESCE((SELECT COUNT(*) FROM report_likes rl WHERE rl.report_id = r.id), 0) AS like_count,
+        (SELECT 1 FROM report_likes rl WHERE rl.report_id = r.id AND rl.user_id = ? LIMIT 1) AS liked_by_me
+      FROM reports r
+      LEFT JOIN users u ON u.id = r.user_id
+      WHERE r.status IN ($in)
+    ";
+    try {
+      if ($category !== '') {
+        $sql .= " AND r.category = ?";
+      }
+      if (is_numeric($minLat) && is_numeric($maxLat) && is_numeric($minLng) && is_numeric($maxLng)) {
+        $sql .= " AND r.lat BETWEEN ? AND ? AND r.lng BETWEEN ? AND ?";
+      }
+      $sql .= " ORDER BY r.created_at DESC LIMIT $limit";
+      $stmt = db()->prepare($sql);
+      $exec2 = [$uid];
+      $exec2 = array_merge($exec2, array_values($visibleStatuses));
+      if ($category !== '') {
+        $exec2[] = $category;
+      }
+      if (is_numeric($minLat) && is_numeric($maxLat) && is_numeric($minLng) && is_numeric($maxLng)) {
+        $exec2[] = (float)$minLat;
+        $exec2[] = (float)$maxLat;
+        $exec2[] = (float)$minLng;
+        $exec2[] = (float)$maxLng;
+      }
+      $stmt->execute($exec2);
+      $rows = $stmt->fetchAll();
+    } catch (Throwable $e2) {
+      $rows = [];
+    }
+    foreach ($rows as &$r0) {
+      $r0['admin_subdivision'] = null;
+    }
+    unset($r0);
+    json_response(['ok' => true, 'data' => $rows]);
+    return;
+  }
   $sql = "
     SELECT
       r.id, r.category, r.title, r.description, r.lat, r.lng,
@@ -107,6 +162,25 @@ $rows = $stmt->fetchAll();
   }
   $stmt->execute($execFallback);
   $rows = $stmt->fetchAll();
+  foreach ($rows as &$r0) {
+    $r0['admin_subdivision'] = null;
+  }
+  unset($r0);
 }
+
+foreach ($rows as &$r) {
+  $js = $r['admin_subdivision_json'] ?? null;
+  unset($r['admin_subdivision_json']);
+  if (array_key_exists('admin_subdivision', $r)) {
+    continue;
+  }
+  if (is_string($js) && $js !== '') {
+    $dec = json_decode($js, true);
+    $r['admin_subdivision'] = is_array($dec) ? $dec : null;
+  } else {
+    $r['admin_subdivision'] = null;
+  }
+}
+unset($r);
 
 json_response(['ok' => true, 'data' => $rows]);

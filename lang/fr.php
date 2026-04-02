@@ -205,6 +205,7 @@ return [
     'popup.details' => 'Détails',
     'popup.liked' => 'Vous aimez',
     'popup.sender' => 'Signalant',
+    'popup.subcity_context' => 'Zone locale',
     'cat.tree_upload' => 'Arbre (upload)',
     'cat.tree_upload_desc' => 'Arbre (upload)',
     'modal.address_required' => 'Veuillez indiquer au moins la ville ou la rue.',

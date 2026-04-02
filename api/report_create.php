@@ -367,6 +367,34 @@ if ($geo) {
   }
 }
 
+$clientAdminSnap = (isset($body['admin_subdivision']) && is_array($body['admin_subdivision'])) ? $body['admin_subdivision'] : null;
+$rawGeoForAdmin = null;
+if (!empty($body['admin_geocode_provider']) && isset($body['admin_geocode_raw']) && is_array($body['admin_geocode_raw'])) {
+  $rawGeoForAdmin = [
+    'provider' => (string)$body['admin_geocode_provider'],
+    'raw' => $body['admin_geocode_raw'],
+  ];
+}
+$adminNorm = admin_subdivision_build_for_report($geo, $lat, $lng, $clientAdminSnap, $rawGeoForAdmin);
+if ($suburb === null || $suburb === '') {
+  $sn = isset($adminNorm['subcity_name']) ? trim((string)$adminNorm['subcity_name']) : '';
+  if ($sn !== '') {
+    $suburb = safe_str($sn, 128);
+  }
+}
+if ($city === null || $city === '') {
+  $cn = isset($adminNorm['city']) ? trim((string)$adminNorm['city']) : '';
+  if ($cn !== '') {
+    $city = safe_str($cn, 128);
+  }
+}
+if ($postcode === null || $postcode === '') {
+  $pc = isset($adminNorm['postcode']) ? trim((string)$adminNorm['postcode']) : '';
+  if ($pc !== '') {
+    $postcode = safe_str($pc, 32);
+  }
+}
+
 // email csak akkor kerüljön eltárolásra, ha értesítést kér (különben NULL)
 $storeEmail = ($wantsNotify === 1) ? $reporterEmail : null;
 
@@ -483,6 +511,18 @@ try {
 }
 
 $id = (int)db()->lastInsertId();
+
+if ($id > 0 && isset($adminNorm) && is_array($adminNorm)) {
+  try {
+    $j = admin_subdivision_to_json($adminNorm);
+    if ($j !== '' && $j !== '{}') {
+      db()->prepare('UPDATE reports SET admin_subdivision_json = :j WHERE id = :id')->execute([':j' => $j, ':id' => $id]);
+    }
+  } catch (Throwable $e) {
+    log_error('report_create admin_subdivision_json: ' . $e->getMessage());
+  }
+}
+
 // ===== /FixMyStreet =====
 
 // ===== AI – Report understanding (tanácsadó, opcionális) =====
@@ -577,5 +617,6 @@ if ($userId) {
 json_response([
   'ok' => true,
   'message' => t('modal.thanks'),
-  'id' => $id
+  'id' => $id,
+  'admin_subdivision' => isset($adminNorm) && is_array($adminNorm) ? $adminNorm : null,
 ]);

@@ -205,6 +205,7 @@ return [
     'popup.details' => 'Detalles',
     'popup.liked' => 'Te gusta',
     'popup.sender' => 'Reportante',
+    'popup.subcity_context' => 'Zona local',
     'cat.tree_upload' => 'Subir árbol',
     'cat.tree_upload_desc' => 'Subir árbol',
     'modal.address_required' => 'Indica al menos la ciudad o la calle.',

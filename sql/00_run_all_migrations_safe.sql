@@ -440,6 +440,11 @@ CALL add_column_if_not_exists('reports', 'suburb', 'VARCHAR(128) NULL');
 CALL add_column_if_not_exists('reports', 'postcode', 'VARCHAR(32) NULL');
 CALL add_column_if_not_exists('reports', 'address_approx', 'VARCHAR(255) NULL');
 CALL add_column_if_not_exists('reports', 'city', 'VARCHAR(80) NULL');
+CALL add_column_if_not_exists('reports', 'admin_subdivision_json', 'JSON NULL');
+
+CALL add_column_if_not_exists('authorities', 'country_code', 'CHAR(2) NULL');
+CALL add_column_if_not_exists('authorities', 'municipality_type', 'VARCHAR(64) NULL');
+CALL add_column_if_not_exists('authorities', 'subdivision_aware', 'TINYINT(1) NOT NULL DEFAULT 0');
 
 -- ========== Users bővítés (profil, XP, szint) – ha exportból/régi sémából hiányzik ==========
 CALL add_column_if_not_exists('users', 'profile_public', 'TINYINT(1) NOT NULL DEFAULT 1');

@@ -72,6 +72,15 @@ if ($action === 'create_authority') {
     }
   }
   $isActive = !empty($body['is_active']) ? 1 : 0;
+  $countryCode = safe_str($body['country_code'] ?? null, 2);
+  if ($countryCode !== '') {
+    $countryCode = strtoupper(substr($countryCode, 0, 2));
+  } else {
+    $countryCode = null;
+  }
+  $municipalityType = safe_str($body['municipality_type'] ?? null, 64);
+  $municipalityType = $municipalityType !== '' ? $municipalityType : null;
+  $subdivisionAware = !empty($body['subdivision_aware']) ? 1 : 0;
 
   if (!$name) json_response(['ok' => false, 'error' => t('api.name_required')], 400);
 
@@ -79,13 +88,16 @@ if ($action === 'create_authority') {
   $inserted = false;
   try {
     $pdo->prepare("
-      INSERT INTO authorities (name, country, region, city, contact_email, contact_phone, website, is_active, min_lat, max_lat, min_lng, max_lng)
-      VALUES (:name, :country, :region, :city, :email, :phone, :website, :active, :minlat, :maxlat, :minlng, :maxlng)
+      INSERT INTO authorities (name, country, region, city, country_code, municipality_type, subdivision_aware, contact_email, contact_phone, website, is_active, min_lat, max_lat, min_lng, max_lng)
+      VALUES (:name, :country, :region, :city, :ccode, :mtype, :subaw, :email, :phone, :website, :active, :minlat, :maxlat, :minlng, :maxlng)
     ")->execute([
       ':name' => $name,
       ':country' => $country,
       ':region' => $region,
       ':city' => $city,
+      ':ccode' => $countryCode,
+      ':mtype' => $municipalityType,
+      ':subaw' => $subdivisionAware,
       ':email' => $email,
       ':phone' => $phone,
       ':website' => $website,
@@ -97,11 +109,11 @@ if ($action === 'create_authority') {
     ]);
     $inserted = true;
   } catch (Throwable $e) {
-    log_error('admin_authorities create (with bbox): ' . $e->getMessage());
+    log_error('admin_authorities create (with bbox+subdivision): ' . $e->getMessage());
     try {
       $pdo->prepare("
-        INSERT INTO authorities (name, country, region, city, contact_email, contact_phone, website, is_active)
-        VALUES (:name, :country, :region, :city, :email, :phone, :website, :active)
+        INSERT INTO authorities (name, country, region, city, contact_email, contact_phone, website, is_active, min_lat, max_lat, min_lng, max_lng)
+        VALUES (:name, :country, :region, :city, :email, :phone, :website, :active, :minlat, :maxlat, :minlng, :maxlng)
       ")->execute([
         ':name' => $name,
         ':country' => $country,
@@ -111,30 +123,51 @@ if ($action === 'create_authority') {
         ':phone' => $phone,
         ':website' => $website,
         ':active' => $isActive,
+        ':minlat' => $minLat,
+        ':maxlat' => $maxLat,
+        ':minlng' => $minLng,
+        ':maxlng' => $maxLng,
       ]);
       $inserted = true;
-    } catch (Throwable $e2) {
-      log_error('admin_authorities create (no bbox): ' . $e2->getMessage());
+    } catch (Throwable $eBbox) {
+      log_error('admin_authorities create (with bbox): ' . $eBbox->getMessage());
       try {
-        // Régi schema: name, email (NOT NULL), category, city, active, min_lat, max_lat, min_lng, max_lng
         $pdo->prepare("
-          INSERT INTO authorities (name, email, category, city, active, min_lat, max_lat, min_lng, max_lng)
-          VALUES (:name, :email, :category, :city, :active, :minlat, :maxlat, :minlng, :maxlng)
+          INSERT INTO authorities (name, country, region, city, contact_email, contact_phone, website, is_active)
+          VALUES (:name, :country, :region, :city, :email, :phone, :website, :active)
         ")->execute([
           ':name' => $name,
-          ':email' => $email ?: ' ',
-          ':category' => '',
+          ':country' => $country,
+          ':region' => $region,
           ':city' => $city,
+          ':email' => $email,
+          ':phone' => $phone,
+          ':website' => $website,
           ':active' => $isActive,
-          ':minlat' => $minLat,
-          ':maxlat' => $maxLat,
-          ':minlng' => $minLng,
-          ':maxlng' => $maxLng,
         ]);
         $inserted = true;
-      } catch (Throwable $e3) {
-        log_error('admin_authorities create (legacy): ' . $e3->getMessage());
-        json_response(['ok' => false, 'error' => t('api.authority_save_failed')], 500);
+      } catch (Throwable $e2) {
+        log_error('admin_authorities create (no bbox): ' . $e2->getMessage());
+        try {
+          $pdo->prepare("
+            INSERT INTO authorities (name, email, category, city, active, min_lat, max_lat, min_lng, max_lng)
+            VALUES (:name, :email, :category, :city, :active, :minlat, :maxlat, :minlng, :maxlng)
+          ")->execute([
+            ':name' => $name,
+            ':email' => $email ?: ' ',
+            ':category' => '',
+            ':city' => $city,
+            ':active' => $isActive,
+            ':minlat' => $minLat,
+            ':maxlat' => $maxLat,
+            ':minlng' => $minLng,
+            ':maxlng' => $maxLng,
+          ]);
+          $inserted = true;
+        } catch (Throwable $e3) {
+          log_error('admin_authorities create (legacy): ' . $e3->getMessage());
+          json_response(['ok' => false, 'error' => t('api.authority_save_failed')], 500);
+        }
       }
     }
   }
@@ -156,16 +189,21 @@ if ($action === 'update_authority') {
   $maxLat = array_key_exists('max_lat', $body) ? (is_numeric($body['max_lat']) ? (float)$body['max_lat'] : null) : null;
   $minLng = array_key_exists('min_lng', $body) ? (is_numeric($body['min_lng']) ? (float)$body['min_lng'] : null) : null;
   $maxLng = array_key_exists('max_lng', $body) ? (is_numeric($body['max_lng']) ? (float)$body['max_lng'] : null) : null;
+  $updCountryCode = safe_str($body['country_code'] ?? null, 2);
+  $updCountryCode = $updCountryCode !== '' ? strtoupper(substr($updCountryCode, 0, 2)) : null;
+  $updMuniType = safe_str($body['municipality_type'] ?? null, 64);
+  $updMuniType = $updMuniType !== '' ? $updMuniType : null;
+  $updSubdivAware = !empty($body['subdivision_aware']) ? 1 : 0;
   try {
     $pdo = db();
     try {
-      $pdo->prepare("UPDATE authorities SET name = ?, country = ?, city = ?, contact_email = ?, contact_phone = ?, min_lat = ?, max_lat = ?, min_lng = ?, max_lng = ? WHERE id = ?")
-        ->execute([$name, $country, $city, $email, $phone, $minLat, $maxLat, $minLng, $maxLng, $id]);
+      $pdo->prepare("UPDATE authorities SET name = ?, country = ?, country_code = ?, municipality_type = ?, subdivision_aware = ?, city = ?, contact_email = ?, contact_phone = ?, min_lat = ?, max_lat = ?, min_lng = ?, max_lng = ? WHERE id = ?")
+        ->execute([$name, $country, $updCountryCode, $updMuniType, $updSubdivAware, $city, $email, $phone, $minLat, $maxLat, $minLng, $maxLng, $id]);
     } catch (Throwable $e) {
       $msg = $e->getMessage();
-      if (strpos($msg, 'Unknown column') !== false && strpos($msg, 'country') !== false) {
-        $pdo->prepare("UPDATE authorities SET name = ?, city = ?, contact_email = ?, contact_phone = ?, min_lat = ?, max_lat = ?, min_lng = ?, max_lng = ? WHERE id = ?")
-          ->execute([$name, $city, $email, $phone, $minLat, $maxLat, $minLng, $maxLng, $id]);
+      if (strpos($msg, 'Unknown column') !== false) {
+        $pdo->prepare("UPDATE authorities SET name = ?, country = ?, city = ?, contact_email = ?, contact_phone = ?, min_lat = ?, max_lat = ?, min_lng = ?, max_lng = ? WHERE id = ?")
+          ->execute([$name, $country, $city, $email, $phone, $minLat, $maxLat, $minLng, $maxLng, $id]);
       } else {
         throw $e;
       }

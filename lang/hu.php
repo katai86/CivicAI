@@ -285,6 +285,7 @@ return [
     'popup.details' => 'Részletek',
     'popup.liked' => 'Kedveled',
     'popup.sender' => 'Beküldő',
+    'popup.subcity_context' => 'Helyi terület',
     'cat.tree_upload' => 'Fa feltöltés',
     'cat.tree_upload_desc' => 'Fa feltöltés',
     'modal.address_required' => 'Add meg legalább a várost vagy az utcát!',

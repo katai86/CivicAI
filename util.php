@@ -1204,3 +1204,158 @@ function gov_compute_esg_snapshot(PDO $pdo, array $treeScopeIds, string $reportW
     'governance' => $gov,
   ];
 }
+
+// -----------------------------------------------------------------------------
+// Administrative subdivision (EU-wide, provider-first; not city-specific)
+// -----------------------------------------------------------------------------
+
+function admin_subdivision_require_normalizer(): void {
+  static $loaded = false;
+  if (!$loaded) {
+    require_once __DIR__ . '/services/AdminSubdivisionNormalizer.php';
+    $loaded = true;
+  }
+}
+
+/** @return string[] */
+function admin_subdivision_parse_country_codes(): array {
+  if (!defined('SUBDIVISION_AWARE_COUNTRY_CODES')) {
+    return [];
+  }
+  $raw = trim((string)SUBDIVISION_AWARE_COUNTRY_CODES);
+  if ($raw === '') {
+    return [];
+  }
+  $out = [];
+  foreach (explode(',', $raw) as $p) {
+    $p = strtoupper(trim($p));
+    if (strlen($p) === 2) {
+      $out[] = $p;
+    }
+  }
+  return array_values(array_unique($out));
+}
+
+/** @return array<string,bool> normalized city key => true */
+function admin_subdivision_parse_city_keys(): array {
+  if (!defined('SUBDIVISION_AWARE_CITIES')) {
+    return [];
+  }
+  $raw = trim((string)SUBDIVISION_AWARE_CITIES);
+  if ($raw === '') {
+    return [];
+  }
+  $out = [];
+  foreach (explode(',', $raw) as $p) {
+    $k = trim(strtolower($p));
+    if ($k !== '') {
+      $out[$k] = true;
+    }
+  }
+  return $out;
+}
+
+function admin_subdivision_city_key(?string $city): string {
+  $city = $city ? trim($city) : '';
+  if ($city === '') {
+    return '';
+  }
+  return function_exists('mb_strtolower') ? mb_strtolower($city) : strtolower($city);
+}
+
+/** @return array{subdivision_aware?:int,country_code?:string,municipality_type?:string} */
+function admin_subdivision_authority_flags(int $authorityId): array {
+  if ($authorityId <= 0) {
+    return [];
+  }
+  try {
+    $st = db()->prepare('SELECT subdivision_aware, country_code, municipality_type FROM authorities WHERE id = ? LIMIT 1');
+    $st->execute([$authorityId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    return is_array($row) ? $row : [];
+  } catch (Throwable $e) {
+    return [];
+  }
+}
+
+/**
+ * Configurable “subdivision aware” mode: country / city / authority / type (authority row).
+ */
+function admin_subdivision_mode_applies(?string $countryCode, ?string $city, ?int $authorityId = null): bool {
+  if (defined('SUBDIVISION_AWARE_DEFAULT') && SUBDIVISION_AWARE_DEFAULT) {
+    return true;
+  }
+  $cc = $countryCode ? strtoupper(substr(trim($countryCode), 0, 2)) : '';
+  if ($cc !== '' && in_array($cc, admin_subdivision_parse_country_codes(), true)) {
+    return true;
+  }
+  $ck = admin_subdivision_city_key($city);
+  if ($ck !== '' && !empty(admin_subdivision_parse_city_keys()[$ck])) {
+    return true;
+  }
+  if ($authorityId && $authorityId > 0) {
+    $row = admin_subdivision_authority_flags($authorityId);
+    if (!empty($row['subdivision_aware'])) {
+      return true;
+    }
+    $ac = isset($row['country_code']) ? strtoupper(substr(trim((string)$row['country_code']), 0, 2)) : '';
+    if ($ac !== '' && in_array($ac, admin_subdivision_parse_country_codes(), true)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function admin_subdivision_analytics_use_subcity(?int $authorityId): bool {
+  if (defined('SUBDIVISION_ANALYTICS_USE_SUBCITY') && SUBDIVISION_ANALYTICS_USE_SUBCITY) {
+    return true;
+  }
+  if (defined('SUBDIVISION_AWARE_DEFAULT') && SUBDIVISION_AWARE_DEFAULT) {
+    return true;
+  }
+  if ($authorityId && $authorityId > 0) {
+    $row = admin_subdivision_authority_flags($authorityId);
+    if (!empty($row['subdivision_aware'])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * @param array<string,mixed>|null $geo
+ * @param array<string,mixed>|null $bodyClientSnapshot normalized client schema
+ * @param array{provider?:string,raw?:array<string,mixed>}|null $rawGeocode admin_geocode_provider + admin_geocode_raw
+ * @return array<string,mixed>
+ */
+function admin_subdivision_build_for_report(
+  ?array $geo,
+  float $lat,
+  float $lng,
+  ?array $bodyClientSnapshot = null,
+  ?array $rawGeocode = null
+): array {
+  admin_subdivision_require_normalizer();
+  $norm = AdminSubdivisionNormalizer::fromNominatim($geo, $lat, $lng);
+  $allowClient = defined('SUBDIVISION_ALLOW_CLIENT_SNAPSHOT') && SUBDIVISION_ALLOW_CLIENT_SNAPSHOT;
+  if ($allowClient && is_array($rawGeocode)) {
+    $gp = isset($rawGeocode['provider']) ? trim((string)$rawGeocode['provider']) : '';
+    $gr = $rawGeocode['raw'] ?? null;
+    if ($gp !== '' && is_array($gr) && $gr) {
+      $pNorm = AdminSubdivisionNormalizer::fromProvider($gp, $gr);
+      $norm = AdminSubdivisionNormalizer::mergeProviderPreferred($norm, $pNorm);
+    }
+  }
+  if ($allowClient && is_array($bodyClientSnapshot) && $bodyClientSnapshot) {
+    $norm = AdminSubdivisionNormalizer::mergeClientSnapshot($norm, $bodyClientSnapshot);
+  }
+  return $norm;
+}
+
+/**
+ * @param array<string,mixed> $norm
+ */
+function admin_subdivision_to_json(array $norm): string {
+  $j = json_encode($norm, JSON_UNESCAPED_UNICODE);
+  return ($j !== false && json_last_error() === JSON_ERROR_NONE) ? $j : '{}';
+}

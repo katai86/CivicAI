@@ -284,6 +284,7 @@ return [
     'popup.details' => 'Details',
     'popup.liked' => 'Liked',
     'popup.sender' => 'Reporter',
+    'popup.subcity_context' => 'Local area',
     'cat.tree_upload' => 'Tree upload',
     'cat.tree_upload_desc' => 'Tree upload',
     'modal.address_required' => 'Please enter at least the city or street.',

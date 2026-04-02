@@ -205,6 +205,7 @@ return [
     'popup.details' => 'Dettagli',
     'popup.liked' => 'Ti piace',
     'popup.sender' => 'Segnalante',
+    'popup.subcity_context' => 'Area locale',
     'cat.tree_upload' => 'Caricamento albero',
     'cat.tree_upload_desc' => 'Caricamento albero',
     'modal.address_required' => 'Inserisci almeno città o via.',

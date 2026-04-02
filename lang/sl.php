@@ -205,6 +205,7 @@ return [
     'popup.details' => 'Podrobnosti',
     'popup.liked' => 'Všeč ti je',
     'popup.sender' => 'Prijavitelj',
+    'popup.subcity_context' => 'Lokalno območje',
     'cat.tree_upload' => 'Nalaganje drevesa',
     'cat.tree_upload_desc' => 'Nalaganje drevesa',
     'modal.address_required' => 'Vnesite vsaj mesto ali ulico.',

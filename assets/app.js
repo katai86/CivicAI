@@ -174,6 +174,24 @@ function userLine(r){
   return `<small><b>${esc(t('popup.sender'))}:</b> ${esc(name)}${level}</small><br>`;
 }
 
+/** EU admin sub-city context (district, borough, arrondissement, sublocality, …) from provider-normalized JSON */
+function subcityContextLine(r){
+  const a = r && r.admin_subdivision;
+  if (!a || typeof a !== 'object') return '';
+  const name = String(a.subcity_name || '').trim();
+  if (!name) return '';
+  const city = String(a.city || '').trim();
+  const typ = String(a.subcity_type || '').trim();
+  let text = name;
+  if (city && city.toLowerCase() !== name.toLowerCase()) {
+    text += ', ' + city;
+  }
+  const typeHint = typ && typ !== 'unknown_subcity_unit'
+    ? ` <span class="popup-subcity-type">(${esc(typ.replace(/_/g, ' '))})</span>`
+    : '';
+  return `<small class="popup-subcity"><b>${esc(t('popup.subcity_context'))}</b> ${esc(text)}${typeHint}</small><br>`;
+}
+
 function likeLine(r){
   if (!r) return '';
   const count = Number(r.like_count || 0);
@@ -385,6 +403,7 @@ async function loadApprovedMarkers(){
         `<b>#${r.id}</b><br>` +
         `<b>${esc(catLabel(r.category))}</b><br>` +
         (r.status ? `<small><b>Státusz:</b> ${esc(statusLabel(r.status))}</small><br>` : '') +
+        subcityContextLine(r) +
         userLine(r) +
         (r.title ? `<b>${esc(r.title)}</b><br>` : '') +
         (r.description ? `${esc(shortDescription(r.description))}<br>` : '') +
