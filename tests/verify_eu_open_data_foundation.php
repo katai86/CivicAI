@@ -1,6 +1,6 @@
 <?php
 /**
- * EU Open Data Milestone 1 – séma ellenőrzés.
+ * EU Open Data – alap séma + kapcsolódó fájlok (M1, M6–M9 smoke).
  * Futtatás: php tests/verify_eu_open_data_foundation.php
  */
 $base = dirname(__DIR__);
@@ -45,6 +45,42 @@ if ($ok && tableExists($db, 'external_data_provider_logs')) {
             $ok = false;
         }
     }
+}
+
+// M6 / Eurostat: authorities.country
+if ($ok && tableExists($db, 'authorities')) {
+    if (!columnExists($db, 'authorities', 'country')) {
+        echo "FAIL: authorities.country missing (Eurostat / EU country context)\n";
+        $ok = false;
+    } else {
+        echo "OK: authorities.country exists\n";
+    }
+} elseif ($ok) {
+    echo "SKIP: authorities table not found\n";
+}
+
+// M9: kritikus fájlok jelenléte (deploy / repo integritás)
+$requiredFiles = [
+    'api/eu_country_context.php',
+    'api/eu_air_quality.php',
+    'api/eu_climate_context.php',
+    'api/eu_eea_inspire_context.php',
+    'api/green_metrics.php',
+    'api/gov_surveys.php',
+    'api/gov_budget.php',
+    'gov/index.php',
+    'services/EurostatService.php',
+    'services/ExternalDataCache.php',
+];
+foreach ($requiredFiles as $rel) {
+    $path = $base . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+    if (!is_file($path)) {
+        echo "FAIL: Missing file $rel\n";
+        $ok = false;
+    }
+}
+if ($ok) {
+    echo "OK: Required EU/gov files present (" . count($requiredFiles) . ")\n";
 }
 
 exit($ok ? 0 : 1);

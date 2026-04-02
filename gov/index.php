@@ -67,9 +67,10 @@ $authorityCities = array_values(array_filter(array_unique(array_map(function($a)
   return trim((string)($a['city'] ?? ''));
 }, $authorities))));
 
+$govEurostatFeatureOn = function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled()
+  && function_exists('eu_open_data_feature_enabled') && eu_open_data_feature_enabled('eurostat_enabled');
 $showEurostatCountryHint = false;
-if (!empty($authorities) && function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled()
-    && function_exists('eu_open_data_feature_enabled') && eu_open_data_feature_enabled('eurostat_enabled')) {
+if (!empty($authorities) && $govEurostatFeatureOn) {
   $fa = $authorities[0];
   if (trim((string)($fa['country'] ?? '')) === '') {
     $showEurostatCountryHint = true;
@@ -717,6 +718,19 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
           <div class="alert alert-warning py-2"><?= h(t('gov.no_authority')) ?></div>
         <?php else: ?>
 
+        <?php if ($isAdmin && count($authorities) > 1): ?>
+        <div class="card border-secondary mb-3" id="govAdminAuthorityScopeCard">
+          <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2">
+            <label for="govAdminAuthoritySelect" class="small mb-0 fw-semibold text-nowrap"><?= h(t('gov.select_authority_scope')) ?></label>
+            <select id="govAdminAuthoritySelect" class="form-select form-select-sm" style="max-width:min(100%, 28rem)">
+              <?php foreach ($authorities as $a): $aidOpt = (int)($a['id'] ?? 0); if ($aidOpt <= 0) continue; ?>
+              <option value="<?= $aidOpt ?>"><?= h((string)($a['name'] ?? '')) ?><?php $ct = trim((string)($a['city'] ?? '')); if ($ct !== ''): ?> – <?= h($ct) ?><?php endif; ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+        </div>
+        <?php endif; ?>
+
         <div class="admin-tab-body" id="tab-dashboard">
           <!-- Áttekintés: City Health, időjárás, statisztikák, ESG összefoglaló -->
           <p class="text-secondary small mb-2"><?= h(t('gov.panels_intro')) ?></p>
@@ -935,8 +949,8 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
 
         <div class="admin-tab-body" id="tab-analytics" hidden>
           <p class="text-secondary small mb-2"><?= h(t('gov.tab_analytics')) ?> – <?= h(t('gov.heatmap_widget_title')) ?>, <?= h(t('gov.statistics_tab_title')) ?></p>
-          <?php if (!empty($showEurostatCountryHint)): ?>
-          <div class="alert alert-warning py-2 small mb-3" role="status"><?= h(t('gov.eurostat_country_hint')) ?></div>
+          <?php if ($govEurostatFeatureOn): ?>
+          <div id="govEurostatCountryHint" class="alert alert-warning py-2 small mb-3<?= $showEurostatCountryHint ? '' : ' d-none' ?>" role="status"><?= h(t('gov.eurostat_country_hint')) ?></div>
           <?php endif; ?>
           <div class="card mb-3">
             <div class="card-body">
@@ -1450,9 +1464,34 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   var govIotSensorHistoryUrl = <?= json_encode(app_url('/api/sensor_metric_history.php'), JSON_UNESCAPED_SLASHES) ?>;
   var heatmapUrl = <?= json_encode(app_url('/api/heatmap_data.php'), JSON_UNESCAPED_SLASHES) ?>;
   var authorityIdForHeatmap = <?= !empty($authorityIds) ? (int)$authorityIds[0] : '0' ?>;
+  <?php
+  $govAuthMetaJs = [];
+  foreach ($authorities as $a) {
+    $aidM = (int)($a['id'] ?? 0);
+    if ($aidM <= 0) {
+      continue;
+    }
+    $cCity = trim((string)($a['city'] ?? ''));
+    $cCountry = trim((string)($a['country'] ?? ''));
+    $govAuthMetaJs[(string)$aidM] = [
+      'name' => (string)($a['name'] ?? ''),
+      'city' => $cCity !== '' ? $cCity : null,
+      'country' => $cCountry !== '' ? $cCountry : null,
+    ];
+  }
+  ?>
+  var govAuthoritiesById = <?= json_encode($govAuthMetaJs, JSON_UNESCAPED_UNICODE) ?>;
+  var govAdminAuthorityPicker = <?= ($isAdmin && count($authorities) > 1) ? 'true' : 'false' ?>;
+  var govEurostatAnalyticsHint = <?= $govEurostatFeatureOn ? 'true' : 'false' ?>;
   function govEuAuthorityQuery(){
     return (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0)
       ? ('?authority_id=' + encodeURIComponent(String(authorityIdForHeatmap))) : '';
+  }
+  /** GET/POST URL: admin scoped surveys/budget (PHP reads $_GET['authority_id']). */
+  function govAppendAuthorityQuery(url){
+    if (typeof authorityIdForHeatmap === 'undefined' || authorityIdForHeatmap <= 0 || !url) return url;
+    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+    return url + sep + 'authority_id=' + encodeURIComponent(String(authorityIdForHeatmap));
   }
   var govStatisticsUrl = <?= json_encode(app_url('/api/gov_statistics.php'), JSON_UNESCAPED_SLASHES) ?>;
   var citybrainDashboardUrl = <?= json_encode(app_url('/api/citybrain_dashboard.php'), JSON_UNESCAPED_SLASHES) ?>;
@@ -1590,8 +1629,9 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   var linkEsgCsv = document.getElementById('linkEsgCsv');
   function updateEsgExportLinks(){
     var y = govEsgYear ? govEsgYear.value : new Date().getFullYear();
-    if (linkEsgJson) linkEsgJson.href = esgExportUrl + '?year=' + y + '&format=json';
-    if (linkEsgCsv) linkEsgCsv.href = esgExportUrl + '?year=' + y + '&format=csv';
+    var aid = (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) ? ('&authority_id=' + authorityIdForHeatmap) : '';
+    if (linkEsgJson) linkEsgJson.href = esgExportUrl + '?year=' + y + '&format=json' + aid;
+    if (linkEsgCsv) linkEsgCsv.href = esgExportUrl + '?year=' + y + '&format=csv' + aid;
   }
   if (govEsgYear) govEsgYear.addEventListener('change', updateEsgExportLinks);
   updateEsgExportLinks();
@@ -1842,6 +1882,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     var from = new Date(); from.setDate(from.getDate() - 30);
     var to = new Date();
     var params = 'date_from=' + from.toISOString().slice(0, 10) + '&date_to=' + to.toISOString().slice(0, 10);
+    if (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) params += '&authority_id=' + authorityIdForHeatmap;
     fetch(govSentimentUrl + '?' + params, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
       if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
@@ -1868,7 +1909,8 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   function loadGovPredictions(){
     var container = document.getElementById('govPredictionsContent');
     if (!container || !govPredictionsUrl) return;
-    fetch(govPredictionsUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+    var predQ = (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) ? ('?authority_id=' + authorityIdForHeatmap) : '';
+    fetch(govPredictionsUrl + predQ, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var L = govPredictionsLabels || {};
       var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
       if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
@@ -2065,7 +2107,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   function loadGovEsgMetrics(){
     var container = document.getElementById('govEsgMetricsContent');
     if (!container || !govEsgMetricsUrl) return;
-    fetch(govEsgMetricsUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+    fetch(govEsgMetricsUrl + govEuAuthorityQuery(), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var L = govEsgMetricsLabels || {};
       var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
       if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
@@ -2087,14 +2129,15 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       html += '</div>';
       container.innerHTML = html;
       var y = (document.getElementById('govEsgYear') || {}).value || new Date().getFullYear();
-      if (document.getElementById('linkEsgCommandJson')) document.getElementById('linkEsgCommandJson').href = esgExportUrl + '?year=' + y + '&format=json';
-      if (document.getElementById('linkEsgCommandCsv')) document.getElementById('linkEsgCommandCsv').href = esgExportUrl + '?year=' + y + '&format=csv';
+      var aidEsg = (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) ? ('&authority_id=' + authorityIdForHeatmap) : '';
+      if (document.getElementById('linkEsgCommandJson')) document.getElementById('linkEsgCommandJson').href = esgExportUrl + '?year=' + y + '&format=json' + aidEsg;
+      if (document.getElementById('linkEsgCommandCsv')) document.getElementById('linkEsgCommandCsv').href = esgExportUrl + '?year=' + y + '&format=csv' + aidEsg;
     }).catch(function(){ var c = document.getElementById('govEsgMetricsContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
   }
   function loadGovCityHealth(){
     var container = document.getElementById('govCityHealthContent');
     if (!container || !govCityHealthUrl) return;
-    fetch(govCityHealthUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+    fetch(govCityHealthUrl + govEuAuthorityQuery(), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var L = govCityHealthLabels || {};
       if (!j.ok || !j.data) {
         var msg = (j && j.error) ? j.error : (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data ? govStatisticsLabels.no_data : '—');
@@ -2411,6 +2454,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     var dateTo = (toEl && toEl.value) ? toEl.value : new Date().toISOString().slice(0, 10);
     container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('gov.loading'), JSON_UNESCAPED_UNICODE) ?></p>';
     var params = 'date_from=' + encodeURIComponent(dateFrom) + '&date_to=' + encodeURIComponent(dateTo);
+    if (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) params += '&authority_id=' + authorityIdForHeatmap;
     fetch(govStatisticsUrl + '?' + params, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var L = govStatisticsLabels || {};
       if (!j.ok || !j.data) {
@@ -2801,7 +2845,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     var resultsContent = document.getElementById('govSurveyResultsContent');
     if (!list || !govSurveysUrl) return;
     list.textContent = <?= json_encode(t('gov.loading'), JSON_UNESCAPED_UNICODE) ?>;
-    fetch(govSurveysUrl, { credentials:'include' })
+    fetch(govAppendAuthorityQuery(govSurveysUrl), { credentials:'include' })
       .then(function(r){ return r.json(); })
       .then(function(j){
         if (!j || !j.ok) { list.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; return; }
@@ -2854,7 +2898,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       var qs = [];
       [document.getElementById('govSurveyQ1'), document.getElementById('govSurveyQ2'), document.getElementById('govSurveyQ3')].forEach(function(inp, i){ if (inp && inp.value.trim()) qs.push({ question_text: inp.value.trim(), question_type: 'text', sort_order: i }); });
       var body = { action: 'save', title: title, description: desc, authority_id: firstAid > 0 ? firstAid : null, starts_at: starts, ends_at: ends, status: status, questions: qs };
-      postJson(govSurveysUrl, body).then(function(x){
+      postJson(govAppendAuthorityQuery(govSurveysUrl), body).then(function(x){
         if (x && x.ok && x.j && x.j.ok) { var w = document.getElementById('govSurveyNewWrap'); if (w && w.parentNode) w.parentNode.removeChild(w); loadGovSurveys(); }
       });
     });
@@ -2866,7 +2910,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     var list = document.getElementById('govSurveysList');
     if (!resultsWrap || !resultsContent || !govSurveysUrl) return;
     resultsContent.textContent = <?= json_encode(t('gov.loading'), JSON_UNESCAPED_UNICODE) ?>;
-    fetch(govSurveysUrl + '?id=' + encodeURIComponent(id) + '&results=1', { credentials:'include' })
+    fetch(govAppendAuthorityQuery(govSurveysUrl + '?id=' + encodeURIComponent(id) + '&results=1'), { credentials:'include' })
       .then(function(r){ return r.json(); })
       .then(function(j){
         if (!j || !j.ok) { resultsContent.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; return; }
@@ -2894,7 +2938,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     var list = document.getElementById('govBudgetList');
     if (!list || !govBudgetUrl) return;
     list.textContent = <?= json_encode(t('gov.loading'), JSON_UNESCAPED_UNICODE) ?>;
-    fetch(govBudgetUrl, { credentials:'include' })
+    fetch(govAppendAuthorityQuery(govBudgetUrl), { credentials:'include' })
       .then(function(r){ return r.json(); })
       .then(function(j){
         if (!j || !j.ok) { list.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; return; }
@@ -2917,11 +2961,11 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
           document.getElementById('govBudgetNewBtn') && document.getElementById('govBudgetNewBtn').addEventListener('click', function(){ showGovBudgetNewForm(list); });
           document.getElementById('govBudgetSaveSettings') && document.getElementById('govBudgetSaveSettings').addEventListener('click', function(){
             var frame = document.getElementById('govBudgetFrame'); var cond = document.getElementById('govBudgetConditions'); var desc = document.getElementById('govBudgetDescSettings');
-            postJson(govBudgetUrl, { action: 'save_settings', frame_amount: frame ? (frame.value === '' ? null : parseFloat(frame.value)) : null, conditions_text: cond ? cond.value : '', description: desc ? desc.value : '' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); else alert((x && x.j && x.j.error) || (<?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>)); });
+            postJson(govAppendAuthorityQuery(govBudgetUrl), { action: 'save_settings', frame_amount: frame ? (frame.value === '' ? null : parseFloat(frame.value)) : null, conditions_text: cond ? cond.value : '', description: desc ? desc.value : '' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); else alert((x && x.j && x.j.error) || (<?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>)); });
           });
           document.getElementById('govBudgetCloseVoting') && document.getElementById('govBudgetCloseVoting').addEventListener('click', function(){
             if (!confirm(<?= json_encode(t('gov.budget_close_confirm'), JSON_UNESCAPED_UNICODE) ?>)) return;
-            postJson(govBudgetUrl, { action: 'close_voting' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); else alert((x && x.j && x.j.error) || (<?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>)); });
+            postJson(govAppendAuthorityQuery(govBudgetUrl), { action: 'close_voting' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); else alert((x && x.j && x.j.error) || (<?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>)); });
           });
           return;
         }
@@ -2936,7 +2980,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
         list.querySelectorAll('.gov-budget-status').forEach(function(sel){
           sel.addEventListener('change', function(){
             var id = parseInt(sel.getAttribute('data-id'), 10);
-            postJson(govBudgetUrl, { action: 'set_status', id: id, status: sel.value }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); });
+            postJson(govAppendAuthorityQuery(govBudgetUrl), { action: 'set_status', id: id, status: sel.value }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); });
           });
         });
         document.getElementById('govBudgetNewBtn') && document.getElementById('govBudgetNewBtn').addEventListener('click', function(){ showGovBudgetNewForm(list); });
@@ -2944,11 +2988,11 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
           var frame = document.getElementById('govBudgetFrame');
           var cond = document.getElementById('govBudgetConditions');
           var desc = document.getElementById('govBudgetDescSettings');
-          postJson(govBudgetUrl, { action: 'save_settings', frame_amount: frame ? (frame.value === '' ? null : parseFloat(frame.value)) : null, conditions_text: cond ? cond.value : '', description: desc ? desc.value : '' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); else alert((x && x.j && x.j.error) || (<?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>)); });
+          postJson(govAppendAuthorityQuery(govBudgetUrl), { action: 'save_settings', frame_amount: frame ? (frame.value === '' ? null : parseFloat(frame.value)) : null, conditions_text: cond ? cond.value : '', description: desc ? desc.value : '' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); else alert((x && x.j && x.j.error) || (<?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>)); });
         });
         document.getElementById('govBudgetCloseVoting') && document.getElementById('govBudgetCloseVoting').addEventListener('click', function(){
           if (!confirm(<?= json_encode(t('gov.budget_close_confirm'), JSON_UNESCAPED_UNICODE) ?>)) return;
-          postJson(govBudgetUrl, { action: 'close_voting' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); else alert((x && x.j && x.j.error) || (<?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>)); });
+          postJson(govAppendAuthorityQuery(govBudgetUrl), { action: 'close_voting' }).then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovBudget(); else alert((x && x.j && x.j.error) || (<?= json_encode(t('common.error_save_failed'), JSON_UNESCAPED_UNICODE) ?>)); });
         });
       })
       .catch(function(){ list.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; });
@@ -2965,11 +3009,56 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       var desc = document.getElementById('govBudgetDesc') && document.getElementById('govBudgetDesc').value || '';
       var amount = parseInt(document.getElementById('govBudgetAmount') && document.getElementById('govBudgetAmount').value, 10) || 0;
       if (!title) return;
-      postJson(govBudgetUrl, { action: 'create', title: title, description: desc, budget: amount, status: 'draft' }).then(function(x){
+      postJson(govAppendAuthorityQuery(govBudgetUrl), { action: 'create', title: title, description: desc, budget: amount, status: 'draft' }).then(function(x){
         if (x && x.ok && x.j && x.j.ok) { var w = document.getElementById('govBudgetNewWrap'); if (w) w.remove(); loadGovBudget(); }
       });
     });
     document.getElementById('govBudgetCancel').addEventListener('click', function(){ var w = document.getElementById('govBudgetNewWrap'); if (w) w.remove(); });
+  }
+
+  function updateGovDashboardContextForAuthority(){
+    var id = typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0;
+    var a = govAuthoritiesById && govAuthoritiesById[String(id)];
+    if (!a || !window.CIVIC_DASHBOARD_CONTEXT) return;
+    window.CIVIC_DASHBOARD_CONTEXT.primary_authority_id = id;
+    window.CIVIC_DASHBOARD_CONTEXT.primary_authority_name = a.name || null;
+    window.CIVIC_DASHBOARD_CONTEXT.country = a.country || null;
+    window.CIVIC_DASHBOARD_CONTEXT.city = a.city || null;
+  }
+  function syncGovEurostatHint(){
+    var el = document.getElementById('govEurostatCountryHint');
+    if (!el || typeof govEurostatAnalyticsHint === 'undefined' || !govEurostatAnalyticsHint) return;
+    var a = govAuthoritiesById && govAuthoritiesById[String(authorityIdForHeatmap)];
+    var missing = !!(a && !a.country);
+    el.classList.toggle('d-none', !missing);
+  }
+  function govReloadDataForCurrentScope(){
+    updateGovDashboardContextForAuthority();
+    syncGovEurostatHint();
+    updateEsgExportLinks();
+    var active = document.querySelector('.app-sidebar .nav-link.tab.active[data-tab]');
+    var key = active ? active.getAttribute('data-tab') : 'dashboard';
+    if (key === 'modules') loadGovModules();
+    if (key === 'surveys') loadGovSurveys();
+    if (key === 'budget') loadGovBudget();
+    if (key === 'trees') { initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
+    if (key === 'iot') loadGovIotDevices();
+    if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); loadGovEuEeaInspire(); loadGovEsgMetrics(); }
+    if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); }
+    if (key === 'citybrain-live') loadCitybrainLive();
+    if (key === 'citybrain-predictive') loadCitybrainPredictive();
+    if (key === 'citybrain-hotspot') { if (typeof citybrainHotspotMap !== 'undefined' && citybrainHotspotMap) loadCitybrainHotspot(); else initCitybrainHotspot(); }
+    if (key === 'citybrain-behavior') loadCitybrainBehavior();
+    if (key === 'citybrain-environmental') loadCitybrainEnvironmental();
+    if (key === 'citybrain-risk') loadCitybrainRisk();
+  }
+  var selGovAuth = document.getElementById('govAdminAuthoritySelect');
+  if (selGovAuth && govAdminAuthorityPicker) {
+    selGovAuth.value = String(authorityIdForHeatmap);
+    selGovAuth.addEventListener('change', function(){
+      authorityIdForHeatmap = parseInt(selGovAuth.value, 10) || 0;
+      govReloadDataForCurrentScope();
+    });
   }
 })();
 </script>

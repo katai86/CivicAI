@@ -2,6 +2,7 @@
 /**
  * Részvételi költségvetés – gov user: projektek listája (saját hatóság), létrehozás, státusz.
  * GET: projektek a user hatóságaihoz; POST: create (authority_id = első hatóság), update, set_status (published/closed).
+ * Admin több hatóság esetén: ?authority_id= a GET/POST URL-en (gov UI), hogy lista, beállítások és új projekt egy hatósághoz kötődjön.
  */
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';

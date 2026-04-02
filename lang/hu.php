@@ -698,6 +698,7 @@ return [
     'gov.eu_inspire_center' => 'Terület középpont (WGS84)',
     'gov.idea_not_found' => 'Nincs ilyen ötlet, vagy nincs hozzá jogosultság.',
     'gov.eurostat_country_hint' => 'Az EU / Eurostat ország-adatokhoz a hatóság profiljában (admin: Hatóságok) ki kell tölteni az ország mezőt.',
+    'gov.select_authority_scope' => 'Adatok hatósága (admin)',
     'gov.ai_format_failed' => 'Nem sikerült formázni.',
     'gov.ai_top_problems' => 'Fő problémák:',
     'gov.ai_esg_block' => 'Fenntarthatósági mutatók:',

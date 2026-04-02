@@ -797,6 +797,7 @@ return [
     'gov.eu_inspire_center' => 'Area centre (WGS84)',
     'gov.idea_not_found' => 'No such idea or no permission to update it.',
     'gov.eurostat_country_hint' => 'For EU / Eurostat country indicators, set the authority’s country field (admin: Authorities).',
+    'gov.select_authority_scope' => 'Ámbito de datos (autoridad)',
     'gov.ai_format_failed' => 'Could not format the response.',
     'gov.ai_top_problems' => 'Top problems:',
     'gov.ai_esg_block' => 'Sustainability indicators:',

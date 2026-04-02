@@ -3,6 +3,7 @@
  * M8 – Gov felmérések kezelés: list, create/update, eredmények.
  * GET: list (authority scope), GET id=X: egy felmérés kérdésekkel, GET id=X&results=1: eredmények.
  * POST: action=save survey + questions; action=set_status (draft|active|closed).
+ * Admin több hatóság esetén: minden GET/POST kéréshez add hozzá ?authority_id= (a gov UI így küldi), különben az összes hatóság scope-ja érvényesül.
  */
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
