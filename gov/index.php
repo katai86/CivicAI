@@ -1032,6 +1032,28 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
             </div>
           </div>
           <?php endif; ?>
+          <?php if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled() && function_exists('eu_open_data_feature_enabled') && eu_open_data_feature_enabled('cds_enabled')): ?>
+          <div class="card mb-3 border-warning border-opacity-25">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.eu_climate_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.eu_climate_hint')) ?></p>
+              <div id="govEuClimateContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
+          <?php if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled() && function_exists('eu_open_data_feature_enabled') && eu_open_data_feature_enabled('eurostat_enabled')): ?>
+          <div class="card mb-3 border-secondary border-opacity-25">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.eu_country_context_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.eu_country_context_hint')) ?></p>
+              <div id="govEuCountryContextContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
           <div class="card mb-3">
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.esg_command_center_title')) ?></h6>
@@ -1440,6 +1462,22 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     'o3' => t('gov.eu_o3'),
     'index' => t('gov.eu_air_index'),
   ], JSON_UNESCAPED_UNICODE) ?>;
+  var govEuClimateUrl = <?= json_encode(app_url('/api/eu_climate_context.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govEuClimateLabels = <?= json_encode([
+    'period' => t('gov.eu_climate_period'),
+    'temp_mean' => t('gov.eu_climate_temp_mean'),
+    'temp_range' => t('gov.eu_climate_temp_range'),
+    'precip' => t('gov.eu_climate_precip'),
+    'warm_days' => t('gov.eu_climate_warm_days'),
+    'frost_days' => t('gov.eu_climate_frost_days'),
+    'dryness' => t('gov.eu_climate_dryness'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govEuCountryContextUrl = <?= json_encode(app_url('/api/eu_country_context.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govEuCountryContextLabels = <?= json_encode([
+    'year' => t('gov.eu_country_year'),
+    'population' => t('gov.eu_country_population'),
+    'unemployment' => t('gov.eu_country_unemployment'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
   var govEuGreenLabels = <?= json_encode([
     'ndvi' => t('gov.eu_ndvi_proxy'),
     'deficit' => t('gov.eu_green_deficit'),
@@ -1634,7 +1672,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       if (key === 'budget') loadGovBudget();
       if (key === 'trees') { initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
       if (key === 'iot') loadGovIotDevices();
-      if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEsgMetrics(); }
+      if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); loadGovEsgMetrics(); }
       if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); }
       if (key === 'citybrain-live') loadCitybrainLive();
       if (key === 'citybrain-predictive') loadCitybrainPredictive();
@@ -1869,6 +1907,48 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       html += '</div>';
       box.innerHTML = html;
     }).catch(function(){ var b = document.getElementById('govEuAirQualityContent'); if (b) b.innerHTML = '<p class=\"text-danger small\">—</p>'; });
+  }
+  function loadGovEuClimate(){
+    var box = document.getElementById('govEuClimateContent');
+    if (!box || !govEuClimateUrl) return;
+    fetch(govEuClimateUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var L = govEuClimateLabels || {};
+      var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
+      if (!j.ok || !j.data || !j.data.ok) { box.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
+      var d = j.data;
+      var period = (d.period_start && d.period_end) ? (d.period_start + ' – ' + d.period_end) : '—';
+      var tr = (d.temp_min_c != null && d.temp_max_c != null) ? (d.temp_min_c + ' … ' + d.temp_max_c + ' °C') : '—';
+      var dryP = (d.dryness_index != null) ? Math.round(parseFloat(d.dryness_index) * 100) : null;
+      var html = '<p class="small text-secondary mb-2">' + (L.period || '') + ': <span class="text-body">' + period + '</span></p>';
+      html += '<div class="row g-2 small">';
+      html += '<div class="col-6"><span class="text-secondary">' + (L.temp_mean || '') + '</span><br><b>' + (d.temp_mean_c != null ? d.temp_mean_c + ' °C' : '—') + '</b></div>';
+      html += '<div class="col-6"><span class="text-secondary">' + (L.temp_range || '') + '</span><br><b>' + tr + '</b></div>';
+      html += '<div class="col-6"><span class="text-secondary">' + (L.precip || '') + '</span><br><b>' + (d.precip_sum_mm != null ? d.precip_sum_mm + ' mm' : '—') + '</b></div>';
+      html += '<div class="col-6"><span class="text-secondary">' + (L.dryness || '') + '</span><br><b>' + (dryP != null ? dryP + '%' : '—') + '</b></div>';
+      html += '<div class="col-6"><span class="text-secondary">' + (L.warm_days || '') + '</span><br><b>' + (d.warm_days != null ? d.warm_days : '—') + '</b></div>';
+      html += '<div class="col-6"><span class="text-secondary">' + (L.frost_days || '') + '</span><br><b>' + (d.frost_days != null ? d.frost_days : '—') + '</b></div>';
+      html += '</div>';
+      box.innerHTML = html;
+    }).catch(function(){ var b = document.getElementById('govEuClimateContent'); if (b) b.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  function loadGovEuCountryContext(){
+    var box = document.getElementById('govEuCountryContextContent');
+    if (!box || !govEuCountryContextUrl) return;
+    fetch(govEuCountryContextUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var L = govEuCountryContextLabels || {};
+      var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
+      if (!j.ok || !j.data || !j.data.ok) { box.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
+      var d = j.data;
+      var y = d.year != null ? String(d.year) : '';
+      var pop = d.population != null ? String(d.population).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ' ') : '—';
+      var ue = d.unemployment_rate != null ? (Math.round(parseFloat(d.unemployment_rate) * 10) / 10) + '%' : '—';
+      var html = '<div class="row g-2 small">';
+      html += '<div class="col-12"><span class="text-secondary">' + (L.year || 'Year') + '</span><br><b>' + (y || '—') + '</b></div>';
+      html += '<div class="col-6"><span class="text-secondary">' + (L.population || 'Population') + '</span><br><b>' + pop + '</b></div>';
+      html += '<div class="col-6"><span class="text-secondary">' + (L.unemployment || 'Unemployment') + '</span><br><b>' + ue + '</b></div>';
+      html += '</div>';
+      box.innerHTML = html;
+    }).catch(function(){ var b = document.getElementById('govEuCountryContextContent'); if (b) b.innerHTML = '<p class="text-danger small">—</p>'; });
   }
   function loadGovEsgMetrics(){
     var container = document.getElementById('govEsgMetricsContent');
