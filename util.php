@@ -28,10 +28,25 @@ function log_error(string $message): void {
     @file_put_contents(ERROR_LOG_FILE, '[' . date('c') . '] ' . $message . "\n", FILE_APPEND);
 }
 
+function civic_json_encode_safe(array $data): string {
+    $flags = JSON_UNESCAPED_UNICODE;
+    if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
+        $flags |= JSON_INVALID_UTF8_SUBSTITUTE;
+    }
+    if (defined('JSON_PARTIAL_OUTPUT_ON_ERROR')) {
+        $flags |= JSON_PARTIAL_OUTPUT_ON_ERROR;
+    }
+    $j = json_encode($data, $flags);
+    if ($j !== false) {
+        return $j;
+    }
+    return '{"ok":false,"error":"encode"}';
+}
+
 function json_response(array $data, int $code = 200): void {
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    echo civic_json_encode_safe($data);
     exit;
 }
 
@@ -96,7 +111,7 @@ function gov_api_cache_set(string $cacheKey, array $responsePayload): void {
     $safe = preg_replace('/[^a-zA-Z0-9._-]+/', '_', $cacheKey);
     $path = gov_api_cache_dir() . '/' . $safe . '.json';
     $wrap = ['_expires_at' => time() + GOV_API_CACHE_TTL_SECONDS, 'payload' => $responsePayload];
-    @file_put_contents($path, json_encode($wrap, JSON_UNESCAPED_UNICODE), LOCK_EX);
+    @file_put_contents($path, civic_json_encode_safe($wrap), LOCK_EX);
 }
 
 set_error_handler(function(int $severity, string $message, string $file, int $line) {

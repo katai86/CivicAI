@@ -71,6 +71,9 @@ final class PrioritizationEngine
         $out['totals']['open_reports'] = $totalOpen;
 
         $useSubcity = admin_subdivision_analytics_use_subcity($primaryAuthorityId);
+        if ($useSubcity && !db_table_has_column($pdo, 'reports', 'admin_subdivision_json')) {
+            $useSubcity = false;
+        }
         if ($useSubcity) {
             $out['meta']['zone_mode'] = 'subcity';
             $zoneExpr = "COALESCE(

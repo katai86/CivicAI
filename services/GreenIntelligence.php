@@ -106,20 +106,26 @@ class GreenIntelligence
         $out['drought_risk'] = round($droughtCount / $totalTrees, 2);
 
         if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled()) {
-            require_once __DIR__ . '/CopernicusDataService.php';
-            $cop = new CopernicusDataService();
-            if ($cop->isActive()) {
-                $extra = $cop->augmentGreenMetrics($out, $authorityId, $bbox, $pdo);
-                if (!empty($extra)) {
-                    $out = array_merge($out, $extra);
+            try {
+                require_once __DIR__ . '/CopernicusDataService.php';
+                $cop = new CopernicusDataService();
+                if ($cop->isActive()) {
+                    $extra = $cop->augmentGreenMetrics($out, $authorityId, $bbox, $pdo);
+                    if (!empty($extra)) {
+                        $out = array_merge($out, $extra);
+                    }
                 }
-            }
-            require_once __DIR__ . '/ClmsUrbanAtlasService.php';
-            $clms = new ClmsUrbanAtlasService();
-            if ($clms->isActive() && $bbox) {
-                $uaExtra = $clms->augmentMetrics($out, $bbox);
-                if (!empty($uaExtra)) {
-                    $out = array_merge($out, $uaExtra);
+                require_once __DIR__ . '/ClmsUrbanAtlasService.php';
+                $clms = new ClmsUrbanAtlasService();
+                if ($clms->isActive() && $bbox) {
+                    $uaExtra = $clms->augmentMetrics($out, $bbox);
+                    if (!empty($uaExtra)) {
+                        $out = array_merge($out, $uaExtra);
+                    }
+                }
+            } catch (Throwable $e) {
+                if (function_exists('log_error')) {
+                    log_error('GreenIntelligence EU augment: ' . $e->getMessage());
                 }
             }
         }

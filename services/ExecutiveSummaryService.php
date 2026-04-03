@@ -104,10 +104,38 @@ final class ExecutiveSummaryService
         $pdo = db();
         [$reportWhere, $reportParams, $treeScopeIds, $healthAid] = self::resolveScopes($pdo, $role, $uid, $adminRequestedAuthorityId);
 
-        $health = (new CityHealthScore())->compute($healthAid);
-        $green = (new GreenIntelligence())->compute($healthAid);
-        $esg = gov_compute_esg_snapshot($pdo, $treeScopeIds, $reportWhere, $reportParams);
-        $pred = (new UrbanPredictionEngine())->predict($reportWhere, $reportParams, []);
+        try {
+            $health = (new CityHealthScore())->compute($healthAid);
+        } catch (Throwable $e) {
+            if (function_exists('log_error')) {
+                log_error('ExecutiveSummary CityHealthScore: ' . $e->getMessage());
+            }
+            $health = ['city_health_score' => 50, 'maintenance_score' => 50, 'infrastructure_score' => 50, 'engagement_score' => 50];
+        }
+        try {
+            $green = (new GreenIntelligence())->compute($healthAid);
+        } catch (Throwable $e) {
+            if (function_exists('log_error')) {
+                log_error('ExecutiveSummary GreenIntelligence: ' . $e->getMessage());
+            }
+            $green = ['drought_risk' => 0.0, 'green_deficit_score' => 0.0];
+        }
+        try {
+            $esg = gov_compute_esg_snapshot($pdo, $treeScopeIds, $reportWhere, $reportParams);
+        } catch (Throwable $e) {
+            if (function_exists('log_error')) {
+                log_error('ExecutiveSummary esg_snapshot: ' . $e->getMessage());
+            }
+            $esg = ['governance' => [], 'environment' => []];
+        }
+        try {
+            $pred = (new UrbanPredictionEngine())->predict($reportWhere, $reportParams, []);
+        } catch (Throwable $e) {
+            if (function_exists('log_error')) {
+                log_error('ExecutiveSummary UrbanPrediction: ' . $e->getMessage());
+            }
+            $pred = ['predicted_issues' => [], 'risk_zones' => [], 'predicted_tree_failures' => []];
+        }
 
         $gov = $esg['governance'] ?? [];
         $env = $esg['environment'] ?? [];
