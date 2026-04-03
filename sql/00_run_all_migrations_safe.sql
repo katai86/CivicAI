@@ -24,6 +24,8 @@
 --   • 2026-22: ideas, idea_votes (ötletek + szavazás)
 --   • 2026-23: budget_projects, budget_votes (részvételi költségvetés)
 --   • 2026-24: ideas.authority_id
+--   • 2026-26: trees.authority_id (fakataszter hatóság szerint)
+--   • 2026-27: reports.admin_subdivision_json, authorities.subdivision_aware (+ country_code, municipality_type a reports blokkban)
 --   • M8: surveys, survey_questions, survey_responses (felmérések)
 --   • Reports bővítés: reporter_name, address_approx, city, stb.
 --   • Users bővítés: profile_public, level, total_xp, streak_days, avatar_filename
@@ -445,6 +447,10 @@ CALL add_column_if_not_exists('reports', 'admin_subdivision_json', 'JSON NULL');
 CALL add_column_if_not_exists('authorities', 'country_code', 'CHAR(2) NULL');
 CALL add_column_if_not_exists('authorities', 'municipality_type', 'VARCHAR(64) NULL');
 CALL add_column_if_not_exists('authorities', 'subdivision_aware', 'TINYINT(1) NOT NULL DEFAULT 0');
+
+-- ========== 2026-26 trees.authority_id ==========
+CALL add_column_if_not_exists('trees', 'authority_id', 'INT NULL');
+CALL add_index_if_not_exists('trees', 'idx_trees_authority', '(authority_id)');
 
 -- ========== Users bővítés (profil, XP, szint) – ha exportból/régi sémából hiányzik ==========
 CALL add_column_if_not_exists('users', 'profile_public', 'TINYINT(1) NOT NULL DEFAULT 1');

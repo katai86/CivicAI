@@ -21,6 +21,8 @@
 16. **2026-19 (Govuser modul kapcsolók)** – user_module_toggles tábla: govuser saját fiókjában (UI szint) ki/be kapcsolók (pl. AI panel).
 
 17. **2026-25-eu-open-data-foundation.sql** – `external_data_cache`, `external_data_provider_logs` (EU / Copernicus integráció alap, Milestone 1).
+18. **2026-26-trees-authority-id.sql** – `trees.authority_id` + index (hatóság szerinti fakataszter). **Benne van:** `00_run_all_migrations_safe.sql` és `01_consolidated_migrations.sql`.
+19. **2026-27-admin-subdivision-json.sql** – `reports.admin_subdivision_json`, `authorities.subdivision_aware` (+ a consolidated blokkban `country_code`, `municipality_type`). **Benne van:** `00_run_all_migrations_safe.sql` és `01_consolidated_migrations.sql`.
 
 **Demo adatok (opcionális):**  
 - **demo_seed.sql** – 2 bejelentés, 1 civil esemény, 1 facility.  
@@ -29,8 +31,8 @@
 
 ### Egy futással (feltételes migráció) – összevont SQL
 
-- **01_consolidated_migrations.sql** – **Egy fájlban az összes eddigi SQL bővítés és módosítás** (2026-03 … 2026-25 EU cache): users, reports, map_layers, trees, tree_logs, tree_adoptions, tree_watering_logs, FMS, authorities, facilities, civil_events, report_likes, friends, module_settings, user_module_toggles, ai_results stb. Minden lépés feltételes (ha már létezik, kihagyja). Futtatás: `mysql -u user -p adatbazis < sql/01_consolidated_migrations.sql`. Demo seed fájlok nincsenek benne.
-- **00_run_all_migrations_safe.sql** – Ugyanaz a tartalom (régi név, visszafelé kompatibilitás).
+- **01_consolidated_migrations.sql** – **Egy fájlban az összes eddigi SQL bővítés és módosítás** (2026-03 … 2026-25 EU cache, valamint 2026-26 / 2026-27 oszlopok): users, reports, map_layers, trees, tree_logs, tree_adoptions, tree_watering_logs, FMS, authorities, facilities, civil_events, report_likes, friends, module_settings, user_module_toggles, ai_results stb. Minden lépés feltételes (ha már létezik, kihagyja). Futtatás: `mysql -u user -p adatbazis < sql/01_consolidated_migrations.sql`. Demo seed fájlok nincsenek benne.
+- **00_run_all_migrations_safe.sql** – Ugyanaz a cél (phpMyAdmin-barát, feltételes lépések); **tartsd szinkronban** a két fájl új oszlop/tábla blokkjaival (2026-26, 2026-27 stb.).
 
 ## Megjegyzések
 

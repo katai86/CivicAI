@@ -8,6 +8,8 @@
 --
 -- Tartalom: 2026-03 … 2026-23 (authorities, authority_contacts, authority_users,
 --           facilities, civil_events, module_settings, trees, ideas, budget_* stb.),
+--           reports.admin_subdivision_json + authorities.subdivision_aware (2026-27),
+--           trees.authority_id (2026-26),
 --           2026-IOT (virtual_sensors, virtual_sensor_metrics_latest,
 --           virtual_sensor_metric_history, virtual_sensor_provider_logs),
 --           2026-25 (external_data_cache, external_data_provider_logs – EU Open Data).
@@ -539,6 +541,15 @@ CALL add_column_if_not_exists('reports', 'suburb', 'VARCHAR(128) NULL');
 CALL add_column_if_not_exists('reports', 'postcode', 'VARCHAR(32) NULL');
 CALL add_column_if_not_exists('reports', 'address_approx', 'VARCHAR(255) NULL');
 CALL add_column_if_not_exists('reports', 'city', 'VARCHAR(80) NULL');
+CALL add_column_if_not_exists('reports', 'admin_subdivision_json', 'JSON NULL');
+
+CALL add_column_if_not_exists('authorities', 'country_code', 'CHAR(2) NULL');
+CALL add_column_if_not_exists('authorities', 'municipality_type', 'VARCHAR(64) NULL');
+CALL add_column_if_not_exists('authorities', 'subdivision_aware', 'TINYINT(1) NOT NULL DEFAULT 0');
+
+-- ========== 2026-26 trees.authority_id (hatóság szerinti fakataszter / ESG scope) ==========
+CALL add_column_if_not_exists('trees', 'authority_id', 'INT NULL');
+CALL add_index_if_not_exists('trees', 'idx_trees_authority', '(authority_id)');
 
 -- ========== Users bővítés (profil, XP, szint) – ha exportból/régi sémából hiányzik ==========
 CALL add_column_if_not_exists('users', 'profile_public', 'TINYINT(1) NOT NULL DEFAULT 1');
