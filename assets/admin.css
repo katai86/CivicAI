@@ -58,6 +58,9 @@
 .admin-chart-bar .bar-wrap{flex:1;height:22px;background:var(--bs-secondary-bg);border-radius:4px;overflow:hidden}
 .admin-chart-bar .bar{height:100%;border-radius:4px;transition:width .3s}
 .admin-chart-bar .val{min-width:28px;text-align:right;font-weight:600}
+.gov-chart-wrap{position:relative;width:100%;min-height:200px;max-height:280px}
+.gov-chart-wrap--donut{min-height:180px;max-height:260px}
+.app-wrapper .gov-chart-wrap canvas{max-height:100%}
 @media (max-width: 992px){
   .admin-map{height:55vh;min-height:360px}
 }
@@ -159,4 +162,48 @@
   border: 1px solid rgba(116, 167, 255, 0.72) !important;
   box-shadow: 0 0 0 2px rgba(54, 114, 220, 0.28), 0 8px 18px rgba(0, 0, 0, 0.25);
   color: #eef4ff !important;
+}
+
+/* Gov executive overview (M1) */
+.exec-hero-card {
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="light"] .exec-hero-card {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+.exec-kpi {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+[data-theme="light"] .exec-kpi {
+  border-color: rgba(0, 0, 0, 0.08);
+  background: #f8fafc;
+}
+.exec-kpi-value {
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  line-height: 1.15;
+}
+.exec-kpi-good {
+  border-color: rgba(25, 135, 84, 0.45);
+  background: rgba(25, 135, 84, 0.12);
+}
+.exec-kpi-warn {
+  border-color: rgba(255, 193, 7, 0.5);
+  background: rgba(255, 193, 7, 0.1);
+}
+.exec-kpi-bad {
+  border-color: rgba(220, 53, 69, 0.45);
+  background: rgba(220, 53, 69, 0.1);
+}
+.exec-kpi-neutral {
+  border-color: rgba(108, 117, 125, 0.35);
+  background: rgba(108, 117, 125, 0.08);
+}
+.exec-ai-blurb {
+  border: 1px solid rgba(13, 110, 253, 0.35);
+  background: rgba(13, 110, 253, 0.08);
+}
+[data-theme="light"] .exec-ai-blurb {
+  background: #eef6ff;
+  border-color: rgba(13, 110, 253, 0.25);
 }

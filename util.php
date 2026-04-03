@@ -35,6 +35,70 @@ function json_response(array $data, int $code = 200): void {
     exit;
 }
 
+/**
+ * M10 – Short-lived JSON file cache for heavy gov GET APIs (per role, user, admin authority scope).
+ */
+function gov_api_cache_scope_key(string $prefix, string $role, int $uid, ?int $adminAuthorityId): string {
+    $a = ($adminAuthorityId !== null && $adminAuthorityId > 0) ? (string)$adminAuthorityId : 'all';
+
+    return $prefix . '_' . sha1($role . '|' . $uid . '|' . $a);
+}
+
+function gov_api_cache_dir(): string {
+    $dir = __DIR__ . '/data/gov_api_cache';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    if (is_dir($dir) && is_writable($dir)) {
+        return $dir;
+    }
+    $fallback = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'civicai_gov_api_cache';
+    if (!is_dir($fallback)) {
+        @mkdir($fallback, 0755, true);
+    }
+
+    return is_dir($fallback) ? $fallback : sys_get_temp_dir();
+}
+
+/** @return array<string,mixed>|null Full JSON response shape e.g. ['ok'=>true,'data'=>…] */
+function gov_api_cache_get(string $cacheKey): ?array {
+    if (!defined('GOV_API_CACHE_TTL_SECONDS') || GOV_API_CACHE_TTL_SECONDS <= 0) {
+        return null;
+    }
+    $safe = preg_replace('/[^a-zA-Z0-9._-]+/', '_', $cacheKey);
+    $path = gov_api_cache_dir() . '/' . $safe . '.json';
+    if (!is_file($path)) {
+        return null;
+    }
+    $raw = @file_get_contents($path);
+    if ($raw === false || $raw === '') {
+        return null;
+    }
+    $j = json_decode($raw, true);
+    if (!is_array($j) || !isset($j['_expires_at'])) {
+        return null;
+    }
+    if (time() > (int)$j['_expires_at']) {
+        @unlink($path);
+
+        return null;
+    }
+    $body = $j['payload'] ?? null;
+
+    return is_array($body) ? $body : null;
+}
+
+/** @param array<string,mixed> $responsePayload */
+function gov_api_cache_set(string $cacheKey, array $responsePayload): void {
+    if (!defined('GOV_API_CACHE_TTL_SECONDS') || GOV_API_CACHE_TTL_SECONDS <= 0) {
+        return;
+    }
+    $safe = preg_replace('/[^a-zA-Z0-9._-]+/', '_', $cacheKey);
+    $path = gov_api_cache_dir() . '/' . $safe . '.json';
+    $wrap = ['_expires_at' => time() + GOV_API_CACHE_TTL_SECONDS, 'payload' => $responsePayload];
+    @file_put_contents($path, json_encode($wrap, JSON_UNESCAPED_UNICODE), LOCK_EX);
+}
+
 set_error_handler(function(int $severity, string $message, string $file, int $line) {
     if (!(error_reporting() & $severity)) return false; // respect @
     $msg = "PHP error ($severity): $message in $file:$line";

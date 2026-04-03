@@ -486,6 +486,7 @@ $govBudgetEnabled = $isAdmin ? true : user_module_enabled($govUid, 'budget');
 $govIotEnabled = $isAdmin ? true : user_module_enabled($govUid, 'iot');
 $adminCssVer = @filemtime(__DIR__ . '/../assets/admin.css') ?: time();
 $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
+$kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
 ?>
 <!doctype html>
 <html lang="<?= h($currentLang) ?>">
@@ -717,8 +718,63 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
         <?php endif; ?>
 
         <div class="admin-tab-body" id="tab-dashboard">
+          <!-- Executive overview (M1) -->
+          <div class="card border-0 shadow-sm mb-3 exec-hero-card" id="govExecutiveHeroCard">
+            <div class="card-body py-3 px-3 px-md-4">
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                <div>
+                  <h5 class="mb-1 fw-semibold"><?= h(t('gov.executive_title')) ?></h5>
+                  <p class="text-secondary small mb-0"><?= h(t('gov.executive_subtitle')) ?></p>
+                </div>
+                <span class="badge rounded-pill d-none px-3 py-2" id="govExecutiveTrendBadge" role="status"></span>
+              </div>
+              <div id="govExecutiveHeroContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+            </div>
+          </div>
+          <div class="card mb-3 border-start border-primary border-3" id="govMorningBriefCard">
+            <div class="card-body py-2 px-3">
+              <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-1">
+                <h6 class="card-title mb-0 small fw-semibold"><?= h(t('gov.morning_brief_title')) ?></h6>
+                <span class="text-secondary small" id="govMorningBriefAsOf" role="status"></span>
+              </div>
+              <div id="govMorningBriefContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+              <div class="mt-2 pt-2 border-top small">
+                <a href="#" id="linkGovMorningBriefJson" class="text-decoration-none" target="_blank" rel="noopener"><?= h(t('gov.dashboard_json_api')) ?></a>
+              </div>
+            </div>
+          </div>
+          <div class="card mb-3" id="govInsightsCard">
+            <div class="card-body py-2 px-3">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+                <h6 class="card-title mb-0 small fw-semibold"><?= h(t('gov.insights_title')) ?></h6>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="govInsightsRefresh"><?= h(t('admin.refresh')) ?></button>
+              </div>
+              <p class="text-secondary small mb-2"><?= h(t('gov.insights_desc')) ?></p>
+              <div id="govInsightsContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+              <?php if ($govAiUiEnabled && ai_configured()): ?>
+              <div class="mt-2 pt-2 border-top" id="govInsightsAiBlock">
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnGovInsightsAiExplain"><?= h(t('gov.insights_ai_explain')) ?></button>
+                <p class="text-secondary small mb-0 mt-2" id="govInsightsAiStatus" hidden></p>
+                <div class="small mt-2 mb-0 text-body-secondary" id="govInsightsAiOutput" style="white-space:pre-wrap;"></div>
+                <p class="text-secondary small mb-0 mt-2" id="govInsightsAiDisclaimer"><?= h(t('gov.insights_ai_disclaimer')) ?></p>
+              </div>
+              <?php endif; ?>
+              <div class="mt-2 pt-2 border-top small">
+                <a href="#" id="linkGovInsightsJson" class="text-decoration-none" target="_blank" rel="noopener"><?= h(t('gov.dashboard_json_api')) ?></a>
+              </div>
+            </div>
+          </div>
           <!-- Áttekintés: City Health, időjárás, statisztikák, ESG összefoglaló -->
-          <p class="text-secondary small mb-2"><?= h(t('gov.panels_intro')) ?></p>
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <p class="text-secondary small mb-0"><?= h(t('gov.panels_intro')) ?></p>
+            <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0" id="btnGovDashboardPdf"><?= h(t('gov.dashboard_pdf_export')) ?></button>
+          </div>
           <div class="card border-primary mb-3" id="govCityHealthCard">
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.city_health_index')) ?></h6>
@@ -959,12 +1015,39 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
 
         <div class="admin-tab-body" id="tab-analytics" hidden>
           <p class="text-secondary small mb-2"><?= h(t('gov.tab_analytics_intro')) ?></p>
+          <div class="card mb-3" id="govTrendsAnalyticsCard">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.trends_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.trends_desc')) ?></p>
+              <ul class="nav nav-pills flex-wrap gap-1 mb-2" id="govTrendsPills">
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-2 active" data-gov-trend-range="30"><?= h(t('gov.trends_range_30d')) ?></button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-2" data-gov-trend-range="90"><?= h(t('gov.trends_range_90d')) ?></button></li>
+                <li class="nav-item"><button type="button" class="nav-link py-1 px-2" data-gov-trend-range="12m"><?= h(t('gov.trends_range_12m')) ?></button></li>
+              </ul>
+              <div class="gov-chart-wrap mb-3">
+                <canvas id="govTrendsCanvas" style="max-height:240px"></canvas>
+              </div>
+              <h6 class="card-title small mb-1"><?= h(t('gov.category_chart_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.category_chart_desc')) ?></p>
+              <div class="gov-chart-wrap gov-chart-wrap--donut">
+                <canvas id="govCategoryCanvas" height="200"></canvas>
+              </div>
+              <h6 class="card-title small mb-1 mt-3" id="govZoneChartTitle"><?= h(t('gov.zone_chart_title_fallback')) ?></h6>
+              <p class="text-secondary small mb-2" id="govZoneChartDesc"><?= h(t('gov.zone_chart_desc')) ?></p>
+              <div class="gov-chart-wrap" style="max-height:min(360px,55vh);min-height:200px">
+                <canvas id="govZoneCanvas"></canvas>
+              </div>
+              <p class="text-secondary small mb-0" id="govZoneChartEmpty" hidden><?= h(t('gov.zone_chart_empty')) ?></p>
+            </div>
+          </div>
           <div class="card mb-3">
             <div class="card-body">
               <h6 class="card-title mb-1"><?= h(t('gov.analytics_title')) ?></h6><br>
               <p class="text-secondary small mb-3"><?= h(t('gov.analytics_desc')) ?></p>
               <a href="<?= h(app_url('/api/analytics.php?format=json')) ?>" class="btn btn-outline-primary btn-sm me-2" target="_blank" rel="noopener"><?= h(t('gov.analytics_export_json')) ?></a>
               <a href="<?= h(app_url('/api/analytics.php?format=csv')) ?>" class="btn btn-outline-secondary btn-sm" download><?= h(t('gov.analytics_export_csv')) ?></a>
+              <p class="text-secondary small mb-2 mt-3"><?= h(t('gov.catalog_intro')) ?></p>
+              <a href="<?= h(app_url('/api/gov_open_data_catalog.php')) ?>" id="linkGovOpenDataCatalog" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener"><?= h(t('gov.catalog_open')) ?></a>
             </div>
           </div>
           <div class="card mb-3">
@@ -1015,6 +1098,15 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
               </div>
             </div>
           </div>
+          <div class="card mb-3 border-success border-opacity-25" id="govGreenDashboardCard">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.green_dashboard_title')) ?></h6>
+              <p class="text-secondary small mb-3"><?= h(t('gov.green_dashboard_desc')) ?></p>
+              <div id="govGreenDashboardContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+            </div>
+          </div>
           <div class="card mb-3">
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.heatmap_widget_title')) ?></h6>
@@ -1061,6 +1153,15 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.predictions_title')) ?></h6>
               <div id="govPredictionsContent">
+                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+            </div>
+          </div>
+          <div class="card mb-3">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.priorities_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.priorities_desc')) ?></p>
+              <div id="govPrioritiesContent">
                 <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
               </div>
             </div>
@@ -1421,6 +1522,8 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
 <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="<?= htmlspecialchars(app_url('/dashboard/dist/js/adminlte.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="<?= htmlspecialchars(app_url('/assets/js/components/kpi.js?v=' . $kpiJsVer), ENT_QUOTES, 'UTF-8') ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <script>
 (function(){
   var aiUrl = <?= json_encode(app_url('/api/gov_ai.php'), JSON_UNESCAPED_SLASHES) ?>;
@@ -1619,6 +1722,23 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     'how_to_measure' => t('gov.ai_how_to_measure'),
     'format_failed' => t('gov.ai_format_failed'),
   ], JSON_UNESCAPED_UNICODE) ?>;
+  var govPrioritiesUrl = <?= json_encode(app_url('/api/priorities.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govPrioritiesLabels = <?= json_encode([
+    'by_category' => t('gov.priorities_by_category'),
+    'by_zone' => t('gov.priorities_by_zone'),
+    'zone_subcity' => t('gov.priorities_zone_subcity'),
+    'zone_district' => t('gov.priorities_zone_district'),
+    'col_category' => t('gov.priorities_col_category'),
+    'col_zone' => t('gov.priorities_col_zone'),
+    'open' => t('gov.priorities_col_open'),
+    'avg_age' => t('gov.priorities_col_avg_age'),
+    'score' => t('gov.priorities_col_score'),
+    'open_total' => t('gov.priorities_open_total'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govGreenDashboardUrl = <?= json_encode(app_url('/api/green_dashboard.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govGreenDashboardLabels = <?= json_encode([
+    'pulse_label' => t('gov.green_pulse_label'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
   var govGreenMetricsUrl = <?= json_encode(app_url('/api/green_metrics.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govEuGreenOverlayUrl = <?= json_encode(app_url('/api/eu_green_overlay.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govGreenMetricsLabels = <?= json_encode([
@@ -1680,12 +1800,77 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     'tree_failures' => t('gov.predictions_tree_failures'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govCityHealthUrl = <?= json_encode(app_url('/api/city_health.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govExecutiveSummaryUrl = <?= json_encode(app_url('/api/executive_summary.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govInsightsUrl = <?= json_encode(app_url('/api/gov_insights.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govInsightsExplainUrl = <?= json_encode(app_url('/api/gov_insights_explain.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govInsightsLabels = <?= json_encode([
+    'load_error' => t('common.error_load'),
+    'ai_explain' => t('gov.insights_ai_explain'),
+    'ai_loading' => t('gov.insights_ai_loading'),
+    'ai_error' => t('gov.insights_ai_error'),
+    'ai_no_bullets' => t('gov.insights_ai_no_bullets_client'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govMorningBriefUrl = <?= json_encode(app_url('/api/morning_brief.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govMorningBriefLabels = <?= json_encode([
+    'created_24h' => t('gov.morning_brief_created_24h'),
+    'resolved_24h' => t('gov.morning_brief_resolved_24h'),
+    'open_backlog' => t('gov.morning_brief_open_backlog'),
+    'focus_heading' => t('gov.morning_brief_focus'),
+    'as_of_prefix' => t('gov.morning_brief_as_of'),
+    'avg_age_short' => t('gov.morning_brief_avg_age'),
+    'no_backlog' => t('gov.morning_brief_no_backlog'),
+    'no_focus' => t('gov.morning_brief_no_focus'),
+    'load_error' => t('common.error_load'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govDashboardPdfLabels = <?= json_encode([
+    'doc_title' => t('gov.dashboard_pdf_title'),
+    'section_executive' => t('gov.dashboard_pdf_section_executive'),
+    'section_brief' => t('gov.dashboard_pdf_section_brief'),
+    'section_insights' => t('gov.dashboard_pdf_section_insights'),
+    'fetch_error' => t('gov.dashboard_pdf_fetch_error'),
+    'na' => t('gov.dashboard_pdf_na'),
+    'exe_risks' => t('gov.executive_top_risks'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govTrendsUrl = <?= json_encode(app_url('/api/trends.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govCategoryStatsUrl = <?= json_encode(app_url('/api/category_stats.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govZoneStatsUrl = <?= json_encode(app_url('/api/subcity_stats.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govOpenDataCatalogUrl = <?= json_encode(app_url('/api/gov_open_data_catalog.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govTrendsLabels = <?= json_encode([
+    'created' => t('gov.trends_created'),
+    'resolved' => t('gov.trends_resolved'),
+    'load_error' => t('common.error_load'),
+    'no_data' => t('gov.no_data'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govExecutiveLabels = <?= json_encode([
+    'city_health' => t('gov.executive_city_health'),
+    'trend' => t('gov.executive_trend'),
+    'open' => t('gov.executive_open'),
+    'resolved_30d' => t('gov.executive_resolved_30d'),
+    'avg_resolution' => t('gov.executive_avg_resolution'),
+    'engagement' => t('gov.executive_engagement'),
+    'climate_risk' => t('gov.executive_climate_risk'),
+    'green_deficit' => t('gov.executive_green_deficit'),
+    'ai_insight' => t('gov.executive_ai_insight'),
+    'top_risks' => t('gov.executive_top_risks'),
+    'zones' => t('gov.executive_zones'),
+    'days_suffix' => t('gov.executive_days_suffix'),
+    'trend_improving' => t('gov.trend_improving'),
+    'trend_stable' => t('gov.trend_stable'),
+    'trend_declining' => t('gov.trend_declining'),
+    'risk_trees_dangerous' => t('gov.risk_trees_dangerous'),
+    'risk_trees_water' => t('gov.risk_trees_water'),
+    'risk_issue_cluster' => t('gov.risk_issue_cluster'),
+    'risk_tree_failure' => t('gov.risk_tree_failure'),
+    'risk_zone_item' => t('gov.risk_zone_item'),
+    'no_data' => t('gov.no_data'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
   var govCityHealthLabels = <?= json_encode([
     'infrastructure' => t('gov.city_health_infrastructure'),
     'environment' => t('gov.city_health_environment'),
     'engagement' => t('gov.city_health_engagement'),
     'maintenance' => t('gov.city_health_maintenance'),
   ], JSON_UNESCAPED_UNICODE) ?>;
+  var govCategoryLabels = <?= json_encode($categoryLabels, JSON_UNESCAPED_UNICODE) ?>;
   var mapCenterLat = <?= json_encode($govMapCenterLat) ?>;
   var mapCenterLng = <?= json_encode($govMapCenterLng) ?>;
   var govMapDefaultZoom = <?= (int) $govMapDefaultZoom ?>;
@@ -1705,8 +1890,15 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   function updateEsgExportLinks(){
     var y = govEsgYear ? govEsgYear.value : new Date().getFullYear();
     var aid = (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) ? ('&authority_id=' + authorityIdForHeatmap) : '';
+    var aidQ = (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) ? ('?authority_id=' + encodeURIComponent(String(authorityIdForHeatmap))) : '';
     if (linkEsgJson) linkEsgJson.href = esgExportUrl + '?year=' + y + '&format=json' + aid;
     if (linkEsgCsv) linkEsgCsv.href = esgExportUrl + '?year=' + y + '&format=csv' + aid;
+    var lb = document.getElementById('linkGovMorningBriefJson');
+    if (lb && typeof govMorningBriefUrl !== 'undefined' && govMorningBriefUrl) lb.href = govMorningBriefUrl + aidQ;
+    var li = document.getElementById('linkGovInsightsJson');
+    if (li && typeof govInsightsUrl !== 'undefined' && govInsightsUrl) li.href = govInsightsUrl + aidQ;
+    var lcat = document.getElementById('linkGovOpenDataCatalog');
+    if (lcat && typeof govOpenDataCatalogUrl !== 'undefined' && govOpenDataCatalogUrl) lcat.href = govOpenDataCatalogUrl + aidQ;
   }
   if (govEsgYear) govEsgYear.addEventListener('change', updateEsgExportLinks);
   updateEsgExportLinks();
@@ -1797,24 +1989,28 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     if (pdfBtn) pdfBtn.classList.remove('d-none');
   }
 
-  function downloadPdf(btnId){
-    var block = btnId === 'btnPdfSummary' ? document.getElementById('govAiOutSummary') : document.getElementById('govAiOutEsg');
-    if (!block || !block.getAttribute('data-pdf-content')) return;
-    var title = block.getAttribute('data-pdf-title') || <?= json_encode(t('gov.ai_summary_title'), JSON_UNESCAPED_UNICODE) ?>;
-    var content = block.getAttribute('data-pdf-content');
+  function govRunPdfExport(title, contentPlain, fileBaseName){
     var JsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
     if (!JsPDF) { alert(<?= json_encode(t('gov.pdf_lib_missing'), JSON_UNESCAPED_UNICODE) ?>); return; }
     var doc = new JsPDF();
     var y = 20;
+    var createdStr = <?= json_encode(t('gov.pdf_created'), JSON_UNESCAPED_UNICODE) ?> + ' ' + new Date().toLocaleString();
     function addContent(){
       doc.setFontSize(12);
       doc.text(title, 14, y); y += 8;
       doc.setFontSize(9);
-      doc.text(<?= json_encode(t('gov.pdf_created'), JSON_UNESCAPED_UNICODE) ?> + ' ' + new Date().toLocaleString(), 14, y); y += 12;
-      var lines = doc.splitTextToSize(content, 180);
+      doc.text(createdStr, 14, y); y += 10;
       doc.setFontSize(10);
-      doc.text(lines, 14, y);
-      doc.save('civic-ai-' + title.replace(/\s+/g, '-').toLowerCase() + '.pdf');
+      var lines = doc.splitTextToSize(String(contentPlain || ''), 180);
+      var lh = 5;
+      var maxY = 288;
+      for (var i = 0; i < lines.length; i++) {
+        if (y > maxY) { doc.addPage(); y = 20; }
+        doc.text(lines[i], 14, y);
+        y += lh;
+      }
+      var base = (fileBaseName || 'civic-ai-export').replace(/[^a-z0-9._-]+/gi, '-').toLowerCase();
+      doc.save(base + '.pdf');
     }
     if (logoUrl) {
       var img = new Image();
@@ -1844,6 +2040,64 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       addContent();
     }
   }
+  function downloadPdf(btnId){
+    var block = btnId === 'btnPdfSummary' ? document.getElementById('govAiOutSummary') : document.getElementById('govAiOutEsg');
+    if (!block || !block.getAttribute('data-pdf-content')) return;
+    var title = block.getAttribute('data-pdf-title') || <?= json_encode(t('gov.ai_summary_title'), JSON_UNESCAPED_UNICODE) ?>;
+    var content = block.getAttribute('data-pdf-content');
+    var slug = 'civic-ai-' + title.replace(/\s+/g, '-').toLowerCase();
+    govRunPdfExport(title, content, slug);
+  }
+  function govDashboardPdfFormatExecutive(d, PdfL, ExeL){
+    if (!d) return PdfL.na || '—';
+    var tr = String(d.trend || 'stable');
+    var trLabel = tr === 'improving' ? (ExeL.trend_improving || tr) : (tr === 'declining' ? (ExeL.trend_declining || tr) : (ExeL.trend_stable || tr));
+    var lines = [];
+    lines.push((ExeL.city_health || '') + ': ' + (d.city_health_score != null ? d.city_health_score : '—'));
+    lines.push((ExeL.trend || '') + ': ' + trLabel);
+    lines.push((ExeL.open || '') + ': ' + (d.open_issues != null ? d.open_issues : '—'));
+    lines.push((ExeL.resolved_30d || '') + ': ' + (d.resolved_last_30_days != null ? d.resolved_last_30_days : '—'));
+    var avg = d.avg_resolution_time;
+    lines.push((ExeL.avg_resolution || '') + ': ' + (avg != null && isFinite(Number(avg)) ? String(Math.round(Number(avg) * 10) / 10) + (ExeL.days_suffix || '') : '—'));
+    lines.push((ExeL.engagement || '') + ': ' + (d.citizen_engagement_score != null ? d.citizen_engagement_score : '—'));
+    if (d.ai_summary) { lines.push(''); lines.push(String(d.ai_summary)); }
+    var risks = d.top_risks || [];
+    if (risks.length) {
+      lines.push('');
+      lines.push(PdfL.exe_risks || '');
+      risks.slice(0, 6).forEach(function(r){
+        if (!r || typeof r !== 'object') return;
+        var bit = (r.code || r.type || '') + ' · ' + (r.severity || '') + (r.count != null ? ' (' + r.count + ')' : '');
+        lines.push('• ' + bit.trim());
+      });
+    }
+    return lines.join('\n');
+  }
+  function govDashboardPdfFormatBrief(d, PdfL, MbL, Gl){
+    if (!d) return PdfL.na || '—';
+    var lines = [];
+    var h = d.last_24h || {};
+    lines.push((MbL.created_24h || '') + ': ' + (h.reports_created != null ? h.reports_created : 0));
+    lines.push((MbL.resolved_24h || '') + ': ' + (h.reports_resolved != null ? h.reports_resolved : 0));
+    lines.push((MbL.open_backlog || '') + ': ' + (d.open_backlog != null ? d.open_backlog : 0));
+    var focus = d.priority_focus || [];
+    if (focus.length) {
+      lines.push('');
+      lines.push(MbL.focus_heading || '');
+      focus.forEach(function(x){
+        var lab = (Gl && Gl[x.category]) ? Gl[x.category] : (x.category || '—');
+        lines.push('• ' + lab + ': ' + (x.open_count != null ? x.open_count : 0));
+      });
+    }
+    return lines.join('\n');
+  }
+  function govDashboardPdfFormatInsights(d, PdfL){
+    if (!d) return PdfL.na || '—';
+    var lines = [];
+    (d.bullets || []).forEach(function(b){ if (b && b.text) lines.push('• ' + String(b.text)); });
+    if (d.footer) { lines.push(''); lines.push(String(d.footer)); }
+    return lines.length ? lines.join('\n') : (PdfL.na || '—');
+  }
 
   // Tabs
   document.querySelectorAll('.tab[data-tab]').forEach(function(btn){
@@ -1860,9 +2114,18 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       if (key === 'budget') loadGovBudget();
       if (key === 'trees') { loadGovEsgSnapshot(); initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
       if (key === 'iot') loadGovIotDevices();
-      if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovEsgMetrics(); }
+      if (key === 'analytics') {
+        initGovHeatmapTab();
+        invalidateGovTrendsCache();
+        initGovStatisticsTab();
+        loadGovSentiment();
+        loadGovPredictions();
+        loadGovPriorities();
+        loadGovEsgMetrics();
+        loadGovGreenDashboard();
+      }
       if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
-      if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); }
+      if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); }
       if (key === 'citybrain-live') loadCitybrainLive();
       if (key === 'citybrain-predictive') loadCitybrainPredictive();
       if (key === 'citybrain-hotspot') initCitybrainHotspot();
@@ -1886,8 +2149,12 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     header.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); header.click(); } });
   });
 
+  loadGovExecutiveSummary();
+  loadGovMorningBrief();
+  loadGovInsights();
   loadGovCityHealth();
   loadGovWeather();
+  document.getElementById('govInsightsRefresh') && document.getElementById('govInsightsRefresh').addEventListener('click', function(){ loadGovInsights(); });
   if (document.getElementById('govDashboardEeaInspireContent')) {
     loadGovEuEeaInspire('govDashboardEeaInspireContent');
   }
@@ -2072,6 +2339,55 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       if (issues.length === 0 && trees.length === 0) html += '<p class="text-secondary small mb-0">' + noData + '</p>';
       container.innerHTML = html;
     }).catch(function(){ var c = document.getElementById('govPredictionsContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  function loadGovPriorities(){
+    var container = document.getElementById('govPrioritiesContent');
+    if (!container || !govPrioritiesUrl) return;
+    function esc(s){
+      return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    fetch(govPrioritiesUrl + govEuAuthorityQuery(), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var L = govPrioritiesLabels || {};
+      var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
+      if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
+      var d = j.data;
+      var total = (d.totals && d.totals.open_reports) ? d.totals.open_reports : 0;
+      var meta = d.meta || {};
+      var zoneMode = meta.zone_mode === 'subcity' ? 'subcity' : 'district';
+      var zoneHeading = zoneMode === 'subcity' ? (L.zone_subcity || L.by_zone) : (L.zone_district || L.by_zone);
+      var cats = Array.isArray(d.by_category) ? d.by_category : [];
+      var zones = Array.isArray(d.by_zone) ? d.by_zone : [];
+      var gl = govCategoryLabels || {};
+      if (total === 0) {
+        container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>';
+        return;
+      }
+      var totLine = (L.open_total || '%n').replace('%n', String(total));
+      var html = '<p class="small text-secondary mb-2">' + esc(totLine) + '</p>';
+      html += '<h6 class="small fw-semibold mb-1">' + esc(L.by_category || '') + '</h6>';
+      html += '<div class="table-responsive mb-3"><table class="table table-sm table-striped small mb-0"><thead><tr><th scope="col">#</th><th scope="col">' + esc(L.col_category || '') + '</th><th scope="col">' + esc(L.open || '') + '</th><th scope="col">' + esc(L.avg_age || '') + '</th><th scope="col" class="text-end">' + esc(L.score || '') + '</th></tr></thead><tbody>';
+      if (cats.length === 0) {
+        html += '<tr><td colspan="5" class="text-secondary">' + esc(noData) + '</td></tr>';
+      } else {
+        cats.forEach(function(row){
+          var cat = row.category || '';
+          var label = gl[cat] || cat || '—';
+          html += '<tr><td>' + esc(String(row.rank != null ? row.rank : '')) + '</td><td>' + esc(label) + '</td><td>' + esc(String(row.open_count != null ? row.open_count : '')) + '</td><td>' + esc(String(row.avg_age_days != null ? row.avg_age_days : '')) + '</td><td class="text-end">' + esc(String(row.priority_score != null ? row.priority_score : '')) + '</td></tr>';
+        });
+      }
+      html += '</tbody></table></div>';
+      html += '<h6 class="small fw-semibold mb-1">' + esc(zoneHeading || '') + '</h6>';
+      html += '<div class="table-responsive"><table class="table table-sm table-striped small mb-0"><thead><tr><th scope="col">#</th><th scope="col">' + esc(L.col_zone || '') + '</th><th scope="col">' + esc(L.open || '') + '</th><th scope="col">' + esc(L.avg_age || '') + '</th><th scope="col" class="text-end">' + esc(L.score || '') + '</th></tr></thead><tbody>';
+      if (zones.length === 0) {
+        html += '<tr><td colspan="5" class="text-secondary">' + esc(noData) + '</td></tr>';
+      } else {
+        zones.forEach(function(row){
+          html += '<tr><td>' + esc(String(row.rank != null ? row.rank : '')) + '</td><td>' + esc(row.zone || '—') + '</td><td>' + esc(String(row.open_count != null ? row.open_count : '')) + '</td><td>' + esc(String(row.avg_age_days != null ? row.avg_age_days : '')) + '</td><td class="text-end">' + esc(String(row.priority_score != null ? row.priority_score : '')) + '</td></tr>';
+        });
+      }
+      html += '</tbody></table></div>';
+      container.innerHTML = html;
+    }).catch(function(){ var c = document.getElementById('govPrioritiesContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
   }
   function loadGovGreenMetrics(){
     var container = document.getElementById('govEuTabGreenMetrics');
@@ -2290,6 +2606,12 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       } catch (_) {}
     }).catch(function(){});
   }
+  function govScoreBar(label, fraction01, invertBad){
+    var pct = Math.round(Math.max(0, Math.min(1, Number(fraction01) || 0)) * 100);
+    var colorScore = invertBad ? (100 - pct) : pct;
+    var tone = colorScore >= 66 ? 'bg-success' : (colorScore >= 33 ? 'bg-warning' : 'bg-danger');
+    return '<div class="mb-2"><div class="d-flex justify-content-between small mb-1"><span>' + label + '</span><span>' + pct + '%</span></div><div class="progress" style="height:7px"><div class="progress-bar ' + tone + '" role="progressbar" style="width:' + pct + '%" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"></div></div></div>';
+  }
   function loadGovEsgMetrics(){
     var container = document.getElementById('govEsgMetricsContent');
     if (!container || !govEsgMetricsUrl) return;
@@ -2302,16 +2624,19 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       var soc = d.social || {};
       var gov = d.governance || {};
       var html = '<div class="row g-2 small">';
-      html += '<div class="col-md-4"><div class="border rounded p-2 bg-light"><div class="fw-semibold text-success">' + (L.environmental || 'E') + '</div>';
-      html += (L.tree_coverage || 'Tree coverage') + ': ' + Math.round((env.tree_coverage || 0) * 100) + '%<br>';
-      html += (L.heat_island || 'Heat island') + ': ' + Math.round((env.heat_island_index || 0) * 100) + '%<br>';
-      html += (L.water_stress || 'Water stress') + ': ' + Math.round((env.water_stress || 0) * 100) + '%</div></div>';
-      html += '<div class="col-md-4"><div class="border rounded p-2 bg-light"><div class="fw-semibold text-primary">' + (L.social || 'S') + '</div>';
-      html += (L.citizen_participation || 'Participation') + ': ' + Math.round((soc.citizen_participation || 0) * 100) + '%<br>';
-      html += (L.volunteer_engagement || 'Volunteers') + ': ' + Math.round((soc.volunteer_engagement || 0) * 100) + '%</div></div>';
-      html += '<div class="col-md-4"><div class="border rounded p-2 bg-light"><div class="fw-semibold text-secondary">' + (L.governance || 'G') + '</div>';
-      html += (L.response_transparency || 'Transparency') + ': ' + Math.round((gov.response_transparency || 0) * 100) + '%<br>';
-      html += (L.resolution_rate || 'Resolution') + ': ' + Math.round((gov.resolution_rate || 0) * 100) + '%</div></div>';
+      html += '<div class="col-md-4"><div class="border rounded p-2 bg-light h-100"><div class="fw-semibold text-success mb-1">' + (L.environmental || 'E') + '</div>';
+      html += govScoreBar(L.tree_coverage || 'Tree coverage', env.tree_coverage, false);
+      html += govScoreBar(L.heat_island || 'Heat island', env.heat_island_index, true);
+      html += govScoreBar(L.water_stress || 'Water stress', env.water_stress, true);
+      html += '</div></div>';
+      html += '<div class="col-md-4"><div class="border rounded p-2 bg-light h-100"><div class="fw-semibold text-primary mb-1">' + (L.social || 'S') + '</div>';
+      html += govScoreBar(L.citizen_participation || 'Participation', soc.citizen_participation, false);
+      html += govScoreBar(L.volunteer_engagement || 'Volunteers', soc.volunteer_engagement, false);
+      html += '</div></div>';
+      html += '<div class="col-md-4"><div class="border rounded p-2 bg-light h-100"><div class="fw-semibold text-secondary mb-1">' + (L.governance || 'G') + '</div>';
+      html += govScoreBar(L.response_transparency || 'Transparency', gov.response_transparency, false);
+      html += govScoreBar(L.resolution_rate || 'Resolution', gov.resolution_rate, false);
+      html += '</div></div>';
       html += '</div>';
       container.innerHTML = html;
       var y = (document.getElementById('govEsgYear') || {}).value || new Date().getFullYear();
@@ -2320,6 +2645,293 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       if (document.getElementById('linkEsgCommandCsv')) document.getElementById('linkEsgCommandCsv').href = esgExportUrl + '?year=' + y + '&format=csv' + aidEsg;
     }).catch(function(){ var c = document.getElementById('govEsgMetricsContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
   }
+  function loadGovGreenDashboard(){
+    var container = document.getElementById('govGreenDashboardContent');
+    if (!container || !govGreenDashboardUrl) return;
+    fetch(govGreenDashboardUrl + govEuAuthorityQuery(), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var L = govGreenDashboardLabels || {};
+      var G = govGreenMetricsLabels || {};
+      var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
+      if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
+      var d = j.data;
+      var pulse = d.pulse || {};
+      var score = typeof pulse.score === 'number' ? pulse.score : 0;
+      var green = d.green_intelligence || {};
+      var tone = score >= 70 ? 'text-success' : (score >= 40 ? 'text-warning' : 'text-danger');
+      var barTone = score >= 70 ? 'bg-success' : (score >= 40 ? 'bg-warning' : 'bg-danger');
+      var html = '<div class="row g-3 align-items-stretch">';
+      html += '<div class="col-md-4 text-center text-md-start"><div class="display-6 fw-semibold ' + tone + '">' + score + '</div><div class="small text-secondary">' + (L.pulse_label || 'Pulse') + '</div></div>';
+      html += '<div class="col-md-8"><div class="progress mb-2" style="height:12px"><div class="progress-bar ' + barTone + '" style="width:' + score + '%"></div></div>';
+      html += govScoreBar(G.canopy_coverage || 'Canopy', green.canopy_coverage, false);
+      html += govScoreBar(G.drought_risk || 'Drought', green.drought_risk, true);
+      html += govScoreBar(G.biodiversity_index || 'Biodiversity', green.biodiversity_index, false);
+      html += '</div></div>';
+      var carb = green.carbon_absorption;
+      html += '<div class="mt-2 pt-2 border-top small text-secondary">' + (G.carbon_absorption || 'CO₂') + ': <strong>' + (carb != null && carb !== '' ? String(carb) : '—') + '</strong> ' + (G.carbon_unit || '') + '</div>';
+      container.innerHTML = html;
+    }).catch(function(){ var c = document.getElementById('govGreenDashboardContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  function govExecEsc(s){
+    if (typeof CivicKpi !== 'undefined' && CivicKpi.escapeHtml) return CivicKpi.escapeHtml(s);
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function govExecScoreTone(n, invert){
+    if (typeof CivicKpi !== 'undefined' && CivicKpi.toneFromScore) return CivicKpi.toneFromScore(n, invert);
+    var v = Number(n);
+    if (!isFinite(v)) return 'exec-kpi-warn';
+    if (invert) v = 100 - v;
+    if (v >= 70) return 'exec-kpi-good';
+    if (v >= 40) return 'exec-kpi-warn';
+    return 'exec-kpi-bad';
+  }
+  function govExecResolutionTone(days){
+    if (typeof CivicKpi !== 'undefined' && CivicKpi.resolutionTone) return CivicKpi.resolutionTone(days);
+    var d = Number(days);
+    if (!isFinite(d)) return 'exec-kpi-warn';
+    if (d <= 10) return 'exec-kpi-good';
+    if (d <= 30) return 'exec-kpi-warn';
+    return 'exec-kpi-bad';
+  }
+  function govExecOpenTone(openCount){
+    if (typeof CivicKpi !== 'undefined' && CivicKpi.openIssuesTone) return CivicKpi.openIssuesTone(openCount);
+    var o = Number(openCount);
+    if (!isFinite(o)) return 'exec-kpi-warn';
+    return govExecScoreTone(Math.max(0, 100 - Math.min(o, 100)), false);
+  }
+  function govExecKpiCard(label, val, tone){
+    if (typeof CivicKpi !== 'undefined' && CivicKpi.renderKpiCard) {
+      return CivicKpi.renderKpiCard({ label: label, value: val, toneClass: tone });
+    }
+    return '<div class="col-6 col-md-4 col-lg-3"><div class="exec-kpi rounded-3 p-2 p-md-3 h-100 ' + tone + '"><div class="exec-kpi-label small text-secondary">' + govExecEsc(label) + '</div><div class="exec-kpi-value fw-bold">' + govExecEsc(val) + '</div></div></div>';
+  }
+  function govExecRiskLine(risk, L){
+    var code = risk.code || '';
+    var base = '';
+    if (code === 'trees_dangerous') base = L.risk_trees_dangerous || code;
+    else if (code === 'trees_needing_water') base = L.risk_trees_water || code;
+    else if (code === 'predicted_issue') base = (L.risk_issue_cluster || '') + (risk.category ? ' · ' + String(risk.category) : '');
+    else if (code === 'predicted_tree_failure') base = (L.risk_tree_failure || '') + (risk.tree_id ? ' #' + String(risk.tree_id) : '');
+    else base = code || '—';
+    var sev = (risk.severity || '').toLowerCase();
+    var badge = sev === 'high' ? 'danger' : (sev === 'medium' ? 'warning' : 'secondary');
+    var cnt = (risk.count != null) ? ' <span class="text-secondary">(' + govExecEsc(risk.count) + ')</span>' : '';
+    return '<li class="small mb-1">' + govExecEsc(base) + cnt + ' <span class="badge bg-' + badge + '">' + govExecEsc(sev || '—') + '</span></li>';
+  }
+  function loadGovExecutiveSummary(){
+    var root = document.getElementById('govExecutiveHeroContent');
+    var trendEl = document.getElementById('govExecutiveTrendBadge');
+    if (!root || !govExecutiveSummaryUrl) return;
+    var L = govExecutiveLabels || {};
+    var q = (typeof govEuAuthorityQuery === 'function') ? govEuAuthorityQuery() : '';
+    fetch(govExecutiveSummaryUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.data) {
+        root.innerHTML = '<p class="text-secondary small mb-0">' + govExecEsc((j && j.error) ? j.error : (L.no_data || '—')) + '</p>';
+        if (trendEl) { trendEl.classList.add('d-none'); trendEl.textContent = ''; }
+        return;
+      }
+      var d = j.data;
+      var trend = String(d.trend || 'stable');
+      var trendText = trend === 'improving' ? (L.trend_improving || trend) : (trend === 'declining' ? (L.trend_declining || trend) : (L.trend_stable || trend));
+      var trendClass = trend === 'improving' ? 'text-bg-success' : (trend === 'declining' ? 'text-bg-danger' : 'text-bg-secondary');
+      if (trendEl) {
+        trendEl.textContent = (L.trend || 'Trend') + ': ' + trendText;
+        trendEl.className = 'badge rounded-pill px-3 py-2 ' + trendClass;
+        trendEl.classList.remove('d-none');
+      }
+      var ch = (d.city_health_score != null) ? parseInt(d.city_health_score, 10) : '—';
+      var eng = (d.citizen_engagement_score != null) ? parseInt(d.citizen_engagement_score, 10) : '—';
+      var cl = (d.climate_risk_score != null) ? parseInt(d.climate_risk_score, 10) : '—';
+      var gd = (d.green_deficit_score != null) ? parseInt(d.green_deficit_score, 10) : '—';
+      var avgD = d.avg_resolution_time;
+      var avgStr = (avgD != null && isFinite(Number(avgD))) ? (String(Math.round(Number(avgD) * 10) / 10) + (L.days_suffix || '')) : '—';
+      var html = '<div class="row g-2 g-md-3 mb-3">';
+      if (typeof CivicKpi !== 'undefined' && CivicKpi.renderGaugeCard && isFinite(Number(ch))) {
+        html += CivicKpi.renderGaugeCard({ label: L.city_health || 'Health', value: Number(ch), max: 100 });
+      } else {
+        html += govExecKpiCard(L.city_health || 'Health', ch, govExecScoreTone(ch, false));
+      }
+      html += govExecKpiCard(L.engagement || 'Engagement', eng, govExecScoreTone(eng, false));
+      html += govExecKpiCard(L.climate_risk || 'Climate', cl, govExecScoreTone(cl, false));
+      html += govExecKpiCard(L.green_deficit || 'Deficit', gd, govExecScoreTone(gd, false));
+      html += govExecKpiCard(L.open || 'Open', (d.open_issues != null) ? d.open_issues : '—', govExecOpenTone(d.open_issues));
+      html += govExecKpiCard(L.resolved_30d || 'Resolved', (d.resolved_last_30_days != null) ? d.resolved_last_30_days : '—', 'exec-kpi-neutral');
+      html += govExecKpiCard(L.avg_resolution || 'Avg', avgStr, govExecResolutionTone(avgD));
+      html += '</div>';
+      if (d.ai_summary) {
+        html += '<div class="exec-ai-blurb rounded-3 p-3 mb-3"><div class="small text-secondary mb-1">' + govExecEsc(L.ai_insight || '') + '</div><p class="mb-0 small">' + govExecEsc(d.ai_summary) + '</p></div>';
+      }
+      var risks = d.top_risks || [];
+      if (risks.length) {
+        html += '<div class="row g-3"><div class="col-md-6"><div class="small fw-semibold mb-2">' + govExecEsc(L.top_risks || '') + '</div><ul class="list-unstyled mb-0">' + risks.map(function(r){ return govExecRiskLine(r, L); }).join('') + '</ul></div>';
+        var zones = d.top_priority_zones || [];
+        html += '<div class="col-md-6"><div class="small fw-semibold mb-2">' + govExecEsc(L.zones || '') + '</div>';
+        if (!zones.length) {
+          html += '<p class="text-secondary small mb-0">' + govExecEsc(L.no_data || '') + '</p>';
+        } else {
+          html += '<ul class="list-unstyled mb-0">';
+          zones.forEach(function(z){
+            var zt = (z.type || '—');
+            var zs = (z.score != null) ? z.score : '';
+            html += '<li class="small mb-1">' + govExecEsc(L.risk_zone_item || 'Zone') + ' · ' + govExecEsc(zt) + (zs !== '' ? ' <span class="text-secondary">(' + govExecEsc(zs) + ')</span>' : '') + '</li>';
+          });
+          html += '</ul>';
+        }
+        html += '</div></div>';
+      }
+      root.innerHTML = html;
+    }).catch(function(){
+      root.innerHTML = '<p class="text-danger small mb-0">—</p>';
+      if (trendEl) trendEl.classList.add('d-none');
+    });
+  }
+  function loadGovMorningBrief(){
+    var root = document.getElementById('govMorningBriefContent');
+    var asOfEl = document.getElementById('govMorningBriefAsOf');
+    if (!root || !govMorningBriefUrl) return;
+    var L = govMorningBriefLabels || {};
+    var gl = typeof govCategoryLabels !== 'undefined' ? govCategoryLabels : {};
+    fetch(govMorningBriefUrl + govEuAuthorityQuery(), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.data) {
+        root.innerHTML = '<p class="text-secondary small mb-0">' + String(L.load_error || '—').replace(/</g, '&lt;') + '</p>';
+        if (asOfEl) asOfEl.textContent = '';
+        return;
+      }
+      var d = j.data;
+      if (asOfEl && d.as_of) {
+        try {
+          var dt = new Date(d.as_of);
+          var prefix = L.as_of_prefix || '';
+          asOfEl.textContent = prefix + (isNaN(dt.getTime()) ? '' : dt.toLocaleString());
+        } catch (_) {
+          if (asOfEl) asOfEl.textContent = '';
+        }
+      }
+      var h = d.last_24h || {};
+      var cr = h.reports_created != null ? h.reports_created : 0;
+      var rr = h.reports_resolved != null ? h.reports_resolved : 0;
+      var backlog = d.open_backlog != null ? d.open_backlog : 0;
+      function esc(s){
+        return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+      var html = '<div class="d-flex flex-wrap gap-3 mb-2 small">';
+      html += '<span><span class="text-secondary">' + esc(L.created_24h || '') + '</span> <strong>' + cr + '</strong></span>';
+      html += '<span><span class="text-secondary">' + esc(L.resolved_24h || '') + '</span> <strong>' + rr + '</strong></span>';
+      html += '<span><span class="text-secondary">' + esc(L.open_backlog || '') + '</span> <strong>' + backlog + '</strong></span>';
+      html += '</div>';
+      var focus = Array.isArray(d.priority_focus) ? d.priority_focus : [];
+      if (focus.length) {
+        html += '<div class="small fw-semibold mb-1">' + esc(L.focus_heading || '') + '</div><ul class="small mb-0 ps-3">';
+        focus.forEach(function(x){
+          var cat = x.category || '';
+          var lab = gl[cat] || cat || '—';
+          var oc = x.open_count != null ? x.open_count : 0;
+          var ag = x.avg_age_days;
+          html += '<li>' + esc(lab) + ' — <strong>' + oc + '</strong>';
+          if (ag != null && ag !== '') {
+            var ageStr = String(L.avg_age_short || '%n').replace('%n', String(ag));
+            html += ' <span class="text-secondary">(' + esc(ageStr) + ')</span>';
+          }
+          html += '</li>';
+        });
+        html += '</ul>';
+      } else if (backlog === 0) {
+        html += '<p class="text-secondary small mb-0">' + esc(L.no_backlog || '') + '</p>';
+      } else {
+        html += '<p class="text-secondary small mb-0">' + esc(L.no_focus || '') + '</p>';
+      }
+      root.innerHTML = html;
+    }).catch(function(){
+      if (root) root.innerHTML = '<p class="text-danger small mb-0">—</p>';
+      if (asOfEl) asOfEl.textContent = '';
+    });
+  }
+  function loadGovInsights(){
+    var root = document.getElementById('govInsightsContent');
+    if (!root || !govInsightsUrl) return;
+    var L = govInsightsLabels || {};
+    function esc(s){
+      return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    window._govInsightsLastBullets = null;
+    var aiOut = document.getElementById('govInsightsAiOutput');
+    var aiSt = document.getElementById('govInsightsAiStatus');
+    if (aiOut) aiOut.textContent = '';
+    if (aiSt) { aiSt.textContent = ''; aiSt.hidden = true; }
+    fetch(govInsightsUrl + govEuAuthorityQuery(), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.data) {
+        root.innerHTML = '<p class="text-secondary small mb-0">' + esc(L.load_error || '—') + '</p>';
+        return;
+      }
+      var d = j.data;
+      var items = Array.isArray(d.bullets) ? d.bullets : [];
+      window._govInsightsLastBullets = items.map(function(b){
+        return { severity: String(b.severity || 'info'), text: String(b.text || '') };
+      });
+      var html = '<ul class="list-unstyled mb-2">';
+      items.forEach(function(b){
+        var sev = String(b.severity || 'info').toLowerCase();
+        var border = sev === 'warning' ? 'warning' : (sev === 'success' ? 'success' : 'info');
+        html += '<li class="border-start border-3 border-' + border + ' ps-2 py-1 mb-2 small">' + esc(b.text || '') + '</li>';
+      });
+      html += '</ul>';
+      if (d.footer) {
+        html += '<p class="text-secondary small mb-0">' + esc(d.footer) + '</p>';
+      }
+      root.innerHTML = html;
+    }).catch(function(){ if (root) root.innerHTML = '<p class="text-danger small mb-0">—</p>'; });
+  }
+  function requestGovInsightsAiExplain(){
+    var L = govInsightsLabels || {};
+    var bullets = window._govInsightsLastBullets;
+    var btn = document.getElementById('btnGovInsightsAiExplain');
+    var statusEl = document.getElementById('govInsightsAiStatus');
+    var outEl = document.getElementById('govInsightsAiOutput');
+    if (!govInsightsExplainUrl || !btn) return;
+    if (!bullets || !bullets.length) {
+      if (statusEl) {
+        statusEl.hidden = false;
+        statusEl.className = 'text-warning small mb-0 mt-2';
+        statusEl.textContent = L.ai_no_bullets || '';
+      }
+      return;
+    }
+    var body = { bullets: bullets };
+    if (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) {
+      body.authority_id = authorityIdForHeatmap;
+    }
+    btn.disabled = true;
+    if (statusEl) {
+      statusEl.hidden = false;
+      statusEl.className = 'text-secondary small mb-0 mt-2';
+      statusEl.textContent = L.ai_loading || '';
+    }
+    if (outEl) outEl.textContent = '';
+    fetch(govInsightsExplainUrl, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function(r){ return r.json(); }).then(function(j){
+      btn.disabled = false;
+      if (!j.ok || !j.data || !j.data.text) {
+        if (statusEl) {
+          statusEl.className = 'text-danger small mb-0 mt-2';
+          statusEl.textContent = (j && j.error) ? String(j.error) : (L.ai_error || '');
+        }
+        return;
+      }
+      if (statusEl) { statusEl.textContent = ''; statusEl.hidden = true; }
+      if (outEl) outEl.textContent = String(j.data.text);
+    }).catch(function(){
+      btn.disabled = false;
+      if (statusEl) {
+        statusEl.hidden = false;
+        statusEl.className = 'text-danger small mb-0 mt-2';
+        statusEl.textContent = L.ai_error || '';
+      }
+    });
+  }
+  document.getElementById('btnGovInsightsAiExplain') && document.getElementById('btnGovInsightsAiExplain').addEventListener('click', function(){ requestGovInsightsAiExplain(); });
   function loadGovCityHealth(){
     var container = document.getElementById('govCityHealthContent');
     if (!container || !govCityHealthUrl) return;
@@ -2657,6 +3269,209 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       if (j.ok && j.data) applyGovEsgSnapshotMetrics(j.data);
     }).catch(function(){});
   }
+  var govTrendsChartInstance = null;
+  var govCategoryChartInstance = null;
+  var govZoneChartInstance = null;
+  var govTrendsCache = null;
+  var govTrendsActiveRange = '30';
+  function govChartTickColor(){
+    var th = document.documentElement.getAttribute('data-theme') || document.documentElement.getAttribute('data-bs-theme') || 'dark';
+    return (th === 'light') ? '#475569' : '#cbd5e1';
+  }
+  function govTrendsPickSeries(data, range){
+    if (!data) return { labels: [], created: [], resolved: [] };
+    if (range === '90') return data.range_90d || { labels: [], created: [], resolved: [] };
+    if (range === '12m') return data.range_12m || { labels: [], created: [], resolved: [] };
+    return data.range_30d || { labels: [], created: [], resolved: [] };
+  }
+  function loadGovTrendsCharts(range){
+    var canvas = document.getElementById('govTrendsCanvas');
+    if (!canvas || !govTrendsUrl || typeof Chart === 'undefined') return;
+    range = range || govTrendsActiveRange;
+    govTrendsActiveRange = range;
+    var pills = document.querySelectorAll('#govTrendsPills [data-gov-trend-range]');
+    pills.forEach(function(b){
+      b.classList.toggle('active', (b.getAttribute('data-gov-trend-range') || '') === range);
+    });
+    var L = govTrendsLabels || {};
+    var tc = govChartTickColor();
+    function drawChart(payload){
+      var series = govTrendsPickSeries(payload, range);
+      if (govTrendsChartInstance) {
+        govTrendsChartInstance.destroy();
+        govTrendsChartInstance = null;
+      }
+      var ctx = canvas.getContext('2d');
+      govTrendsChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: series.labels || [],
+          datasets: [
+            { label: L.created || 'Created', data: series.created || [], borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,0.12)', tension: 0.2, fill: false, pointRadius: range === '12m' ? 3 : 0 },
+            { label: L.resolved || 'Resolved', data: series.resolved || [], borderColor: '#198754', backgroundColor: 'rgba(25,135,84,0.12)', tension: 0.2, fill: false, pointRadius: range === '12m' ? 3 : 0 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { labels: { color: tc } }
+          },
+          scales: {
+            x: { ticks: { color: tc, maxTicksLimit: range === '90' ? 12 : 14 } },
+            y: { beginAtZero: true, ticks: { color: tc, precision: 0 } }
+          }
+        }
+      });
+    }
+    if (govTrendsCache) {
+      drawChart(govTrendsCache);
+      return;
+    }
+    var q = (typeof govEuAuthorityQuery === 'function') ? govEuAuthorityQuery() : '';
+    fetch(govTrendsUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.data) {
+        govTrendsCache = null;
+        if (govTrendsChartInstance) { govTrendsChartInstance.destroy(); govTrendsChartInstance = null; }
+        return;
+      }
+      govTrendsCache = j.data;
+      drawChart(govTrendsCache);
+    }).catch(function(){
+      if (govTrendsChartInstance) { govTrendsChartInstance.destroy(); govTrendsChartInstance = null; }
+    });
+  }
+  function loadGovCategoryChart(){
+    var canvas = document.getElementById('govCategoryCanvas');
+    if (!canvas || !govCategoryStatsUrl || typeof Chart === 'undefined') return;
+    var L = govTrendsLabels || {};
+    var tc = govChartTickColor();
+    var aq = (typeof govEuAuthorityQuery === 'function') ? govEuAuthorityQuery() : '';
+    var url = govCategoryStatsUrl + (aq ? aq + '&' : '?') + 'days=90';
+    fetch(url, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (govCategoryChartInstance) {
+        govCategoryChartInstance.destroy();
+        govCategoryChartInstance = null;
+      }
+      if (!j.ok || !j.data || !j.data.by_category || !j.data.by_category.length) {
+        return;
+      }
+      var rows = j.data.by_category;
+      var labels = rows.map(function(row){
+        var cat = row.category || '';
+        var gl = govCategoryLabels || {};
+        return gl[cat] || cat || '—';
+      });
+      var values = rows.map(function(row){ return row.count; });
+      var colors = ['#0d6efd','#198754','#ffc107','#6f42c1','#dc3545','#20c997','#fd7e14','#0dcaf0','#6c757d','#e83e8c'];
+      var bg = values.map(function(_, i){ return colors[i % colors.length]; });
+      var ctx = canvas.getContext('2d');
+      govCategoryChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{ data: values, backgroundColor: bg, borderWidth: 1 }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: tc, boxWidth: 12 } }
+          }
+        }
+      });
+    }).catch(function(){});
+  }
+  function loadGovZoneChart(){
+    var canvas = document.getElementById('govZoneCanvas');
+    var titleEl = document.getElementById('govZoneChartTitle');
+    var descEl = document.getElementById('govZoneChartDesc');
+    var emptyEl = document.getElementById('govZoneChartEmpty');
+    if (!canvas || !govZoneStatsUrl || typeof Chart === 'undefined') return;
+    var tc = govChartTickColor();
+    var aq = (typeof govEuAuthorityQuery === 'function') ? govEuAuthorityQuery() : '';
+    var url = govZoneStatsUrl + (aq ? aq + '&' : '?') + 'days=90';
+    fetch(url, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (govZoneChartInstance) {
+        govZoneChartInstance.destroy();
+        govZoneChartInstance = null;
+      }
+      var i18n = (j.ok && j.data && j.data.i18n) ? j.data.i18n : {};
+      if (titleEl && i18n.title) titleEl.textContent = i18n.title;
+      if (descEl && i18n.desc) descEl.textContent = i18n.desc;
+      if (!j.ok || !j.data || !j.data.by_zone || !j.data.by_zone.length) {
+        if (emptyEl) {
+          emptyEl.hidden = false;
+          emptyEl.textContent = i18n.empty || emptyEl.textContent;
+        }
+        return;
+      }
+      if (emptyEl) emptyEl.hidden = true;
+      var rows = j.data.by_zone.filter(function(z){ return (z.count || 0) > 0; });
+      if (!rows.length) {
+        if (emptyEl) {
+          emptyEl.hidden = false;
+          emptyEl.textContent = i18n.empty || emptyEl.textContent;
+        }
+        return;
+      }
+      var labels = rows.map(function(z){ return (z.zone && String(z.zone).trim()) ? z.zone : '—'; });
+      var values = rows.map(function(z){ return z.count; });
+      var seriesLabel = i18n.series_label || 'Reports';
+      var ctx = canvas.getContext('2d');
+      govZoneChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: seriesLabel,
+            data: values,
+            backgroundColor: 'rgba(13,110,253,0.72)',
+            borderColor: 'rgba(13,110,253,0.9)',
+            borderWidth: 0
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: function(items){ return items.length ? String(items[0].label || '') : ''; }
+              }
+            }
+          },
+          scales: {
+            x: { beginAtZero: true, ticks: { color: tc, precision: 0 } },
+            y: { ticks: { color: tc, autoSkip: false, font: { size: 11 } } }
+          }
+        }
+      });
+    }).catch(function(){
+      if (govZoneChartInstance) {
+        govZoneChartInstance.destroy();
+        govZoneChartInstance = null;
+      }
+    });
+  }
+  function invalidateGovTrendsCache(){
+    govTrendsCache = null;
+  }
+  (function bindGovTrendsPills(){
+    var el = document.getElementById('govTrendsPills');
+    if (!el) return;
+    el.addEventListener('click', function(e){
+      var btn = e.target.closest('[data-gov-trend-range]');
+      if (!btn) return;
+      e.preventDefault();
+      var r = btn.getAttribute('data-gov-trend-range') || '30';
+      govTrendsActiveRange = r;
+      loadGovTrendsCharts(r);
+    });
+  })();
   function initGovStatisticsTab(){
     var fromEl = document.getElementById('govStatsDateFrom');
     var toEl = document.getElementById('govStatsDateTo');
@@ -2668,6 +3483,9 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     if (toEl && !toEl.value) toEl.value = new Date().toISOString().slice(0, 10);
     loadGovEsgSnapshot();
     loadGovStatistics();
+    loadGovTrendsCharts(govTrendsActiveRange);
+    loadGovCategoryChart();
+    loadGovZoneChart();
   }
   function loadGovStatistics(){
     var container = document.getElementById('govStatisticsContent');
@@ -2714,7 +3532,16 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
       container.innerHTML = html;
     }).catch(function(){ var container = document.getElementById('govStatisticsContent'); var Le = govStatisticsLabels || {}; if (container) container.innerHTML = '<p class="text-danger small">' + (Le.load_error || '') + '</p>'; });
   }
-  document.getElementById('govStatisticsRefresh') && document.getElementById('govStatisticsRefresh').addEventListener('click', function(){ loadGovEsgSnapshot(); loadGovStatistics(); });
+  document.getElementById('govStatisticsRefresh') && document.getElementById('govStatisticsRefresh').addEventListener('click', function(){
+    loadGovEsgSnapshot();
+    loadGovStatistics();
+    invalidateGovTrendsCache();
+    loadGovTrendsCharts(govTrendsActiveRange);
+    loadGovCategoryChart();
+    loadGovZoneChart();
+    loadGovGreenDashboard();
+    loadGovPriorities();
+  });
 
   function loadCitybrainLive(){
     var container = document.getElementById('citybrainLiveContent');
@@ -3079,6 +3906,38 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
   document.getElementById('btnPdfSummary') && document.getElementById('btnPdfSummary').addEventListener('click', function(){ downloadPdf('btnPdfSummary'); });
   document.getElementById('btnPdfEsg') && document.getElementById('btnPdfEsg').addEventListener('click', function(){ downloadPdf('btnPdfEsg'); });
 
+  document.getElementById('btnGovDashboardPdf') && document.getElementById('btnGovDashboardPdf').addEventListener('click', function(){
+    var btn = document.getElementById('btnGovDashboardPdf');
+    var PdfL = govDashboardPdfLabels || {};
+    var ExeL = govExecutiveLabels || {};
+    var MbL = govMorningBriefLabels || {};
+    var Gl = typeof govCategoryLabels !== 'undefined' ? govCategoryLabels : {};
+    if (!btn || !govExecutiveSummaryUrl || !govMorningBriefUrl || !govInsightsUrl) return;
+    var q = (typeof govEuAuthorityQuery === 'function') ? govEuAuthorityQuery() : '';
+    btn.disabled = true;
+    Promise.all([
+      fetch(govExecutiveSummaryUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); }),
+      fetch(govMorningBriefUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); }),
+      fetch(govInsightsUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); })
+    ]).then(function(arr){
+      btn.disabled = false;
+      var ex = arr[0], br = arr[1], ins = arr[2];
+      var parts = [];
+      parts.push('=== ' + (PdfL.section_executive || '') + ' ===');
+      parts.push(govDashboardPdfFormatExecutive(ex && ex.ok ? ex.data : null, PdfL, ExeL));
+      parts.push('');
+      parts.push('=== ' + (PdfL.section_brief || '') + ' ===');
+      parts.push(govDashboardPdfFormatBrief(br && br.ok ? br.data : null, PdfL, MbL, Gl));
+      parts.push('');
+      parts.push('=== ' + (PdfL.section_insights || '') + ' ===');
+      parts.push(govDashboardPdfFormatInsights(ins && ins.ok ? ins.data : null, PdfL));
+      govRunPdfExport(PdfL.doc_title || 'Dashboard', parts.join('\n'), 'civic-ai-gov-dashboard-snapshot');
+    }).catch(function(){
+      btn.disabled = false;
+      alert(PdfL.fetch_error || <?= json_encode(t('common.error_generic'), JSON_UNESCAPED_UNICODE) ?>);
+    });
+  });
+
   if (btnReport && outReport) {
     btnReport.addEventListener('click', function(){
       var reportType = (document.getElementById('govReportType') && document.getElementById('govReportType').value) || 'summary';
@@ -3316,6 +4175,7 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     el.classList.toggle('d-none', !missing);
   }
   function govReloadDataForCurrentScope(){
+    invalidateGovTrendsCache();
     govPanOpenMapsToCurrentAuthority();
     loadGovEsgSnapshot();
     updateGovDashboardContextForAuthority();
@@ -3328,9 +4188,17 @@ $tourJsVer = @filemtime(__DIR__ . '/../assets/tour.js') ?: time();
     if (key === 'budget') loadGovBudget();
     if (key === 'trees') { loadGovEsgSnapshot(); initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
     if (key === 'iot') loadGovIotDevices();
-    if (key === 'analytics') { initGovHeatmapTab(); initGovStatisticsTab(); loadGovSentiment(); loadGovPredictions(); loadGovEsgMetrics(); }
+    if (key === 'analytics') {
+      initGovHeatmapTab();
+      initGovStatisticsTab();
+      loadGovSentiment();
+      loadGovPredictions();
+      loadGovPriorities();
+      loadGovEsgMetrics();
+      loadGovGreenDashboard();
+    }
     if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
-    if (key === 'dashboard') { loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); }
+    if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); }
     if (key === 'citybrain-live') loadCitybrainLive();
     if (key === 'citybrain-predictive') loadCitybrainPredictive();
     if (key === 'citybrain-hotspot') { if (typeof citybrainHotspotMap !== 'undefined' && citybrainHotspotMap) loadCitybrainHotspot(); else initCitybrainHotspot(); }

@@ -171,5 +171,45 @@ class AiPromptBuilder
             "Sample texts:\n" . ($combined ?: '(no text)') . "\n\n" .
             "JSON:";
     }
+
+    /**
+     * M14: Plain-language explanation of rule-based dashboard insights (bullets only; do not invent facts).
+     *
+     * @param list<string> $bulletTexts
+     */
+    public static function govInsightsExplain(array $bulletTexts, string $outputLang = 'hu', string $scopeTitle = ''): string
+    {
+        $langName = self::languageNameForCode($outputLang);
+        $scopeLine = trim($scopeTitle) !== '' ? ('Scope / authority: ' . trim($scopeTitle) . "\n") : '';
+        $list = [];
+        $i = 1;
+        foreach ($bulletTexts as $t) {
+            $t = trim((string)$t);
+            if ($t === '') {
+                continue;
+            }
+            if (mb_strlen($t) > 600) {
+                $t = mb_substr($t, 0, 600) . '…';
+            }
+            $list[] = $i . '. ' . $t;
+            $i++;
+        }
+        $block = implode("\n", $list);
+
+        return
+            "You help municipal staff understand their dashboard. " .
+            "The following lines are **rule-based automated insights** (not raw citizen messages). " .
+            "Return ONLY a compact JSON object, no markdown code fences.\n\n" .
+            "Important: Write the value of \"text\" in " . $langName . ".\n\n" .
+            "Rules:\n" .
+            "- Explain what the dashboard is signalling in 2–4 short paragraphs; keep \"text\" under 900 characters.\n" .
+            "- Do NOT invent statistics, locations, or issues not implied by the bullets.\n" .
+            "- For warnings, suggest what to verify operationally; for info bullets, connect themes briefly.\n" .
+            "- Professional, concise tone.\n\n" .
+            $scopeLine .
+            "Insight bullets:\n" . ($block ?: '(none)') . "\n\n" .
+            "Fields: a single key \"text\" (string).\n\n" .
+            'JSON:';
+    }
 }
 

@@ -4,4 +4,5 @@
 /Thumbs.db
 *.log
 /uploads/
+/data/gov_api_cache/
 .env

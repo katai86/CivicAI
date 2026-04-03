@@ -102,6 +102,10 @@ define('AI_IMAGE_ANALYSIS_LIMIT', (int)(getenv('AI_IMAGE_ANALYSIS_LIMIT') ?: 300
 // Időjárás API (Gov dashboard) – Open-Meteo használata, API kulcs nem kell
 define('WEATHER_ENABLED', filter_var(getenv('WEATHER_ENABLED'), FILTER_VALIDATE_BOOLEAN) ?: true);
 
+// Gov API rövid fájl-cache (executive_summary, morning_brief, gov_insights). 0 = kikapcsolva. Env: GOV_API_CACHE_TTL_SECONDS
+$_gov_api_ttl = getenv('GOV_API_CACHE_TTL_SECONDS');
+define('GOV_API_CACHE_TTL_SECONDS', ($_gov_api_ttl !== false && $_gov_api_ttl !== '') ? max(0, (int)$_gov_api_ttl) : 90);
+
 // --- EU admin subdivisions (district / borough / arrondissement / sublocality / ward, provider-first) ---
 // Ha true: minden ország/város számára érvényes (analytics + UI relevancia szűrőkhez).
 define('SUBDIVISION_AWARE_DEFAULT', filter_var(getenv('SUBDIVISION_AWARE_DEFAULT'), FILTER_VALIDATE_BOOLEAN) ?: false);

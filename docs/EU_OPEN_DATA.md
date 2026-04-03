@@ -16,7 +16,8 @@ A közigazgatási felületen (`gov/index.php`) az EU-s tartalom fő része a **`
 | Eurostat ország | `govEuCountryContextContent` – `loadGovEuCountryContext()`; figyelmeztetés hiányzó `country` mezőre: `govEurostatCountryHint` |
 | EEA & INSPIRE (áttekintő) | **Áttekintés** (dashboard): `govDashboardEeaInspireContent` – `loadGovEuEeaInspire()` → `api/eu_eea_inspire_context.php` |
 
-Az **Analytics** fülön maradtak a hőtérkép, statisztika, sentiment, predikciók és az ESG; a fenti EU-s kártyák **nem** az Analytics alá vannak szervezve.
+Az **Analytics** fülön maradtak a hőtérkép, statisztika, sentiment, predikciók és az ESG; a fenti EU-s kártyák **nem** az Analytics alá vannak szervezve. **API-katalógus (M13):** `api/gov_open_data_catalog.php` – a gov JSON végpontok (köztük EU modulhoz kötött linkek, ha a modul be van kapcsolva) egy indexben.
+
 
 A **Zöld & fakataszter** fülön a helyi fák mellett opcionálisan ugyanaz az EU rácsréteg jeleníthető meg (`eu_green_overlay.php`, fa térkép vezérlői).
 
