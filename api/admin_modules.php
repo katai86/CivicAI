@@ -40,6 +40,20 @@ $MODULE_DEFS = [
       ['key' => 'model', 'label' => 'Modell (pl. gpt-4o-mini)', 'type' => 'text', 'placeholder' => 'gpt-4o-mini'],
     ],
   ],
+  'geocode' => [
+    'name' => t('geocode.module_name'),
+    'description' => t('geocode.module_desc'),
+    'settings' => [
+      ['key' => 'enabled', 'label' => t('admin.enabled'), 'type' => 'checkbox'],
+      ['key' => 'search_provider_mode', 'label' => t('geocode.search_mode'), 'type' => 'select', 'options' => [
+        'nominatim' => t('geocode.opt_nominatim'),
+        'tomtom' => t('geocode.opt_tomtom'),
+        'both' => t('geocode.opt_both'),
+      ]],
+      ['key' => 'tomtom_api_key', 'label' => t('geocode.tomtom_api_key'), 'type' => 'password', 'mask' => true],
+      ['key' => 'country_codes', 'label' => t('geocode.country_codes'), 'type' => 'text', 'placeholder' => 'hu'],
+    ],
+  ],
   'participatory_budget' => [
     'name' => 'Részvételi költségvetés',
     'description' => 'Időszakos szavazás a projektekre. Ha kikapcsolt, a menüben és a nyilvános oldalon nem aktív.',

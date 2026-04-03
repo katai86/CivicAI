@@ -17,6 +17,8 @@ if (!$isAdmin && !in_array($role, ['govuser'], true)) {
   exit;
 }
 
+$geocodeClientUi = civic_geocode_client_config($uid);
+
 $ok = '';
 $err = '';
 
@@ -1122,6 +1124,17 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
                 </select>
                 <button type="button" id="govHeatmapRefresh" class="btn btn-sm btn-outline-primary"><?= h(t('admin.refresh')) ?></button>
               </div>
+              <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                <?php if (!empty($geocodeClientUi['show_selector']) && !empty($geocodeClientUi['providers'])): ?>
+                <select id="govMapSearchProvider" class="form-select form-select-sm" style="max-width:220px" aria-label="<?= h(t('search.provider_aria')) ?>">
+                  <?php foreach ($geocodeClientUi['providers'] as $p): ?>
+                  <option value="<?= h((string)($p['id'] ?? '')) ?>"<?= (($p['id'] ?? '') === ($geocodeClientUi['default'] ?? '')) ? ' selected' : '' ?>><?= h((string)($p['label'] ?? '')) ?></option>
+                  <?php endforeach; ?>
+                </select>
+                <?php endif; ?>
+                <input type="search" id="govMapSearchInput" class="form-control form-control-sm" placeholder="<?= h(t('gov.map_search_placeholder')) ?>" style="max-width:280px">
+                <button type="button" id="govMapSearchGo" class="btn btn-sm btn-outline-secondary"><?= h(t('gov.map_search_go')) ?></button>
+              </div>
               <p id="govHeatmapEmpty" class="text-secondary small mb-2 d-none" role="status"></p>
               <div id="govHeatmapMap" style="height:500px;width:100%;border:1px solid #dee2e6;border-radius:0.375rem;"></div>
             </div>
@@ -1605,6 +1618,8 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govIotSensorHistoryUrl = <?= json_encode(app_url('/api/sensor_metric_history.php'), JSON_UNESCAPED_SLASHES) ?>;
   var heatmapUrl = <?= json_encode(app_url('/api/heatmap_data.php'), JSON_UNESCAPED_SLASHES) ?>;
+  window.CIVIC_GEOCODE = <?= json_encode($geocodeClientUi, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+  var govGeocodeLabels = <?= json_encode(['no_results' => t('search.no_results'), 'error' => t('search.error')], JSON_UNESCAPED_UNICODE) ?>;
   var authorityIdForHeatmap = <?= !empty($authorityIds) ? (int)$authorityIds[0] : '0' ?>;
   <?php
   $govAuthMetaJs = [];
@@ -1883,6 +1898,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
   var logoUrl = <?= json_encode(app_url('/assets/logo.png'), JSON_UNESCAPED_SLASHES) ?>;
   var govHeatmapMap = null;
   var govHeatmapLayer = null;
+  var govGeocodeSearchMarker = null;
 
   var govEsgYear = document.getElementById('govEsgYear');
   var linkEsgJson = document.getElementById('linkEsgJson');
@@ -2280,6 +2296,44 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
   }
   document.getElementById('govHeatmapRefresh') && document.getElementById('govHeatmapRefresh').addEventListener('click', loadGovHeatmap);
   document.getElementById('govHeatmapType') && document.getElementById('govHeatmapType').addEventListener('change', loadGovHeatmap);
+
+  function govGeocodeFetchHits(q, limit){
+    var cfg = window.CIVIC_GEOCODE || {};
+    var provEl = document.getElementById('govMapSearchProvider');
+    var prov = (provEl && provEl.value) ? provEl.value : (cfg.default || 'nominatim');
+    var trimmed = String(q || '').trim();
+    if (!trimmed) return Promise.resolve([]);
+    if (cfg.backend && cfg.endpoint) {
+      var u = cfg.endpoint + '?q=' + encodeURIComponent(trimmed) + '&limit=' + encodeURIComponent(limit) + '&provider=' + encodeURIComponent(prov);
+      return fetch(u, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+        return (j && j.ok && Array.isArray(j.results)) ? j.results : [];
+      });
+    }
+    return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=' + encodeURIComponent(limit) + '&countrycodes=hu&q=' + encodeURIComponent(trimmed))
+      .then(function(r){ return r.json(); }).then(function(arr){ return Array.isArray(arr) ? arr : []; });
+  }
+  var govMapSearchGo = document.getElementById('govMapSearchGo');
+  if (govMapSearchGo) {
+    govMapSearchGo.addEventListener('click', function(){
+      var inp = document.getElementById('govMapSearchInput');
+      if (!inp) return;
+      var q = inp.value.trim();
+      if (!q) return;
+      if (!govHeatmapMap) initGovHeatmapTab();
+      if (!govHeatmapMap) return;
+      govGeocodeFetchHits(q, 5).then(function(hits){
+        var Lbl = (typeof govGeocodeLabels !== 'undefined' && govGeocodeLabels) ? govGeocodeLabels : {};
+        if (!hits || !hits.length) { alert(Lbl.no_results || '—'); return; }
+        var h = hits[0];
+        var lat = parseFloat(h.lat);
+        var lon = parseFloat(h.lon);
+        if (!isFinite(lat) || !isFinite(lon)) { alert(Lbl.error || '—'); return; }
+        if (govGeocodeSearchMarker) { govHeatmapMap.removeLayer(govGeocodeSearchMarker); govGeocodeSearchMarker = null; }
+        govGeocodeSearchMarker = L.marker([lat, lon]).addTo(govHeatmapMap);
+        govHeatmapMap.setView([lat, lon], Math.max(govHeatmapMap.getZoom(), 15));
+      }).catch(function(){ var Lbl = (typeof govGeocodeLabels !== 'undefined' && govGeocodeLabels) ? govGeocodeLabels : {}; alert(Lbl.error || '—'); });
+    });
+  }
 
   function loadGovSentiment(){
     var container = document.getElementById('govSentimentContent');

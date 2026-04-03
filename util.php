@@ -821,6 +821,100 @@ function case_number(int $id, ?string $createdAt = null): string {
 /**
  * Geocode address to point. Returns [lat, lng] or null.
  */
+/**
+ * Forward geocode (Nominatim): több találat, a térkép-kereső / API számára.
+ *
+ * @return list<array{lat:string,lon:string,display_name:string}>
+ */
+function nominatim_geocode_forward_list(string $query, int $limit = 5, string $countrycodes = ''): array {
+    $query = trim($query);
+    if ($query === '' || !defined('NOMINATIM_BASE')) {
+        return [];
+    }
+    $limit = min(10, max(1, $limit));
+    $cc = strtolower(preg_replace('/[^a-z,]/', '', $countrycodes));
+
+    $base = rtrim((string)NOMINATIM_BASE, '/');
+    $url = $base . '/search?format=jsonv2&q=' . rawurlencode($query) . '&limit=' . $limit;
+    if ($cc !== '') {
+        $url .= '&countrycodes=' . rawurlencode($cc);
+    }
+    $ua = defined('NOMINATIM_USER_AGENT') ? (string)NOMINATIM_USER_AGENT : 'Problematerkep/1.0';
+    $opts = ['http' => ['method' => 'GET', 'header' => "User-Agent: {$ua}\r\nAccept: application/json\r\n", 'timeout' => 8]];
+
+    try {
+        $raw = @file_get_contents($url, false, stream_context_create($opts));
+        if ($raw === false) {
+            return [];
+        }
+        $arr = json_decode($raw, true);
+        if (!is_array($arr)) {
+            return [];
+        }
+        $out = [];
+        foreach ($arr as $r) {
+            if (!is_array($r)) {
+                continue;
+            }
+            $lat = isset($r['lat']) ? (string)$r['lat'] : '';
+            $lon = isset($r['lon']) ? (string)$r['lon'] : '';
+            $name = isset($r['display_name']) ? (string)$r['display_name'] : '';
+            if ($lat !== '' && $lon !== '') {
+                $out[] = ['lat' => $lat, 'lon' => $lon, 'display_name' => $name];
+            }
+        }
+
+        return $out;
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/**
+ * Címkereső UI + api/geocode_search.php: modul bekapcsolás, provider lista (TomTom csak bejelentkezve + API kulcs).
+ *
+ * @return array{backend:bool,endpoint:?string,providers:list<array{id:string,label:string}>,default:string,show_selector:bool}
+ */
+function civic_geocode_client_config(int $userId): array {
+    $empty = ['backend' => false, 'endpoint' => null, 'providers' => [], 'default' => 'nominatim', 'show_selector' => false];
+    if (!function_exists('get_module_setting')) {
+        return $empty;
+    }
+    if (get_module_setting('geocode', 'enabled') !== '1') {
+        return $empty;
+    }
+    $mode = strtolower(trim((string)(get_module_setting('geocode', 'search_provider_mode') ?: 'both')));
+    if (!in_array($mode, ['nominatim', 'tomtom', 'both'], true)) {
+        $mode = 'both';
+    }
+    $key = trim((string)(get_module_setting('geocode', 'tomtom_api_key') ?? ''));
+    $hasTomtom = $key !== '';
+
+    $providers = [];
+    if ($mode === 'nominatim' || $mode === 'both') {
+        $providers[] = ['id' => 'nominatim', 'label' => t('search.provider_nominatim')];
+    }
+    if (($mode === 'tomtom' || $mode === 'both') && $hasTomtom && $userId > 0) {
+        $providers[] = ['id' => 'tomtom', 'label' => t('search.provider_tomtom')];
+    }
+    if ($providers === []) {
+        $providers[] = ['id' => 'nominatim', 'label' => t('search.provider_nominatim')];
+    }
+
+    $default = (string)($providers[0]['id'] ?? 'nominatim');
+    if ($mode === 'tomtom' && $hasTomtom && $userId > 0) {
+        $default = 'tomtom';
+    }
+
+    return [
+        'backend' => true,
+        'endpoint' => app_url('/api/geocode_search.php'),
+        'providers' => $providers,
+        'default' => $default,
+        'show_selector' => count($providers) > 1,
+    ];
+}
+
 function nominatim_geocode_to_point(string $address): ?array {
     $address = trim($address);
     if ($address === '') return null;

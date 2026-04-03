@@ -13,6 +13,7 @@ if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
 }
 $currentLang = current_lang();
 $LANG_JS = lang_array_for_js();
+$geocodeClientUi = civic_geocode_client_config($uid);
 ?>
 <!doctype html>
 <html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>">
@@ -69,6 +70,16 @@ $LANG_JS = lang_array_for_js();
           <i class="bi bi-x-circle"></i>
         </a>
       </div>
+      <?php if (!empty($geocodeClientUi['show_selector']) && !empty($geocodeClientUi['providers'])): ?>
+      <div class="form-group px-3 pb-1 mb-0">
+        <label class="form-label small text-secondary mb-0" for="mapSearchProvider"><?= htmlspecialchars(t('search.provider_aria'), ENT_QUOTES, 'UTF-8') ?></label>
+        <select id="mapSearchProvider" class="form-control form-select form-select-sm">
+          <?php foreach ($geocodeClientUi['providers'] as $p): ?>
+          <option value="<?= htmlspecialchars((string)($p['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= (($p['id'] ?? '') === ($geocodeClientUi['default'] ?? '')) ? ' selected' : '' ?>><?= htmlspecialchars((string)($p['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <?php endif; ?>
       <div id="mapSearchResults" class="search-results" role="listbox" aria-label="<?= htmlspecialchars(t('search.results_aria'), ENT_QUOTES, 'UTF-8') ?>"></div>
     </form>
   </div>
@@ -161,8 +172,9 @@ $LANG_JS = lang_array_for_js();
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script>window.LANG = <?= json_encode($LANG_JS, JSON_UNESCAPED_UNICODE); ?>;</script>
+  <script>window.CIVIC_GEOCODE = <?= json_encode($geocodeClientUi, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;</script>
   <script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
-  <script src="<?= htmlspecialchars(app_url('/assets/app.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
+  <script src="<?= htmlspecialchars(app_url('/assets/app.js'), ENT_QUOTES, 'UTF-8') ?>?v=32"></script>
   <script src="<?= htmlspecialchars(app_url('/assets/pwa-install.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
 </html>

@@ -9,6 +9,8 @@ if (!empty($_GET['lang']) && in_array($_GET['lang'], LANG_ALLOWED, true)) {
 }
 $currentLang = current_lang();
 $LANG_JS = lang_array_for_js();
+$adminUid = current_user_id() ? (int)current_user_id() : 0;
+$geocodeClientUi = civic_geocode_client_config($adminUid);
 ?>
 <!doctype html>
 <html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>">
@@ -190,6 +192,19 @@ $LANG_JS = lang_array_for_js();
                     </div>
                   </div>
 
+                  <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                    <?php if (!empty($geocodeClientUi['show_selector']) && !empty($geocodeClientUi['providers'])): ?>
+                    <select id="adminMapSearchProvider" class="form-select form-select-sm" style="max-width:220px" aria-label="<?= htmlspecialchars(t('search.provider_aria'), ENT_QUOTES, 'UTF-8') ?>">
+                      <?php foreach ($geocodeClientUi['providers'] as $p): ?>
+                      <option value="<?= htmlspecialchars((string)($p['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= (($p['id'] ?? '') === ($geocodeClientUi['default'] ?? '')) ? ' selected' : '' ?>><?= htmlspecialchars((string)($p['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                    <?php endif; ?>
+                    <input type="search" id="adminMapSearchInput" class="form-control form-control-sm" placeholder="<?= htmlspecialchars(t('admin.map_search_placeholder'), ENT_QUOTES, 'UTF-8') ?>" style="max-width:280px">
+                    <button type="button" id="adminMapSearchGo" class="btn btn-sm btn-outline-primary"><?= htmlspecialchars(t('admin.map_search_go'), ENT_QUOTES, 'UTF-8') ?></button>
+                  </div>
+                  <div id="map" class="mb-3 rounded border" style="height:380px;width:100%;min-height:200px"></div>
+
                   <div class="counts mb-2" id="counts"></div>
                   <div class="admin-list" id="reportList"><?= htmlspecialchars(t('admin.initial_hint'), ENT_QUOTES, 'UTF-8') ?>: <b><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?></b>.</div>
                 </div>
@@ -315,8 +330,9 @@ $LANG_JS = lang_array_for_js();
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
 <script src="<?= htmlspecialchars(app_url('/dashboard/dist/js/adminlte.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script>window.LANG = <?= json_encode($LANG_JS, JSON_UNESCAPED_UNICODE); ?>;</script>
+<script>window.CIVIC_GEOCODE = <?= json_encode($geocodeClientUi, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;</script>
 <script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="admin.js?v=8"></script>
+<script src="admin.js?v=9"></script>
 </body>
 </html>

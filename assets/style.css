@@ -81,6 +81,7 @@
   background:#fff!important;border-color:var(--border)!important;color:var(--text)!important;
 }
 [data-theme="light"] .topbar-search input::placeholder{color:var(--muted)!important}
+[data-theme="light"] .map-search-provider{background:#fff!important;border-color:var(--border)!important;color:var(--text)!important}
 [data-theme="light"] .topbar-search button{background:#fff!important;border-color:var(--border)!important;color:var(--text)!important}
 [data-theme="light"] .search-result:hover{background:var(--bg-2)}
 [data-theme="light"] .page input,[data-theme="light"] .page select,[data-theme="light"] .page textarea{
@@ -304,6 +305,11 @@ body.intro-open #mapWrap{
 .topbtn.primary{background:var(--accent);border-color:var(--accent);color:#1b0f00;box-shadow:0 0 24px rgba(255,122,0,0.45)}
 
 .topbar-search{display:flex;gap:8px;align-items:center;flex:1;min-width:320px}
+.map-search-provider{
+  flex:0 0 auto;max-width:200px;min-width:140px;
+  padding:8px 10px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(15,23,33,0.7);color:var(--text);font:inherit;font-size:13px;
+}
 .search-wrap{position:relative;flex:1;min-width:220px;width:100%}
 .topbar-search input{
   flex:1;

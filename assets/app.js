@@ -91,8 +91,26 @@ async function fetchJson(url, opts){
   return j;
 }
 
+function getMapGeocodeProvider(){
+  const sel = document.getElementById('mapSearchProvider');
+  const cfg = window.CIVIC_GEOCODE;
+  if (sel && sel.value) return sel.value;
+  if (cfg && cfg.default) return cfg.default;
+  return 'nominatim';
+}
+
 async function geocodeAddress(query, limit = 5){
-  const url = `${GEO_SEARCH}?format=json&limit=${encodeURIComponent(limit)}&countrycodes=hu&q=${encodeURIComponent(query)}`;
+  const q = String(query ?? '').trim();
+  if (!q) return [];
+  const cfg = window.CIVIC_GEOCODE;
+  const prov = getMapGeocodeProvider();
+  if (cfg && cfg.backend && cfg.endpoint) {
+    const u = `${cfg.endpoint}?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(limit)}&provider=${encodeURIComponent(prov)}`;
+    const j = await fetchJson(u, { credentials: 'include' });
+    if (j && j.ok && Array.isArray(j.results)) return j.results;
+    return [];
+  }
+  const url = `${GEO_SEARCH}?format=json&limit=${encodeURIComponent(limit)}&countrycodes=hu&q=${encodeURIComponent(q)}`;
   const res = await fetchJson(url);
   return Array.isArray(res) ? res : [];
 }

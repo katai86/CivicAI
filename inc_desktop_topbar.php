@@ -9,6 +9,11 @@ $role = isset($role) ? (string)$role : 'guest';
 $currentLang = isset($currentLang) ? (string)$currentLang : (function_exists('current_lang') ? current_lang() : 'hu');
 $showSearch = !empty($desktop_topbar_show_search);
 $rankAll = isset($rankAll) ? $rankAll : null;
+if (!isset($geocodeClientUi)) {
+  $geocodeClientUi = function_exists('civic_geocode_client_config')
+    ? civic_geocode_client_config($uid)
+    : ['show_selector' => false, 'providers' => []];
+}
 ?>
 <header class="topbar">
   <div class="topbar-inner">
@@ -19,6 +24,13 @@ $rankAll = isset($rankAll) ? $rankAll : null;
 
     <?php if ($showSearch): ?>
     <form class="topbar-search" id="mapSearchForm">
+      <?php if ($showSearch && !empty($geocodeClientUi['show_selector']) && !empty($geocodeClientUi['providers'])): ?>
+      <select id="mapSearchProvider" class="map-search-provider" aria-label="<?= htmlspecialchars(t('search.provider_aria'), ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars(t('search.provider_aria'), ENT_QUOTES, 'UTF-8') ?>">
+        <?php foreach ($geocodeClientUi['providers'] as $p): ?>
+        <option value="<?= htmlspecialchars((string)($p['id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"<?= (($p['id'] ?? '') === ($geocodeClientUi['default'] ?? '')) ? ' selected' : '' ?>><?= htmlspecialchars((string)($p['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></option>
+        <?php endforeach; ?>
+      </select>
+      <?php endif; ?>
       <div class="search-wrap">
         <input id="mapSearchInput" type="search" placeholder="<?= htmlspecialchars(t('search.placeholder'), ENT_QUOTES, 'UTF-8') ?>" aria-label="<?= htmlspecialchars(t('search.aria'), ENT_QUOTES, 'UTF-8') ?>">
         <div id="mapSearchResults" class="search-results" role="listbox" aria-label="<?= htmlspecialchars(t('search.results_aria'), ENT_QUOTES, 'UTF-8') ?>"></div>

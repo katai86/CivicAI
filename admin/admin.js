@@ -38,6 +38,66 @@ if (document.getElementById('map')) {
   }).addTo(map);
 }
 
+let adminSearchMarker = null;
+
+async function adminGeocodeQuery(q, limit) {
+  const cfg = window.CIVIC_GEOCODE || {};
+  const sel = document.getElementById('adminMapSearchProvider');
+  const prov = (sel && sel.value) ? sel.value : (cfg.default || 'nominatim');
+  const trimmed = String(q || '').trim();
+  if (!trimmed) return [];
+  if (cfg.backend && cfg.endpoint) {
+    const u = `${cfg.endpoint}?q=${encodeURIComponent(trimmed)}&limit=${encodeURIComponent(limit)}&provider=${encodeURIComponent(prov)}`;
+    const j = await fetchJson(u);
+    if (j && j.ok && Array.isArray(j.results)) return j.results;
+    return [];
+  }
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=${encodeURIComponent(limit)}&countrycodes=hu&q=${encodeURIComponent(trimmed)}`;
+  const res = await fetch(url);
+  const text = await res.text();
+  let arr = null;
+  try { arr = JSON.parse(text); } catch (_) {}
+  return Array.isArray(arr) ? arr : [];
+}
+
+function initAdminMapSearch() {
+  const inp = document.getElementById('adminMapSearchInput');
+  const btn = document.getElementById('adminMapSearchGo');
+  if (!inp || !btn || !map) return;
+  const go = async () => {
+    const q = inp.value.trim();
+    if (!q) return;
+    try {
+      const hits = await adminGeocodeQuery(q, 5);
+      if (!hits.length) {
+        alert(t('search.no_results'));
+        return;
+      }
+      const h = hits[0];
+      const lat = parseFloat(h.lat);
+      const lon = parseFloat(h.lon);
+      if (!isFinite(lat) || !isFinite(lon)) {
+        alert(t('search.error'));
+        return;
+      }
+      if (adminSearchMarker) map.removeLayer(adminSearchMarker);
+      adminSearchMarker = L.marker([lat, lon]).addTo(map);
+      map.setView([lat, lon], Math.max(map.getZoom(), 15));
+    } catch (e) {
+      alert(t('search.error'));
+    }
+  };
+  btn.addEventListener('click', go);
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      go();
+    }
+  });
+}
+
+initAdminMapSearch();
+
 function clearMarkers(){
   if (!map) return;
   markers.forEach(m => map.removeLayer(m));
