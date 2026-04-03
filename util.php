@@ -871,24 +871,76 @@ function nominatim_geocode_forward_list(string $query, int $limit = 5, string $c
 }
 
 /**
- * Címkereső UI + api/geocode_search.php: modul bekapcsolás, provider lista (TomTom csak bejelentkezve + API kulcs).
+ * TomTom Search / Reverse API address objektum → űrlap mezők.
  *
- * @return array{backend:bool,endpoint:?string,providers:list<array{id:string,label:string}>,default:string,show_selector:bool}
+ * @param array<string,mixed> $addr
+ * @return array{postal_code:string,city:string,street:string,house:string,display_name:string}
  */
-function civic_geocode_client_config(int $userId): array {
-    $empty = ['backend' => false, 'endpoint' => null, 'providers' => [], 'default' => 'nominatim', 'show_selector' => false];
+function civic_tomtom_address_parts(array $addr): array {
+    $city = (string)($addr['municipality'] ?? $addr['municipalitySubdivision'] ?? $addr['localName'] ?? '');
+
+    return [
+        'postal_code' => trim((string)($addr['postalCode'] ?? '')),
+        'city' => trim($city),
+        'street' => trim((string)($addr['streetName'] ?? '')),
+        'house' => trim((string)($addr['streetNumber'] ?? '')),
+        'display_name' => trim((string)($addr['freeformAddress'] ?? '')),
+    ];
+}
+
+/**
+ * Címkereső UI + geocode API-k. $forPublicUserMap: fő térkép = csak TomTom (ha van kulcs), egyébként admin/gov modulbeállítás.
+ *
+ * @return array{backend:bool,endpoint:?string,reverse_endpoint:?string,providers:list<array{id:string,label:string}>,default:string,show_selector:bool,public_map_tomtom_only:bool}
+ */
+function civic_geocode_client_config(int $userId, bool $forPublicUserMap = false): array {
+    $empty = [
+        'backend' => false,
+        'endpoint' => null,
+        'reverse_endpoint' => null,
+        'providers' => [],
+        'default' => 'nominatim',
+        'show_selector' => false,
+        'public_map_tomtom_only' => false,
+    ];
     if (!function_exists('get_module_setting')) {
         return $empty;
     }
     if (get_module_setting('geocode', 'enabled') !== '1') {
         return $empty;
     }
+    $key = trim((string)(get_module_setting('geocode', 'tomtom_api_key') ?? ''));
+    $hasTomtom = $key !== '';
+    $reverseUrl = $hasTomtom ? app_url('/api/geocode_reverse.php') : null;
+
+    if ($forPublicUserMap && $hasTomtom) {
+        return [
+            'backend' => true,
+            'endpoint' => app_url('/api/geocode_search.php'),
+            'reverse_endpoint' => $reverseUrl,
+            'providers' => [['id' => 'tomtom', 'label' => t('search.provider_tomtom')]],
+            'default' => 'tomtom',
+            'show_selector' => false,
+            'public_map_tomtom_only' => true,
+        ];
+    }
+
+    if ($forPublicUserMap && !$hasTomtom) {
+        return [
+            'backend' => true,
+            'endpoint' => app_url('/api/geocode_search.php'),
+            'reverse_endpoint' => null,
+            'providers' => [['id' => 'nominatim', 'label' => t('search.provider_nominatim')]],
+            'default' => 'nominatim',
+            'show_selector' => false,
+            'public_map_tomtom_only' => false,
+        ];
+    }
+
     $mode = strtolower(trim((string)(get_module_setting('geocode', 'search_provider_mode') ?: 'both')));
     if (!in_array($mode, ['nominatim', 'tomtom', 'both'], true)) {
         $mode = 'both';
     }
-    $key = trim((string)(get_module_setting('geocode', 'tomtom_api_key') ?? ''));
-    $hasTomtom = $key !== '';
 
     $providers = [];
     if ($mode === 'nominatim' || $mode === 'both') {
@@ -909,9 +961,11 @@ function civic_geocode_client_config(int $userId): array {
     return [
         'backend' => true,
         'endpoint' => app_url('/api/geocode_search.php'),
+        'reverse_endpoint' => $reverseUrl,
         'providers' => $providers,
         'default' => $default,
         'show_selector' => count($providers) > 1,
+        'public_map_tomtom_only' => false,
     ];
 }
 

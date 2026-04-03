@@ -56,6 +56,8 @@ if (navigator.geolocation) {
 let markerLayers = []; // { marker, data }
 let searchMarker = null;
 let searchMarkerTimeout = null;
+let suppressMapClickOpenReport = false;
+window._lastGeocodeHit = null;
 let layerMarkers = [];
 let treeMarkers = [];
 let treeClusterGroup = null; // Leaflet.markercluster: fa markerek csoportja
@@ -92,8 +94,9 @@ async function fetchJson(url, opts){
 }
 
 function getMapGeocodeProvider(){
-  const sel = document.getElementById('mapSearchProvider');
   const cfg = window.CIVIC_GEOCODE;
+  if (cfg && cfg.public_map_tomtom_only) return 'tomtom';
+  const sel = document.getElementById('mapSearchProvider');
   if (sel && sel.value) return sel.value;
   if (cfg && cfg.default) return cfg.default;
   return 'nominatim';
@@ -110,20 +113,65 @@ async function geocodeAddress(query, limit = 5){
     if (j && j.ok && Array.isArray(j.results)) return j.results;
     return [];
   }
+  if (window.CIVIC_GEOCODE && window.CIVIC_GEOCODE.public_map_tomtom_only) {
+    return [];
+  }
   const url = `${GEO_SEARCH}?format=json&limit=${encodeURIComponent(limit)}&countrycodes=hu&q=${encodeURIComponent(q)}`;
   const res = await fetchJson(url);
   return Array.isArray(res) ? res : [];
 }
 
-function placeSearchMarker(lat, lon){
+function normalizeGeocodeHit(hit, lat, lon){
+  if (hit && typeof hit === 'object') {
+    return {
+      lat: String(hit.lat != null ? hit.lat : lat),
+      lon: String(hit.lon != null ? hit.lon : lon),
+      display_name: hit.display_name || '',
+      postal_code: hit.postal_code || '',
+      city: hit.city || '',
+      street: hit.street || '',
+      house: hit.house || '',
+    };
+  }
+  return { lat: String(lat), lon: String(lon), display_name: '', postal_code: '', city: '', street: '', house: '' };
+}
+
+function fillModalAddressFields(modal, p){
+  if (!modal || !p) return;
+  const z = modal.querySelector('#mZip');
+  const c = modal.querySelector('#mCity');
+  const s = modal.querySelector('#mStreet');
+  const h = modal.querySelector('#mHouse');
+  const n = modal.querySelector('#mAddrNote');
+  if (z && p.postal_code) z.value = String(p.postal_code);
+  if (c && p.city) c.value = String(p.city);
+  if (s && p.street) s.value = String(p.street);
+  if (h && p.house) h.value = String(p.house);
+  if (n && p.display_name && !String(n.value || '').trim()) n.value = String(p.display_name);
+}
+
+async function reverseGeocodeFillModal(modal, lat, lng){
+  const base = window.CIVIC_GEOCODE?.reverse_endpoint;
+  if (!base || !modal) return;
+  try {
+    const j = await fetchJson(`${base}?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`, { credentials: 'include' });
+    if (j && j.ok) fillModalAddressFields(modal, j);
+  } catch (e) {
+    console.warn('reverse geocode', e);
+  }
+}
+
+function placeSearchMarker(lat, lon, hit){
   if (searchMarker) map.removeLayer(searchMarker);
   if (searchMarkerTimeout) clearTimeout(searchMarkerTimeout);
+  window._lastGeocodeHit = normalizeGeocodeHit(hit, lat, lon);
   searchMarker = L.marker([lat, lon]).addTo(map);
   map.setView([lat, lon], 16, { animate: true });
   searchMarkerTimeout = setTimeout(() => {
     if (searchMarker) map.removeLayer(searchMarker);
     searchMarker = null;
-  }, 10000);
+    window._lastGeocodeHit = null;
+  }, 600000);
 }
 
 // ====== Category labels + badge icons ======
@@ -906,6 +954,7 @@ loadIdeas().catch(err => console.error(err));
         btn.classList.remove('active');
         map.getContainer().style.cursor = '';
         map.off('click', addIdeaMapClick);
+        suppressMapClickOpenReport = true;
         openModal(e.latlng, { category: 'idea' });
       };
       map.on('click', addIdeaMapClick);
@@ -941,6 +990,7 @@ loadIdeas().catch(err => console.error(err));
     if (addTreeMode) {
       addTreeMapClick = (e) => {
         exitAddTreeMode();
+        suppressMapClickOpenReport = true;
         openModal(e.latlng, { category: 'tree_upload' });
       };
       map.on('click', addTreeMapClick);
@@ -986,7 +1036,7 @@ loadIdeas().catch(err => console.error(err));
       if (!hit) return;
       const lat = parseFloat(hit.lat);
       const lon = parseFloat(hit.lon);
-      if (isFinite(lat) && isFinite(lon)) placeSearchMarker(lat, lon);
+      if (isFinite(lat) && isFinite(lon)) placeSearchMarker(lat, lon, hit);
       hideResults();
     });
   }
@@ -1010,7 +1060,7 @@ loadIdeas().catch(err => console.error(err));
       if (hits.length === 1) {
         const lat = parseFloat(hits[0].lat);
         const lon = parseFloat(hits[0].lon);
-        if (isFinite(lat) && isFinite(lon)) placeSearchMarker(lat, lon);
+        if (isFinite(lat) && isFinite(lon)) placeSearchMarker(lat, lon, hits[0]);
         hideResults();
         return;
       }
@@ -1114,7 +1164,12 @@ function openModal(latlng, options){
   closeModal();
   window._openModalOptions = options || {};
 
-  tempMarker = L.marker(latlng).addTo(map);
+  const coords = {
+    lat: Number(typeof latlng.lat === 'function' ? latlng.lat() : latlng.lat),
+    lng: Number(typeof latlng.lng === 'function' ? latlng.lng() : latlng.lng),
+  };
+
+  tempMarker = L.marker([coords.lat, coords.lng]).addTo(map);
 
   const isMobileFullscreen = document.body.classList.contains('civicai-mobile');
   const modal = document.createElement('div');
@@ -1250,6 +1305,13 @@ function openModal(latlng, options){
   `;
   document.body.appendChild(modal);
 
+  const modalOpts = options || {};
+  if (modalOpts.prefillAddress) {
+    fillModalAddressFields(modal, modalOpts.prefillAddress);
+  } else if (modalOpts.fromMapClick && window.CIVIC_GEOCODE?.reverse_endpoint && modalOpts.category !== 'tree_upload') {
+    void reverseGeocodeFillModal(modal, coords.lat, coords.lng);
+  }
+
   if (isMobileFullscreen) {
     const modalBox = modal.querySelector('.modal');
     const mobileHeader = document.createElement('div');
@@ -1292,8 +1354,9 @@ function openModal(latlng, options){
         if (tempMarker) map.removeLayer(tempMarker);
         tempMarker = L.marker([lat, lon]).addTo(map);
         map.setView([lat, lon], 17, { animate: true });
-        latlng.lat = lat;
-        latlng.lng = lon;
+        coords.lat = lat;
+        coords.lng = lon;
+        fillModalAddressFields(modal, h);
         alert(t('modal.location_set'));
       } else { alert(t('modal.geocode_failed')); }
     } catch (e) {
@@ -1543,7 +1606,7 @@ function openModal(latlng, options){
     if (category !== 'civil_event' && category !== 'tree_upload') {
       try {
         const near200 = await fetchJson(
-          `${API_NEARBY}?lat=${encodeURIComponent(latlng.lat)}&lng=${encodeURIComponent(latlng.lng)}&category=${encodeURIComponent(category)}&radius=200`
+          `${API_NEARBY}?lat=${encodeURIComponent(coords.lat)}&lng=${encodeURIComponent(coords.lng)}&category=${encodeURIComponent(category)}&radius=200`
         );
         if (near200.ok && near200.data && near200.data.length > 0 && elNearby200) {
           elNearby200.textContent = 'ℹ️ ' + (t('modal.nearby_count').replace('{n}', String(near200.data.length)));
@@ -1557,7 +1620,7 @@ function openModal(latlng, options){
     if (category !== 'civil_event' && category !== 'tree_upload') {
       try{
         const near = await fetchJson(
-          `${API_NEARBY}?lat=${encodeURIComponent(latlng.lat)}&lng=${encodeURIComponent(latlng.lng)}&category=${encodeURIComponent(category)}&radius=50`
+          `${API_NEARBY}?lat=${encodeURIComponent(coords.lat)}&lng=${encodeURIComponent(coords.lng)}&category=${encodeURIComponent(category)}&radius=50`
         );
 
         if (near.ok && near.data && near.data.length){
@@ -1580,8 +1643,8 @@ function openModal(latlng, options){
     try{
       if (category === 'tree_upload') {
         const formData = new FormData();
-        formData.append('lat', String(latlng.lat));
-        formData.append('lng', String(latlng.lng));
+        formData.append('lat', String(coords.lat));
+        formData.append('lng', String(coords.lng));
         formData.append('species', title || '');
         formData.append('note', description || '');
         const trunkVal = modal.querySelector('#mTrunkDiameter')?.value;
@@ -1627,8 +1690,8 @@ function openModal(latlng, options){
             description,
             start_date: event_start,
             end_date: event_end,
-            lat: latlng.lat,
-            lng: latlng.lng,
+            lat: coords.lat,
+            lng: coords.lng,
             address: [address_street, address_house, address_city, address_zip].filter(Boolean).join(' ')
           })
         });
@@ -1640,8 +1703,8 @@ function openModal(latlng, options){
             category,
             title,
             description,
-            lat: latlng.lat,
-            lng: latlng.lng,
+            lat: coords.lat,
+            lng: coords.lng,
             force_duplicate: force ? 1 : 0,
 
             reporter_is_anonymous,
@@ -1688,12 +1751,29 @@ function openModal(latlng, options){
   });
 }
 
-// Kattintás a térképen → bejelentés
-map.on('click', (e) => openModal(e.latlng));
+// Kattintás a térképen → bejelentés (TomTom reverse cím, ha elérhető)
+map.on('click', (e) => {
+  if (suppressMapClickOpenReport) {
+    suppressMapClickOpenReport = false;
+    return;
+  }
+  openModal(e.latlng, { fromMapClick: true });
+});
 
 document.getElementById('btnNewReport')?.addEventListener('click', () => {
-  const c = map.getCenter();
-  openModal({ lat: c.lat, lng: c.lng });
+  let latlng = map.getCenter();
+  let prefill = null;
+  const hit = window._lastGeocodeHit;
+  if (hit && searchMarker && map.hasLayer(searchMarker)) {
+    const ll = searchMarker.getLatLng();
+    const plat = parseFloat(hit.lat);
+    const plon = parseFloat(hit.lon);
+    if (isFinite(plat) && isFinite(plon) && Math.abs(ll.lat - plat) < 1e-4 && Math.abs(ll.lng - plon) < 1e-4) {
+      latlng = { lat: plat, lng: plon };
+      prefill = hit;
+    }
+  }
+  openModal(latlng, prefill ? { prefillAddress: prefill } : {});
 });
 
 // ====== FIRST POPUP (vendég: csak Belépés / Regisztráció – anonim bejelentés nincs) ======

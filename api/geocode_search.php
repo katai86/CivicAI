@@ -1,7 +1,7 @@
 <?php
 /**
  * GET q, provider (nominatim|tomtom), limit – címkeresés (Nominatim / TomTom), kulcs szerveren marad.
- * Csak ha a geocode modul be van kapcsolva. TomTom: bejelentkezett felhasználó kötelező.
+ * Csak ha a geocode modul be van kapcsolva. TomTom: API kulcs szerveren (nyilvános térkép is használhatja).
  */
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
@@ -33,12 +33,7 @@ $countryRaw = trim((string)(get_module_setting('geocode', 'country_codes') ?: 'h
 $countryNominatim = strtolower(preg_replace('/[^a-z,]/', '', $countryRaw));
 $countryTomtom = strtoupper(preg_replace('/[^a-zA-Z,]/', '', str_replace(';', ',', $countryRaw)));
 
-$uid = current_user_id() ? (int)current_user_id() : 0;
-
 if ($provider === 'tomtom') {
-    if ($uid <= 0) {
-        json_response(['ok' => false, 'error' => t('geocode.api_tomtom_login')], 401);
-    }
     $apiKey = trim((string)(get_module_setting('geocode', 'tomtom_api_key') ?? ''));
     if ($apiKey === '') {
         json_response(['ok' => false, 'error' => t('geocode.api_no_tomtom_key')], 400);
@@ -79,7 +74,14 @@ if ($provider === 'tomtom') {
                 continue;
             }
             $addr = is_array($r['address'] ?? null) ? $r['address'] : [];
-            $label = isset($addr['freeformAddress']) ? (string)$addr['freeformAddress'] : '';
+            $parts = function_exists('civic_tomtom_address_parts') ? civic_tomtom_address_parts($addr) : [
+                'postal_code' => '',
+                'city' => '',
+                'street' => '',
+                'house' => '',
+                'display_name' => '',
+            ];
+            $label = $parts['display_name'] !== '' ? $parts['display_name'] : '';
             if ($label === '') {
                 $label = isset($r['poi']['name']) ? (string)$r['poi']['name'] : '';
             }
@@ -90,6 +92,10 @@ if ($provider === 'tomtom') {
                 'lat' => (string)$lat,
                 'lon' => (string)$lng,
                 'display_name' => $label,
+                'postal_code' => $parts['postal_code'],
+                'city' => $parts['city'],
+                'street' => $parts['street'],
+                'house' => $parts['house'],
             ];
         }
         json_response(['ok' => true, 'provider' => 'tomtom', 'results' => $results]);

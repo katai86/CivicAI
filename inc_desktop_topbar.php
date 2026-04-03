@@ -11,8 +11,8 @@ $showSearch = !empty($desktop_topbar_show_search);
 $rankAll = isset($rankAll) ? $rankAll : null;
 if (!isset($geocodeClientUi)) {
   $geocodeClientUi = function_exists('civic_geocode_client_config')
-    ? civic_geocode_client_config($uid)
-    : ['show_selector' => false, 'providers' => []];
+    ? civic_geocode_client_config($uid, !empty($desktop_topbar_show_search))
+    : ['show_selector' => false, 'providers' => [], 'public_map_tomtom_only' => false];
 }
 ?>
 <header class="topbar">
