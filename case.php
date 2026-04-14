@@ -92,8 +92,6 @@ $osmUrl = "https://www.openstreetmap.org/?mlat=" . rawurlencode((string)$r['lat'
           "&mlon=" . rawurlencode((string)$r['lng']) . "#map=19/" .
           rawurlencode((string)$r['lat']) . "/" . rawurlencode((string)$r['lng']);
 
-function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
-
 $uid = 0;
 $role = 'guest';
 $isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : false;

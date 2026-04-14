@@ -331,8 +331,10 @@ $geocodeClientUi = civic_geocode_client_config($adminUid);
 <script src="<?= htmlspecialchars(app_url('/dashboard/dist/js/adminlte.min.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script>window.LANG = <?= json_encode($LANG_JS, JSON_UNESCAPED_UNICODE); ?>;</script>
 <script>window.CIVIC_GEOCODE = <?= json_encode($geocodeClientUi, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;</script>
+<script>window.CIVIC_API = <?= json_encode(['loginUrl' => app_url('/admin/login.php')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;</script>
 <script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="admin.js?v=9"></script>
+<script src="<?= htmlspecialchars(app_url('/assets/api_client.js'), ENT_QUOTES, 'UTF-8') ?>?v=1"></script>
+<script src="admin.js?v=10"></script>
 </body>
 </html>

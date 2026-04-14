@@ -125,7 +125,6 @@ try {
   $reports = $stmt->fetchAll() ?: [];
 } catch (Throwable $e) { $reports = []; }
 
-function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function badge_icon_url($code){
   if (!$code) return null;
   $base = __DIR__ . '/../assets/badges/' . $code;

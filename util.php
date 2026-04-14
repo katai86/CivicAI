@@ -43,9 +43,21 @@ function civic_json_encode_safe(array $data): string {
     return '{"ok":false,"error":"encode"}';
 }
 
+/**
+ * HTML-escape for echoed text attributes (UTF-8).
+ * Defined once here so all pages that only include util.php can use h().
+ */
+if (!function_exists('h')) {
+    function h($v): string {
+        return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+    }
+}
+
 function json_response(array $data, int $code = 200): void {
-    http_response_code($code);
-    header('Content-Type: application/json; charset=utf-8');
+    if (!headers_sent()) {
+        http_response_code($code);
+        header('Content-Type: application/json; charset=utf-8');
+    }
     echo civic_json_encode_safe($data);
     exit;
 }
@@ -217,6 +229,20 @@ function require_admin(): void {
     if (defined('ADMIN_TOKEN') && ADMIN_TOKEN && isset($_GET['token']) && hash_equals((string)ADMIN_TOKEN, (string)$_GET['token'])) {
         $_SESSION['admin_logged_in'] = true;
         return;
+    }
+
+    if (is_api_request()) {
+        $uid = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0;
+        $code = $uid <= 0 ? 401 : 403;
+        $msgKey = $uid <= 0 ? 'auth.login_required' : 'common.error_no_permission';
+        json_response([
+            'ok' => false,
+            'error' => [
+                'code' => $uid <= 0 ? 'admin_auth_required' : 'admin_forbidden',
+                'message' => t($msgKey),
+                'retryable' => false,
+            ],
+        ], $code);
     }
 
     header('Location: ' . app_url('admin/login.php'));

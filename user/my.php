@@ -109,7 +109,6 @@ $rankCatWeek = get_user_category_rank('week', (int)$userId, $cat);
 $rankCatMonth = get_user_category_rank('month', (int)$userId, $cat);
 $rankCatAll = get_user_category_rank('all', (int)$userId, $cat);
 
-function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function badge_icon_url($code){
   if (!$code) return null;
   $base = __DIR__ . '/../assets/badges/' . $code;

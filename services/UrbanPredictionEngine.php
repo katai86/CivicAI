@@ -112,7 +112,7 @@ class UrbanPredictionEngine
                 ");
                 while ($row = $treeStmt->fetch(PDO::FETCH_ASSOC)) {
                     $risk = (string)($row['risk_level'] ?? 'medium');
-                    if ($risk === '' && (in_array($row['health_status'] ?? '', ['poor', 'critical'], true)) {
+                    if ($risk === '' && (in_array($row['health_status'] ?? '', ['poor', 'critical'], true))) {
                         $risk = 'medium';
                     }
                     $out['predicted_tree_failures'][] = [

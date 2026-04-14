@@ -126,6 +126,9 @@ function descriptionSummary(text, maxLen){
 }
 
 async function fetchJson(url, opts){
+  if (window.CivicApi && typeof window.CivicApi.fetchJson === 'function') {
+    return window.CivicApi.fetchJson(url, Object.assign({ credentials: 'same-origin' }, opts || {}));
+  }
   const res = await fetch(url, {
     credentials: 'same-origin', // session cookie
     ...opts

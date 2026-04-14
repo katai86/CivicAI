@@ -81,6 +81,9 @@ function esc(s){
 }
 
 async function fetchJson(url, opts){
+  if (window.CivicApi && typeof window.CivicApi.fetchJson === 'function') {
+    return window.CivicApi.fetchJson(url, opts || {});
+  }
   const res = await fetch(url, opts);
   const text = await res.text();
   let j = null;

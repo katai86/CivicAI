@@ -34,7 +34,6 @@ $rankCatWeek = $uid ? get_user_category_rank('week', $uid, $cat) : null;
 $rankCatMonth = $uid ? get_user_category_rank('month', $uid, $cat) : null;
 $rankCatAll = $uid ? get_user_category_rank('all', $uid, $cat) : null;
 
-function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function badge_icon_url($code){
   if (!$code) return null;
   $base = __DIR__ . '/assets/badges/' . $code;

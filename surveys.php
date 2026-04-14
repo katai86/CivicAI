@@ -20,7 +20,7 @@ $LANG_JS = lang_array_for_js();
 $surveysActive = function_exists('surveys_enabled') && surveys_enabled();
 $pageTitle = t('survey.page_title');
 ?><!doctype html>
-<html lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>">
+<html lang="<?= h($currentLang) ?>">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />

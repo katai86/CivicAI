@@ -14,17 +14,36 @@
   const msg = document.getElementById('upMsg');
   if (!gallery || !file || !btn || !msg) return;
 
+  const Api = window.CivicApi;
+
   function esc(s){
     return String(s || '').replace(/[&<>"']/g, c => ({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
     }[c]));
   }
 
+  function errText(j, fallback) {
+    if (Api && typeof Api.parseErrorMessage === 'function') {
+      return Api.parseErrorMessage(j, fallback || '');
+    }
+    if (j && typeof j.error === 'string') return j.error;
+    return fallback || '';
+  }
+
+  async function fetchJson(url, opts) {
+    if (Api && typeof Api.fetchJson === 'function') {
+      return Api.fetchJson(url, opts || { credentials: 'same-origin' });
+    }
+    const r = await fetch(url, Object.assign({ credentials: 'same-origin' }, opts || {}));
+    const j = await r.json().catch(() => null);
+    if (!r.ok) throw new Error(errText(j, String(r.status)));
+    return j;
+  }
+
   async function load(){
     gallery.innerHTML = '';
     try{
-      const r = await fetch(`${apiList}?id=${encodeURIComponent(rid)}`, {credentials:'same-origin'});
-      const j = await r.json();
+      const j = await fetchJson(`${apiList}?id=${encodeURIComponent(rid)}`);
       if(!j.ok || !j.data || !j.data.length){
         gallery.innerHTML = '<div class="small">' + esc(I18N.no_attachments || '') + '</div>';
         return;
@@ -51,15 +70,13 @@
           delBtn.disabled = true;
 
           try{
-            const r = await fetch(apiDelete, {
+            const j2 = await fetchJson(apiDelete, {
               method:'POST',
               headers:{ 'Content-Type':'application/json' },
-              credentials:'same-origin',
               body: JSON.stringify({ id })
             });
-            const j2 = await r.json().catch(() => null);
             if(!j2 || !j2.ok){
-              alert((j2 && j2.error) ? j2.error : (I18N.delete_error || ''));
+              alert(errText(j2, I18N.delete_error || ''));
             }else{
               await load();
             }
@@ -86,10 +103,9 @@
     fd.append('file', file.files[0]);
 
     try{
-      const r = await fetch(apiUpload, {method:'POST', body:fd, credentials:'same-origin'});
-      const j = await r.json().catch(() => null);
+      const j = await fetchJson(apiUpload, {method:'POST', body:fd});
       if(!j || !j.ok){
-        msg.textContent = (j && j.error) ? j.error : (I18N.upload_error || '');
+        msg.textContent = errText(j, I18N.upload_error || '');
       }else{
         msg.textContent = I18N.upload_ok || '';
         file.value = '';

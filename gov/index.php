@@ -476,8 +476,6 @@ if (!empty($stats['by_category'])) {
     $v = array_values($stats['by_category']);
     $maxCategory = $v ? max(1, max($v)) : 1;
 }
-
-function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 ?>
 <?php
 $govUid = current_user_id();

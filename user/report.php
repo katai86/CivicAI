@@ -78,8 +78,6 @@ $trackUrl = ((int)$r['notify_enabled'] === 1 && !empty($r['notify_token']))
   ? app_url('/case.php?token=' . rawurlencode((string)$r['notify_token']))
   : null;
 
-function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
-
 $currentLang = function_exists('current_lang') ? current_lang() : 'hu';
 $isMobile = function_exists('use_mobile_layout') ? use_mobile_layout() : false;
 $uid = $userId;
@@ -216,6 +214,8 @@ window.REPORT_PAGE_I18N = <?= json_encode([
   'upload_ok' => t('report.js_upload_ok'),
 ], JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="<?= h(app_url('/assets/user/report.js')) ?>"></script>
+<script>window.CIVIC_API = <?= json_encode(['loginUrl' => app_url('/user/login.php')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;</script>
+<script src="<?= h(app_url('/assets/api_client.js')) ?>?v=1"></script>
+<script src="<?= h(app_url('/assets/user/report.js')) ?>?v=2"></script>
 </body>
 </html>

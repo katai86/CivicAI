@@ -10,8 +10,6 @@ if ($uid <= 0) {
 }
 $role = current_user_role() ?: '';
 
-function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
-
 $friends = [];
 $incoming = [];
 $outgoing = [];
