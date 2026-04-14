@@ -176,7 +176,8 @@ $geocodeClientUi = civic_geocode_client_config($uid, true);
   <script>window.CIVIC_API = <?= json_encode(['loginUrl' => app_url('/user/login.php')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;</script>
   <script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
   <script src="<?= htmlspecialchars(app_url('/assets/api_client.js'), ENT_QUOTES, 'UTF-8') ?>?v=1"></script>
-  <script src="<?= htmlspecialchars(app_url('/assets/app.js'), ENT_QUOTES, 'UTF-8') ?>?v=34"></script>
+  <script src="<?= htmlspecialchars(app_url('/assets/ui_toast.js'), ENT_QUOTES, 'UTF-8') ?>?v=1"></script>
+  <script src="<?= htmlspecialchars(app_url('/assets/app.js'), ENT_QUOTES, 'UTF-8') ?>?v=36"></script>
   <script src="<?= htmlspecialchars(app_url('/assets/pwa-install.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 </body>
 </html>

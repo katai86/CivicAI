@@ -77,7 +77,8 @@ if (isset($_SESSION['flash'])) unset($_SESSION['flash']);
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="<?php echo htmlspecialchars(app_url('/assets/api_client.js'), ENT_QUOTES, 'UTF-8'); ?>?v=1"></script>
-<script src="<?php echo htmlspecialchars(app_url('/assets/app.js'), ENT_QUOTES, 'UTF-8'); ?>?v=34"></script>
+<script src="<?php echo htmlspecialchars(app_url('/assets/ui_toast.js'), ENT_QUOTES, 'UTF-8'); ?>?v=1"></script>
+<script src="<?php echo htmlspecialchars(app_url('/assets/app.js'), ENT_QUOTES, 'UTF-8'); ?>?v=36"></script>
 <script src="<?php echo htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
 <script src="<?php echo htmlspecialchars(app_url('/assets/tour.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>

@@ -80,6 +80,50 @@ function esc(s){
     .replaceAll('>','&gt;');
 }
 
+/** P2: toast a Mobilekit (mobil) vagy CivicUi (desktop) útján */
+function civicUiToast(message, type, title) {
+  const msg = message == null ? '' : String(message);
+  if (window.CivicUi && typeof window.CivicUi.toast === 'function') {
+    window.CivicUi.toast({
+      type: type || 'info',
+      title: title || '',
+      message: msg,
+      timeoutMs: type === 'error' ? 5200 : 3600,
+    });
+  } else if (typeof alert === 'function') {
+    alert(title ? title + '\n' + msg : msg);
+  }
+}
+
+function civicToastFromApiPayload(payload, fallback) {
+  if (window.CivicApi && typeof window.CivicApi.parseErrorMessage === 'function') {
+    return window.CivicApi.parseErrorMessage(payload, fallback || '');
+  }
+  if (payload && typeof payload.error === 'string') return payload.error;
+  return fallback || '';
+}
+
+function civicToastErr(err) {
+  let msg = err && err.message ? String(err.message) : String(err);
+  if (window.CivicApi && typeof window.CivicApi.parseErrorMessage === 'function' && err && err.payload) {
+    msg = window.CivicApi.parseErrorMessage(err.payload, msg);
+  }
+  civicUiToast(msg, 'error');
+}
+
+function setModalInlineError(modal, text) {
+  if (!modal) return;
+  const el = modal.querySelector('#mInlineError');
+  if (!el) return;
+  if (!text) {
+    el.style.display = 'none';
+    el.textContent = '';
+    return;
+  }
+  el.textContent = text;
+  el.style.display = 'block';
+}
+
 async function fetchJson(url, opts){
   if (window.CivicApi && typeof window.CivicApi.fetchJson === 'function') {
     return window.CivicApi.fetchJson(url, opts || {});
@@ -524,7 +568,7 @@ map.on('popupopen', (e) => {
   if (likeBtn) {
     likeBtn.addEventListener('click', async () => {
       if (!IS_LOGGED_IN) {
-        alert(t('auth.login_required'));
+        civicUiToast(t('auth.login_required'), 'info');
         return;
       }
       const id = Number(likeBtn.getAttribute('data-id'));
@@ -600,7 +644,7 @@ map.on('popupopen', (e) => {
           });
           const j = await res.json().catch(() => null);
           if (!res.ok || !j || !j.ok) {
-            alert((j && j.error) ? j.error : t('tree.water_error'));
+            civicUiToast(civicToastFromApiPayload(j, t('tree.water_error')), 'error');
             return;
           }
           const lastLine = el.querySelector('.tree-last-watered-line');
@@ -612,10 +656,10 @@ map.on('popupopen', (e) => {
           }
           waterForm.reset();
           const msg = (window.LANG && window.LANG['tree.watered_success']) ? window.LANG['tree.watered_success'] : 'Öntözve. Köszönjük!';
-          if (typeof alert === 'function') alert(msg);
+          civicUiToast(msg, 'success');
         }catch(err){
           console.error(err);
-          alert(t('tree.water_error'));
+          civicUiToast(t('tree.water_error'), 'error');
         }
       });
     }
@@ -626,7 +670,7 @@ map.on('popupopen', (e) => {
         ev.preventDefault();
         const photoInput = healthForm.querySelector('.tree-health-photo');
         if (!photoInput || !photoInput.files || !photoInput.files[0]) {
-          alert(t('tree.health_analyze_need_photo'));
+          civicUiToast(t('tree.health_analyze_need_photo'), 'info');
           return;
         }
         const fd = new FormData();
@@ -1057,7 +1101,7 @@ loadIdeas().catch(err => console.error(err));
     try{
       const hits = await geocodeAddress(q, 5);
       if (!hits.length) {
-        alert(t('search.no_results'));
+        civicUiToast(t('search.no_results'), 'info');
         return;
       }
       if (hits.length === 1) {
@@ -1073,7 +1117,7 @@ loadIdeas().catch(err => console.error(err));
       }
     }catch(err){
       console.error(err);
-      alert(t('search.error'));
+      civicUiToast(t('search.error'), 'error');
     }
   });
 })();
@@ -1115,7 +1159,7 @@ function openIdeaModal(latlng){
   modal.querySelector('.modal-x').onclick = () => { closeModal(); };
   modal.querySelector('#mIdeaSubmit').onclick = async () => {
     const title = modal.querySelector('#mIdeaTitle').value.trim();
-    if (!title) { alert(t('api.facility_name_required')); return; }
+    if (!title) { civicUiToast(t('api.facility_name_required'), 'info'); return; }
     const description = modal.querySelector('#mIdeaDesc').value.trim();
     try {
       const j = await fetchJson(API_IDEA_CREATE, {
@@ -1126,12 +1170,12 @@ function openIdeaModal(latlng){
       if (j.ok) {
         closeModal();
         loadIdeas().catch(() => {});
-        alert(t('modal.thanks'));
+        civicUiToast(t('modal.thanks'), 'success');
       } else {
-        alert(j.error || t('common.error_generic'));
+        civicUiToast(civicToastFromApiPayload(j, typeof j.error === 'string' ? j.error : t('common.error_generic')), 'error');
       }
     } catch (e) {
-      alert(e.message || t('common.error_server'));
+      civicToastErr(e);
     }
   };
 }
@@ -1183,6 +1227,7 @@ function openModal(latlng, options){
       <button class="modal-x" type="button" aria-label="${esc(t('modal.close'))}">×</button>
 
       <div class="modal-scroll">
+        <div id="mInlineError" class="modal-inline-error" role="alert" style="display:none"></div>
         <h3>${esc(t('modal.category'))}</h3>
         <select id="mCategory">
           ${buildCategoryOptions()}
@@ -1213,14 +1258,14 @@ function openModal(latlng, options){
 
         <div id="mReportFields">
         <div id="mEventFields" style="display:none">
-          <h3>Esemény időpont</h3>
-          <label>Kezdete</label>
+          <h3>${esc(t('modal.event_time_heading'))}</h3>
+          <label>${esc(t('modal.label_event_start'))}</label>
           <input id="mEventStart" type="date">
-          <label>Vége</label>
+          <label>${esc(t('modal.label_event_end'))}</label>
           <input id="mEventEnd" type="date">
         </div>
 
-        <h3>Cím (opcionális)</h3>
+        <h3>${esc(t('modal.address_section_optional'))}</h3>
         <div class="addr-grid">
           <div>
             <label>${esc(t('modal.zip'))}</label>
@@ -1239,7 +1284,7 @@ function openModal(latlng, options){
             <input id="mHouse" maxlength="20" placeholder="12">
           </div>
         </div>
-        <label>Cím megjegyzés</label>
+        <label>${esc(t('modal.address_note_label'))}</label>
         <input id="mAddrNote" maxlength="160" placeholder="${esc(t('modal.addr_note'))}">
         <p class="muted" style="margin-top:8px;font-size:12px">${esc(t('modal.geocode_hint'))} <strong>${esc(t('modal.geocode_btn'))}</strong></p>
         <button type="button" id="mGeocodeBtn" class="btn-soft" style="margin-top:6px">${esc(t('modal.geocode_btn'))}</button>
@@ -1261,10 +1306,10 @@ function openModal(latlng, options){
         </div>
 
         <div id="mContact" class="box" style="display:none">
-          <label>E-mail</label>
+          <label>${esc(t('modal.label_email'))}</label>
           <input id="mEmail" maxlength="190" placeholder="${esc(t('modal.email_placeholder'))}" inputmode="email">
 
-          <label>Név</label>
+          <label>${esc(t('modal.label_name'))}</label>
           <input id="mName" maxlength="80" placeholder="${esc(t('modal.name_placeholder'))}">
 
           <label class="check" style="margin-top:10px">
@@ -1341,15 +1386,19 @@ function openModal(latlng, options){
   const elEventFields = modal.querySelector('#mEventFields');
 
   modal.querySelector('#mGeocodeBtn')?.addEventListener('click', async () => {
+    const geoBtn = modal.querySelector('#mGeocodeBtn');
     const zip = modal.querySelector('#mZip')?.value.trim() || '';
     const city = modal.querySelector('#mCity')?.value.trim() || '';
     const street = modal.querySelector('#mStreet')?.value.trim() || '';
     const house = modal.querySelector('#mHouse')?.value.trim() || '';
     const addr = [street, house, city, zip].filter(Boolean).join(', ');
-    if (!addr) { alert(t('modal.address_required')); return; }
+    if (!addr) { setModalInlineError(modal, t('modal.address_required')); return; }
+    setModalInlineError(modal, '');
+    const geoLabel = geoBtn ? geoBtn.textContent : '';
+    if (geoBtn) { geoBtn.disabled = true; geoBtn.textContent = t('modal.geocode_searching'); }
     try {
       const hits = await geocodeAddress(addr, 1);
-      if (!hits || !hits.length) { alert(t('modal.geocode_no_results')); return; }
+      if (!hits || !hits.length) { civicUiToast(t('modal.geocode_no_results'), 'info'); return; }
       const h = hits[0];
       const lat = parseFloat(h.lat);
       const lon = parseFloat(h.lon);
@@ -1360,11 +1409,13 @@ function openModal(latlng, options){
         coords.lat = lat;
         coords.lng = lon;
         fillModalAddressFields(modal, h);
-        alert(t('modal.location_set'));
-      } else { alert(t('modal.geocode_failed')); }
+        civicUiToast(t('modal.location_set'), 'success');
+      } else { civicUiToast(t('modal.geocode_failed'), 'error'); }
     } catch (e) {
       console.error(e);
-      alert(t('modal.geocode_error'));
+      civicUiToast(t('modal.geocode_error'), 'error');
+    } finally {
+      if (geoBtn) { geoBtn.disabled = false; geoBtn.textContent = geoLabel || t('modal.geocode_btn'); }
     }
   });
 
@@ -1431,7 +1482,7 @@ function openModal(latlng, options){
       if (mTitleInput) mTitleInput.placeholder = t('tree.species_placeholder') || 'pl. kőris, tölgy';
       if (mDescInput) mDescInput.placeholder = t('tree.note_placeholder') || 'pl. becsült életkor, állapot';
     } else {
-      if (mTitleLabel) mTitleLabel.textContent = t('modal.category') + ' – rövid cím';
+      if (mTitleLabel) mTitleLabel.textContent = t('modal.default_title_label');
       if (mDescLabel) mDescLabel.textContent = t('modal.description_label');
       if (mTitleInput) mTitleInput.placeholder = t('modal.title_placeholder') || 'pl. Kátyú a kereszteződésnél';
       if (mDescInput) mDescInput.placeholder = t('modal.desc_placeholder') || 'Írd le röviden a problémát';
@@ -1453,7 +1504,7 @@ function openModal(latlng, options){
   modal.querySelector('#mAnalyzePhotoBtn')?.addEventListener('click', async () => {
     const fileInput = modal.querySelector('#mImage');
     if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-      alert(t('tree.health_analyze_need_photo'));
+      civicUiToast(t('tree.health_analyze_need_photo'), 'info');
       return;
     }
     const btn = modal.querySelector('#mAnalyzePhotoBtn');
@@ -1487,12 +1538,12 @@ function openModal(latlng, options){
       } else {
         const resultEl = modal.querySelector('#mTreeAnalyzeResult');
         if (resultEl) { resultEl.style.display = 'none'; resultEl.textContent = ''; }
-        alert(j && j.error ? j.error : t('common.error_server'));
+        civicUiToast(civicToastFromApiPayload(j, typeof j.error === 'string' ? j.error : t('common.error_server')), 'error');
       }
     } catch (e) {
       const re = modal.querySelector('#mTreeAnalyzeResult');
       if (re) { re.style.display = 'none'; re.textContent = ''; }
-      alert(t('common.error_server'));
+      civicUiToast(t('common.error_server'), 'error');
     }
     if (btn) { btn.disabled = false; btn.textContent = origText || t('tree.analyze_photo_btn'); }
   });
@@ -1512,7 +1563,7 @@ function openModal(latlng, options){
         try {
           const res = await fetchJson(`${API_SUGGEST_CATEGORY}?description=${encodeURIComponent(desc)}`);
           if (res.ok && res.suggested_category && elCategory.querySelector(`option[value="${res.suggested_category}"]`)) {
-            elSuggestion.innerHTML = `Javasolt kategória: <strong>${esc(res.label || res.suggested_category)}</strong> <button type="button" class="btn-soft btn-sm" id="mApplySuggestion">Kiválasztom</button>`;
+            elSuggestion.innerHTML = `${esc(t('modal.suggested_category_intro'))} <strong>${esc(res.label || res.suggested_category)}</strong> <button type="button" class="btn-soft btn-sm" id="mApplySuggestion">${esc(t('modal.suggested_category_apply'))}</button>`;
             elSuggestion.style.display = 'block';
             modal.querySelector('#mApplySuggestion')?.addEventListener('click', () => {
               elCategory.value = res.suggested_category;
@@ -1527,14 +1578,7 @@ function openModal(latlng, options){
 
   modal.querySelector('#mSubmit').addEventListener('click', async () => {
     const category = modal.querySelector('#mCategory').value;
-    if (category === 'tree_upload') {
-      if (modal._treeSubmitting) return;
-      if (!IS_LOGGED_IN) {
-        alert(t('modal.tree_upload_login'));
-        return;
-      }
-      modal._treeSubmitting = true;
-    }
+    setModalInlineError(modal, '');
     const title = modal.querySelector('#mTitle').value.trim();
     const description = modal.querySelector('#mDesc').value.trim();
     const address_zip = modal.querySelector('#mZip')?.value.trim() || '';
@@ -1572,31 +1616,31 @@ function openModal(latlng, options){
     }
     
     if (!description && category !== 'tree_upload'){
-      alert(t('api.description_required'));
+      setModalInlineError(modal, t('api.description_required'));
       return;
     }
 
     // nem anonim -> név kell
     if (!IS_LOGGED_IN && !reporter_is_anonymous && !reporter_name) {
-      alert(t('modal.name_required'));
+      setModalInlineError(modal, t('modal.name_required'));
       return;
     }
 
     const needsPersonal = (notify_enabled || create_account || !reporter_is_anonymous);
 
     if (!IS_LOGGED_IN && needsPersonal && !consent_data) {
-      alert(t('api.gdpr_consent_required'));
+      setModalInlineError(modal, t('api.gdpr_consent_required'));
       return;
     }
 
     // értesítés/reg: email kell (vendégnél)
     if (!IS_LOGGED_IN && (notify_enabled || create_account) && !reporter_email) {
-      alert('Az értesítéshez / regisztrációhoz e-mail cím szükséges.');
+      setModalInlineError(modal, t('modal.email_required_notify'));
       return;
     }
 
     if (create_account && password.length < 8) {
-      alert(t('api.password_min_8'));
+      setModalInlineError(modal, t('api.password_min_8'));
       return;
     }
 
@@ -1645,6 +1689,12 @@ function openModal(latlng, options){
 
     try{
       if (category === 'tree_upload') {
+        if (modal._treeSubmitting) return;
+        if (!IS_LOGGED_IN) {
+          civicUiToast(t('modal.tree_upload_login'), 'error');
+          return;
+        }
+        modal._treeSubmitting = true;
         const formData = new FormData();
         formData.append('lat', String(coords.lat));
         formData.append('lng', String(coords.lng));
@@ -1670,7 +1720,7 @@ function openModal(latlng, options){
           modal._treeSubmitting = false;
           throw new Error(j && j.error ? j.error : (t('common.error_server') || 'Fa feltöltés sikertelen.'));
         }
-        alert(t('tree.submit_success'));
+        civicUiToast(t('tree.submit_success'), 'success');
         modal._treeSubmitting = false;
         closeModal();
         loadTrees().catch(e => console.warn('loadTrees after tree_create', e));
@@ -1680,7 +1730,7 @@ function openModal(latlng, options){
       }
       if (category === 'civil_event') {
         if (!event_start || !event_end) {
-          alert(t('modal.event_dates_required'));
+          setModalInlineError(modal, t('modal.event_dates_required'));
           btn.disabled = false;
           btn.textContent = t('modal.submit');
           return;
@@ -1741,13 +1791,13 @@ function openModal(latlng, options){
         }
       }
 
-      alert(t('modal.thanks'));
+      civicUiToast(t('modal.thanks'), 'success');
       closeModal();
 
     }catch(err){
       console.error(err);
       modal._treeSubmitting = false;
-      alert(t('common.error_submit') + ': ' + err.message);
+      civicUiToast((t('common.error_submit') || 'Hiba') + ': ' + (err && err.message ? err.message : String(err)), 'error');
       btn.disabled = false;
       btn.textContent = t('modal.submit');
     }
