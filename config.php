@@ -22,8 +22,54 @@ define('IP_HASH_SALT', getenv('IP_HASH_SALT') ?: 'change_me');
 define('NOMINATIM_BASE', 'https://nominatim.openstreetmap.org');
 define('NOMINATIM_USER_AGENT', 'Problematerkep/1.0 (contact: hello@kataiattila.hu)');
 
-// FONTOS: állítsd be a tényleges alap URL-t (https + teljes domain + /terkep)
-define('APP_BASE_URL', getenv('APP_BASE_URL') ?: 'https://example.com/terkep');
+// FONTOS: állítsd be a tényleges alap URL-t (https + teljes domain + alkönyvtár, pl. /CivicAI)
+if (!function_exists('civic_resolve_app_base_url')) {
+    /**
+     * Production: ha APP_BASE_URL nincs beállítva (vagy example.com placeholder),
+     * a DOCUMENT_ROOT és a projekt mappa alapján felismeri (pl. https://kataiattila.hu/CivicAI).
+     */
+    function civic_resolve_app_base_url(): string {
+        $env = getenv('APP_BASE_URL');
+        if (is_string($env) && $env !== '' && stripos($env, 'example.com') === false) {
+            return rtrim($env, '/');
+        }
+
+        if (PHP_SAPI !== 'cli') {
+            $docRoot = $_SERVER['DOCUMENT_ROOT'] ?? '';
+            if ($docRoot !== '') {
+                $docRootReal = realpath($docRoot);
+                $appRootReal = realpath(__DIR__);
+                if ($docRootReal && $appRootReal) {
+                    $docNorm = str_replace('\\', '/', $docRootReal);
+                    $appNorm = str_replace('\\', '/', $appRootReal);
+                    if (strpos($appNorm, $docNorm) === 0) {
+                        $rel = substr($appNorm, strlen($docNorm));
+                        if ($rel === '' || $rel[0] !== '/') {
+                            $rel = '/' . ltrim($rel, '/');
+                        }
+                        $rel = rtrim($rel, '/');
+                        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+                            || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443);
+                        $scheme = $https ? 'https' : 'http';
+                        $host = $_SERVER['HTTP_HOST'] ?? '';
+                        if ($host !== '') {
+                            return $scheme . '://' . $host . $rel;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (is_string($env) && $env !== '') {
+            return rtrim($env, '/');
+        }
+
+        return 'https://example.com/terkep';
+    }
+}
+
+define('APP_BASE_URL', civic_resolve_app_base_url());
 
 // Térkép kezdeti nézet (Phase 5 – multi-city: városonként más érték lehet)
 // Pl. Orosháza: MAP_CENTER_LAT=46.565 MAP_CENTER_LNG=20.667 MAP_ZOOM=13
