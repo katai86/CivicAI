@@ -6,3 +6,4 @@
 /uploads/
 /data/gov_api_cache/
 .env
+config.local.php

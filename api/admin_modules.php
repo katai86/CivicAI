@@ -103,6 +103,18 @@ $MODULE_DEFS = [
       ['key' => 'sync_enabled', 'label' => t('eu_open_data.lbl_sync'), 'type' => 'select', 'options' => ['0' => t('eu_open_data.opt_off'), '1' => t('eu_open_data.opt_on')]],
     ],
   ],
+  'hu_open_data' => [
+    'name' => t('hu_open_data.module_name'),
+    'description' => t('hu_open_data.module_desc'),
+    'settings' => [
+      ['key' => 'enabled', 'label' => t('admin.enabled'), 'type' => 'checkbox'],
+      ['key' => 'ksh_green_areas_enabled', 'label' => t('hu_open_data.lbl_green_areas'), 'type' => 'select', 'options' => ['0' => t('hu_open_data.opt_off'), '1' => t('hu_open_data.opt_on')]],
+      ['key' => 'ksh_forestry_enabled', 'label' => t('hu_open_data.lbl_forestry'), 'type' => 'select', 'options' => ['0' => t('hu_open_data.opt_off'), '1' => t('hu_open_data.opt_on')]],
+      ['key' => 'ksh_weather_enabled', 'label' => t('hu_open_data.lbl_weather'), 'type' => 'select', 'options' => ['0' => t('hu_open_data.opt_off'), '1' => t('hu_open_data.opt_on')]],
+      ['key' => 'request_timeout_seconds', 'label' => t('hu_open_data.lbl_timeout'), 'type' => 'number', 'placeholder' => '30'],
+      ['key' => 'cache_ttl_minutes', 'label' => t('hu_open_data.lbl_cache_ttl'), 'type' => 'number', 'placeholder' => '360'],
+    ],
+  ],
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

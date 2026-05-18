@@ -28,6 +28,19 @@ try {
   $payload['ok'] = false;
   $payload['db'] = 'error';
   $payload['message'] = 'Database unreachable';
+  $payload['db_pass_set'] = defined('DB_PASS') && (string)DB_PASS !== '';
+  if (!empty($_GET['hints'])) {
+    $msg = $e->getMessage();
+    if (stripos($msg, 'Access denied') !== false) {
+      $payload['db_hint'] = 'access_denied';
+    } elseif (stripos($msg, 'Unknown database') !== false) {
+      $payload['db_hint'] = 'unknown_database';
+    } elseif (stripos($msg, 'could not find driver') !== false) {
+      $payload['db_hint'] = 'pdo_mysql_missing';
+    } else {
+      $payload['db_hint'] = 'other';
+    }
+  }
   http_response_code(503);
 }
 

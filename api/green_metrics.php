@@ -39,6 +39,11 @@ try {
     $euNotes = $data['eu_notes'];
     unset($data['eu_notes']);
   }
+  $huNotes = [];
+  if (!empty($data['hu_notes']) && is_array($data['hu_notes'])) {
+    $huNotes = $data['hu_notes'];
+    unset($data['hu_notes']);
+  }
   $sources = $data['data_sources'] ?? [];
   $hasStac = in_array('copernicus_stac_sentinel2_l2a', $sources, true);
   $hasOAuth = in_array('copernicus_cdse_oauth', $sources, true);
@@ -56,6 +61,16 @@ try {
     if ($confidence === 'medium' && $hasStac) {
       $confidence = 'high';
     }
+  }
+  $hasHuKsh = false;
+  foreach ($sources as $src) {
+    if (is_string($src) && strpos($src, 'ksh_') === 0) {
+      $hasHuKsh = true;
+      break;
+    }
+  }
+  if ($hasHuKsh && $confidence === 'low') {
+    $confidence = 'medium';
   }
   $bbox = null;
   if ($authorityId !== null && $authorityId > 0) {
@@ -75,7 +90,7 @@ try {
   }
   json_response([
     'ok' => true,
-    'source' => (function () use ($sources) {
+    'source' => (function () use ($sources, $hasHuKsh) {
       $c = in_array('copernicus_stac_sentinel2_l2a', $sources, true) || in_array('copernicus_cdse_oauth', $sources, true);
       $u = in_array('clms_urban_atlas_2018_eea', $sources, true);
       if ($c && $u) {
@@ -86,6 +101,9 @@ try {
       }
       if ($u) {
         return 'clms';
+      }
+      if ($hasHuKsh) {
+        return 'hu_ksh';
       }
       return 'local';
     })(),
@@ -99,7 +117,7 @@ try {
       'fetched_at' => gmdate('c'),
       'cached' => false,
       'confidence' => $confidence,
-      'notes' => $euNotes,
+      'notes' => array_values(array_merge($euNotes, $huNotes)),
       'data_sources' => $sources,
     ],
   ]);

@@ -130,6 +130,26 @@ class GreenIntelligence
             }
         }
 
+        if (function_exists('hu_open_data_module_enabled') && hu_open_data_module_enabled()) {
+            try {
+                require_once __DIR__ . '/HuOpenDataService.php';
+                $hu = new HuOpenDataService();
+                $huExtra = $hu->augmentGreenMetrics($out, $authorityId, $pdo);
+                if (!empty($huExtra)) {
+                    $huNotes = $huExtra['hu_notes'] ?? null;
+                    unset($huExtra['hu_notes']);
+                    $out = array_merge($out, $huExtra);
+                    if (is_array($huNotes) && !empty($huNotes)) {
+                        $out['hu_notes'] = $huNotes;
+                    }
+                }
+            } catch (Throwable $e) {
+                if (function_exists('log_error')) {
+                    log_error('GreenIntelligence HU augment: ' . $e->getMessage());
+                }
+            }
+        }
+
         return $out;
     }
 

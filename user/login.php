@@ -12,36 +12,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $u = null;
 
   try {
-    try {
-      $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role, is_active, preferred_lang FROM users WHERE email=:e LIMIT 1");
-      $stmt->execute([':e' => $email]);
-      $u = $stmt->fetch();
-    } catch (Throwable $e) {
+    $lookupQueries = [
+      'SELECT id, pass_hash, is_verified, role, is_active, preferred_lang FROM users WHERE email=:e LIMIT 1',
+      'SELECT id, pass_hash, role, is_active FROM users WHERE email=:e LIMIT 1',
+      'SELECT id, pass_hash, role FROM users WHERE email=:e LIMIT 1',
+    ];
+    $lookupFailed = true;
+    foreach ($lookupQueries as $sql) {
       try {
-        $stmt = db()->prepare("SELECT id, pass_hash, is_verified, role FROM users WHERE email=:e LIMIT 1");
+        $stmt = db()->prepare($sql);
         $stmt->execute([':e' => $email]);
         $u = $stmt->fetch();
+        $lookupFailed = false;
         if ($u) {
-          $u['is_active'] = 1;
-          $u['preferred_lang'] = null;
+          if (!isset($u['is_active'])) {
+            $u['is_active'] = 1;
+          }
+          if (!array_key_exists('preferred_lang', $u)) {
+            $u['preferred_lang'] = null;
+          }
         }
-      } catch (Throwable $e2) {
-        log_error('login: DB query failed - ' . $e2->getMessage() . ' in ' . $e2->getFile() . ':' . $e2->getLine());
-        $err = 'auth.login_error';
+        break;
+      } catch (PDOException $e) {
+        log_error('login: DB connection failed - ' . $e->getMessage());
+        $err = 'auth.login_db_unavailable';
         $u = null;
+        break;
+      } catch (Throwable $e) {
+        continue;
       }
     }
-
-    if ($u === null && $err === null) {
-      $err = 'auth.login_error';
+    if ($lookupFailed && $err === null) {
+      log_error('login: user lookup queries failed for ' . $email);
+      $err = 'auth.login_db_unavailable';
+      $u = null;
     }
-    if ($err !== null) {
-      // already set above
-    } elseif (!$u || !password_verify($pass, $u['pass_hash'] ?? '')) {
+
+    if ($err === null && !$u) {
       $err = 'auth.login_error';
-    } elseif (isset($u['is_active']) && (int)$u['is_active'] === 0) {
-      $err = 'auth.account_disabled';
-    } else {
+    } elseif ($err === null) {
+      $hash = trim((string)($u['pass_hash'] ?? ''));
+      if ($hash === '' || strlen($hash) < 60 || !password_verify($pass, $hash)) {
+        $err = 'auth.login_error';
+      } elseif (isset($u['is_active']) && (int)$u['is_active'] === 0) {
+        $err = 'auth.account_disabled';
+      }
+    }
+    if ($err === null && $u) {
       session_regenerate_id(true);
       $_SESSION['user_id'] = (int)$u['id'];
       $_SESSION['user_role'] = $u['role'] ? (string)$u['role'] : 'user';
@@ -66,6 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
       exit;
     }
+  } catch (PDOException $e) {
+    log_error('login: DB - ' . $e->getMessage());
+    $err = 'auth.login_db_unavailable';
   } catch (Throwable $e) {
     log_error('login: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     $err = 'auth.login_error';

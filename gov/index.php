@@ -123,6 +123,13 @@ $govEuOpenDataTabEnabled = function_exists('eu_open_data_module_enabled') && eu_
     || eu_open_data_feature_enabled('cds_enabled')
     || eu_open_data_feature_enabled('eurostat_enabled')
   );
+$govHuOpenDataTabEnabled = function_exists('hu_open_data_module_enabled') && hu_open_data_module_enabled()
+  && function_exists('hu_open_data_feature_enabled')
+  && (
+    hu_open_data_feature_enabled('ksh_green_areas_enabled')
+    || hu_open_data_feature_enabled('ksh_forestry_enabled')
+    || hu_open_data_feature_enabled('ksh_weather_enabled')
+  );
 
 $statusFilter = isset($_GET['status_filter']) ? trim((string)$_GET['status_filter']) : '';
 $allowedStatuses = ['pending','approved','rejected','new','needs_info','forwarded','waiting_reply','in_progress','solved','closed'];
@@ -620,6 +627,14 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
             </a>
           </li>
           <?php endif; ?>
+          <?php if ($govHuOpenDataTabEnabled): ?>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="hu-open-data">
+              <i class="nav-icon bi bi-flag"></i>
+              <p><?= h(t('gov.tab_hu_open_data')) ?></p>
+            </a>
+          </li>
+          <?php endif; ?>
           <?php if ($govIotEnabled): ?>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="iot">
@@ -747,6 +762,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
               </div>
             </div>
           </div>
+          <?php require __DIR__ . '/../inc/gov_hu_dashboard_card.php'; ?>
           <div class="card mb-3" id="govInsightsCard">
             <div class="card-body py-2 px-3">
               <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
@@ -950,6 +966,9 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
             <div class="card-body">
               <h6 class="card-title mb-2"><?= h(t('gov.tree_cadastre_title')) ?></h6>
               <p class="text-secondary small mb-2"><?= h(t('gov.tree_cadastre_desc')) ?></p>
+              <?php if ($govHuOpenDataTabEnabled && hu_open_data_feature_enabled('ksh_green_areas_enabled')): ?>
+              <p class="text-secondary small mb-2" id="govTreesKshHint" hidden></p>
+              <?php endif; ?>
               <p class="text-secondary small mb-2"><?= h(t('gov.tree_map_layers_hint')) ?></p>
               <?php if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled() && function_exists('eu_open_data_feature_enabled') && (eu_open_data_feature_enabled('copernicus_enabled') || eu_open_data_feature_enabled('clms_enabled'))): ?>
               <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
@@ -1261,6 +1280,40 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
             </div>
           </div>
           <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($govHuOpenDataTabEnabled): ?>
+        <div class="admin-tab-body" id="tab-hu-open-data" hidden>
+          <p class="text-secondary small mb-3"><?= h(t('gov.hu_open_data_intro')) ?></p>
+          <?php if (hu_open_data_feature_enabled('ksh_green_areas_enabled')): ?>
+          <div class="card mb-3 border-success border-opacity-25">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.hu_green_card_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.hu_green_card_hint')) ?></p>
+              <div id="govHuGreenContent"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
+            </div>
+          </div>
+          <?php endif; ?>
+          <?php if (hu_open_data_feature_enabled('ksh_forestry_enabled')): ?>
+          <div class="card mb-3 border-success border-opacity-25">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.hu_forestry_card_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.hu_forestry_card_hint')) ?></p>
+              <div id="govHuForestryContent"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
+            </div>
+          </div>
+          <?php endif; ?>
+          <?php if (hu_open_data_feature_enabled('ksh_weather_enabled')): ?>
+          <div class="card mb-3 border-success border-opacity-25">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.hu_weather_card_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.hu_weather_card_hint')) ?></p>
+              <div id="govHuWeatherContent"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
+            </div>
+          </div>
+          <?php endif; ?>
+          <p class="small mb-0"><a href="https://kozadatportal.hu/" target="_blank" rel="noopener noreferrer"><?= h(t('gov.hu_portal_link')) ?></a></p>
         </div>
         <?php endif; ?>
 
@@ -1793,6 +1846,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     'registry' => t('gov.eu_inspire_registry'),
     'center' => t('gov.eu_inspire_center'),
   ], JSON_UNESCAPED_UNICODE) ?>;
+<?php require __DIR__ . '/../inc/gov_hu_open_data_js.php'; ?>
   var govEuGreenLabels = <?= json_encode([
     'ndvi' => t('gov.eu_ndvi_proxy'),
     'deficit' => t('gov.eu_green_deficit'),
@@ -2126,7 +2180,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       if (key === 'modules') loadGovModules();
       if (key === 'surveys') loadGovSurveys();
       if (key === 'budget') loadGovBudget();
-      if (key === 'trees') { loadGovEsgSnapshot(); initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
+      if (key === 'trees') { loadGovEsgSnapshot(); initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext(); }
       if (key === 'iot') loadGovIotDevices();
       if (key === 'analytics') {
         initGovHeatmapTab();
@@ -2139,7 +2193,8 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         loadGovGreenDashboard();
       }
       if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
-      if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); }
+      if (key === 'hu-open-data' && typeof loadGovHuOpenDataContext === 'function') { loadGovHuOpenDataContext(); }
+      if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext(); }
       if (key === 'citybrain-live') loadCitybrainLive();
       if (key === 'citybrain-predictive') loadCitybrainPredictive();
       if (key === 'citybrain-hotspot') initCitybrainHotspot();
@@ -2463,6 +2518,11 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       html += '<div class="col-6"><span class="text-secondary">' + (L.carbon_absorption || 'CO2') + '</span><br><b>' + carbon + ' ' + (L.carbon_unit || '') + '</b></div>';
       html += '<div class="col-6"><span class="text-secondary">' + (L.biodiversity_index || 'Biodiverzitás') + '</span><br><b>' + bio + '%</b></div>';
       html += '<div class="col-6"><span class="text-secondary">' + (L.drought_risk || 'Szárazság kockázat') + '</span><br><b>' + drought + '%</b></div>';
+      if (d.ksh_municipal_green_ha != null) {
+        var kshHa = Number(d.ksh_municipal_green_ha);
+        var kshY = d.ksh_municipal_green_year != null ? String(d.ksh_municipal_green_year) : '';
+        html += '<div class="col-12 mt-2 pt-2 border-top"><span class="text-secondary">KSH zöldterület (orsz.)</span><br><b>' + (isNaN(kshHa) ? '—' : Math.round(kshHa).toLocaleString('hu-HU')) + ' ha</b>' + (kshY ? ' <span class="text-muted">(' + kshY + ')</span>' : '') + '</div>';
+      }
       html += '</div>';
       container.innerHTML = html;
       if (euBox && (d.ndvi_score != null || d.ua_built_share != null)) {
@@ -4238,7 +4298,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     if (key === 'modules') loadGovModules();
     if (key === 'surveys') loadGovSurveys();
     if (key === 'budget') loadGovBudget();
-    if (key === 'trees') { loadGovEsgSnapshot(); initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); }
+    if (key === 'trees') { loadGovEsgSnapshot(); initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext(); }
     if (key === 'iot') loadGovIotDevices();
     if (key === 'analytics') {
       initGovHeatmapTab();
@@ -4250,7 +4310,8 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       loadGovGreenDashboard();
     }
     if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
-    if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); }
+    if (key === 'hu-open-data' && typeof loadGovHuOpenDataContext === 'function') { loadGovHuOpenDataContext(); }
+    if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext(); }
     if (key === 'citybrain-live') loadCitybrainLive();
     if (key === 'citybrain-predictive') loadCitybrainPredictive();
     if (key === 'citybrain-hotspot') { if (typeof citybrainHotspotMap !== 'undefined' && citybrainHotspotMap) loadCitybrainHotspot(); else initCitybrainHotspot(); }

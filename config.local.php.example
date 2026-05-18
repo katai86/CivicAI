@@ -1,0 +1,16 @@
+<?php
+/**
+ * Másold át config.local.php néven (a config.php mellett).
+ * Ez felülírja a .env / alapértelmezett értékeket. NE commitold Gitbe.
+ */
+return [
+    'DB_HOST' => 'localhost',
+    'DB_NAME' => 'kataia_civicai',
+    'DB_USER' => 'kataia_civicai',
+    'DB_PASS' => 'ide_a_mysql_jelszo',
+
+    'APP_BASE_URL' => 'https://kataiattila.hu/CivicAI',
+
+    'ADMIN_USER' => 'admin',
+    'ADMIN_PASS' => 'ide_az_admin_jelszo',
+];

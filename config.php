@@ -1,19 +1,45 @@
 <?php
 // ========= Alap beállítások =========
 
+require_once __DIR__ . '/inc/dotenv.php';
+civic_bootstrap_dotenv(__DIR__ . '/.env');
+
+$civicLocalConfig = [];
+$localPath = __DIR__ . '/config.local.php';
+if (is_file($localPath)) {
+    $loaded = require $localPath;
+    if (is_array($loaded)) {
+        $civicLocalConfig = $loaded;
+    }
+}
+
+if (!function_exists('civic_cfg')) {
+    /**
+     * Sorrend: config.local.php → .env / környezet → alapértelmezés.
+     */
+    function civic_cfg(string $key, ?string $default = null): ?string
+    {
+        global $civicLocalConfig;
+        if (array_key_exists($key, $civicLocalConfig)) {
+            return (string)$civicLocalConfig[$key];
+        }
+        return civic_env($key, $default);
+    }
+}
+
 // Error log (ide íródnak a PHP/DB hibák – segít a 500-asoknál)
 define('ERROR_LOG_FILE', __DIR__ . '/error.log');
 
 // --- DB ---
-define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_NAME', getenv('DB_NAME') ?: 'kataia_civicai');
-define('DB_USER', getenv('DB_USER') ?: 'kataia_civicai');
-define('DB_PASS', getenv('DB_PASS') ?: '');
+define('DB_HOST', civic_cfg('DB_HOST', 'localhost') ?? 'localhost');
+define('DB_NAME', civic_cfg('DB_NAME', 'kataia_civicai') ?? 'kataia_civicai');
+define('DB_USER', civic_cfg('DB_USER', 'kataia_civicai') ?? 'kataia_civicai');
+define('DB_PASS', civic_cfg('DB_PASS', '') ?? '');
 
 // --- Admin login (MVP) ---
 // Később cseréljük rendes felhasználó táblára + hash-re.
-define('ADMIN_USER', getenv('ADMIN_USER') ?: 'admin');
-define('ADMIN_PASS', getenv('ADMIN_PASS') ?: 'admin');
+define('ADMIN_USER', civic_cfg('ADMIN_USER', 'admin') ?? 'admin');
+define('ADMIN_PASS', civic_cfg('ADMIN_PASS', 'admin') ?? 'admin');
 
 // --- IP hash só (privacy) ---
 define('IP_HASH_SALT', getenv('IP_HASH_SALT') ?: 'change_me');

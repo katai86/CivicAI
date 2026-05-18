@@ -426,6 +426,38 @@ function eu_open_data_sync_enabled(): bool {
     return eu_open_data_module_enabled() && get_module_setting('eu_open_data', 'sync_enabled') === '1';
 }
 
+/** Magyar nyílt adatok (KSH / kozadatportal) – admin → Beépülő modulok. */
+function hu_open_data_module_enabled(): bool
+{
+    return get_module_setting('hu_open_data', 'enabled') === '1';
+}
+
+function hu_open_data_feature_enabled(string $settingKey): bool
+{
+    if (!hu_open_data_module_enabled()) {
+        return false;
+    }
+    return get_module_setting('hu_open_data', $settingKey) === '1';
+}
+
+function hu_open_data_request_timeout_seconds(): int
+{
+    $v = get_module_setting('hu_open_data', 'request_timeout_seconds');
+    if ($v !== null && $v !== '' && is_numeric($v)) {
+        return max(5, min(120, (int)$v));
+    }
+    return 30;
+}
+
+function hu_open_data_cache_ttl_minutes(): int
+{
+    $v = get_module_setting('hu_open_data', 'cache_ttl_minutes');
+    if ($v !== null && $v !== '' && is_numeric($v)) {
+        return max(30, min(10080, (int)$v));
+    }
+    return 360;
+}
+
 /** Részvételi költségvetés – modul ki/be (időszakos szavazás). Alapértelmezett: be. */
 function participatory_budget_enabled(): bool {
     $v = get_module_setting('participatory_budget', 'enabled');
