@@ -446,7 +446,7 @@ function hu_open_data_request_timeout_seconds(): int
     if ($v !== null && $v !== '' && is_numeric($v)) {
         return max(5, min(120, (int)$v));
     }
-    return 30;
+    return 15;
 }
 
 function hu_open_data_cache_ttl_minutes(): int

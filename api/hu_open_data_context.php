@@ -29,9 +29,11 @@ if (in_array($role, ['admin', 'superadmin'], true)) {
     }
 }
 
+$lite = isset($_GET['lite']) && ($_GET['lite'] === '1' || $_GET['lite'] === 'true');
+
 try {
     $svc = new HuOpenDataService();
-    $data = $svc->fetchContext($authorityId, db());
+    $data = $svc->fetchContext($authorityId, db(), $lite);
     $sources = [];
     if (!empty($data['green'])) {
         $sources[] = 'ksh_kor0011_municipal_green';
@@ -47,10 +49,11 @@ try {
     }
 
     json_response([
-        'ok' => (bool)($data['ok'] ?? false),
+        'ok' => true,
         'source' => 'hu_ksh',
         'scope' => [
             'authority_id' => $authorityId,
+            'lite' => $lite,
         ],
         'data' => $data,
         'meta' => [

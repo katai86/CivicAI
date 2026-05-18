@@ -2173,14 +2173,14 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       e.preventDefault();
       var key = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
-      ['dashboard','ai','reports','ideas','surveys','budget','trees','analytics','eu-open-data','iot','citybrain-live','citybrain-predictive','citybrain-hotspot','citybrain-behavior','citybrain-environmental','citybrain-insights','citybrain-risk','modules'].forEach(function(k){
+      ['dashboard','ai','reports','ideas','surveys','budget','trees','analytics','eu-open-data','hu-open-data','iot','citybrain-live','citybrain-predictive','citybrain-hotspot','citybrain-behavior','citybrain-environmental','citybrain-insights','citybrain-risk','modules'].forEach(function(k){
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
       });
       if (key === 'modules') loadGovModules();
       if (key === 'surveys') loadGovSurveys();
       if (key === 'budget') loadGovBudget();
-      if (key === 'trees') { loadGovEsgSnapshot(); initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext(); }
+      if (key === 'trees') { loadGovEsgSnapshot(); initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
       if (key === 'iot') loadGovIotDevices();
       if (key === 'analytics') {
         initGovHeatmapTab();
@@ -2193,8 +2193,8 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         loadGovGreenDashboard();
       }
       if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
-      if (key === 'hu-open-data' && typeof loadGovHuOpenDataContext === 'function') { loadGovHuOpenDataContext(); }
-      if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext(); }
+      if (key === 'hu-open-data' && typeof loadGovHuOpenDataContext === 'function') { loadGovHuOpenDataContext({ lite: false }); }
+      if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
       if (key === 'citybrain-live') loadCitybrainLive();
       if (key === 'citybrain-predictive') loadCitybrainPredictive();
       if (key === 'citybrain-hotspot') initCitybrainHotspot();
@@ -2223,6 +2223,9 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
   loadGovInsights();
   loadGovCityHealth();
   loadGovWeather();
+  if (typeof loadGovHuOpenDataContext === 'function') {
+    loadGovHuOpenDataContext({ lite: true });
+  }
   document.getElementById('govInsightsRefresh') && document.getElementById('govInsightsRefresh').addEventListener('click', function(){ loadGovInsights(); });
   if (document.getElementById('govDashboardEeaInspireContent')) {
     loadGovEuEeaInspire('govDashboardEeaInspireContent');
@@ -4310,8 +4313,8 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       loadGovGreenDashboard();
     }
     if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
-    if (key === 'hu-open-data' && typeof loadGovHuOpenDataContext === 'function') { loadGovHuOpenDataContext(); }
-    if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext(); }
+    if (key === 'hu-open-data' && typeof loadGovHuOpenDataContext === 'function') { loadGovHuOpenDataContext({ lite: false }); }
+    if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
     if (key === 'citybrain-live') loadCitybrainLive();
     if (key === 'citybrain-predictive') loadCitybrainPredictive();
     if (key === 'citybrain-hotspot') { if (typeof citybrainHotspotMap !== 'undefined' && citybrainHotspotMap) loadCitybrainHotspot(); else initCitybrainHotspot(); }

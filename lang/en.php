@@ -471,6 +471,8 @@ return [
     'gov.hu_forest_ha' => 'Forest stock',
     'gov.hu_temp' => 'Mean temperature',
     'gov.hu_precip' => 'Precipitation',
+    'gov.hu_load_error' => 'Could not load KSH data (timeout or server cannot reach ksh.hu).',
+    'gov.hu_ksh_unreachable' => 'KSH source is not reachable from the server. Try again later or check hosting outbound network.',
     'admin.modules_load_failed' => 'Failed to load module list.',
     'admin.role_update_failed' => 'Role update failed.',
     'admin.pending_legacy' => 'Pending (legacy)',

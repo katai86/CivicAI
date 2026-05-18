@@ -473,6 +473,8 @@ return [
     'gov.hu_forest_ha' => 'Erdőállomány',
     'gov.hu_temp' => 'Átlaghőmérséklet',
     'gov.hu_precip' => 'Csapadék',
+    'gov.hu_load_error' => 'Nem sikerült betölteni a KSH adatokat (időtúllépés vagy a szerver nem éri el a ksh.hu-t).',
+    'gov.hu_ksh_unreachable' => 'A KSH forrás jelenleg nem elérhető a szerverről. Próbáld később, vagy ellenőrizd a tárhely kimenő hálózatát.',
     'admin.modules_load_failed' => 'Modullista betöltése sikertelen.',
     'admin.role_update_failed' => 'Role frissítés sikertelen.',
     'admin.pending_legacy' => 'Pending (régi)',

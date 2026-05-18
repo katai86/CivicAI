@@ -32,8 +32,15 @@ class HuOpenDataService
     /**
      * @return array{ok:bool,green:?array,forestry:?array,weather_city:?array,weather_national:?array,links:array,notes:array,cached:bool,error:?string}
      */
-    public function fetchContext(?int $authorityId, PDO $pdo): array
+    /**
+     * @param bool $lite Dashboard: csak zöldterület (1 CSV), gyorsabb – nem hív CKAN városi időjárást.
+     */
+    public function fetchContext(?int $authorityId, PDO $pdo, bool $lite = false): array
     {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit($lite ? 45 : 90);
+        }
+
         $out = [
             'ok' => false,
             'green' => null,
@@ -74,10 +81,11 @@ class HuOpenDataService
         $cacheKey = 'ctx_' . md5(json_encode([
             'aid' => $authorityId,
             'city' => mb_strtolower($city),
+            'lite' => $lite,
             'g' => hu_open_data_feature_enabled('ksh_green_areas_enabled'),
-            'f' => hu_open_data_feature_enabled('ksh_forestry_enabled'),
-            'w' => hu_open_data_feature_enabled('ksh_weather_enabled'),
-            'v' => 2,
+            'f' => $lite ? 0 : hu_open_data_feature_enabled('ksh_forestry_enabled'),
+            'w' => $lite ? 0 : hu_open_data_feature_enabled('ksh_weather_enabled'),
+            'v' => 3,
         ]));
         $hit = ExternalDataCache::getValid('hu_ksh', $cacheKey);
         if ($hit && !empty($hit['payload']) && is_array($hit['payload'])) {
@@ -98,7 +106,7 @@ class HuOpenDataService
             }
         }
 
-        if (hu_open_data_feature_enabled('ksh_forestry_enabled')) {
+        if (!$lite && hu_open_data_feature_enabled('ksh_forestry_enabled')) {
             $forestry = $this->loadForestry();
             if ($forestry !== null) {
                 $out['forestry'] = $forestry;
@@ -108,7 +116,7 @@ class HuOpenDataService
             }
         }
 
-        if (hu_open_data_feature_enabled('ksh_weather_enabled')) {
+        if (!$lite && hu_open_data_feature_enabled('ksh_weather_enabled')) {
             $nat = $this->loadNationalWeather();
             if ($nat !== null) {
                 $out['weather_national'] = $nat;
@@ -271,7 +279,7 @@ class HuOpenDataService
     {
         $q = $city . ' időjárási adatai';
         $url = self::CKAN_API . 'package_search?q=' . rawurlencode($q) . '&rows=1';
-        $resp = ExternalHttpClient::get($url, hu_open_data_request_timeout_seconds());
+        $resp = ExternalHttpClient::get($url, min(12, $this->httpTimeoutSeconds()));
         if (!$resp['ok'] || $resp['body'] === '') {
             return null;
         }
@@ -294,9 +302,15 @@ class HuOpenDataService
     }
 
     /** @return ?array<int, array<int, string>> */
+    private function httpTimeoutSeconds(): int
+    {
+        $t = hu_open_data_request_timeout_seconds();
+        return max(5, min(20, $t));
+    }
+
     private function fetchCsvRows(string $csvUrl): ?array
     {
-        $resp = ExternalHttpClient::get($csvUrl, hu_open_data_request_timeout_seconds());
+        $resp = ExternalHttpClient::get($csvUrl, $this->httpTimeoutSeconds());
         if (!$resp['ok'] || $resp['body'] === '' || stripos($resp['body'], 'rejected') !== false) {
             ExternalDataCache::logProvider('hu_ksh', 'csv_fetch', 'error', ($resp['error'] ?? 'http_error') . ' ' . $csvUrl);
             return null;
