@@ -53,6 +53,7 @@ class HuOpenDataService
             ],
             'notes' => [],
             'cached' => false,
+            'reference_snapshot' => false,
             'error' => null,
         ];
 
@@ -131,6 +132,10 @@ class HuOpenDataService
             }
         }
 
+        if (!$any && function_exists('hu_open_data_snapshot_fallback_enabled') && hu_open_data_snapshot_fallback_enabled()) {
+            $any = $this->applyReferenceSnapshotToContext($out, $lite);
+        }
+
         $out['ok'] = $any;
         if (!$any) {
             $out['error'] = 'no_data_loaded';
@@ -141,6 +146,73 @@ class HuOpenDataService
         }
 
         return $out;
+    }
+
+    /** @param array<string, mixed> $out */
+    private function applyReferenceSnapshotToContext(array &$out, bool $lite): bool
+    {
+        $ref = $this->loadReferenceSnapshot();
+        if ($ref === null) {
+            return false;
+        }
+        $any = false;
+        if (hu_open_data_feature_enabled('ksh_green_areas_enabled') && empty($out['green']) && !empty($ref['green']) && is_array($ref['green'])) {
+            $g = $ref['green'];
+            $out['green'] = [
+                'value_ha' => (float)($g['value_ha'] ?? 0),
+                'year' => (int)($g['year'] ?? 0),
+                'scope' => (string)($g['scope'] ?? 'national'),
+                'label' => (string)($g['label'] ?? 'Önkormányzati zöldterület (KSH referencia)'),
+                'reference' => true,
+            ];
+            $any = true;
+        }
+        if (!$lite && hu_open_data_feature_enabled('ksh_forestry_enabled') && empty($out['forestry']) && !empty($ref['forestry']) && is_array($ref['forestry'])) {
+            $f = $ref['forestry'];
+            $out['forestry'] = [
+                'total_ha' => (float)($f['total_ha'] ?? 0),
+                'year' => (int)($f['year'] ?? 0),
+                'species_groups' => null,
+                'reference' => true,
+            ];
+            $any = true;
+        }
+        if (!$lite && hu_open_data_feature_enabled('ksh_weather_enabled') && empty($out['weather_national']) && !empty($ref['weather_national']) && is_array($ref['weather_national'])) {
+            $w = $ref['weather_national'];
+            $out['weather_national'] = [
+                'temp_mean_c' => isset($w['temp_mean_c']) ? (float)$w['temp_mean_c'] : null,
+                'precip_mm' => isset($w['precip_mm']) ? (float)$w['precip_mm'] : null,
+                'year' => (int)($w['year'] ?? 0),
+                'label' => (string)($w['label'] ?? 'Magyarország – KSH időjárás (referencia)'),
+                'reference' => true,
+            ];
+            $any = true;
+        }
+        if (!$any) {
+            return false;
+        }
+        $out['reference_snapshot'] = true;
+        $out['notes'] = array_values(array_filter($out['notes'], static function ($n) {
+            return !in_array($n, ['ksh_green_unavailable', 'ksh_forestry_unavailable'], true);
+        }));
+        $out['notes'][] = 'ksh_using_reference_snapshot';
+        $out['error'] = null;
+        return true;
+    }
+
+    /** @return ?array<string, mixed> */
+    private function loadReferenceSnapshot(): ?array
+    {
+        $path = dirname(__DIR__) . '/data/ksh_reference_snapshot.json';
+        if (!is_file($path) || !is_readable($path)) {
+            return null;
+        }
+        $raw = @file_get_contents($path);
+        if ($raw === false || trim($raw) === '') {
+            return null;
+        }
+        $j = json_decode($raw, true);
+        return is_array($j) ? $j : null;
     }
 
     /**
@@ -310,7 +382,9 @@ class HuOpenDataService
 
     private function fetchCsvRows(string $csvUrl): ?array
     {
-        $resp = ExternalHttpClient::get($csvUrl, $this->httpTimeoutSeconds());
+        $resp = $this->isKshUrl($csvUrl)
+            ? $this->fetchKshHttp($csvUrl, $this->httpTimeoutSeconds())
+            : ExternalHttpClient::get($csvUrl, $this->httpTimeoutSeconds());
         if (!$resp['ok'] || $resp['body'] === '' || stripos($resp['body'], 'rejected') !== false) {
             ExternalDataCache::logProvider('hu_ksh', 'csv_fetch', 'error', ($resp['error'] ?? 'http_error') . ' ' . $csvUrl);
             return null;
@@ -335,6 +409,58 @@ class HuOpenDataService
             $rows[] = str_getcsv($line, ';');
         }
         return $rows === [] ? null : $rows;
+    }
+
+    private function isKshUrl(string $url): bool
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+        if (!is_string($host) || $host === '') {
+            return false;
+        }
+        $host = strtolower($host);
+        return $host === 'ksh.hu' || substr($host, -7) === '.ksh.hu';
+    }
+
+    /**
+     * KSH STADAT CSV – böngészőszerű fejlécek (egyes WAF-ek elutasítják az alapértelmezett PHP UA-t).
+     *
+     * @return array{ok:bool,status:int,body:string,error:?string,url:string}
+     */
+    private function fetchKshHttp(string $url, int $timeoutSeconds): array
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'empty_url', 'url' => ''];
+        }
+        if (!function_exists('curl_init')) {
+            return ExternalHttpClient::get($url, $timeoutSeconds);
+        }
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_init_failed', 'url' => $url];
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_CONNECTTIMEOUT => min(12, $timeoutSeconds),
+            CURLOPT_TIMEOUT => $timeoutSeconds,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            CURLOPT_HTTPHEADER => [
+                'Accept: text/csv,text/plain,*/*',
+                'Accept-Language: hu-HU,hu;q=0.9,en;q=0.8',
+            ],
+            CURLOPT_REFERER => 'https://www.ksh.hu/',
+        ]);
+        $body = curl_exec($ch);
+        $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if ($body === false) {
+            return ['ok' => false, 'status' => $status, 'body' => '', 'error' => $err !== '' ? $err : 'curl_exec_failed', 'url' => $url];
+        }
+        $ok = $status >= 200 && $status < 300;
+        return ['ok' => $ok, 'status' => $status, 'body' => (string)$body, 'error' => $ok ? null : ('http_' . $status), 'url' => $url];
     }
 
     /**

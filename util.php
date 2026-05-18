@@ -458,6 +458,19 @@ function hu_open_data_cache_ttl_minutes(): int
     return 360;
 }
 
+/** Ha a ksh.hu élő CSV nem elérhető (WAF / tűzfal), beépített STADAT referencia JSON. */
+function hu_open_data_snapshot_fallback_enabled(): bool
+{
+    if (!hu_open_data_module_enabled()) {
+        return false;
+    }
+    $v = get_module_setting('hu_open_data', 'ksh_snapshot_fallback');
+    if ($v === null || $v === '') {
+        return true;
+    }
+    return $v === '1' || $v === 1;
+}
+
 /** Részvételi költségvetés – modul ki/be (időszakos szavazás). Alapértelmezett: be. */
 function participatory_budget_enabled(): bool {
     $v = get_module_setting('participatory_budget', 'enabled');

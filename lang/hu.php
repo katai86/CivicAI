@@ -456,6 +456,7 @@ return [
     'hu_open_data.lbl_weather' => 'KSH – időjárás (országos + város, ha elérhető)',
     'hu_open_data.lbl_timeout' => 'HTTP időkorlát (másodperc)',
     'hu_open_data.lbl_cache_ttl' => 'Cache élettartam (perc)',
+    'hu_open_data.lbl_snapshot_fallback' => 'Referencia snapshot, ha a KSH élő CSV nem elérhető',
 
     'gov.tab_hu_open_data' => 'Magyar nyílt adatok',
     'gov.hu_open_data_intro' => 'Országos KSH statisztikák a Nemzeti Közadatportálról – összevetéshez a helyi fakataszter és zöld mutatók mellett.',
@@ -475,6 +476,7 @@ return [
     'gov.hu_precip' => 'Csapadék',
     'gov.hu_load_error' => 'Nem sikerült betölteni a KSH adatokat (időtúllépés vagy a szerver nem éri el a ksh.hu-t).',
     'gov.hu_ksh_unreachable' => 'A KSH forrás jelenleg nem elérhető a szerverről. Próbáld később, vagy ellenőrizd a tárhely kimenő hálózatát.',
+    'gov.hu_reference_snapshot' => 'Referencia adat (KSH STADAT) – a szerver nem éri el élőben a ksh.hu-t; frissítés: admin / data/ksh_reference_snapshot.json.',
     'admin.modules_load_failed' => 'Modullista betöltése sikertelen.',
     'admin.role_update_failed' => 'Role frissítés sikertelen.',
     'admin.pending_legacy' => 'Pending (régi)',

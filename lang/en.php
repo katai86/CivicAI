@@ -454,6 +454,7 @@ return [
     'hu_open_data.lbl_weather' => 'KSH – weather (national + city when available)',
     'hu_open_data.lbl_timeout' => 'HTTP timeout (seconds)',
     'hu_open_data.lbl_cache_ttl' => 'Cache TTL (minutes)',
+    'hu_open_data.lbl_snapshot_fallback' => 'Reference snapshot when live KSH CSV is unreachable',
 
     'gov.tab_hu_open_data' => 'Hungarian open data',
     'gov.hu_open_data_intro' => 'National KSH statistics from the open data portal – context next to local tree cadastre and green metrics.',
@@ -473,6 +474,7 @@ return [
     'gov.hu_precip' => 'Precipitation',
     'gov.hu_load_error' => 'Could not load KSH data (timeout or server cannot reach ksh.hu).',
     'gov.hu_ksh_unreachable' => 'KSH source is not reachable from the server. Try again later or check hosting outbound network.',
+    'gov.hu_reference_snapshot' => 'Reference data (KSH STADAT) – server cannot reach ksh.hu live; update via admin / data/ksh_reference_snapshot.json.',
     'admin.modules_load_failed' => 'Failed to load module list.',
     'admin.role_update_failed' => 'Role update failed.',
     'admin.pending_legacy' => 'Pending (legacy)',

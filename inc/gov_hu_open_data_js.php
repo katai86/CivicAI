@@ -16,6 +16,7 @@ if (empty($govHuOpenDataTabEnabled)) {
     'no_data' => t('gov.no_data'),
     'load_error' => t('gov.hu_load_error'),
     'ksh_unreachable' => t('gov.hu_ksh_unreachable'),
+    'reference_snapshot' => t('gov.hu_reference_snapshot'),
   ], JSON_UNESCAPED_UNICODE) ?>;
 
   function govHuFormatHa(v) {
@@ -25,6 +26,9 @@ if (empty($govHuOpenDataTabEnabled)) {
 
   function govHuNoteMessage(d, j) {
     var L = govHuOpenDataLabels || {};
+    if (d && (d.reference_snapshot || (Array.isArray(d.notes) && d.notes.indexOf('ksh_using_reference_snapshot') >= 0))) {
+      return L.reference_snapshot || L.no_data || '—';
+    }
     if (d && Array.isArray(d.notes) && d.notes.length) {
       if (d.notes.indexOf('ksh_green_unavailable') >= 0 || d.notes.indexOf('ksh_forestry_unavailable') >= 0) {
         return L.ksh_unreachable || L.no_data || '—';
@@ -108,7 +112,9 @@ if (empty($govHuOpenDataTabEnabled)) {
         parts.push((L.temp || '') + ' HU: ' + d.weather_national.temp_mean_c + ' °C');
       }
       if (parts.length) {
-        dash.innerHTML = '<p class="text-secondary small mb-0">' + parts.join(' · ') + '</p>';
+        var refHint = (d.reference_snapshot || (Array.isArray(d.notes) && d.notes.indexOf('ksh_using_reference_snapshot') >= 0))
+          ? '<br><span class="text-warning-emphasis">' + (L.reference_snapshot || '') + '</span>' : '';
+        dash.innerHTML = '<p class="text-secondary small mb-0">' + parts.join(' · ') + refHint + '</p>';
       } else {
         dash.innerHTML = '<p class="text-secondary small mb-0">' + govHuNoteMessage(d, j) + '</p>';
       }

@@ -1,0 +1,21 @@
+{
+  "source": "KSH STADAT (kor0011, kor0004, kor0037) – referencia, ha a ksh.hu élő CSV a tárhelyről nem elérhető",
+  "published_through": "2020-12-31",
+  "green": {
+    "value_ha": 28104,
+    "year": 2020,
+    "scope": "national",
+    "label": "Önkormányzati tulajdonú zöldterületek (KSH)"
+  },
+  "forestry": {
+    "total_ha": 2032000,
+    "year": 2021,
+    "label": "Faállománnyal borított erdőgazdálkodási erdőterület – országos közelítő (KSH)"
+  },
+  "weather_national": {
+    "temp_mean_c": 11.5,
+    "precip_mm": 556.2,
+    "year": 2019,
+    "label": "Magyarország – KSH hosszú távú időjárás (közelítő)"
+  }
+}
