@@ -16,72 +16,16 @@ final class ExecutiveSummaryService
      */
     public static function resolveScopes(PDO $pdo, string $role, int $uid, ?int $adminRequestedAuthorityId): array
     {
-        $authorityIds = [];
-        $authorityCities = [];
-
-        if (in_array($role, ['admin', 'superadmin'], true)) {
-            if ($adminRequestedAuthorityId !== null && $adminRequestedAuthorityId > 0) {
-                $authorityIds = [$adminRequestedAuthorityId];
-            } else {
-                try {
-                    $rows = $pdo->query('SELECT id FROM authorities ORDER BY name ASC')->fetchAll(PDO::FETCH_COLUMN);
-                    $authorityIds = array_values(array_filter(array_map('intval', $rows ?: []), static fn ($x) => $x > 0));
-                } catch (Throwable $e) {
-                    $authorityIds = [];
-                }
-            }
-        } else {
-            try {
-                $stmt = $pdo->prepare('
-                  SELECT a.id, a.city FROM authority_users au
-                  INNER JOIN authorities a ON a.id = au.authority_id
-                  WHERE au.user_id = ?
-                  ORDER BY a.id ASC
-                ');
-                $stmt->execute([$uid]);
-                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                    $id = (int)($row['id'] ?? 0);
-                    if ($id > 0) {
-                        $authorityIds[] = $id;
-                    }
-                    $ct = trim((string)($row['city'] ?? ''));
-                    if ($ct !== '') {
-                        $authorityCities[] = $ct;
-                    }
-                }
-            } catch (Throwable $e) {
-                $authorityIds = [];
-            }
-            $authorityIds = array_values(array_unique($authorityIds));
-            $authorityCities = array_values(array_unique(array_filter($authorityCities)));
-        }
-
-        $reportWhere = '1=1';
-        $reportParams = [];
-
-        if (in_array($role, ['admin', 'superadmin'], true)) {
-            if (!empty($authorityIds)) {
-                $reportWhere = 'r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')';
-                $reportParams = $authorityIds;
-            }
-        } else {
-            if (empty($authorityIds)) {
-                $reportWhere = '1=0';
-            } else {
-                $reportWhere = 'r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')';
-                $reportParams = $authorityIds;
-                if (!empty($authorityCities)) {
-                    $reportWhere .= ' OR (r.authority_id IS NULL AND r.city IN (' . implode(',', array_fill(0, count($authorityCities), '?')) . '))';
-                    $reportParams = array_merge($reportParams, $authorityCities);
-                }
-            }
-        }
+        $scope = gov_resolve_report_scope($pdo, 'r', $adminRequestedAuthorityId);
+        $reportWhere = $scope['where'];
+        $reportParams = $scope['params'];
+        $authorityIds = $scope['authority_ids'];
 
         $treeScopeIds = [];
         if ($adminRequestedAuthorityId !== null && $adminRequestedAuthorityId > 0 && in_array($role, ['admin', 'superadmin'], true)) {
             $treeScopeIds = [$adminRequestedAuthorityId];
         } elseif (!empty($authorityIds)) {
-            $treeScopeIds = $authorityIds;
+            $treeScopeIds = in_array($role, ['admin', 'superadmin'], true) ? $authorityIds : [(int)$authorityIds[0]];
         }
 
         $healthAuthorityId = null;

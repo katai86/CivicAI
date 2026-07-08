@@ -328,25 +328,13 @@ $stats = [
   'governance' => [],
 ];
 
-// Gov user: CSAK a saját hatóság(ok) adatai – soha ne jelenjen meg más város/hatóság
-// Admin: összes adat; nem admin: csak authority_users-ból származó authority_ids
-$govWhere = '1=0';
-$govParams = [];
-if (!empty($authorityIds)) {
-  $govWhere = 'r.authority_id IN (' . implode(',', array_fill(0, count($authorityIds), '?')) . ')';
-  $govParams = array_values($authorityIds);
-  if (!empty($authorityCities)) {
-    $govWhere .= ' OR (r.authority_id IS NULL AND r.city IN (' . implode(',', array_fill(0, count($authorityCities), '?')) . '))';
-    $govParams = array_merge($govParams, $authorityCities);
-  }
-}
-$baseWhere = $isAdmin ? '1=1' : $govWhere;
-$baseParams = $isAdmin ? [] : $govParams;
+// Gov user: CSAK a saját hatóság adatai – szigorú authority_id (nincs város-alapú összefolyás)
 $adminRequestAuthorityId = ($isAdmin && isset($_GET['authority_id'])) ? (int)$_GET['authority_id'] : 0;
-if ($adminRequestAuthorityId > 0) {
-  $baseWhere = 'r.authority_id = ?';
-  $baseParams = [$adminRequestAuthorityId];
-}
+$reportScope = gov_resolve_report_scope(db(), 'r', $adminRequestAuthorityId > 0 ? $adminRequestAuthorityId : null);
+$govWhere = $reportScope['where'];
+$govParams = $reportScope['params'];
+$baseWhere = $isAdmin ? ($adminRequestAuthorityId > 0 ? $govWhere : '1=1') : $govWhere;
+$baseParams = $isAdmin ? ($adminRequestAuthorityId > 0 ? $govParams : []) : $govParams;
 
 $where = $baseWhere;
 $params = $baseParams;
@@ -635,6 +623,13 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
             </a>
           </li>
           <?php endif; ?>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_climate')) ?></li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="climate">
+              <i class="nav-icon bi bi-cloud-sun"></i>
+              <p><?= h(t('gov.tab_climate')) ?></p>
+            </a>
+          </li>
           <?php if ($govIotEnabled): ?>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="iot">
@@ -970,7 +965,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
               <p class="text-secondary small mb-2" id="govTreesKshHint" hidden></p>
               <?php endif; ?>
               <p class="text-secondary small mb-2"><?= h(t('gov.tree_map_layers_hint')) ?></p>
-              <?php if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled() && function_exists('eu_open_data_feature_enabled') && (eu_open_data_feature_enabled('copernicus_enabled') || eu_open_data_feature_enabled('clms_enabled'))): ?>
+              <?php if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled() && function_exists('eu_open_data_feature_enabled') && eu_open_data_feature_enabled('copernicus_enabled')): ?>
               <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
                 <label class="small mb-0"><?= h(t('gov.eu_map_layer_label')) ?>:</label>
                 <select id="govTreeEuLayerType" class="form-select form-select-sm" style="max-width:260px">
@@ -981,6 +976,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
                 </select>
                 <button type="button" class="btn btn-sm btn-outline-success" id="govTreeEuLayerRefresh"><?= h(t('admin.refresh')) ?></button>
               </div>
+              <p class="text-secondary small mb-2" id="govTreeEuOverlayHint"></p>
               <?php endif; ?>
               <div id="govTreeCadastreMap" style="height:480px; width:100%; border:1px solid #dee2e6; border-radius:0.375rem;"></div>
             </div>
@@ -1316,6 +1312,24 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
           <p class="small mb-0"><a href="https://kozadatportal.hu/" target="_blank" rel="noopener noreferrer"><?= h(t('gov.hu_portal_link')) ?></a></p>
         </div>
         <?php endif; ?>
+
+        <div class="admin-tab-body" id="tab-climate" hidden>
+          <p class="text-secondary small mb-3"><?= h(t('gov.climate_intro')) ?></p>
+          <div class="card mb-3">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.climate_modules_title')) ?></h6>
+              <div id="govClimateModulesContent"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
+            </div>
+          </div>
+          <div class="card mb-3 border-success border-opacity-25">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.climate_gfw_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.climate_gfw_hint')) ?></p>
+              <div id="govGfwContent"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
+              <p class="small mb-0 mt-2"><a href="https://www.globalforestwatch.org/" target="_blank" rel="noopener noreferrer">globalforestwatch.org</a></p>
+            </div>
+          </div>
+        </div>
 
         <div class="admin-tab-body" id="tab-reports" hidden>
           <div class="card">
@@ -1807,6 +1821,12 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govGreenMetricsUrl = <?= json_encode(app_url('/api/green_metrics.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govEuGreenOverlayUrl = <?= json_encode(app_url('/api/eu_green_overlay.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govIntelligenceModulesUrl = <?= json_encode(app_url('/api/intelligence_modules.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govGfwContextUrl = <?= json_encode(app_url('/api/gfw_context.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govClimateLabels = <?= json_encode([
+    'load_error' => t('gov.hu_load_error'),
+    'gfw_inactive' => t('gov.climate_module_inactive'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
   var govGreenMetricsLabels = <?= json_encode([
     'canopy_coverage' => t('gov.green_canopy_coverage'),
     'carbon_absorption' => t('gov.green_carbon_absorption'),
@@ -2173,7 +2193,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       e.preventDefault();
       var key = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
-      ['dashboard','ai','reports','ideas','surveys','budget','trees','analytics','eu-open-data','hu-open-data','iot','citybrain-live','citybrain-predictive','citybrain-hotspot','citybrain-behavior','citybrain-environmental','citybrain-insights','citybrain-risk','modules'].forEach(function(k){
+      ['dashboard','ai','reports','ideas','surveys','budget','trees','analytics','eu-open-data','hu-open-data','climate','iot','citybrain-live','citybrain-predictive','citybrain-hotspot','citybrain-behavior','citybrain-environmental','citybrain-insights','citybrain-risk','modules'].forEach(function(k){
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
       });
@@ -2194,6 +2214,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       }
       if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
       if (key === 'hu-open-data' && typeof loadGovHuOpenDataContext === 'function') { loadGovHuOpenDataContext({ lite: false }); }
+      if (key === 'climate') loadGovClimateTab();
       if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
       if (key === 'citybrain-live') loadCitybrainLive();
       if (key === 'citybrain-predictive') loadCitybrainPredictive();
@@ -3856,17 +3877,67 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     if (tr) tr.addEventListener('click', function(){ loadGovTreeEuOverlayLayer(); });
     if (ts) ts.addEventListener('change', function(){ loadGovTreeEuOverlayLayer(); });
   }
+  function loadGovClimateTab(){
+    var mod = document.getElementById('govClimateModulesContent');
+    var gfw = document.getElementById('govGfwContent');
+    var Lb = govClimateLabels || {};
+    if (mod && govIntelligenceModulesUrl) {
+      fetch(govIntelligenceModulesUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+        if (!j.ok || !j.data || !Array.isArray(j.data.modules)) {
+          mod.innerHTML = '<p class="text-secondary small mb-0">' + (Lb.load_error || '—') + '</p>';
+          return;
+        }
+        mod.innerHTML = j.data.modules.map(function(m){
+          var st = m.runtimeStatus || 'inactive';
+          var badge = st === 'active' ? 'success' : (st === 'preview' ? 'warning' : 'secondary');
+          var nm = (typeof escStr === 'function') ? escStr(m.name || '') : String(m.name || '');
+          var ds = (typeof escStr === 'function') ? escStr(m.description || '') : String(m.description || '');
+          return '<div class="d-flex justify-content-between align-items-start border-bottom py-2 small"><div><b>' + nm + '</b><br><span class="text-secondary">' + ds + '</span></div><span class="badge text-bg-' + badge + '">' + st + '</span></div>';
+        }).join('');
+      }).catch(function(){
+        mod.innerHTML = '<p class="text-secondary small mb-0">' + (Lb.load_error || '—') + '</p>';
+      });
+    }
+    if (gfw && govGfwContextUrl) {
+      var q = (typeof govEuAuthorityQuery === 'function' ? govEuAuthorityQuery() : '');
+      fetch(govGfwContextUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+        if (!j.ok || !j.data) {
+          gfw.innerHTML = '<p class="text-secondary small mb-0">' + (Lb.gfw_inactive || Lb.load_error || '—') + '</p>';
+          return;
+        }
+        var d = j.data;
+        var parts = [];
+        if (d.tree_cover_percent != null) parts.push('<?= h(t('gov.hu_green_ha')) ?> ~' + d.tree_cover_percent + '%');
+        if (d.year) parts.push('<?= h(t('gov.hu_year')) ?>: ' + d.year);
+        if (d.source) parts.push(String(d.source));
+        gfw.innerHTML = '<p class="text-secondary small mb-0">' + (parts.length ? parts.join(' · ') : (Lb.gfw_inactive || '—')) + '</p>';
+      }).catch(function(){
+        gfw.innerHTML = '<p class="text-secondary small mb-0">' + (Lb.load_error || '—') + '</p>';
+      });
+    }
+  }
   function loadGovTreeEuOverlayLayer(){
     if (!govTreeCadastreMap || !govEuGreenOverlayUrl) return;
     var sel = document.getElementById('govTreeEuLayerType');
+    var hint = document.getElementById('govTreeEuOverlayHint');
     if (!sel) return;
     var lt = sel.value || 'planting_priority';
     if (govTreeEuGeoLayer) {
       govTreeCadastreMap.removeLayer(govTreeEuGeoLayer);
       govTreeEuGeoLayer = null;
     }
+    if (hint) hint.textContent = '';
     fetch(govEuGreenOverlayUrl + govEuOverlayQueryParams(lt), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
-      if (!j.ok || !j.data || j.data.type !== 'FeatureCollection') return;
+      if (!j.ok || !j.data || j.data.type !== 'FeatureCollection') {
+        if (hint) hint.textContent = (j && j.error) ? String(j.error) : <?= json_encode(t('gov.eu_overlay_empty'), JSON_UNESCAPED_UNICODE) ?>;
+        return;
+      }
+      var feats = j.data.features || [];
+      if (!feats.length) {
+        var notes = (j.meta && j.meta.notes) ? j.meta.notes.join(', ') : '';
+        if (hint) hint.textContent = notes || <?= json_encode(t('gov.eu_overlay_empty'), JSON_UNESCAPED_UNICODE) ?>;
+        return;
+      }
       govTreeEuGeoLayer = L.geoJSON(j.data, {
         pointToLayer: function(_f, latlng){
           return L.circleMarker(latlng, { radius: 5, color: '#198754', fillColor: '#20c997', fillOpacity: 0.5, weight: 1 });
@@ -3882,7 +3953,9 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
           govTreeEuOverlayBoundOnce = true;
         } catch (_) {}
       }
-    }).catch(function(){});
+    }).catch(function(){
+      if (hint) hint.textContent = <?= json_encode(t('gov.eu_overlay_load_error'), JSON_UNESCAPED_UNICODE) ?>;
+    });
   }
   function loadGovTreesMap(){
     if (!govTreeCadastreMap || !govTreeCadastreLayer || !govTreesListUrl) return;
@@ -4314,6 +4387,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     }
     if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
     if (key === 'hu-open-data' && typeof loadGovHuOpenDataContext === 'function') { loadGovHuOpenDataContext({ lite: false }); }
+    if (key === 'climate') loadGovClimateTab();
     if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
     if (key === 'citybrain-live') loadCitybrainLive();
     if (key === 'citybrain-predictive') loadCitybrainPredictive();

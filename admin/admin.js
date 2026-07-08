@@ -21,8 +21,17 @@ let map = null;
 let markers = [];
 let markerById = new Map();
 let layerMarkers = [];
+let adminMapInitialized = false;
 
-if (document.getElementById('map')) {
+function ensureAdminMap() {
+  const el = document.getElementById('map');
+  if (!el || typeof L === 'undefined') return null;
+  if (map) {
+    requestAnimationFrame(function () {
+      try { map.invalidateSize(); } catch (_) {}
+    });
+    return map;
+  }
   const b = document.body;
   const mlat = parseFloat(b.dataset.mapLat);
   const mlng = parseFloat(b.dataset.mapLng);
@@ -36,6 +45,11 @@ if (document.getElementById('map')) {
     maxZoom: 20,
     attribution: '&copy; OpenStreetMap közreműködők, Humanitarian style'
   }).addTo(map);
+  adminMapInitialized = true;
+  requestAnimationFrame(function () {
+    try { map.invalidateSize(); } catch (_) {}
+  });
+  return map;
 }
 
 let adminSearchMarker = null;
@@ -574,6 +588,7 @@ async function ensureAuthorityFilterOptions(){
 }
 
 async function loadReports(){
+  ensureAdminMap();
   const status = document.getElementById('statusFilter').value;
   const q = (document.getElementById('reportSearch').value || '').trim();
   const authorityId = (document.getElementById('authorityFilter') && document.getElementById('authorityFilter').value) ? Number(document.getElementById('authorityFilter').value) : 0;
@@ -1247,7 +1262,14 @@ function initTabs(){
         }
         if (key === 'reports') {
           clearLayerMarkers();
+          ensureAdminMap();
           loadStats();
+          loadReports();
+          requestAnimationFrame(function () {
+            if (map) {
+              try { map.invalidateSize(); } catch (_) {}
+            }
+          });
         }
         if (key === 'authorities') {
           clearLayerMarkers();
@@ -1570,4 +1592,3 @@ document.querySelectorAll('.app-sidebar .sidebar-section-header').forEach(functi
   header.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); header.click(); } });
 });
 loadStats();
-loadReports();

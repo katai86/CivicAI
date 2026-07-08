@@ -15,61 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 $role = current_user_role();
 $uid = current_user_id() ? (int)current_user_id() : 0;
-$authorityIds = [];
-$authorityCities = [];
-
-if ($role && in_array($role, ['admin', 'superadmin'], true)) {
-  $aid = isset($_GET['authority_id']) ? (int)$_GET['authority_id'] : 0;
-  if ($aid > 0) {
-    $authorityIds = [$aid];
-  } else {
-    try {
-      $rows = db()->query("SELECT id FROM authorities ORDER BY name ASC")->fetchAll(PDO::FETCH_COLUMN);
-      $authorityIds = array_map('intval', $rows);
-    } catch (Throwable $e) {
-      $authorityIds = [];
-    }
-  }
-} else {
-  if ($uid) {
-    try {
-      $stmt = db()->prepare("SELECT authority_id FROM authority_users WHERE user_id = ? ORDER BY authority_id");
-      $stmt->execute([$uid]);
-      $authorityIds = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
-      if (!empty($authorityIds)) {
-        $stmt = db()->prepare("SELECT city FROM authorities WHERE id = ?");
-        foreach ($authorityIds as $aid) {
-          $stmt->execute([$aid]);
-          $city = $stmt->fetchColumn();
-          if ($city) $authorityCities[] = $city;
-        }
-        $authorityCities = array_values(array_unique(array_filter($authorityCities)));
-      }
-    } catch (Throwable $e) {}
-  }
-}
-
-$baseWhere = '1=1';
-$baseParams = [];
-if (in_array($role, ['admin', 'superadmin'], true)) {
-  if (!empty($authorityIds)) {
-    $placeholders = implode(',', array_fill(0, count($authorityIds), '?'));
-    $baseWhere = "r.authority_id IN ($placeholders)";
-    $baseParams = $authorityIds;
-  }
-} else {
-  if (empty($authorityIds)) {
-    $baseWhere = '1=0';
-  } else {
-    $placeholders = implode(',', array_fill(0, count($authorityIds), '?'));
-    $baseWhere = "r.authority_id IN ($placeholders)";
-    $baseParams = $authorityIds;
-    if (!empty($authorityCities)) {
-      $baseWhere .= " OR (r.authority_id IS NULL AND r.city IN (" . implode(',', array_fill(0, count($authorityCities), '?')) . "))";
-      $baseParams = array_merge($baseParams, $authorityCities);
-    }
-  }
-}
+$scope = gov_resolve_report_scope(db(), 'r');
+$baseWhere = $scope['where'];
+$baseParams = $scope['params'];
+$authorityIds = $scope['authority_ids'];
 
 $dateFrom = isset($_GET['date_from']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date_from']) ? $_GET['date_from'] : date('Y-m-d', strtotime('-30 days'));
 $dateTo   = isset($_GET['date_to'])   && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date_to'])   ? $_GET['date_to'] : date('Y-m-d');

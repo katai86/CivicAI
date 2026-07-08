@@ -189,11 +189,23 @@ class CopernicusDataService
                 $trees = 0;
                 $greenReports = 0;
                 try {
-                    $st = $pdo->prepare('SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND lat BETWEEN ? AND ? AND lng BETWEEN ? AND ?');
-                    $st->execute([$cMinLat, $cMaxLat, $cMinLng, $cMaxLng]);
+                    $treeSql = 'SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND lat BETWEEN ? AND ? AND lng BETWEEN ? AND ?';
+                    $treeParams = [$cMinLat, $cMaxLat, $cMinLng, $cMaxLng];
+                    if ($authorityId > 0 && db_table_has_column($pdo, 'trees', 'authority_id')) {
+                        $treeSql .= ' AND authority_id = ?';
+                        $treeParams[] = $authorityId;
+                    }
+                    $st = $pdo->prepare($treeSql);
+                    $st->execute($treeParams);
                     $trees = (int)$st->fetchColumn();
-                    $st = $pdo->prepare('SELECT COUNT(*) FROM reports WHERE lat BETWEEN ? AND ? AND lng BETWEEN ? AND ? AND category = ?');
-                    $st->execute([$cMinLat, $cMaxLat, $cMinLng, $cMaxLng, 'green']);
+                    $repSql = 'SELECT COUNT(*) FROM reports WHERE lat BETWEEN ? AND ? AND lng BETWEEN ? AND ? AND category = ?';
+                    $repParams = [$cMinLat, $cMaxLat, $cMinLng, $cMaxLng, 'green'];
+                    if ($authorityId > 0) {
+                        $repSql .= ' AND authority_id = ?';
+                        $repParams[] = $authorityId;
+                    }
+                    $st = $pdo->prepare($repSql);
+                    $st->execute($repParams);
                     $greenReports = (int)$st->fetchColumn();
                 } catch (Throwable $e) {
                     continue;

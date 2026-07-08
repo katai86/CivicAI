@@ -116,6 +116,14 @@ $MODULE_DEFS = [
       ['key' => 'cache_ttl_minutes', 'label' => t('hu_open_data.lbl_cache_ttl'), 'type' => 'number', 'placeholder' => '360'],
     ],
   ],
+  'climate_gfw' => [
+    'name' => t('climate_gfw.module_name'),
+    'description' => t('climate_gfw.module_desc'),
+    'settings' => [
+      ['key' => 'enabled', 'label' => t('admin.enabled'), 'type' => 'checkbox'],
+      ['key' => 'cache_ttl_minutes', 'label' => t('climate_gfw.lbl_cache_ttl'), 'type' => 'number', 'placeholder' => '1440'],
+    ],
+  ],
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

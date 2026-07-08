@@ -56,54 +56,52 @@ class GreenIntelligence
         }
 
         $totalTrees = count($trees);
-        if ($totalTrees === 0) {
-            return $out;
-        }
+        if ($totalTrees > 0) {
+            $totalCanopyM2 = 0;
+            $speciesSet = [];
+            $droughtCount = 0;
+            $speciesIntervals = $this->loadSpeciesWateringIntervals($pdo);
 
-        $totalCanopyM2 = 0;
-        $speciesSet = [];
-        $droughtCount = 0;
-        $speciesIntervals = $this->loadSpeciesWateringIntervals($pdo);
+            foreach ($trees as $t) {
+                $radiusM = self::DEFAULT_CANOPY_RADIUS_M;
+                if (!empty($t['canopy_diameter']) && (float)$t['canopy_diameter'] > 0) {
+                    $radiusM = (float)$t['canopy_diameter'] / 2.0;
+                }
+                $totalCanopyM2 += M_PI * $radiusM * $radiusM;
 
-        foreach ($trees as $t) {
-            $radiusM = self::DEFAULT_CANOPY_RADIUS_M;
-            if (!empty($t['canopy_diameter']) && (float)$t['canopy_diameter'] > 0) {
-                $radiusM = (float)$t['canopy_diameter'] / 2.0;
-            }
-            $totalCanopyM2 += M_PI * $radiusM * $radiusM;
+                $species = trim((string)($t['species'] ?? ''));
+                if ($species !== '') {
+                    $speciesSet[$species] = true;
+                }
 
-            $species = trim((string)($t['species'] ?? ''));
-            if ($species !== '') {
-                $speciesSet[$species] = true;
-            }
-
-            $lastWatered = $t['last_watered'] ?? null;
-            $intervalDays = isset($speciesIntervals[$species]) ? $speciesIntervals[$species] : 14;
-            if ($lastWatered === null || $lastWatered === '') {
-                $droughtCount++;
-            } else {
-                $daysSince = (time() - strtotime($lastWatered)) / 86400;
-                if ($daysSince > $intervalDays) {
+                $lastWatered = $t['last_watered'] ?? null;
+                $intervalDays = isset($speciesIntervals[$species]) ? $speciesIntervals[$species] : 14;
+                if ($lastWatered === null || $lastWatered === '') {
                     $droughtCount++;
+                } else {
+                    $daysSince = (time() - strtotime($lastWatered)) / 86400;
+                    if ($daysSince > $intervalDays) {
+                        $droughtCount++;
+                    }
                 }
             }
+
+            $out['carbon_absorption'] = round(($totalCanopyM2 * self::CO2_KG_PER_M2_YEAR) / 1000, 1);
+
+            $referenceAreaM2 = 1e6;
+            if ($bbox) {
+                $avgLat = ($bbox['min_lat'] + $bbox['max_lat']) / 2;
+                $latM = 111320 * 1000 * cos($avgLat * M_PI / 180);
+                $lngM = 111320 * 1000 * cos($avgLat * M_PI / 180);
+                $referenceAreaM2 = max(1000, ($bbox['max_lat'] - $bbox['min_lat']) * $latM * ($bbox['max_lng'] - $bbox['min_lng']) * $lngM);
+            }
+            $out['canopy_coverage'] = round(min(1.0, $totalCanopyM2 / $referenceAreaM2), 2);
+
+            $speciesCount = count($speciesSet);
+            $out['biodiversity_index'] = round(min(1.0, $speciesCount / 15.0), 2);
+
+            $out['drought_risk'] = round($droughtCount / $totalTrees, 2);
         }
-
-        $out['carbon_absorption'] = round(($totalCanopyM2 * self::CO2_KG_PER_M2_YEAR) / 1000, 1);
-
-        $referenceAreaM2 = 1e6;
-        if ($bbox) {
-            $avgLat = ($bbox['min_lat'] + $bbox['max_lat']) / 2;
-            $latM = 111320 * 1000 * cos($avgLat * M_PI / 180);
-            $lngM = 111320 * 1000 * cos($avgLat * M_PI / 180);
-            $referenceAreaM2 = max(1000, ($bbox['max_lat'] - $bbox['min_lat']) * $latM * ($bbox['max_lng'] - $bbox['min_lng']) * $lngM);
-        }
-        $out['canopy_coverage'] = round(min(1.0, $totalCanopyM2 / $referenceAreaM2), 2);
-
-        $speciesCount = count($speciesSet);
-        $out['biodiversity_index'] = round(min(1.0, $speciesCount / 15.0), 2);
-
-        $out['drought_risk'] = round($droughtCount / $totalTrees, 2);
 
         if (function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled()) {
             try {

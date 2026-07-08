@@ -471,6 +471,12 @@ function hu_open_data_snapshot_fallback_enabled(): bool
     return $v === '1' || $v === 1;
 }
 
+/** Global Forest Watch (Klíma modul) – ingyenes erdő/adat API. */
+function climate_gfw_module_enabled(): bool
+{
+    return get_module_setting('climate_gfw', 'enabled') === '1';
+}
+
 /** Részvételi költségvetés – modul ki/be (időszakos szavazás). Alapértelmezett: be. */
 function participatory_budget_enabled(): bool {
     $v = get_module_setting('participatory_budget', 'enabled');
@@ -1281,6 +1287,71 @@ function gov_tree_list_scope_authority_ids(): array {
     }
   }
   return array_values(array_filter($ids, static fn($x) => $x > 0));
+}
+
+/** Gov felhasználó elsődleges hatósága (egy fiók = egy körben látható statisztika). */
+function gov_primary_authority_id(): ?int
+{
+  $ids = gov_tree_list_scope_authority_ids();
+  if (empty($ids)) {
+    return null;
+  }
+  $role = current_user_role() ?: '';
+  if (!in_array($role, ['admin', 'superadmin'], true)) {
+    return (int)$ids[0];
+  }
+  $req = isset($_GET['authority_id']) ? (int)$_GET['authority_id'] : 0;
+  return $req > 0 ? $req : null;
+}
+
+/**
+ * Bejelentések scope: szigorú authority_id szűrés (nincs város-alapú összefolyás).
+ *
+ * @return array{authority_ids:int[],where:string,params:array}
+ */
+function gov_resolve_report_scope(PDO $pdo, string $alias = 'r', ?int $requestedAuthorityId = null): array
+{
+  $role = current_user_role() ?: '';
+  $authorityIds = [];
+  if ($requestedAuthorityId === null && isset($_GET['authority_id'])) {
+    $requestedAuthorityId = (int)$_GET['authority_id'];
+  }
+  if (in_array($role, ['admin', 'superadmin'], true)) {
+    if ($requestedAuthorityId !== null && $requestedAuthorityId > 0) {
+      $authorityIds = [$requestedAuthorityId];
+    } else {
+      try {
+        $authorityIds = array_map('intval', $pdo->query('SELECT id FROM authorities ORDER BY name')->fetchAll(PDO::FETCH_COLUMN));
+      } catch (Throwable $e) {
+        $authorityIds = [];
+      }
+    }
+  } else {
+    $uid = current_user_id() ? (int)current_user_id() : 0;
+    if ($requestedAuthorityId !== null && $requestedAuthorityId > 0 && $uid > 0) {
+      try {
+        $st = $pdo->prepare('SELECT 1 FROM authority_users WHERE user_id = ? AND authority_id = ? LIMIT 1');
+        $st->execute([$uid, $requestedAuthorityId]);
+        if ($st->fetchColumn()) {
+          $authorityIds = [$requestedAuthorityId];
+        }
+      } catch (Throwable $e) {
+      }
+    }
+    if (empty($authorityIds)) {
+      $pid = gov_primary_authority_id();
+      $authorityIds = $pid ? [$pid] : [];
+    }
+  }
+  if (empty($authorityIds)) {
+    return ['authority_ids' => [], 'where' => '1=0', 'params' => []];
+  }
+  $ph = implode(',', array_fill(0, count($authorityIds), '?'));
+  return [
+    'authority_ids' => $authorityIds,
+    'where' => $alias . '.authority_id IN (' . $ph . ')',
+    'params' => $authorityIds,
+  ];
 }
 
 /**

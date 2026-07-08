@@ -132,8 +132,10 @@ class HuOpenDataService
             }
         }
 
-        if (!$any && function_exists('hu_open_data_snapshot_fallback_enabled') && hu_open_data_snapshot_fallback_enabled()) {
-            $any = $this->applyReferenceSnapshotToContext($out, $lite);
+        if (function_exists('hu_open_data_snapshot_fallback_enabled') && hu_open_data_snapshot_fallback_enabled()) {
+            if ($this->applyReferenceSnapshotToContext($out, $lite)) {
+                $any = true;
+            }
         }
 
         $out['ok'] = $any;
