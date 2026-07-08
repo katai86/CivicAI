@@ -588,12 +588,45 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
             </a>
           </li>
           <?php endif; ?>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= h(t('gov.nav_section_map')) ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="trees">
               <i class="nav-icon bi bi-globe-americas"></i>
               <p><?= h(t('gov.tab_canopy')) ?></p>
             </a>
           </li>
+          <?php if ($govEuOpenDataTabEnabled): ?>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="eu-open-data">
+              <i class="nav-icon bi bi-globe2"></i>
+              <p><?= h(t('gov.tab_eu_open_data')) ?></p>
+            </a>
+          </li>
+          <?php endif; ?>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= h(t('gov.nav_section_climate')) ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="climate">
+              <i class="nav-icon bi bi-cloud-sun"></i>
+              <p><?= h(t('gov.tab_climate')) ?></p>
+            </a>
+          </li>
+          <?php if ($govHuOpenDataTabEnabled): ?>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="hu-open-data">
+              <i class="nav-icon bi bi-flag"></i>
+              <p><?= h(t('gov.tab_hu_open_data')) ?></p>
+            </a>
+          </li>
+          <?php endif; ?>
+          <?php if ($govIotEnabled): ?>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_mobility')) ?></li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="iot">
+              <i class="nav-icon bi bi-ev-front-fill"></i>
+              <p><?= h(t('gov.tab_iot')) ?></p>
+            </a>
+          </li>
+          <?php endif; ?>
           <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= h(t('gov.nav_section_insights')) ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="ai">
@@ -607,38 +640,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
               <p><?= h(t('gov.tab_analytics')) ?></p>
             </a>
           </li>
-          <?php if ($govEuOpenDataTabEnabled): ?>
-          <li class="nav-item">
-            <a href="#" class="nav-link tab" data-tab="eu-open-data">
-              <i class="nav-icon bi bi-globe2"></i>
-              <p><?= h(t('gov.tab_eu_open_data')) ?></p>
-            </a>
-          </li>
-          <?php endif; ?>
-          <?php if ($govHuOpenDataTabEnabled): ?>
-          <li class="nav-item">
-            <a href="#" class="nav-link tab" data-tab="hu-open-data">
-              <i class="nav-icon bi bi-flag"></i>
-              <p><?= h(t('gov.tab_hu_open_data')) ?></p>
-            </a>
-          </li>
-          <?php endif; ?>
-          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_climate')) ?></li>
-          <li class="nav-item">
-            <a href="#" class="nav-link tab" data-tab="climate">
-              <i class="nav-icon bi bi-cloud-sun"></i>
-              <p><?= h(t('gov.tab_climate')) ?></p>
-            </a>
-          </li>
-          <?php if ($govIotEnabled): ?>
-          <li class="nav-item">
-            <a href="#" class="nav-link tab" data-tab="iot">
-              <i class="nav-icon bi bi-broadcast"></i>
-              <p><?= h(t('gov.tab_iot')) ?></p>
-            </a>
-          </li>
-          <?php endif; ?>
-          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= h(t('gov.nav_section_city_brain')) ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
+          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= h(t('gov.nav_section_legacy')) ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="citybrain-live">
               <i class="nav-icon bi bi-speedometer2"></i>
@@ -740,6 +742,27 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
               </div>
               <div id="govExecutiveHeroContent">
                 <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+              </div>
+            </div>
+          </div>
+          <div class="card mb-3 border-success border-opacity-50 shadow-sm" id="govIntelDashboardCard">
+            <div class="card-body py-3 px-3">
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                <div>
+                  <h6 class="mb-1 fw-semibold"><?= h(t('intel.platform_title')) ?></h6>
+                  <p class="text-secondary small mb-0"><?= h(t('intel.platform_subtitle')) ?></p>
+                </div>
+                <div class="d-flex flex-wrap gap-1" id="govIntelModuleBadges"></div>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-4 col-lg-3" id="govClimateIndexCol">
+                  <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+                </div>
+                <div class="col-md-8 col-lg-9">
+                  <div class="row g-2 mb-2" id="govIntelKpiRow"></div>
+                  <h6 class="small fw-semibold mb-1"><?= h(t('intel.recommendations')) ?></h6>
+                  <div id="govIntelRecommendations"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
+                </div>
               </div>
             </div>
           </div>
@@ -1579,8 +1602,17 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         </div>
 
         <div class="admin-tab-body" id="tab-modules" hidden>
+          <div class="card mb-3">
+            <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('intel.module_manager_title')) ?></h6>
+              <p class="text-secondary small mb-3"><?= h(t('intel.module_manager_intro')) ?></p>
+              <?php if (!$isAdmin): ?><p class="text-secondary small mb-2"><?= h(t('intel.admin_only_hint')) ?></p><?php endif; ?>
+              <div id="govIntelModuleManager"><?= h(t('admin.load')) ?>...</div>
+            </div>
+          </div>
           <div class="card">
             <div class="card-body">
+              <h6 class="card-title mb-1"><?= h(t('gov.tab_modules')) ?></h6>
               <p class="text-secondary small mb-3"><?= h(t('gov.modules_intro')) ?></p>
               <div id="govModuleList"><?= h(t('admin.load')) ?>...</div>
             </div>
@@ -1822,7 +1854,34 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
   var govGreenMetricsUrl = <?= json_encode(app_url('/api/green_metrics.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govEuGreenOverlayUrl = <?= json_encode(app_url('/api/eu_green_overlay.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govIntelligenceModulesUrl = <?= json_encode(app_url('/api/intelligence_modules.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govIntelligenceDashboardUrl = <?= json_encode(app_url('/api/intelligence_dashboard.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govIntelligenceModuleSettingsUrl = <?= json_encode(app_url('/api/intelligence_module_settings.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govGfwContextUrl = <?= json_encode(app_url('/api/gfw_context.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var govIsAdmin = <?= json_encode(!empty($isAdmin)) ?>;
+  var govIntelLabels = <?= json_encode([
+    'platform_title' => t('intel.platform_title'),
+    'climate_index' => t('intel.climate_index'),
+    'active_modules' => t('intel.active_modules'),
+    'error_modules' => t('intel.error_modules'),
+    'recommendations' => t('intel.recommendations'),
+    'no_recommendations' => t('intel.no_recommendations'),
+    'load_error' => t('gov.hu_load_error'),
+    'cat_critical' => t('intel.cat_critical'),
+    'cat_weak' => t('intel.cat_weak'),
+    'cat_moderate' => t('intel.cat_moderate'),
+    'cat_good' => t('intel.cat_good'),
+    'cat_excellent' => t('intel.cat_excellent'),
+    'category_climate' => t('intel.category_climate'),
+    'category_mobility' => t('intel.category_mobility'),
+    'category_ai_vision' => t('intel.category_ai_vision'),
+    'status_inactive' => t('intel.status_inactive'),
+    'status_preview' => t('intel.status_preview'),
+    'status_config_required' => t('intel.status_config_required'),
+    'status_active' => t('intel.status_active'),
+    'lbl_dashboard' => t('intel.lbl_dashboard_widget'),
+    'lbl_map' => t('intel.lbl_map_layer'),
+    'lbl_report' => t('intel.lbl_report'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
   var govClimateLabels = <?= json_encode([
     'load_error' => t('gov.hu_load_error'),
     'gfw_inactive' => t('gov.climate_module_inactive'),
@@ -2197,7 +2256,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
       });
-      if (key === 'modules') loadGovModules();
+      if (key === 'modules') { loadGovIntelModuleManager(); loadGovModules(); }
       if (key === 'surveys') loadGovSurveys();
       if (key === 'budget') loadGovBudget();
       if (key === 'trees') { loadGovEsgSnapshot(); initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
@@ -2215,7 +2274,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
       if (key === 'hu-open-data' && typeof loadGovHuOpenDataContext === 'function') { loadGovHuOpenDataContext({ lite: false }); }
       if (key === 'climate') loadGovClimateTab();
-      if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
+      if (key === 'dashboard') { loadGovIntelligenceDashboard(); loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
       if (key === 'citybrain-live') loadCitybrainLive();
       if (key === 'citybrain-predictive') loadCitybrainPredictive();
       if (key === 'citybrain-hotspot') initCitybrainHotspot();
@@ -2239,6 +2298,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     header.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); header.click(); } });
   });
 
+  loadGovIntelligenceDashboard();
   loadGovExecutiveSummary();
   loadGovMorningBrief();
   loadGovInsights();
@@ -4141,6 +4201,117 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
   }
 
   // Gov modules list
+  function intelStatusBadge(st) {
+    var map = { active: 'success', preview: 'warning', config_required: 'secondary', inactive: 'secondary' };
+    return map[st] || 'secondary';
+  }
+  function intelCategoryLabel(cat) {
+    var L = govIntelLabels || {};
+    if (cat === 'climate') return L.category_climate || cat;
+    if (cat === 'mobility') return L.category_mobility || cat;
+    if (cat === 'ai_vision') return L.category_ai_vision || cat;
+    return cat;
+  }
+  function loadGovIntelligenceDashboard(){
+    var col = document.getElementById('govClimateIndexCol');
+    var kpi = document.getElementById('govIntelKpiRow');
+    var rec = document.getElementById('govIntelRecommendations');
+    var badges = document.getElementById('govIntelModuleBadges');
+    var L = govIntelLabels || {};
+    if (!govIntelligenceDashboardUrl) return;
+    var q = (typeof govEuAuthorityQuery === 'function' ? govEuAuthorityQuery() : '');
+    fetch(govIntelligenceDashboardUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.data) {
+        if (col) col.innerHTML = '<p class="text-secondary small mb-0">' + (L.load_error || '—') + '</p>';
+        return;
+      }
+      var ci = j.data.climate_index || {};
+      var cat = ci.category || 'moderate';
+      var catLabel = L['cat_' + cat] || cat;
+      var catClass = (cat === 'critical' || cat === 'weak') ? 'danger' : (cat === 'excellent' || cat === 'good') ? 'success' : 'warning';
+      if (col) {
+        if (window.CivicKpi && typeof CivicKpi.renderGaugeCard === 'function') {
+          col.innerHTML = CivicKpi.renderGaugeCard({ title: L.climate_index || '', value: ci.score || 0, max: 100, subtitle: catLabel });
+        } else {
+          col.innerHTML = '<div class="text-center p-2 border rounded"><div class="display-6 fw-bold text-' + catClass + '">' + (ci.score || '—') + '</div><div class="small text-secondary">' + (L.climate_index || '') + '</div><span class="badge text-bg-' + catClass + '">' + catLabel + '</span></div>';
+        }
+      }
+      if (badges) {
+        badges.innerHTML = '<span class="badge text-bg-success">' + (L.active_modules || '') + ': ' + (ci.active_modules || 0) + '</span>'
+          + '<span class="badge text-bg-' + ((ci.error_modules || 0) > 0 ? 'danger' : 'secondary') + '">' + (L.error_modules || '') + ': ' + (ci.error_modules || 0) + '</span>';
+      }
+      if (kpi && ci.components) {
+        var comps = ci.components;
+        var keys = Object.keys(comps).slice(0, 4);
+        kpi.innerHTML = keys.map(function(k){
+          var c = comps[k];
+          return '<div class="col-6 col-md-3"><div class="border rounded p-2 text-center"><div class="fw-bold">' + (c.score != null ? c.score : '—') + '</div><div class="text-secondary small">' + k.replace(/_/g, ' ') + '</div></div></div>';
+        }).join('');
+      }
+      if (rec) {
+        var recs = ci.recommendations || [];
+        if (!recs.length) {
+          rec.innerHTML = '<p class="text-secondary small mb-0">' + (L.no_recommendations || '—') + '</p>';
+        } else {
+          rec.innerHTML = '<ul class="small mb-0 ps-3">' + recs.map(function(r){
+            var p = r.priority === 'high' ? 'text-danger' : (r.priority === 'medium' ? 'text-warning-emphasis' : 'text-secondary');
+            return '<li class="' + p + ' mb-1">' + String(r.text || '').replace(/</g,'&lt;') + '</li>';
+          }).join('') + '</ul>';
+        }
+      }
+    }).catch(function(){
+      if (col) col.innerHTML = '<p class="text-secondary small mb-0">' + (L.load_error || '—') + '</p>';
+    });
+  }
+  function loadGovIntelModuleManager(){
+    var wrap = document.getElementById('govIntelModuleManager');
+    var L = govIntelLabels || {};
+    if (!wrap || !govIntelligenceModuleSettingsUrl) return;
+    wrap.textContent = <?= json_encode(t('gov.loading'), JSON_UNESCAPED_UNICODE) ?>;
+    fetch(govIntelligenceModuleSettingsUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.data || !Array.isArray(j.data.modules)) {
+        wrap.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>;
+        return;
+      }
+      var canEdit = !!(j.data.can_edit && govIsAdmin);
+      var byCat = {};
+      j.data.modules.forEach(function(m){
+        var c = m.category || 'other';
+        if (!byCat[c]) byCat[c] = [];
+        byCat[c].push(m);
+      });
+      var html = '';
+      Object.keys(byCat).forEach(function(cat){
+        html += '<h6 class="small fw-semibold mt-3 mb-2">' + intelCategoryLabel(cat) + '</h6>';
+        byCat[cat].forEach(function(m){
+          var st = m.runtimeStatus || 'inactive';
+          html += '<div class="border rounded p-2 mb-2"><div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">'
+            + '<div class="flex-grow-1"><div class="fw-semibold small">' + String(m.name||'').replace(/</g,'&lt;') + '</div>'
+            + '<div class="text-secondary small">' + String(m.description||'').replace(/</g,'&lt;') + '</div>'
+            + '<div class="small mt-1"><span class="badge text-bg-' + intelStatusBadge(st) + '">' + (L['status_' + st] || st) + '</span>'
+            + (m.lastSync ? ' <span class="text-secondary">· ' + String(m.lastSync).slice(0,19) + '</span>' : '') + '</div></div>';
+          if (canEdit) {
+            html += '<div class="d-flex flex-column gap-1 small">'
+              + '<label class="form-check form-switch mb-0"><input type="checkbox" class="form-check-input intel-mod-toggle" data-key="' + m.module_key + '" data-setting="enabled" ' + (m.enabled ? 'checked' : '') + '> ' + <?= json_encode(t('admin.enabled'), JSON_UNESCAPED_UNICODE) ?> + '</label>'
+              + '<label class="form-check form-switch mb-0"><input type="checkbox" class="form-check-input intel-mod-toggle" data-key="' + m.module_key + '" data-setting="dashboard_widget" ' + (m.dashboard_widget ? 'checked' : '') + '> ' + (L.lbl_dashboard || '') + '</label>'
+              + '<label class="form-check form-switch mb-0"><input type="checkbox" class="form-check-input intel-mod-toggle" data-key="' + m.module_key + '" data-setting="map_layer" ' + (m.map_layer ? 'checked' : '') + '> ' + (L.lbl_map || '') + '</label>'
+              + '</div>';
+          }
+          html += '</div></div>';
+        });
+      });
+      wrap.innerHTML = html || '<p class="text-secondary small mb-0">—</p>';
+      if (canEdit) {
+        wrap.querySelectorAll('.intel-mod-toggle').forEach(function(sw){
+          sw.addEventListener('change', function(){
+            postJson(govIntelligenceModuleSettingsUrl, { module_key: sw.getAttribute('data-key'), setting_key: sw.getAttribute('data-setting'), value: sw.checked ? '1' : '0' })
+              .then(function(x){ if (x && x.ok && x.j && x.j.ok) loadGovIntelligenceDashboard(); })
+              .catch(function(){});
+          });
+        });
+      }
+    }).catch(function(){ wrap.textContent = <?= json_encode(t('common.error_load'), JSON_UNESCAPED_UNICODE) ?>; });
+  }
   function loadGovModules(){
     var list = document.getElementById('govModuleList');
     if (!list) return;
@@ -4371,7 +4542,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     updateEsgExportLinks();
     var active = document.querySelector('.app-sidebar .nav-link.tab.active[data-tab]');
     var key = active ? active.getAttribute('data-tab') : 'dashboard';
-    if (key === 'modules') loadGovModules();
+    if (key === 'modules') { loadGovIntelModuleManager(); loadGovModules(); }
     if (key === 'surveys') loadGovSurveys();
     if (key === 'budget') loadGovBudget();
     if (key === 'trees') { loadGovEsgSnapshot(); initGovTreeCadastreMap(); loadGovTreesMap(); loadGovTrees(); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext(); }
@@ -4388,7 +4559,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
     if (key === 'hu-open-data' && typeof loadGovHuOpenDataContext === 'function') { loadGovHuOpenDataContext({ lite: false }); }
     if (key === 'climate') loadGovClimateTab();
-    if (key === 'dashboard') { loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
+    if (key === 'dashboard') { loadGovIntelligenceDashboard(); loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
     if (key === 'citybrain-live') loadCitybrainLive();
     if (key === 'citybrain-predictive') loadCitybrainPredictive();
     if (key === 'citybrain-hotspot') { if (typeof citybrainHotspotMap !== 'undefined' && citybrainHotspotMap) loadCitybrainHotspot(); else initCitybrainHotspot(); }

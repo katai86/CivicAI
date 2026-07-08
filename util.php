@@ -384,6 +384,17 @@ function get_module_setting(string $moduleKey, string $settingKey): ?string {
     }
 }
 
+function set_module_setting(string $moduleKey, string $settingKey, ?string $value): void
+{
+    $pdo = db();
+    if ($value === null || $value === '') {
+        $pdo->prepare('DELETE FROM module_settings WHERE module_key = ? AND setting_key = ?')->execute([$moduleKey, $settingKey]);
+        return;
+    }
+    $pdo->prepare('INSERT INTO module_settings (module_key, setting_key, value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)')
+        ->execute([$moduleKey, $settingKey, $value]);
+}
+
 /** EU Open Data modul (admin → Beépülő modulok → EU nyílt adatok). */
 function eu_open_data_module_enabled(): bool {
     return get_module_setting('eu_open_data', 'enabled') === '1';

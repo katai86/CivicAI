@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
+require_once __DIR__ . '/../services/IntelligenceModuleRegistry.php';
 
 require_admin();
 
@@ -121,10 +122,15 @@ $MODULE_DEFS = [
     'description' => t('climate_gfw.module_desc'),
     'settings' => [
       ['key' => 'enabled', 'label' => t('admin.enabled'), 'type' => 'checkbox'],
+      ['key' => 'dashboard_widget', 'label' => t('intel.lbl_dashboard_widget'), 'type' => 'select', 'options' => ['0' => t('hu_open_data.opt_off'), '1' => t('hu_open_data.opt_on')]],
+      ['key' => 'map_layer', 'label' => t('intel.lbl_map_layer'), 'type' => 'select', 'options' => ['0' => t('hu_open_data.opt_off'), '1' => t('hu_open_data.opt_on')]],
+      ['key' => 'report_enabled', 'label' => t('intel.lbl_report'), 'type' => 'select', 'options' => ['0' => t('hu_open_data.opt_off'), '1' => t('hu_open_data.opt_on')]],
       ['key' => 'cache_ttl_minutes', 'label' => t('climate_gfw.lbl_cache_ttl'), 'type' => 'number', 'placeholder' => '1440'],
     ],
   ],
 ];
+
+$MODULE_DEFS = array_merge($MODULE_DEFS, IntelligenceModuleRegistry::adminModuleDefinitions());
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   try {
