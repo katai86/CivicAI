@@ -71,24 +71,28 @@
       t('tour.intro_title', 'Rövid bemutató')
     );
     var govTabSteps = [
-      { tab: 'dashboard', key: 'tour.step_gov_dashboard', fallback: 'Áttekintés: itt látod a városi egészség indexet, időjárást és fő statisztikákat.' },
-      { tab: 'reports', key: 'tour.step_gov_reports', fallback: 'Bejelentések kezelése: státuszfrissítés, megjegyzések, követés.' },
-      { tab: 'ideas', key: 'tour.step_gov_ideas', fallback: 'Ötletek: közösségi javaslatok és szavazatok áttekintése.' },
-      { tab: 'surveys', key: 'tour.step_gov_surveys', fallback: 'Felmérések: kérdőívek létrehozása, kezelése és eredmények megtekintése.' },
-      { tab: 'budget', key: 'tour.step_gov_budget', fallback: 'Részvételi költségvetés: projektek, szavazás és beállítások kezelése.' },
-      { tab: 'trees', key: 'tour.step_gov_trees', fallback: 'Zöld & fakataszter: hatósághoz kötött fák, térkép és karbantartás.' },
-      { tab: 'ai', key: 'tour.step_gov_ai', fallback: 'AI: Copilot és automatikus elemzések a hatóság adatai alapján.' },
-      { tab: 'analytics', key: 'tour.step_gov_analytics', fallback: 'Elemzés: hőtérkép, statisztikák és trendek áttekintése.' },
-      { tab: 'eu-open-data', key: 'tour.step_gov_eu_open_data', fallback: 'EU nyílt adatok: Copernicus, műhold, levegő, klíma, Eurostat – hatóság szerint.' },
-      { tab: 'iot', key: 'tour.step_gov_iot', fallback: 'Szenzorok (IoT): összesítő, térképes nézet, sync és export.' },
-      { tab: 'citybrain-live', key: 'tour.step_gov_citybrain_live', fallback: 'Valós idejű áttekintés: állapotkép és gyors mutatók.' },
-      { tab: 'citybrain-predictive', key: 'tour.step_gov_citybrain_predictive', fallback: 'Előrejelző elemzés: trendek és várható terhelés.' },
-      { tab: 'citybrain-hotspot', key: 'tour.step_gov_citybrain_hotspot', fallback: 'Problémagócok a térképen: sűrűség és helyek.' },
-      { tab: 'citybrain-behavior', key: 'tour.step_gov_citybrain_behavior', fallback: 'Viselkedés és trendek: aktivitási minták.' },
-      { tab: 'citybrain-environmental', key: 'tour.step_gov_citybrain_environmental', fallback: 'Környezeti elemzés: levegő, hőmérséklet, szenzorok.' },
-      { tab: 'citybrain-insights', key: 'tour.step_gov_citybrain_insights', fallback: 'AI-összefoglalók: kiemelt megállapítások.' },
-      { tab: 'citybrain-risk', key: 'tour.step_gov_citybrain_risk', fallback: 'Kockázat és riasztások: prioritás szerint.' },
-      { tab: 'modules', key: 'tour.step_gov_modules', fallback: 'Modulok: funkciók be- és kikapcsolása jogosultság szerint.' }
+      { tab: 'dashboard', key: 'tour.step_gov_dashboard', fallback: 'Áttekintés: klímaindex, városi egészség, időjárás.' },
+      { tab: 'reports', key: 'tour.step_gov_reports', fallback: 'Bejelentések kezelése.' },
+      { tab: 'ideas', key: 'tour.step_gov_ideas', fallback: 'Ötletek és szavazatok.' },
+      { tab: 'surveys', key: 'tour.step_gov_surveys', fallback: 'Felmérések.' },
+      { tab: 'budget', key: 'tour.step_gov_budget', fallback: 'Részvételi költségvetés.' },
+      { tab: 'trees', key: 'tour.step_gov_trees', fallback: 'Zöld & fák.' },
+      { tab: 'eu-open-data', key: 'tour.step_gov_eu_open_data', fallback: 'EU adatok.' },
+      { tab: 'map-layers', key: 'tour.step_gov_map_layers', fallback: 'Térképes rétegek.' },
+      { tab: 'climate', key: 'tour.step_gov_climate', fallback: 'Klíma platform.' },
+      { tab: 'hu-open-data', key: 'tour.step_gov_hu_open_data', fallback: 'KSH & magyar adat.' },
+      { tab: 'iot', key: 'tour.step_gov_iot', fallback: 'Szenzorok (IoT).' },
+      { tab: 'ai', key: 'tour.step_gov_ai', fallback: 'AI Copilot és elemzések.' },
+      { tab: 'analytics', key: 'tour.step_gov_analytics', fallback: 'Elemzés és trendek.' },
+      { tab: 'intel-reports', key: 'tour.step_gov_intel_reports', fallback: 'Automatikus jelentések.' },
+      { tab: 'citybrain-live', key: 'tour.step_gov_citybrain_live', fallback: 'City Brain – élő.' },
+      { tab: 'citybrain-predictive', key: 'tour.step_gov_citybrain_predictive', fallback: 'City Brain – előrejelzés.' },
+      { tab: 'citybrain-hotspot', key: 'tour.step_gov_citybrain_hotspot', fallback: 'City Brain – gócpontok.' },
+      { tab: 'citybrain-behavior', key: 'tour.step_gov_citybrain_behavior', fallback: 'City Brain – trendek.' },
+      { tab: 'citybrain-environmental', key: 'tour.step_gov_citybrain_environmental', fallback: 'City Brain – környezet.' },
+      { tab: 'citybrain-insights', key: 'tour.step_gov_citybrain_insights', fallback: 'City Brain – AI összefoglaló.' },
+      { tab: 'citybrain-risk', key: 'tour.step_gov_citybrain_risk', fallback: 'City Brain – rizikók.' },
+      { tab: 'modules', key: 'tour.step_gov_modules', fallback: 'Modulok.' }
     ];
     govTabSteps.forEach(function (stepDef) {
       pushStep(
@@ -134,6 +138,10 @@
           if (active) active.classList.remove('civic-tour-sidebar-active');
           if (element && element.classList && element.classList.contains('tab')) {
             element.classList.add('civic-tour-sidebar-active');
+            var tabKey = element.getAttribute('data-tab');
+            if (tabKey && typeof window.govSidebarRevealTab === 'function') {
+              window.govSidebarRevealTab(tabKey);
+            }
           }
         } catch (_) {}
       },

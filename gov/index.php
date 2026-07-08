@@ -625,7 +625,6 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
           </li>
           <?php endif; ?>
           <?php if ($govIotEnabled): ?>
-          <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted"><?= h(t('gov.nav_section_mobility')) ?></li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="iot">
               <i class="nav-icon bi bi-ev-front-fill"></i>
@@ -2374,6 +2373,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       e.preventDefault();
       var key = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
+      govSidebarRevealTab(key);
       ['dashboard','ai','reports','ideas','surveys','budget','trees','analytics','eu-open-data','hu-open-data','map-layers','climate','iot','citybrain-live','citybrain-predictive','citybrain-hotspot','citybrain-behavior','citybrain-environmental','citybrain-insights','citybrain-risk','intel-reports','modules'].forEach(function(k){
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
@@ -2416,18 +2416,82 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     });
   });
 
-  // Összecsukható menüszekciók (sidebar): kattintásra elrejti/megmutatja a szekció elemeit
-  document.querySelectorAll('.app-sidebar .sidebar-section-header').forEach(function(header){
-    header.addEventListener('click', function(){
-      header.classList.toggle('sidebar-section-collapsed');
-      var next = header.nextElementSibling;
-      while (next && !next.classList.contains('nav-header')) {
-        next.classList.toggle('sidebar-section-item-hidden');
-        next = next.nextElementSibling;
+  // Összecsukható menüszekciók (sidebar): alapból összecsukva, kattintásra nyílik
+  function govSidebarExpandSection(header, reveal){
+    if (!header || !header.classList.contains('sidebar-section-header')) return;
+    header.classList.remove('sidebar-section-collapsed');
+    var next = header.nextElementSibling;
+    while (next && !next.classList.contains('sidebar-section-header')) {
+      next.classList.remove('sidebar-section-item-hidden');
+      next = next.nextElementSibling;
+    }
+    if (reveal) {
+      try { header.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) {}
+    }
+  }
+  function govSidebarCollapseSection(header){
+    if (!header || !header.classList.contains('sidebar-section-header')) return;
+    header.classList.add('sidebar-section-collapsed');
+    var next = header.nextElementSibling;
+    while (next && !next.classList.contains('sidebar-section-header')) {
+      next.classList.add('sidebar-section-item-hidden');
+      next = next.nextElementSibling;
+    }
+  }
+  function govSidebarCollapseAllExcept(exceptHeader){
+    document.querySelectorAll('.app-sidebar .sidebar-section-header').forEach(function(header){
+      if (exceptHeader && header === exceptHeader) return;
+      govSidebarCollapseSection(header);
+    });
+  }
+  function govSidebarRevealTab(tabKey){
+    var link = document.querySelector('.app-sidebar .nav-link.tab[data-tab="' + tabKey + '"]');
+    if (!link) return;
+    var header = null;
+    var prev = link.closest('.nav-item');
+    while (prev) {
+      prev = prev.previousElementSibling;
+      if (prev && prev.classList && prev.classList.contains('sidebar-section-header')) {
+        header = prev;
+        break;
       }
+    }
+    if (header) {
+      govSidebarCollapseAllExcept(header);
+      govSidebarExpandSection(header, false);
+    }
+    try { link.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) {}
+    govSidebarUpdateScrollHint();
+  }
+  function govSidebarUpdateScrollHint(){
+    var wrap = document.querySelector('.app-sidebar .sidebar-wrapper');
+    if (!wrap) return;
+    var hasScroll = wrap.scrollHeight > wrap.clientHeight + 4;
+    wrap.classList.toggle('sidebar-wrapper--scrollable', hasScroll);
+    wrap.classList.toggle('sidebar-wrapper--scrolled', wrap.scrollTop > 8);
+    wrap.classList.toggle('sidebar-wrapper--scroll-end', wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 8);
+  }
+  document.querySelectorAll('.app-sidebar .sidebar-section-header').forEach(function(header){
+    govSidebarCollapseSection(header);
+    header.addEventListener('click', function(){
+      var collapsed = header.classList.contains('sidebar-section-collapsed');
+      if (collapsed) {
+        govSidebarCollapseAllExcept(header);
+        govSidebarExpandSection(header, true);
+      } else {
+        govSidebarCollapseSection(header);
+      }
+      govSidebarUpdateScrollHint();
     });
     header.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); header.click(); } });
   });
+  var govSidebarWrap = document.querySelector('.app-sidebar .sidebar-wrapper');
+  if (govSidebarWrap) {
+    govSidebarWrap.addEventListener('scroll', govSidebarUpdateScrollHint);
+    window.addEventListener('resize', govSidebarUpdateScrollHint);
+    govSidebarUpdateScrollHint();
+  }
+  window.govSidebarRevealTab = govSidebarRevealTab;
 
   loadGovIntelligenceDashboard();
   loadGovExecutiveSummary();
@@ -5080,6 +5144,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     if (key === 'citybrain-behavior') loadCitybrainBehavior();
     if (key === 'citybrain-environmental') loadCitybrainEnvironmental();
     if (key === 'citybrain-risk') loadCitybrainRisk();
+    if (key === 'citybrain-insights') { if (typeof citybrainInsightsMap !== 'undefined' && citybrainInsightsMap) loadCitybrainInsights(); else initCitybrainInsights(); }
   }
   var selGovAuth = document.getElementById('govAdminAuthoritySelect');
   if (selGovAuth && govAdminAuthorityPicker) {
