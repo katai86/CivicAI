@@ -17,12 +17,12 @@ final class IntelligenceModuleRegistry
     {
         return [
             self::def('global_forest_watch', 'climate_gfw', 'Global Forest Watch', 'Erdővesztés, zöldborítás – ingyenes GFW Data API.', 'climate', 'preview', 'https://data-api.globalforestwatch.org/', false),
-            self::def('hungaromet', 'climate_hungaromet', 'HungaroMet', 'Időjárás, aszály, hőség – adapter előkészítés alatt.', 'climate', 'planned', '', false),
+            self::def('hungaromet', 'climate_hungaromet', 'HungaroMet', 'Időjárás, aszály, hőség – Open-Meteo proxy.', 'climate', 'preview', '', false),
             self::def('eea', 'climate_eea', 'European Environment Agency', 'EU környezeti indikátorok – EU nyílt adatok modullal összekapcsolva.', 'climate', 'linked_eu_open_data', 'https://www.eea.europa.eu/', false),
-            self::def('gbif', 'climate_gbif', 'GBIF', 'Biodiverzitás, fajmegfigyelések.', 'climate', 'planned', 'https://api.gbif.org/v1/', false),
-            self::def('pvgis', 'climate_pvgis', 'PVGIS', 'Napenergia-potenciál becslés.', 'climate', 'planned', 'https://re.jrc.ec.europa.eu/api/', false),
-            self::def('nasa_viirs', 'climate_viirs', 'NASA VIIRS Night Lights', 'Éjszakai fények, fényszennyezés.', 'climate', 'planned', '', false),
-            self::def('open_charge_map', 'climate_ocm', 'OpenChargeMap', 'EV töltőpontok térképezése.', 'mobility', 'planned', 'https://api.openchargemap.io/v3/', true),
+            self::def('gbif', 'climate_gbif', 'GBIF', 'Biodiverzitás, fajmegfigyelések.', 'climate', 'preview', 'https://api.gbif.org/v1/', false),
+            self::def('pvgis', 'climate_pvgis', 'PVGIS', 'Napenergia-potenciál becslés.', 'climate', 'preview', 'https://re.jrc.ec.europa.eu/api/', false),
+            self::def('nasa_viirs', 'climate_viirs', 'NASA VIIRS Night Lights', 'Éjszakai fények, fényszennyezés.', 'climate', 'preview', '', false),
+            self::def('open_charge_map', 'climate_ocm', 'OpenChargeMap', 'EV töltőpontok térképezése.', 'mobility', 'preview', 'https://api.openchargemap.io/v3/', true),
         ];
     }
 

@@ -118,6 +118,31 @@ class ExternalDataCache
         }
     }
 
+    /** @return list<array{source_key:string,action:string,status:string,message:?string,created_at:string}> */
+    public static function recentProviderLogs(?string $sourceKey = null, int $limit = 20): array
+    {
+        try {
+            db()->query('SELECT 1 FROM external_data_provider_logs LIMIT 1');
+        } catch (Throwable $e) {
+            return [];
+        }
+        $limit = max(1, min(100, $limit));
+        $sql = 'SELECT source_key, action, status, message, created_at FROM external_data_provider_logs';
+        $params = [];
+        if ($sourceKey !== null && $sourceKey !== '') {
+            $sql .= ' WHERE source_key = ?';
+            $params[] = self::sanitizeKey($sourceKey, 64);
+        }
+        $sql .= ' ORDER BY id DESC LIMIT ' . $limit;
+        try {
+            $st = db()->prepare($sql);
+            $st->execute($params);
+            return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
     public static function logProvider(string $sourceKey, string $action, string $status, ?string $message = null): void
     {
         try {

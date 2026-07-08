@@ -7,6 +7,11 @@ require_once __DIR__ . '/../util.php';
 require_once __DIR__ . '/CityHealthScore.php';
 require_once __DIR__ . '/GreenIntelligence.php';
 require_once __DIR__ . '/IntelligenceModuleRegistry.php';
+require_once __DIR__ . '/intelligence/GbifDataService.php';
+require_once __DIR__ . '/intelligence/HungaroMetDataService.php';
+require_once __DIR__ . '/intelligence/PvgisDataService.php';
+require_once __DIR__ . '/intelligence/OpenChargeMapDataService.php';
+require_once __DIR__ . '/intelligence/ViirsDataService.php';
 
 class ClimateIndexService
 {
@@ -75,6 +80,32 @@ class ClimateIndexService
             $components['forest_watch'] = ['score' => 65, 'label' => 'forest_watch', 'weight' => 0.05, 'preview' => true];
             $weights[] = ['score' => 65, 'weight' => 0.05];
         }
+
+        $this->mergeModuleScore($authorityId, $weights, $components, 'gbif', (new GbifDataService()), function ($ctx) {
+            $n = (int)($ctx['occurrence_count'] ?? 0);
+            return (int)min(100, max(10, 30 + log(1 + max(1, $n)) * 12));
+        }, 0.08, 'gbif_biodiversity');
+
+        $this->mergeModuleScore($authorityId, $weights, $components, 'weather', (new HungaroMetDataService()), function ($ctx) {
+            $heat = (int)($ctx['heat_risk'] ?? 50);
+            $drought = (int)($ctx['drought_index'] ?? 50);
+            return (int)max(0, min(100, 100 - (int)(($heat + $drought) / 2)));
+        }, 0.08, 'weather_climate');
+
+        $this->mergeModuleScore($authorityId, $weights, $components, 'solar', (new PvgisDataService()), function ($ctx) {
+            $kwh = (float)($ctx['annual_kwh'] ?? 900);
+            return (int)min(100, max(20, $kwh / 15));
+        }, 0.07, 'solar_potential');
+
+        $this->mergeModuleScore($authorityId, $weights, $components, 'ev', (new OpenChargeMapDataService()), function ($ctx) {
+            $n = (int)($ctx['charger_count'] ?? 0);
+            return (int)min(100, max(15, $n * 8));
+        }, 0.07, 'ev_coverage');
+
+        $this->mergeModuleScore($authorityId, $weights, $components, 'lights', (new ViirsDataService()), function ($ctx) {
+            $idx = (int)($ctx['light_pollution_index'] ?? 50);
+            return (int)max(0, min(100, 100 - $idx));
+        }, 0.05, 'night_lights');
 
         $engagement = 50;
         if ($authorityId > 0) {
@@ -164,5 +195,27 @@ class ClimateIndexService
             ];
         }
         return array_slice($recs, 0, 6);
+    }
+
+    /**
+     * @param array<int,array{score:int,weight:float}> $weights
+     * @param array<string,array<string,mixed>> $components
+     * @param callable(array):int $scoreFn
+     */
+    private function mergeModuleScore(?int $authorityId, array &$weights, array &$components, string $key, object $svc, callable $scoreFn, float $weight, string $label): void
+    {
+        if (!method_exists($svc, 'isActive') || !method_exists($svc, 'fetchContext') || !$svc->isActive()) {
+            return;
+        }
+        try {
+            $ctx = $svc->fetchContext($authorityId);
+            if (empty($ctx['ok'])) {
+                return;
+            }
+            $score = $scoreFn($ctx);
+            $components[$key] = ['score' => $score, 'label' => $label, 'weight' => $weight];
+            $weights[] = ['score' => $score, 'weight' => $weight];
+        } catch (Throwable $e) {
+        }
     }
 }
