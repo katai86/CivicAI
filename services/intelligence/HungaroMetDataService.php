@@ -28,6 +28,11 @@ class HungaroMetDataService
         $cacheKey = 'wx_' . md5(json_encode($c));
         $cached = $this->cacheGet($cacheKey);
         if ($cached) return $cached;
+        if ($this->liteFetchGuard()) {
+            $mock = ['ok' => true, 'temp_c' => 24.0, 'precip_mm' => 12.0, 'drought_index' => 40, 'heat_risk' => 25, 'source' => 'reference', 'notes' => ['using_reference', 'lite_fetch'], 'cached' => false];
+            $this->cacheSet($cacheKey, $mock, 'reference');
+            return $mock;
+        }
 
         $url = 'https://api.open-meteo.com/v1/forecast?latitude=' . $c['lat'] . '&longitude=' . $c['lng']
             . '&current=temperature_2m,precipitation&daily=temperature_2m_max,precipitation_sum&forecast_days=7&timezone=auto';

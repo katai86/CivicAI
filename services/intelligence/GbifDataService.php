@@ -29,6 +29,11 @@ class GbifDataService
         if ($cached) {
             return $cached;
         }
+        if ($this->liteFetchGuard()) {
+            $mock = ['ok' => true, 'occurrence_count' => 1240, 'species_sample' => [], 'source' => 'gbif_reference', 'notes' => ['using_reference', 'lite_fetch'], 'cached' => false];
+            $this->cacheSet($cacheKey, $mock, 'reference');
+            return $mock;
+        }
         $c = $bbox ? self::bboxCenter($bbox) : ['lat' => 47.1625, 'lng' => 19.5033];
         $url = 'https://api.gbif.org/v1/occurrence/search?hasCoordinate=true&country=HU'
             . '&decimalLatitude=' . rawurlencode((string)$c['lat'])

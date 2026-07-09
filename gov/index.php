@@ -4264,7 +4264,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       dataRow.innerHTML = '<div class="col-12"><p class="text-secondary small mb-0">…</p></div>';
       var ctxUrl = govAppendAuthorityQuery(govIntelligenceContextUrl);
       ctxUrl += (ctxUrl.indexOf('?') >= 0 ? '&' : '?') + 'lite=1';
-      fetch(ctxUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      govFetchJsonWithTimeout(ctxUrl, 20000).then(function(j){
         if (!j.ok || !j.data) {
           dataRow.innerHTML = '<div class="col-12"><p class="text-secondary small mb-0">' + (Lb.data_empty || Lb.load_error || '—') + '</p></div>';
           return;
@@ -4961,10 +4961,17 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     var v = d.viirs || {};
     if (v.ok) tiles.push({ cls: 'dash-intel-tile--viirs', icon: 'bi-moon-stars', value: v.light_pollution_index != null ? v.light_pollution_index : '—', label: L.tile_viirs || 'VIIRS', sub: '' });
     else tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-moon-stars', value: '—', label: L.tile_viirs || 'VIIRS', sub: L.tile_inactive || '' });
-    if (!tiles.some(function(t){ return t.cls.indexOf('inactive') < 0; })) {
+    if (!tiles.length) {
       return '<div class="col-12"><p class="text-secondary small mb-0">' + (Lc.data_empty || '—') + '</p></div>';
     }
     return tiles.map(renderDashIntelTile).join('');
+  }
+  function govFetchJsonWithTimeout(url, timeoutMs){
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function(){ try { ctrl.abort(); } catch (_) {} }, timeoutMs || 20000) : null;
+    return fetch(url, { credentials: 'include', signal: ctrl ? ctrl.signal : undefined })
+      .then(function(r){ return r.json(); })
+      .finally(function(){ if (timer) clearTimeout(timer); });
   }
   function loadGovDashIntelTiles(){
     var row = document.getElementById('govDashIntelTiles');
@@ -4973,7 +4980,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     if (!row || !govIntelligenceContextUrl) return;
     var ctxUrl = govAppendAuthorityQuery(govIntelligenceContextUrl);
     ctxUrl += (ctxUrl.indexOf('?') >= 0 ? '&' : '?') + 'lite=1';
-    fetch(ctxUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+    govFetchJsonWithTimeout(ctxUrl, 20000).then(function(j){
       if (!j.ok || !j.data) {
         row.innerHTML = '<div class="col-12"><p class="text-secondary small mb-0">' + (Lc.load_error || L.load_error || '—') + '</p></div>';
         return;
@@ -4991,9 +4998,12 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     loadGovDashIntelTiles();
     if (!govIntelligenceDashboardUrl) return;
     var q = (typeof govEuAuthorityQuery === 'function' ? govEuAuthorityQuery() : '');
-    fetch(govIntelligenceDashboardUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+    govFetchJsonWithTimeout(govIntelligenceDashboardUrl + q, 25000).then(function(j){
       if (!j.ok || !j.data) {
         if (col) col.innerHTML = '<p class="text-secondary small mb-0">' + (L.load_error || '—') + '</p>';
+        if (rec) rec.innerHTML = '<p class="text-secondary small mb-0">' + (L.load_error || '—') + '</p>';
+        govDashSetHeroValue('govDashHeroClimate', '—');
+        govDashSetHeroValue('govDashHeroModules', '—');
         return;
       }
       var ci = j.data.climate_index || {};
@@ -5028,6 +5038,9 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       }
     }).catch(function(){
       if (col) col.innerHTML = '<p class="text-secondary small mb-0">' + (L.load_error || '—') + '</p>';
+      if (rec) rec.innerHTML = '<p class="text-secondary small mb-0">' + (L.load_error || '—') + '</p>';
+      govDashSetHeroValue('govDashHeroClimate', '—');
+      govDashSetHeroValue('govDashHeroModules', '—');
     });
   }
   function loadGovIntelModuleManager(){

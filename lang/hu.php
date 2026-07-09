@@ -559,7 +559,7 @@ return [
     'intel.provider_logs' => 'Utolsó provider események',
     'intel.climate_data_title' => 'Aktív modul adatok',
     'intel.climate_data_load_error' => 'Nem sikerült betölteni a moduladatokat. Próbáld újra később, vagy kapcsold be a klíma modulokat a Modulok menüben.',
-    'intel.climate_data_empty' => 'Nincs aktív modul adat – kapcsold be a klíma modulokat (pl. HungaroMet, GBIF) a Modulok menüben.',
+    'intel.climate_data_empty' => 'Nincs aktív modul adat – kapcsold be a klíma modulokat az Admin → Beépülő modulok menüben (pl. HungaroMet, GBIF).',
     'intel.tile_weather' => 'Időjárás',
     'intel.tile_gbif' => 'Biodiverzitás',
     'intel.tile_pvgis' => 'Napenergia',

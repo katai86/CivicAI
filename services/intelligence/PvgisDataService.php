@@ -28,6 +28,11 @@ class PvgisDataService
         $cacheKey = 'pv_' . md5(json_encode($c));
         $cached = $this->cacheGet($cacheKey);
         if ($cached) return $cached;
+        if ($this->liteFetchGuard()) {
+            $mock = ['ok' => true, 'annual_kwh' => 1150.0, 'co2_kg' => 400.0, 'irradiation' => 1350.0, 'source' => 'pvgis_reference', 'notes' => ['using_reference', 'lite_fetch'], 'cached' => false];
+            $this->cacheSet($cacheKey, $mock, 'reference');
+            return $mock;
+        }
 
         $url = 'https://re.jrc.ec.europa.eu/api/v5_2/PVcalc?lat=' . rawurlencode((string)$c['lat'])
             . '&lon=' . rawurlencode((string)$c['lng']) . '&peakpower=1&loss=14&outputformat=json';

@@ -14,10 +14,30 @@ require_once __DIR__ . '/intelligence/PvgisDataService.php';
 require_once __DIR__ . '/intelligence/OpenChargeMapDataService.php';
 require_once __DIR__ . '/intelligence/ViirsDataService.php';
 
-class IntelligenceHub
+final class IntelligenceHub
 {
+    private static bool $liteFetchMode = false;
+
+    public static function isLiteFetchMode(): bool
+    {
+        return self::$liteFetchMode;
+    }
+
     /** @return array<string,mixed> */
     public function fetchFullContext(?int $authorityId, bool $lite = false): array
+    {
+        if ($lite) {
+            self::$liteFetchMode = true;
+        }
+        try {
+            return $this->fetchFullContextInner($authorityId, $lite);
+        } finally {
+            self::$liteFetchMode = false;
+        }
+    }
+
+    /** @return array<string,mixed> */
+    private function fetchFullContextInner(?int $authorityId, bool $lite): array
     {
         $bbox = null;
         if ($authorityId > 0) {

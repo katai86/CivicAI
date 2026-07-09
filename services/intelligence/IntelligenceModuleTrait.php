@@ -13,6 +13,13 @@ trait IntelligenceModuleTrait
         return get_module_setting($this->moduleKey(), 'enabled') === '1';
     }
 
+    /** Lite dashboard: cache vagy referencia, élő HTTP nélkül. */
+    protected function liteFetchGuard(): bool
+    {
+        return class_exists('IntelligenceHub', false)
+            && IntelligenceHub::isLiteFetchMode();
+    }
+
     protected function cacheTtlMinutes(int $default = 360): int
     {
         $v = get_module_setting($this->moduleKey(), 'cache_ttl_minutes');

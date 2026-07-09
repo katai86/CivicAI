@@ -16,7 +16,7 @@ require_once __DIR__ . '/intelligence/ViirsDataService.php';
 class ClimateIndexService
 {
     /** @return array{score:int,category:string,label:string,components:array,recommendations:array,active_modules:int,error_modules:int} */
-    public function compute(?int $authorityId): array
+    public function compute(?int $authorityId, bool $fast = false): array
     {
         $components = [];
         $weights = [];
@@ -81,31 +81,33 @@ class ClimateIndexService
             $weights[] = ['score' => 65, 'weight' => 0.05];
         }
 
-        $this->mergeModuleScore($authorityId, $weights, $components, 'gbif', (new GbifDataService()), function ($ctx) {
-            $n = (int)($ctx['occurrence_count'] ?? 0);
-            return (int)min(100, max(10, 30 + log(1 + max(1, $n)) * 12));
-        }, 0.08, 'gbif_biodiversity');
+        if (!$fast) {
+            $this->mergeModuleScore($authorityId, $weights, $components, 'gbif', (new GbifDataService()), function ($ctx) {
+                $n = (int)($ctx['occurrence_count'] ?? 0);
+                return (int)min(100, max(10, 30 + log(1 + max(1, $n)) * 12));
+            }, 0.08, 'gbif_biodiversity');
 
-        $this->mergeModuleScore($authorityId, $weights, $components, 'weather', (new HungaroMetDataService()), function ($ctx) {
-            $heat = (int)($ctx['heat_risk'] ?? 50);
-            $drought = (int)($ctx['drought_index'] ?? 50);
-            return (int)max(0, min(100, 100 - (int)(($heat + $drought) / 2)));
-        }, 0.08, 'weather_climate');
+            $this->mergeModuleScore($authorityId, $weights, $components, 'weather', (new HungaroMetDataService()), function ($ctx) {
+                $heat = (int)($ctx['heat_risk'] ?? 50);
+                $drought = (int)($ctx['drought_index'] ?? 50);
+                return (int)max(0, min(100, 100 - (int)(($heat + $drought) / 2)));
+            }, 0.08, 'weather_climate');
 
-        $this->mergeModuleScore($authorityId, $weights, $components, 'solar', (new PvgisDataService()), function ($ctx) {
-            $kwh = (float)($ctx['annual_kwh'] ?? 900);
-            return (int)min(100, max(20, $kwh / 15));
-        }, 0.07, 'solar_potential');
+            $this->mergeModuleScore($authorityId, $weights, $components, 'solar', (new PvgisDataService()), function ($ctx) {
+                $kwh = (float)($ctx['annual_kwh'] ?? 900);
+                return (int)min(100, max(20, $kwh / 15));
+            }, 0.07, 'solar_potential');
 
-        $this->mergeModuleScore($authorityId, $weights, $components, 'ev', (new OpenChargeMapDataService()), function ($ctx) {
-            $n = (int)($ctx['charger_count'] ?? 0);
-            return (int)min(100, max(15, $n * 8));
-        }, 0.07, 'ev_coverage');
+            $this->mergeModuleScore($authorityId, $weights, $components, 'ev', (new OpenChargeMapDataService()), function ($ctx) {
+                $n = (int)($ctx['charger_count'] ?? 0);
+                return (int)min(100, max(15, $n * 8));
+            }, 0.07, 'ev_coverage');
 
-        $this->mergeModuleScore($authorityId, $weights, $components, 'lights', (new ViirsDataService()), function ($ctx) {
-            $idx = (int)($ctx['light_pollution_index'] ?? 50);
-            return (int)max(0, min(100, 100 - $idx));
-        }, 0.05, 'night_lights');
+            $this->mergeModuleScore($authorityId, $weights, $components, 'lights', (new ViirsDataService()), function ($ctx) {
+                $idx = (int)($ctx['light_pollution_index'] ?? 50);
+                return (int)max(0, min(100, 100 - $idx));
+            }, 0.05, 'night_lights');
+        }
 
         $engagement = 50;
         if ($authorityId > 0) {

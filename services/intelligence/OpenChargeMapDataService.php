@@ -28,6 +28,11 @@ class OpenChargeMapDataService
         $cacheKey = 'ocm_' . md5(json_encode($c));
         $cached = $this->cacheGet($cacheKey);
         if ($cached) return $cached;
+        if ($this->liteFetchGuard()) {
+            $mock = ['ok' => true, 'charger_count' => 6, 'points' => [], 'source' => 'ocm_reference', 'notes' => ['using_reference', 'lite_fetch'], 'cached' => false];
+            $this->cacheSet($cacheKey, $mock, 'reference');
+            return $mock;
+        }
 
         $apiKey = trim((string)(get_module_setting('climate_ocm', 'api_key') ?? ''));
         $url = 'https://api.openchargemap.io/v3/poi/?output=json&latitude=' . $c['lat'] . '&longitude=' . $c['lng']

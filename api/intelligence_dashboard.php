@@ -41,7 +41,7 @@ if (function_exists('set_time_limit')) {
 }
 
 try {
-    $climate = (new ClimateIndexService())->compute($aid);
+    $climate = (new ClimateIndexService())->compute($aid, true);
 } catch (Throwable $e) {
     if (function_exists('log_error')) {
         log_error('intelligence_dashboard: ' . $e->getMessage());
