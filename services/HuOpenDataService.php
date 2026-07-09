@@ -112,6 +112,12 @@ class HuOpenDataService
 
         $any = false;
 
+        // Snapshot előtöltés teljes nézetben is (gyors első render), majd élő KSH próba.
+        if (!$lite && function_exists('hu_open_data_snapshot_fallback_enabled') && hu_open_data_snapshot_fallback_enabled()) {
+            $this->applyReferenceSnapshotToContext($out, false);
+            $any = !empty($out['green']) || !empty($out['forestry']) || !empty($out['weather_national']) || !empty($out['weather_city']);
+        }
+
         if (hu_open_data_feature_enabled('ksh_green_areas_enabled')) {
             $green = $this->loadGreenAreas();
             if ($green !== null) {

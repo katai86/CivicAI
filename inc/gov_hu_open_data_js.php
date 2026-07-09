@@ -137,20 +137,37 @@ if (empty($govHuOpenDataTabEnabled)) {
     var url = govHuOpenDataUrl + (q || '');
     url += (url.indexOf('?') >= 0 ? '&' : '?') + 'lite=' + (lite ? '1' : '0');
 
-    var timeoutMs = lite ? 12000 : 45000;
-  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timeoutMs = lite ? 12000 : 30000;
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function() { try { ctrl.abort(); } catch (_) {} }, timeoutMs) : null;
 
-    fetch(url, { credentials: 'include', signal: ctrl ? ctrl.signal : undefined })
-      .then(function(r) { return r.json(); })
-      .then(function(j) { govHuRenderContext(j, ids); })
-      .catch(function(err) {
-        var L = govHuOpenDataLabels || {};
-        var msg = (err && err.name === 'AbortError') ? (L.load_error || '—') : (L.load_error || '—');
-        ids.forEach(function(id) {
-          var el = document.getElementById(id);
-          if (el) el.innerHTML = '<p class="text-secondary small mb-0">' + msg + '</p>';
-        });
-      })
-      .finally(function() { if (timer) clearTimeout(timer); });
+    function fetchCtx(liteFlag, tMs, onDone) {
+      var u = govHuOpenDataUrl + (q || '');
+      u += (u.indexOf('?') >= 0 ? '&' : '?') + 'lite=' + (liteFlag ? '1' : '0');
+      var c = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var tm = c ? setTimeout(function() { try { c.abort(); } catch (_) {} }, tMs) : null;
+      fetch(u, { credentials: 'include', signal: c ? c.signal : undefined })
+        .then(function(r) { return r.json(); })
+        .then(function(j) { if (onDone) onDone(j); })
+        .catch(function(err) {
+          if (onDone) onDone({ ok: false, error: (err && err.name === 'AbortError') ? 'timeout' : 'fetch_error' });
+        })
+        .finally(function() { if (tm) clearTimeout(tm); });
+    }
+
+    if (!lite) {
+      fetchCtx(true, 12000, function(j) {
+        if (j && j.ok) govHuRenderContext(j, ids);
+      });
+      fetchCtx(false, timeoutMs, function(j) {
+        govHuRenderContext(j, ids);
+        if (timer) clearTimeout(timer);
+      });
+      return;
+    }
+
+    fetchCtx(true, timeoutMs, function(j) {
+      govHuRenderContext(j, ids);
+      if (timer) clearTimeout(timer);
+    });
   }
