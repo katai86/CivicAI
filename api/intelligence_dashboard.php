@@ -6,6 +6,7 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 require_once __DIR__ . '/../services/ClimateIndexService.php';
 require_once __DIR__ . '/../services/IntelligenceModuleRegistry.php';
+require_once __DIR__ . '/../services/ExternalDataCache.php';
 
 require_gov_or_admin();
 
@@ -27,14 +28,37 @@ if (isset($_GET['authority_id']) && (int)$_GET['authority_id'] > 0) {
     }
 }
 
-$climate = (new ClimateIndexService())->compute($aid);
+$cacheKey = 'dash_' . (int)($aid ?? 0);
+$hit = ExternalDataCache::getValid('intel_dashboard', $cacheKey);
+if ($hit && !empty($hit['payload']) && is_array($hit['payload'])) {
+    $payload = $hit['payload'];
+    $payload['cached'] = true;
+    json_response(['ok' => true, 'data' => $payload]);
+}
+
+if (function_exists('set_time_limit')) {
+    @set_time_limit(90);
+}
+
+try {
+    $climate = (new ClimateIndexService())->compute($aid);
+} catch (Throwable $e) {
+    if (function_exists('log_error')) {
+        log_error('intelligence_dashboard: ' . $e->getMessage());
+    }
+    $climate = ['score' => 0, 'category' => 'moderate', 'label' => '—', 'recommendations' => [], 'components' => [], 'active_modules' => 0, 'error_modules' => 0];
+}
 $modules = IntelligenceModuleRegistry::listWithStatus();
+
+$payload = [
+    'climate_index' => $climate,
+    'modules' => $modules,
+    'authority_id' => $aid,
+    'cached' => false,
+];
+ExternalDataCache::set('intel_dashboard', $cacheKey, $payload, 15, 'ok', null);
 
 json_response([
     'ok' => true,
-    'data' => [
-        'climate_index' => $climate,
-        'modules' => $modules,
-        'authority_id' => $aid,
-    ],
+    'data' => $payload,
 ]);

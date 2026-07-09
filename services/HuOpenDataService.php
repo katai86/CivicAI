@@ -95,6 +95,21 @@ class HuOpenDataService
             return $p;
         }
 
+        // Lite/dashboard: referencia snapshot azonnal, ha a KSH lassú vagy nem elérhető.
+        if ($lite && function_exists('hu_open_data_snapshot_fallback_enabled') && hu_open_data_snapshot_fallback_enabled()) {
+            $snapOnly = [
+                'ok' => false, 'green' => null, 'forestry' => null, 'weather_city' => null,
+                'weather_national' => null, 'links' => $out['links'], 'notes' => [],
+                'cached' => false, 'reference_snapshot' => false, 'error' => null,
+            ];
+            if ($this->applyReferenceSnapshotToContext($snapOnly, true)) {
+                $snapOnly['ok'] = true;
+                $snapOnly['error'] = null;
+                ExternalDataCache::set('hu_ksh', $cacheKey, $snapOnly, hu_open_data_cache_ttl_minutes(), 'reference', null);
+                return $snapOnly;
+            }
+        }
+
         $any = false;
 
         if (hu_open_data_feature_enabled('ksh_green_areas_enabled')) {
@@ -198,6 +213,7 @@ class HuOpenDataService
             return !in_array($n, ['ksh_green_unavailable', 'ksh_forestry_unavailable'], true);
         }));
         $out['notes'][] = 'ksh_using_reference_snapshot';
+        $out['ok'] = true;
         $out['error'] = null;
         return true;
     }

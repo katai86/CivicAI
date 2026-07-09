@@ -11,11 +11,26 @@ class IntelligenceReportGenerator
     /** @param array<string,mixed> $opts type, audience (citizen|official), authority_id */
     public function generate(array $opts): array
     {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(90);
+        }
+
         $type = (string)($opts['type'] ?? 'full');
         $audience = (string)($opts['audience'] ?? 'official');
         $aid = isset($opts['authority_id']) ? (int)$opts['authority_id'] : null;
-        $ctx = (new IntelligenceHub())->fetchFullContext($aid);
-        $ci = $ctx['climate_index'] ?? (new ClimateIndexService())->compute($aid);
+
+        $hub = new IntelligenceHub();
+        $ctx = $hub->fetchFullContext($aid, true);
+
+        try {
+            $ci = (new ClimateIndexService())->compute($aid);
+        } catch (Throwable $e) {
+            if (function_exists('log_error')) {
+                log_error('IntelligenceReportGenerator climate_index: ' . $e->getMessage());
+            }
+            $ci = ['score' => 0, 'category' => 'moderate', 'label' => '—', 'recommendations' => []];
+        }
+
         $title = $this->reportTitle($type);
         $html = $this->wrapHtml($title, $this->bodyHtml($type, $audience, $ctx, $ci));
         return [
@@ -89,7 +104,7 @@ class IntelligenceReportGenerator
     private function wrapHtml(string $title, string $body): string
     {
         return '<!DOCTYPE html><html lang="hu"><head><meta charset="utf-8"><title>'
-            . htmlspecialchars($title) . '</title><style>body{font-family:system-ui,sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;line-height:1.5}h1{font-size:1.4rem}h2{font-size:1.1rem;margin-top:1.5rem}section{margin-bottom:1rem}</style></head><body><h1>'
+            . htmlspecialchars($title) . '</title><style>body{font-family:system-ui,sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;line-height:1.5;color:#1e293b}h1{font-size:1.4rem;color:#0f766e}h2{font-size:1.1rem;margin-top:1.5rem;color:#334155}section{margin-bottom:1rem;padding:0.75rem 1rem;background:#f8fafc;border-radius:8px;border-left:4px solid #0d9488}ul{padding-left:1.2rem}</style></head><body><h1>'
             . htmlspecialchars($title) . '</h1>' . $body . '</body></html>';
     }
 }

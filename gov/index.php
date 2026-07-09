@@ -1381,29 +1381,32 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
 
         <?php if ($govHuOpenDataTabEnabled): ?>
         <div class="admin-tab-body" id="tab-hu-open-data" hidden>
-          <p class="text-secondary small mb-3"><?= h(t('gov.hu_open_data_intro')) ?></p>
+          <div class="mb-3">
+            <h5 class="mb-1 fw-semibold"><i class="bi bi-flag text-success me-1"></i><?= h(t('gov.tab_hu_open_data')) ?></h5>
+            <p class="text-secondary small mb-0"><?= h(t('gov.hu_open_data_intro')) ?></p>
+          </div>
           <?php if (hu_open_data_feature_enabled('ksh_green_areas_enabled')): ?>
-          <div class="card mb-3 border-success border-opacity-25">
+          <div class="card mb-3 gov-dash-panel border-start border-success border-3 shadow-sm">
             <div class="card-body">
-              <h6 class="card-title mb-1"><?= h(t('gov.hu_green_card_title')) ?></h6>
+              <h6 class="card-title mb-1 fw-semibold"><?= h(t('gov.hu_green_card_title')) ?></h6>
               <p class="text-secondary small mb-2"><?= h(t('gov.hu_green_card_hint')) ?></p>
               <div id="govHuGreenContent"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
             </div>
           </div>
           <?php endif; ?>
           <?php if (hu_open_data_feature_enabled('ksh_forestry_enabled')): ?>
-          <div class="card mb-3 border-success border-opacity-25">
+          <div class="card mb-3 gov-dash-panel border-start border-success border-3 shadow-sm">
             <div class="card-body">
-              <h6 class="card-title mb-1"><?= h(t('gov.hu_forestry_card_title')) ?></h6>
+              <h6 class="card-title mb-1 fw-semibold"><?= h(t('gov.hu_forestry_card_title')) ?></h6>
               <p class="text-secondary small mb-2"><?= h(t('gov.hu_forestry_card_hint')) ?></p>
               <div id="govHuForestryContent"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
             </div>
           </div>
           <?php endif; ?>
           <?php if (hu_open_data_feature_enabled('ksh_weather_enabled')): ?>
-          <div class="card mb-3 border-success border-opacity-25">
+          <div class="card mb-3 gov-dash-panel border-start border-info border-3 shadow-sm">
             <div class="card-body">
-              <h6 class="card-title mb-1"><?= h(t('gov.hu_weather_card_title')) ?></h6>
+              <h6 class="card-title mb-1 fw-semibold"><?= h(t('gov.hu_weather_card_title')) ?></h6>
               <p class="text-secondary small mb-2"><?= h(t('gov.hu_weather_card_hint')) ?></p>
               <div id="govHuWeatherContent"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
             </div>
@@ -1414,28 +1417,31 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         <?php endif; ?>
 
         <div class="admin-tab-body" id="tab-climate" hidden>
-          <p class="text-secondary small mb-3"><?= h(t('gov.climate_intro')) ?></p>
-          <div class="card mb-3">
+          <div class="mb-3">
+            <h5 class="mb-1 fw-semibold"><i class="bi bi-cloud-sun text-warning me-1"></i><?= h(t('gov.tab_climate')) ?></h5>
+            <p class="text-secondary small mb-0"><?= h(t('gov.climate_intro')) ?></p>
+          </div>
+          <div class="card mb-3 gov-dash-panel gov-dash-panel--intel shadow-sm">
             <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('intel.climate_data_title')) ?></h6>
-              <div id="govClimateDataRow" class="row g-2"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
+              <h6 class="card-title mb-2 fw-semibold"><?= h(t('intel.climate_data_title')) ?></h6>
+              <div id="govClimateDataRow" class="row g-2"><p class="text-secondary small mb-0 col-12"><?= h(t('gov.loading')) ?></p></div>
             </div>
           </div>
-          <div class="card mb-3">
+          <div class="card mb-3 gov-dash-panel shadow-sm">
             <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('gov.climate_modules_title')) ?></h6>
+              <h6 class="card-title mb-2 fw-semibold"><?= h(t('gov.climate_modules_title')) ?></h6>
               <div id="govClimateModulesContent"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
             </div>
           </div>
-          <div class="card mb-3 border-success border-opacity-25">
+          <div class="card mb-3 gov-dash-panel border-start border-success border-3 shadow-sm">
             <div class="card-body">
-              <h6 class="card-title mb-1"><?= h(t('gov.climate_gfw_title')) ?></h6>
+              <h6 class="card-title mb-1 fw-semibold"><?= h(t('gov.climate_gfw_title')) ?></h6>
               <p class="text-secondary small mb-2"><?= h(t('gov.climate_gfw_hint')) ?></p>
               <div id="govGfwContent"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
               <p class="small mb-0 mt-2"><a href="https://www.globalforestwatch.org/" target="_blank" rel="noopener noreferrer">globalforestwatch.org</a></p>
             </div>
           </div>
-          <div class="card mb-3 border-primary border-opacity-25">
+          <div class="card mb-3 gov-dash-panel border-start border-primary border-3 shadow-sm">
             <div class="card-body">
               <h6 class="card-title mb-1"><?= h(t('intel.ai_vision_title')) ?></h6>
               <p class="text-secondary small mb-2"><?= h(t('intel.ai_vision_intro')) ?></p>
@@ -1476,8 +1482,11 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         </div>
 
         <div class="admin-tab-body" id="tab-intel-reports" hidden>
-          <p class="text-secondary small mb-3"><?= h(t('intel.reports_intro')) ?></p>
-          <div class="card mb-3">
+          <div class="mb-3">
+            <h5 class="mb-1 fw-semibold"><i class="bi bi-file-earmark-bar-graph text-primary me-1"></i><?= h(t('intel.tab_reports')) ?></h5>
+            <p class="text-secondary small mb-0"><?= h(t('intel.reports_intro')) ?></p>
+          </div>
+          <div class="card mb-3 gov-dash-panel shadow-sm">
             <div class="card-body">
               <div class="row g-2 align-items-end">
                 <div class="col-md-4">
@@ -2065,6 +2074,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     'module_test_fail' => t('intel.module_test_fail'),
     'provider_logs' => t('intel.provider_logs'),
     'report_pdf' => t('intel.report_pdf'),
+    'report_preview_hint' => t('intel.report_preview_hint'),
     'tile_weather' => t('intel.tile_weather'),
     'tile_gbif' => t('intel.tile_gbif'),
     'tile_pvgis' => t('intel.tile_pvgis'),
@@ -4249,37 +4259,17 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     }
     var dataRow = document.getElementById('govClimateDataRow');
     if (dataRow && govIntelligenceContextUrl) {
-      dataRow.innerHTML = '<p class="text-secondary small mb-0">…</p>';
+      dataRow.innerHTML = '<div class="col-12"><p class="text-secondary small mb-0">…</p></div>';
       var ctxUrl = govAppendAuthorityQuery(govIntelligenceContextUrl);
       ctxUrl += (ctxUrl.indexOf('?') >= 0 ? '&' : '?') + 'lite=1';
       fetch(ctxUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
         if (!j.ok || !j.data) {
-          dataRow.innerHTML = '<p class="text-secondary small mb-0">' + (Lb.load_error || '—') + '</p>';
+          dataRow.innerHTML = '<div class="col-12"><p class="text-secondary small mb-0">' + (Lb.data_empty || Lb.load_error || '—') + '</p></div>';
           return;
         }
-        var d = j.data;
-        var cards = [];
-        var w = d.weather || {};
-        if (w.ok) {
-          cards.push({ t: 'HungaroMet', v: (w.temp_c != null ? w.temp_c + ' °C' : '—'), s: (w.precip_mm != null ? w.precip_mm + ' mm / 7 nap' : '') });
-        }
-        var g = d.gbif || {};
-        if (g.ok) cards.push({ t: 'GBIF', v: (g.occurrence_count != null ? g.occurrence_count : 0), s: 'megfigyelés' });
-        var p = d.pvgis || {};
-        if (p.ok) cards.push({ t: 'PVGIS', v: (p.annual_kwh != null ? p.annual_kwh + ' kWh' : '—'), s: '1 kWp / év' });
-        var o = d.ocm || {};
-        if (o.ok) cards.push({ t: 'EV', v: (o.charger_count != null ? o.charger_count : 0), s: 'töltő 25 km-en' });
-        var v = d.viirs || {};
-        if (v.ok) cards.push({ t: 'VIIRS', v: (v.light_pollution_index != null ? v.light_pollution_index : '—'), s: 'fényszennyezés' });
-        if (!cards.length) {
-          dataRow.innerHTML = '<p class="text-secondary small mb-0">' + (Lb.data_empty || '—') + '</p>';
-          return;
-        }
-        dataRow.innerHTML = cards.map(function(c){
-          return '<div class="col-6 col-md-4 col-lg-3"><div class="border rounded p-2 h-100"><div class="text-secondary small">' + (typeof escStr === 'function' ? escStr(c.t) : c.t) + '</div><div class="fw-bold">' + (typeof escStr === 'function' ? escStr(c.v) : c.v) + '</div><div class="text-secondary small">' + (typeof escStr === 'function' ? escStr(c.s) : c.s) + '</div></div></div>';
-        }).join('');
+        dataRow.innerHTML = buildIntelFeedTilesHtml(j.data);
       }).catch(function(){
-        dataRow.innerHTML = '<p class="text-secondary small mb-0">' + (Lb.load_error || '—') + '</p>';
+        dataRow.innerHTML = '<div class="col-12"><p class="text-secondary small mb-0">' + (Lb.load_error || '—') + '</p></div>';
       });
     }
     initGovAiVision();
@@ -4505,7 +4495,11 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       });
       if (pdfBtn) pdfBtn.addEventListener('click', exportGovIntelReportPdf);
     }
-    loadGovIntelReport();
+    var frame = document.getElementById('govIntelReportFrame');
+    var Lb = govIntelLabels || {};
+    if (frame && !frame.dataset.loaded) {
+      frame.srcdoc = '<div style="font-family:system-ui,sans-serif;padding:2.5rem 1rem;text-align:center;color:#64748b;"><p style="margin:0;">' + String(Lb.report_preview_hint || Lb.report_generate || '—').replace(/</g,'&lt;') + '</p></div>';
+    }
   }
   function exportGovIntelReportPdf(){
     var frame = document.getElementById('govIntelReportFrame');
@@ -4537,8 +4531,22 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     var frame = document.getElementById('govIntelReportFrame');
     var Lb = govIntelLabels || {};
     if (!frame || !govIntelligenceReportUrl) return;
-    frame.srcdoc = '<p style="font-family:sans-serif;padding:1rem;color:#666;">' + (Lb.report_generate || '…') + '</p>';
-    fetch(buildGovIntelReportUrl('html'), { credentials: 'include' }).then(function(r){ return r.text(); }).then(function(html){
+    frame.dataset.loaded = '1';
+    frame.srcdoc = '<p style="font-family:sans-serif;padding:1.5rem;color:#64748b;">…</p>';
+    fetch(buildGovIntelReportUrl('html'), { credentials: 'include' }).then(function(r){
+      return r.text().then(function(html){ return { ok: r.ok, html: html }; });
+    }).then(function(res){
+      var html = res.html || '';
+      if (html.trim().charAt(0) === '{' && html.indexOf('"ok"') >= 0) {
+        try {
+          var errJ = JSON.parse(html);
+          if (errJ && errJ.ok === false) {
+            html = '<div style="font-family:sans-serif;padding:1.5rem;color:#b91c1c;"><strong>' + String(errJ.error || Lb.load_error || '—').replace(/</g,'&lt;') + '</strong></div>';
+          }
+        } catch (_) {}
+      } else if (!res.ok && html.trim().charAt(0) !== '<') {
+        html = '<div style="font-family:sans-serif;padding:1.5rem;color:#b91c1c;">' + String(Lb.load_error || '—').replace(/</g,'&lt;') + '</div>';
+      }
       frame.srcdoc = html || '<p>—</p>';
       if (govIntelReportBlobUrl) {
         try { URL.revokeObjectURL(govIntelReportBlobUrl); } catch (_) {}
@@ -4931,6 +4939,31 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       + (cfg.sub ? '<div class="dash-intel-sub">' + (typeof escStr === 'function' ? escStr(cfg.sub) : String(cfg.sub).replace(/</g,'&lt;')) + '</div>' : '')
       + '</div></div>';
   }
+  function buildIntelFeedTilesHtml(d){
+    var L = govIntelLabels || {};
+    var Lc = govClimateLabels || {};
+    if (!d) return '<div class="col-12"><p class="text-secondary small mb-0">' + (Lc.data_empty || '—') + '</p></div>';
+    var tiles = [];
+    var w = d.weather || {};
+    if (w.ok) tiles.push({ cls: 'dash-intel-tile--weather', icon: 'bi-cloud-sun', value: (w.temp_c != null ? w.temp_c + '°C' : '—'), label: L.tile_weather || 'Weather', sub: (w.precip_mm != null ? w.precip_mm + ' mm' : '') });
+    else tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-cloud-sun', value: '—', label: L.tile_weather || 'Weather', sub: L.tile_inactive || '' });
+    var g = d.gbif || {};
+    if (g.ok) tiles.push({ cls: 'dash-intel-tile--gbif', icon: 'bi-flower1', value: g.occurrence_count != null ? g.occurrence_count : 0, label: L.tile_gbif || 'GBIF', sub: 'HU' });
+    else tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-flower1', value: '—', label: L.tile_gbif || 'GBIF', sub: L.tile_inactive || '' });
+    var p = d.pvgis || {};
+    if (p.ok) tiles.push({ cls: 'dash-intel-tile--pvgis', icon: 'bi-sun', value: (p.annual_kwh != null ? p.annual_kwh : '—'), label: L.tile_pvgis || 'PVGIS', sub: 'kWh/kWp' });
+    else tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-sun', value: '—', label: L.tile_pvgis || 'PVGIS', sub: L.tile_inactive || '' });
+    var o = d.ocm || {};
+    if (o.ok) tiles.push({ cls: 'dash-intel-tile--ev', icon: 'bi-ev-front', value: o.charger_count != null ? o.charger_count : 0, label: L.tile_ev || 'EV', sub: '25 km' });
+    else tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-ev-front', value: '—', label: L.tile_ev || 'EV', sub: L.tile_inactive || '' });
+    var v = d.viirs || {};
+    if (v.ok) tiles.push({ cls: 'dash-intel-tile--viirs', icon: 'bi-moon-stars', value: v.light_pollution_index != null ? v.light_pollution_index : '—', label: L.tile_viirs || 'VIIRS', sub: '' });
+    else tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-moon-stars', value: '—', label: L.tile_viirs || 'VIIRS', sub: L.tile_inactive || '' });
+    if (!tiles.some(function(t){ return t.cls.indexOf('inactive') < 0; })) {
+      return '<div class="col-12"><p class="text-secondary small mb-0">' + (Lc.data_empty || '—') + '</p></div>';
+    }
+    return tiles.map(renderDashIntelTile).join('');
+  }
   function loadGovDashIntelTiles(){
     var row = document.getElementById('govDashIntelTiles');
     var L = govIntelLabels || {};
@@ -4943,39 +4976,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         row.innerHTML = '<div class="col-12"><p class="text-secondary small mb-0">' + (Lc.load_error || L.load_error || '—') + '</p></div>';
         return;
       }
-      var d = j.data;
-      var tiles = [];
-      var w = d.weather || {};
-      if (w.ok) {
-        tiles.push({ cls: 'dash-intel-tile--weather', icon: 'bi-cloud-sun', value: (w.temp_c != null ? w.temp_c + '°C' : '—'), label: L.tile_weather || 'Weather', sub: (w.precip_mm != null ? w.precip_mm + ' mm' : '') });
-      } else {
-        tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-cloud-sun', value: '—', label: L.tile_weather || 'Weather', sub: L.tile_inactive || '' });
-      }
-      var g = d.gbif || {};
-      if (g.ok) {
-        tiles.push({ cls: 'dash-intel-tile--gbif', icon: 'bi-flower1', value: g.occurrence_count != null ? g.occurrence_count : 0, label: L.tile_gbif || 'GBIF', sub: 'HU' });
-      } else {
-        tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-flower1', value: '—', label: L.tile_gbif || 'GBIF', sub: L.tile_inactive || '' });
-      }
-      var p = d.pvgis || {};
-      if (p.ok) {
-        tiles.push({ cls: 'dash-intel-tile--pvgis', icon: 'bi-sun', value: (p.annual_kwh != null ? p.annual_kwh : '—'), label: L.tile_pvgis || 'PVGIS', sub: 'kWh/kWp' });
-      } else {
-        tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-sun', value: '—', label: L.tile_pvgis || 'PVGIS', sub: L.tile_inactive || '' });
-      }
-      var o = d.ocm || {};
-      if (o.ok) {
-        tiles.push({ cls: 'dash-intel-tile--ev', icon: 'bi-ev-front', value: o.charger_count != null ? o.charger_count : 0, label: L.tile_ev || 'EV', sub: '25 km' });
-      } else {
-        tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-ev-front', value: '—', label: L.tile_ev || 'EV', sub: L.tile_inactive || '' });
-      }
-      var v = d.viirs || {};
-      if (v.ok) {
-        tiles.push({ cls: 'dash-intel-tile--viirs', icon: 'bi-moon-stars', value: v.light_pollution_index != null ? v.light_pollution_index : '—', label: L.tile_viirs || 'VIIRS', sub: '' });
-      } else {
-        tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-moon-stars', value: '—', label: L.tile_viirs || 'VIIRS', sub: L.tile_inactive || '' });
-      }
-      row.innerHTML = tiles.map(renderDashIntelTile).join('');
+      row.innerHTML = buildIntelFeedTilesHtml(j.data);
     }).catch(function(){
       row.innerHTML = '<div class="col-12"><p class="text-secondary small mb-0">' + (Lc.load_error || '—') + '</p></div>';
     });

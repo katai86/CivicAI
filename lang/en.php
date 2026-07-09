@@ -565,6 +565,7 @@ return [
     'intel.tile_gfw' => 'Tree cover',
     'intel.tile_inactive' => 'Inactive',
     'intel.report_pdf' => 'Export PDF',
+    'intel.report_preview_hint' => 'Click “Generate report” to preview.',
     'intel.ai_analyze' => 'Analyze',
     'intel.ai_upload' => 'Upload image',
     'intel.ai_model' => 'AI model',

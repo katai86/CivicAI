@@ -40,19 +40,33 @@ class IntelligenceHub
         $out = [
             'authority_id' => $authorityId,
             'bbox' => $bbox,
-            'modules' => $this->safeCall(static function () {
+            'modules' => $this->safeCall(function () {
                 return IntelligenceModuleRegistry::listWithStatus();
             }, []),
-            'gbif' => $this->safeCall(static fn () => (new GbifDataService())->fetchContext($authorityId), ['ok' => false]),
-            'weather' => $this->safeCall(static fn () => (new HungaroMetDataService())->fetchContext($authorityId), ['ok' => false]),
-            'pvgis' => $this->safeCall(static fn () => (new PvgisDataService())->fetchContext($authorityId), ['ok' => false]),
-            'ocm' => $this->safeCall(static fn () => (new OpenChargeMapDataService())->fetchContext($authorityId), ['ok' => false]),
-            'viirs' => $this->safeCall(static fn () => (new ViirsDataService())->fetchContext($authorityId), ['ok' => false]),
+            'gbif' => $this->safeCall(function () use ($authorityId) {
+                return (new GbifDataService())->fetchContext($authorityId);
+            }, ['ok' => false]),
+            'weather' => $this->safeCall(function () use ($authorityId) {
+                return (new HungaroMetDataService())->fetchContext($authorityId);
+            }, ['ok' => false]),
+            'pvgis' => $this->safeCall(function () use ($authorityId) {
+                return (new PvgisDataService())->fetchContext($authorityId);
+            }, ['ok' => false]),
+            'ocm' => $this->safeCall(function () use ($authorityId) {
+                return (new OpenChargeMapDataService())->fetchContext($authorityId);
+            }, ['ok' => false]),
+            'viirs' => $this->safeCall(function () use ($authorityId) {
+                return (new ViirsDataService())->fetchContext($authorityId);
+            }, ['ok' => false]),
         ];
 
         if (!$lite) {
-            $out['climate_index'] = $this->safeCall(static fn () => (new ClimateIndexService())->compute($authorityId), ['score' => 0, 'category' => 'moderate']);
-            $out['gfw'] = $this->safeCall(static fn () => (new GlobalForestWatchService())->fetchContext($bbox), ['ok' => false]);
+            $out['climate_index'] = $this->safeCall(function () use ($authorityId) {
+                return (new ClimateIndexService())->compute($authorityId);
+            }, ['score' => 0, 'category' => 'moderate', 'label' => '', 'recommendations' => []]);
+            $out['gfw'] = $this->safeCall(function () use ($bbox) {
+                return (new GlobalForestWatchService())->fetchContext($bbox);
+            }, ['ok' => false]);
         }
 
         return $out;

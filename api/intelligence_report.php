@@ -24,11 +24,18 @@ if (isset($in['authority_id']) && (int)$in['authority_id'] > 0) {
 }
 
 $gen = new IntelligenceReportGenerator();
-$report = $gen->generate([
-    'type' => $type,
-    'audience' => $audience,
-    'authority_id' => $aid,
-]);
+try {
+    $report = $gen->generate([
+        'type' => $type,
+        'audience' => $audience,
+        'authority_id' => $aid,
+    ]);
+} catch (Throwable $e) {
+    if (function_exists('log_error')) {
+        log_error('intelligence_report: ' . $e->getMessage());
+    }
+    json_response(['ok' => false, 'error' => t('common.error_load')], 500);
+}
 
 $format = trim((string)($in['format'] ?? 'json'));
 if ($format === 'html') {

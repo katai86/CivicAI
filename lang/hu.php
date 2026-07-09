@@ -568,6 +568,8 @@ return [
     'intel.tile_gfw' => 'Erdőborítás',
     'intel.tile_inactive' => 'Inaktív',
     'intel.report_pdf' => 'PDF export',
+    'intel.report_preview_hint' => 'Kattints a „Jelentés generálása” gombra az előnézethez.',
+    'intel.report_preview_hint' => 'Kattints a „Jelentés generálása” gombra az előnézethez.',
     'intel.ai_analyze' => 'Elemzés',
     'intel.ai_upload' => 'Kép feltöltése',
     'intel.ai_model' => 'AI modell',

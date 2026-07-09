@@ -61,8 +61,9 @@ if (empty($govHuOpenDataTabEnabled)) {
     if (greenBox) {
       if (d.green) {
         var g = d.green;
-        greenBox.innerHTML = '<div class="row g-2 small"><div class="col-6"><span class="text-secondary">' + (L.year || '') + '</span><br><b>' + (g.year || '—') + '</b></div>'
-          + '<div class="col-6"><span class="text-secondary">' + (L.green_ha || '') + '</span><br><b>' + govHuFormatHa(g.value_ha) + '</b></div></div>';
+        var refBadge = (g.reference || d.reference_snapshot) ? ' <span class="badge text-bg-warning ms-1">' + (L.reference_snapshot || 'ref') + '</span>' : '';
+        greenBox.innerHTML = '<div class="row g-2"><div class="col-md-6"><div class="dash-hero-tile dash-tile-green"><div class="dash-tile-value">' + govHuFormatHa(g.value_ha) + '</div><div class="dash-tile-label">' + (L.green_ha || '') + refBadge + '</div></div></div>'
+          + '<div class="col-md-6"><div class="dash-hero-tile dash-tile-slate"><div class="dash-tile-value">' + (g.year || '—') + '</div><div class="dash-tile-label">' + (L.year || '') + '</div></div></div></div>';
       } else if (greenBox.innerHTML.indexOf('Betöltés') >= 0 || greenBox.innerHTML.indexOf('Loading') >= 0) {
         greenBox.innerHTML = '<p class="text-secondary small mb-0">' + govHuNoteMessage(d, j) + '</p>';
       }
@@ -72,8 +73,8 @@ if (empty($govHuOpenDataTabEnabled)) {
     if (forBox) {
       if (d.forestry) {
         var f = d.forestry;
-        forBox.innerHTML = '<div class="row g-2 small"><div class="col-6"><span class="text-secondary">' + (L.year || '') + '</span><br><b>' + (f.year || '—') + '</b></div>'
-          + '<div class="col-6"><span class="text-secondary">' + (L.forest_ha || '') + '</span><br><b>' + govHuFormatHa(f.total_ha) + '</b></div></div>';
+        forBox.innerHTML = '<div class="row g-2"><div class="col-md-6"><div class="dash-hero-tile dash-tile-teal"><div class="dash-tile-value">' + govHuFormatHa(f.total_ha) + '</div><div class="dash-tile-label">' + (L.forest_ha || '') + '</div></div></div>'
+          + '<div class="col-md-6"><div class="dash-hero-tile dash-tile-slate"><div class="dash-tile-value">' + (f.year || '—') + '</div><div class="dash-tile-label">' + (L.year || '') + '</div></div></div></div>';
       } else if (forBox.innerHTML.indexOf('Betöltés') >= 0 || forBox.innerHTML.indexOf('Loading') >= 0) {
         forBox.innerHTML = '<p class="text-secondary small mb-0">' + govHuNoteMessage(d, j) + '</p>';
       }
@@ -136,7 +137,7 @@ if (empty($govHuOpenDataTabEnabled)) {
     var url = govHuOpenDataUrl + (q || '');
     url += (url.indexOf('?') >= 0 ? '&' : '?') + 'lite=' + (lite ? '1' : '0');
 
-    var timeoutMs = lite ? 25000 : 55000;
+    var timeoutMs = lite ? 12000 : 45000;
   var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function() { try { ctrl.abort(); } catch (_) {} }, timeoutMs) : null;
 
