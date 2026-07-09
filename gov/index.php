@@ -471,6 +471,33 @@ if (!empty($stats['by_category'])) {
     $v = array_values($stats['by_category']);
     $maxCategory = $v ? max(1, max($v)) : 1;
 }
+$dashStatusChart = [];
+foreach ($statusOrder as $st) {
+    if (!empty($stats['by_status'][$st])) {
+        $dashStatusChart[] = [
+            'label' => $statusLabels[$st] ?? $st,
+            'value' => (int)$stats['by_status'][$st],
+            'color' => $statusColors[$st] ?? '#6c757d',
+        ];
+    }
+}
+$dashCategoryChart = [];
+if (!empty($stats['by_category'])) {
+    $catItemsDash = $stats['by_category'];
+    arsort($catItemsDash);
+    $ci = 0;
+    foreach ($catItemsDash as $cat => $cnt) {
+        if ($ci >= 8) {
+            break;
+        }
+        $dashCategoryChart[] = [
+            'label' => $categoryLabels[$cat] ?? $cat,
+            'value' => (int)$cnt,
+            'color' => $catColors[$ci % count($catColors)],
+        ];
+        $ci++;
+    }
+}
 ?>
 <?php
 $govUid = current_user_id();
@@ -741,173 +768,212 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         <?php endif; ?>
 
         <div class="admin-tab-body" id="tab-dashboard">
-          <!-- Executive overview (M1) -->
-          <div class="card border-0 shadow-sm mb-3 exec-hero-card" id="govExecutiveHeroCard">
-            <div class="card-body py-3 px-3 px-md-4">
-              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
-                <div>
-                  <h5 class="mb-1 fw-semibold"><?= h(t('gov.executive_title')) ?></h5>
-                  <p class="text-secondary small mb-0"><?= h(t('gov.executive_subtitle')) ?></p>
-                </div>
-                <span class="badge rounded-pill d-none px-3 py-2" id="govExecutiveTrendBadge" role="status"></span>
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div>
+              <h5 class="mb-1 fw-semibold"><?= h(t('gov.dash_overview_title')) ?></h5>
+              <p class="text-secondary small mb-0"><?= h(t('gov.dash_overview_subtitle')) ?></p>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <span class="badge rounded-pill d-none px-3 py-2" id="govExecutiveTrendBadge" role="status"></span>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="btnGovDashboardPdf"><?= h(t('gov.dashboard_pdf_export')) ?></button>
+            </div>
+          </div>
+
+          <!-- Fő mutatók -->
+          <div class="row g-2 g-md-3 mb-3" id="govDashHeroKpis">
+            <div class="col-6 col-md-4 col-xl-2">
+              <div class="dash-hero-tile dash-tile-blue h-100">
+                <i class="bi bi-flag-fill dash-tile-icon"></i>
+                <div class="dash-tile-value"><?= (int)$stats['reports_1d'] ?></div>
+                <div class="dash-tile-label"><?= h(t('gov.stat_today')) ?></div>
               </div>
-              <div id="govExecutiveHeroContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+              <div class="dash-hero-tile dash-tile-indigo h-100">
+                <i class="bi bi-calendar-week dash-tile-icon"></i>
+                <div class="dash-tile-value"><?= (int)$stats['reports_7d'] ?></div>
+                <div class="dash-tile-label"><?= h(t('gov.stat_7d')) ?></div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+              <div class="dash-hero-tile dash-tile-slate h-100">
+                <i class="bi bi-collection dash-tile-icon"></i>
+                <div class="dash-tile-value"><?= (int)$stats['reports_total'] ?></div>
+                <div class="dash-tile-label"><?= h(t('gov.stat_total')) ?></div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2" id="govDashHeroClimate">
+              <div class="dash-hero-tile dash-tile-teal h-100">
+                <i class="bi bi-speedometer2 dash-tile-icon"></i>
+                <div class="dash-tile-value">…</div>
+                <div class="dash-tile-label"><?= h(t('intel.climate_index')) ?></div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2" id="govDashHeroHealth">
+              <div class="dash-hero-tile dash-tile-green h-100">
+                <i class="bi bi-heart-pulse dash-tile-icon"></i>
+                <div class="dash-tile-value">…</div>
+                <div class="dash-tile-label"><?= h(t('gov.city_health_index')) ?></div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2" id="govDashHeroModules">
+              <div class="dash-hero-tile dash-tile-amber h-100">
+                <i class="bi bi-plug dash-tile-icon"></i>
+                <div class="dash-tile-value">…</div>
+                <div class="dash-tile-label"><?= h(t('intel.active_modules')) ?></div>
               </div>
             </div>
           </div>
-          <div class="card mb-3 border-success border-opacity-50 shadow-sm" id="govIntelDashboardCard">
+
+          <!-- Intelligence Platform – élő adatok -->
+          <div class="card mb-3 gov-dash-panel gov-dash-panel--intel shadow-sm" id="govIntelDashboardCard">
             <div class="card-body py-3 px-3">
-              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+              <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
                 <div>
-                  <h6 class="mb-1 fw-semibold"><?= h(t('intel.platform_title')) ?></h6>
-                  <p class="text-secondary small mb-0"><?= h(t('intel.platform_subtitle')) ?></p>
+                  <h5 class="mb-1 fw-semibold d-flex align-items-center gap-2"><i class="bi bi-cloud-sun text-warning"></i><?= h(t('intel.platform_title')) ?></h5>
+                  <p class="text-secondary small mb-0"><?= h(t('gov.dash_intel_feeds')) ?></p>
                 </div>
                 <div class="d-flex flex-wrap gap-1" id="govIntelModuleBadges"></div>
               </div>
-              <div class="row g-3">
-                <div class="col-md-4 col-lg-3" id="govClimateIndexCol">
+              <div class="row g-2 mb-3" id="govDashIntelTiles">
+                <div class="col-12"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
+              </div>
+              <div class="row g-3 align-items-stretch">
+                <div class="col-lg-4" id="govClimateIndexCol">
                   <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
                 </div>
-                <div class="col-md-8 col-lg-9">
-                  <div class="row g-2 mb-2" id="govIntelKpiRow"></div>
+                <div class="col-lg-8">
+                  <h6 class="small fw-semibold mb-2"><?= h(t('gov.dash_climate_components')) ?></h6>
+                  <div class="gov-chart-wrap mb-3" style="min-height:200px;max-height:240px">
+                    <canvas id="govDashClimateComponentsChart"></canvas>
+                  </div>
                   <h6 class="small fw-semibold mb-1"><?= h(t('intel.recommendations')) ?></h6>
                   <div id="govIntelRecommendations"><p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p></div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="card mb-3 border-start border-primary border-3" id="govMorningBriefCard">
-            <div class="card-body py-2 px-3">
-              <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-1">
-                <h6 class="card-title mb-0 small fw-semibold"><?= h(t('gov.morning_brief_title')) ?></h6>
-                <span class="text-secondary small" id="govMorningBriefAsOf" role="status"></span>
-              </div>
-              <div id="govMorningBriefContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
-              </div>
-              <div class="mt-2 pt-2 border-top small">
-                <a href="#" id="linkGovMorningBriefJson" class="text-decoration-none" target="_blank" rel="noopener"><?= h(t('gov.dashboard_json_api')) ?></a>
-              </div>
-            </div>
-          </div>
-          <?php require __DIR__ . '/../inc/gov_hu_dashboard_card.php'; ?>
-          <div class="card mb-3" id="govInsightsCard">
-            <div class="card-body py-2 px-3">
-              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
-                <h6 class="card-title mb-0 small fw-semibold"><?= h(t('gov.insights_title')) ?></h6>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="govInsightsRefresh"><?= h(t('admin.refresh')) ?></button>
-              </div>
-              <p class="text-secondary small mb-2"><?= h(t('gov.insights_desc')) ?></p>
-              <div id="govInsightsContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
-              </div>
-              <?php if ($govAiUiEnabled && ai_configured()): ?>
-              <div class="mt-2 pt-2 border-top" id="govInsightsAiBlock">
-                <button type="button" class="btn btn-sm btn-outline-primary" id="btnGovInsightsAiExplain"><?= h(t('gov.insights_ai_explain')) ?></button>
-                <p class="text-secondary small mb-0 mt-2" id="govInsightsAiStatus" hidden></p>
-                <div class="small mt-2 mb-0 text-body-secondary" id="govInsightsAiOutput" style="white-space:pre-wrap;"></div>
-                <p class="text-secondary small mb-0 mt-2" id="govInsightsAiDisclaimer"><?= h(t('gov.insights_ai_disclaimer')) ?></p>
-              </div>
-              <?php endif; ?>
-              <div class="mt-2 pt-2 border-top small">
-                <a href="#" id="linkGovInsightsJson" class="text-decoration-none" target="_blank" rel="noopener"><?= h(t('gov.dashboard_json_api')) ?></a>
-              </div>
-            </div>
-          </div>
-          <!-- Áttekintés: City Health, időjárás, statisztikák, ESG összefoglaló -->
-          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-            <p class="text-secondary small mb-0"><?= h(t('gov.panels_intro')) ?></p>
-            <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0" id="btnGovDashboardPdf"><?= h(t('gov.dashboard_pdf_export')) ?></button>
-          </div>
-          <div class="card border-primary mb-3" id="govCityHealthCard">
-            <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('gov.city_health_index')) ?></h6>
-              <div id="govCityHealthContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
-              </div>
-            </div>
-          </div>
-          <?php if (defined('WEATHER_ENABLED') && WEATHER_ENABLED): ?>
-          <div class="card mb-3" id="govWeatherCard">
-            <div class="card-body">
-              <h6 class="card-title mb-2"><?= h(t('gov.weather_title')) ?></h6>
-              <div id="govWeatherContent">
-                <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
-              </div>
-            </div>
-          </div>
-          <?php endif; ?>
+
+          <!-- Grafikonok + vezetői pillanatkép -->
           <div class="row g-3 mb-3">
-            <div class="col-12">
-              <div class="card">
+            <div class="col-md-6 col-lg-4">
+              <div class="card h-100 gov-dash-panel shadow-sm">
                 <div class="card-body">
-                  <h6 class="card-title mb-2"><?= h(t('gov.panel_city_health')) ?> – <?= h(t('gov.stats_title')) ?></h6><br>
-                  <div class="row g-2">
-                    <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_today')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_1d'] ?></span></div></div>
-                    <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_7d')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_7d'] ?></span></div></div>
-                    <div class="col-md-2"><div class="d-flex flex-column"><span class="text-secondary small"><?= h(t('gov.stat_total')) ?></span><span class="fw-bold fs-5"><?= (int)$stats['reports_total'] ?></span></div></div>
-                    <div class="col-md-6"><div class="text-secondary small"><?= ($isAdmin ? h(t('gov.authorities')) . ': ' : h(t('gov.your_authority')) . ': ') ?><b><?= h($isAdmin ? implode(', ', array_map(fn($a)=>$a['name'], $authorities)) : ($authorities[0]['name'] ?? '—')) ?></b></div></div>
+                  <h6 class="card-title mb-2 fw-semibold"><i class="bi bi-pie-chart-fill text-primary me-1"></i><?= h(t('gov.by_status')) ?></h6>
+                  <div class="gov-chart-wrap gov-chart-wrap--donut">
+                    <canvas id="govDashStatusChart"></canvas>
                   </div>
-                  <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                      <h6 class="text-secondary small mb-2"><?= h(t('gov.by_status')) ?></h6>
-                      <div class="admin-chart">
-                        <?php
-                        $statusItems = [];
-                        foreach ($statusOrder as $st) {
-                          if (!empty($stats['by_status'][$st])) {
-                            $statusItems[] = ['k' => $st, 'cnt' => (int)$stats['by_status'][$st], 'label' => $statusLabels[$st] ?? $st, 'color' => $statusColors[$st] ?? '#6c757d'];
-                          }
-                        }
-                        if ($statusItems): ?>
-                          <?php foreach ($statusItems as $x): ?>
-                          <div class="admin-chart-bar">
-                            <span class="label"><?= h($x['label']) ?></span>
-                            <div class="bar-wrap"><div class="bar" style="width:<?= (int)round(100 * $x['cnt'] / $maxStatus) ?>%;background:<?= h($x['color']) ?>"></div></div>
-                            <span class="val"><?= $x['cnt'] ?></span>
-                          </div>
-                          <?php endforeach; ?>
-                        <?php else: ?>
-                          <div class="text-secondary small"><?= h(t('gov.no_data')) ?></div>
-                        <?php endif; ?>
-                      </div>
-                    </div>
-                    <div class="col-md-6">
-                      <h6 class="text-secondary small mb-2"><?= h(t('gov.by_category')) ?></h6>
-                      <div class="admin-chart">
-                        <?php
-                        $catItems = $stats['by_category'];
-                        arsort($catItems);
-                        $i = 0;
-                        if (!empty($catItems)): ?>
-                          <?php foreach ($catItems as $cat => $cnt): $cnt = (int)$cnt; $color = $catColors[$i % count($catColors)]; $i++; ?>
-                          <div class="admin-chart-bar">
-                            <span class="label"><?= h($categoryLabels[$cat] ?? $cat) ?></span>
-                            <div class="bar-wrap"><div class="bar" style="width:<?= (int)round(100 * $cnt / $maxCategory) ?>%;background:<?= h($color) ?>"></div></div>
-                            <span class="val"><?= $cnt ?></span>
-                          </div>
-                          <?php endforeach; ?>
-                        <?php else: ?>
-                          <div class="text-secondary small"><?= h(t('gov.no_data')) ?></div>
-                        <?php endif; ?>
-                      </div>
-                    </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+              <div class="card h-100 gov-dash-panel shadow-sm">
+                <div class="card-body">
+                  <h6 class="card-title mb-2 fw-semibold"><i class="bi bi-bar-chart-fill text-success me-1"></i><?= h(t('gov.by_category')) ?></h6>
+                  <div class="gov-chart-wrap">
+                    <canvas id="govDashCategoryChart"></canvas>
                   </div>
-                  <p class="text-secondary small mt-2 mb-0">
-                    <?= h(t('gov.integration_status')) ?>:
-                    <?= ($govFmsUiEnabled && fms_enabled()) ? h(t('gov.fms_configured')) : h(t('gov.fms_not_configured')) ?>
-                    |
-                    <?= ($govAiUiEnabled && ai_configured()) ? h(t('gov.ai_configured')) : h(t('gov.ai_not_configured')) ?>
-                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="card h-100 gov-dash-panel exec-hero-card shadow-sm" id="govExecutiveHeroCard">
+                <div class="card-body py-3">
+                  <h6 class="card-title mb-2 fw-semibold"><?= h(t('gov.executive_title')) ?></h6>
+                  <p class="text-secondary small mb-2"><?= h(t('gov.executive_subtitle')) ?></p>
+                  <div id="govExecutiveHeroContent">
+                    <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Napi brief + betekintés -->
+          <div class="row g-3 mb-3">
+            <div class="col-lg-6">
+              <div class="card h-100 gov-dash-panel border-start border-primary border-3 shadow-sm" id="govMorningBriefCard">
+                <div class="card-body py-3 px-3">
+                  <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+                    <h6 class="card-title mb-0 fw-semibold"><i class="bi bi-sunrise text-warning me-1"></i><?= h(t('gov.morning_brief_title')) ?></h6>
+                    <span class="text-secondary small" id="govMorningBriefAsOf" role="status"></span>
+                  </div>
+                  <div id="govMorningBriefContent">
+                    <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+                  </div>
+                  <div class="mt-2 pt-2 border-top small">
+                    <a href="#" id="linkGovMorningBriefJson" class="text-decoration-none" target="_blank" rel="noopener"><?= h(t('gov.dashboard_json_api')) ?></a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="card h-100 gov-dash-panel shadow-sm" id="govInsightsCard">
+                <div class="card-body py-3 px-3">
+                  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h6 class="card-title mb-0 fw-semibold"><i class="bi bi-lightbulb text-info me-1"></i><?= h(t('gov.insights_title')) ?></h6>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="govInsightsRefresh"><?= h(t('admin.refresh')) ?></button>
+                  </div>
+                  <div id="govInsightsContent">
+                    <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+                  </div>
+                  <?php if ($govAiUiEnabled && ai_configured()): ?>
+                  <div class="mt-2 pt-2 border-top" id="govInsightsAiBlock">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnGovInsightsAiExplain"><?= h(t('gov.insights_ai_explain')) ?></button>
+                    <p class="text-secondary small mb-0 mt-2" id="govInsightsAiStatus" hidden></p>
+                    <div class="small mt-2 mb-0 text-body-secondary" id="govInsightsAiOutput" style="white-space:pre-wrap;"></div>
+                    <p class="text-secondary small mb-0 mt-2" id="govInsightsAiDisclaimer"><?= h(t('gov.insights_ai_disclaimer')) ?></p>
+                  </div>
+                  <?php endif; ?>
+                  <div class="mt-2 pt-2 border-top small">
+                    <a href="#" id="linkGovInsightsJson" class="text-decoration-none" target="_blank" rel="noopener"><?= h(t('gov.dashboard_json_api')) ?></a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kiegészítő panelek -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <div class="card h-100 gov-dash-panel border-primary border-opacity-25 shadow-sm" id="govCityHealthCard">
+                <div class="card-body">
+                  <h6 class="card-title mb-2 fw-semibold"><i class="bi bi-heart-pulse text-danger me-1"></i><?= h(t('gov.city_health_index')) ?></h6>
+                  <div id="govCityHealthContent">
+                    <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <?php if (defined('WEATHER_ENABLED') && WEATHER_ENABLED): ?>
+            <div class="col-md-4">
+              <div class="card h-100 gov-dash-panel shadow-sm" id="govWeatherCard">
+                <div class="card-body">
+                  <h6 class="card-title mb-2 fw-semibold"><i class="bi bi-cloud-sun text-info me-1"></i><?= h(t('gov.weather_title')) ?></h6>
+                  <div id="govWeatherContent">
+                    <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <?php endif; ?>
+            <div class="col-md-4">
+              <?php require __DIR__ . '/../inc/gov_hu_dashboard_card.php'; ?>
+            </div>
+          </div>
+
+          <p class="text-secondary small mb-3">
+            <?= h(t('gov.integration_status')) ?>:
+            <?= ($govFmsUiEnabled && fms_enabled()) ? h(t('gov.fms_configured')) : h(t('gov.fms_not_configured')) ?>
+            |
+            <?= ($govAiUiEnabled && ai_configured()) ? h(t('gov.ai_configured')) : h(t('gov.ai_not_configured')) ?>
+            · <?= ($isAdmin ? h(t('gov.authorities')) . ': ' : h(t('gov.your_authority')) . ': ') ?><b><?= h($isAdmin ? implode(', ', array_map(fn($a)=>$a['name'], $authorities)) : ($authorities[0]['name'] ?? '—')) ?></b>
+          </p>
+
           <?php if ($govEeaInspireForDashboard): ?>
-          <div class="card mb-3 border-secondary border-opacity-50">
+          <div class="card mb-3 gov-dash-panel border-secondary border-opacity-50 shadow-sm">
             <div class="card-body">
-              <h6 class="card-title mb-1"><?= h(t('gov.eu_eea_inspire_title')) ?></h6>
+              <h6 class="card-title mb-1 fw-semibold"><?= h(t('gov.eu_eea_inspire_title')) ?></h6>
               <p class="text-secondary small mb-2"><?= h(t('gov.eu_eea_inspire_hint')) ?></p>
               <div id="govDashboardEeaInspireContent">
                 <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
@@ -1960,7 +2026,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     'error_modules' => t('intel.error_modules'),
     'recommendations' => t('intel.recommendations'),
     'no_recommendations' => t('intel.no_recommendations'),
-    'load_error' => t('gov.hu_load_error'),
+    'load_error' => t('intel.climate_data_load_error'),
     'cat_critical' => t('intel.cat_critical'),
     'cat_weak' => t('intel.cat_weak'),
     'cat_moderate' => t('intel.cat_moderate'),
@@ -1999,9 +2065,22 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     'module_test_fail' => t('intel.module_test_fail'),
     'provider_logs' => t('intel.provider_logs'),
     'report_pdf' => t('intel.report_pdf'),
+    'tile_weather' => t('intel.tile_weather'),
+    'tile_gbif' => t('intel.tile_gbif'),
+    'tile_pvgis' => t('intel.tile_pvgis'),
+    'tile_ev' => t('intel.tile_ev'),
+    'tile_viirs' => t('intel.tile_viirs'),
+    'tile_gfw' => t('intel.tile_gfw'),
+    'tile_inactive' => t('intel.tile_inactive'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
+  var govDashChartData = <?= json_encode([
+    'status' => $dashStatusChart,
+    'category' => $dashCategoryChart,
+    'no_data' => t('gov.no_data'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govClimateLabels = <?= json_encode([
-    'load_error' => t('gov.hu_load_error'),
+    'load_error' => t('intel.climate_data_load_error'),
+    'data_empty' => t('intel.climate_data_empty'),
     'gfw_inactive' => t('gov.climate_module_inactive'),
     'ai_analyze' => t('intel.ai_analyze'),
     'ai_model' => t('intel.ai_model'),
@@ -2405,7 +2484,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       loadGovMapLayersTab();
     }
     if (key === 'intel-reports') initGovIntelReports();
-    if (key === 'dashboard') { loadGovIntelligenceDashboard(); loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
+    if (key === 'dashboard') { initGovDashboardCharts(); loadGovIntelligenceDashboard(); loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
     if (key === 'citybrain-live') loadCitybrainLive();
     if (key === 'citybrain-predictive') loadCitybrainPredictive();
       if (key === 'citybrain-hotspot') initCitybrainHotspot();
@@ -2493,6 +2572,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
   }
   window.govSidebarRevealTab = govSidebarRevealTab;
 
+  initGovDashboardCharts();
   loadGovIntelligenceDashboard();
   loadGovExecutiveSummary();
   loadGovMorningBrief();
@@ -3089,11 +3169,12 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     if (!isFinite(o)) return 'exec-kpi-warn';
     return govExecScoreTone(Math.max(0, 100 - Math.min(o, 100)), false);
   }
-  function govExecKpiCard(label, val, tone){
+  function govExecKpiCard(label, val, tone, colClass){
+    var col = colClass || 'col-6 col-md-4 col-lg-3';
     if (typeof CivicKpi !== 'undefined' && CivicKpi.renderKpiCard) {
-      return CivicKpi.renderKpiCard({ label: label, value: val, toneClass: tone });
+      return CivicKpi.renderKpiCard({ label: label, value: val, toneClass: tone, colClass: col });
     }
-    return '<div class="col-6 col-md-4 col-lg-3"><div class="exec-kpi rounded-3 p-2 p-md-3 h-100 ' + tone + '"><div class="exec-kpi-label small text-secondary">' + govExecEsc(label) + '</div><div class="exec-kpi-value fw-bold">' + govExecEsc(val) + '</div></div></div>';
+    return '<div class="' + col + '"><div class="exec-kpi rounded-3 p-2 p-md-3 h-100 ' + tone + '"><div class="exec-kpi-label small text-secondary">' + govExecEsc(label) + '</div><div class="exec-kpi-value fw-bold">' + govExecEsc(val) + '</div></div></div>';
   }
   function govExecRiskLine(risk, L){
     var code = risk.code || '';
@@ -3129,24 +3210,20 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         trendEl.className = 'badge rounded-pill px-3 py-2 ' + trendClass;
         trendEl.classList.remove('d-none');
       }
-      var ch = (d.city_health_score != null) ? parseInt(d.city_health_score, 10) : '—';
+      var ch = (d.city_health_score != null) ? parseInt(d.city_health_score, 10) : null;
+      govDashSetHeroValue('govDashHeroHealth', isFinite(ch) ? ch : '—');
       var eng = (d.citizen_engagement_score != null) ? parseInt(d.citizen_engagement_score, 10) : '—';
       var cl = (d.climate_risk_score != null) ? parseInt(d.climate_risk_score, 10) : '—';
       var gd = (d.green_deficit_score != null) ? parseInt(d.green_deficit_score, 10) : '—';
       var avgD = d.avg_resolution_time;
       var avgStr = (avgD != null && isFinite(Number(avgD))) ? (String(Math.round(Number(avgD) * 10) / 10) + (L.days_suffix || '')) : '—';
-      var html = '<div class="row g-2 g-md-3 mb-3">';
-      if (typeof CivicKpi !== 'undefined' && CivicKpi.renderGaugeCard && isFinite(Number(ch))) {
-        html += CivicKpi.renderGaugeCard({ label: L.city_health || 'Health', value: Number(ch), max: 100 });
-      } else {
-        html += govExecKpiCard(L.city_health || 'Health', ch, govExecScoreTone(ch, false));
-      }
-      html += govExecKpiCard(L.engagement || 'Engagement', eng, govExecScoreTone(eng, false));
-      html += govExecKpiCard(L.climate_risk || 'Climate', cl, govExecScoreTone(cl, false));
-      html += govExecKpiCard(L.green_deficit || 'Deficit', gd, govExecScoreTone(gd, false));
-      html += govExecKpiCard(L.open || 'Open', (d.open_issues != null) ? d.open_issues : '—', govExecOpenTone(d.open_issues));
-      html += govExecKpiCard(L.resolved_30d || 'Resolved', (d.resolved_last_30_days != null) ? d.resolved_last_30_days : '—', 'exec-kpi-neutral');
-      html += govExecKpiCard(L.avg_resolution || 'Avg', avgStr, govExecResolutionTone(avgD));
+      var html = '<div class="row g-2 mb-2">';
+      html += govExecKpiCard(L.engagement || 'Engagement', eng, govExecScoreTone(eng, false), 'col-6');
+      html += govExecKpiCard(L.climate_risk || 'Climate', cl, govExecScoreTone(cl, false), 'col-6');
+      html += govExecKpiCard(L.green_deficit || 'Deficit', gd, govExecScoreTone(gd, false), 'col-6');
+      html += govExecKpiCard(L.open || 'Open', (d.open_issues != null) ? d.open_issues : '—', govExecOpenTone(d.open_issues), 'col-6');
+      html += govExecKpiCard(L.resolved_30d || 'Resolved', (d.resolved_last_30_days != null) ? d.resolved_last_30_days : '—', 'exec-kpi-neutral', 'col-6');
+      html += govExecKpiCard(L.avg_resolution || 'Avg', avgStr, govExecResolutionTone(avgD), 'col-6');
       html += '</div>';
       if (d.ai_summary) {
         html += '<div class="exec-ai-blurb rounded-3 p-3 mb-3"><div class="small text-secondary mb-1">' + govExecEsc(L.ai_insight || '') + '</div><p class="mb-0 small">' + govExecEsc(d.ai_summary) + '</p></div>';
@@ -4173,7 +4250,9 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     var dataRow = document.getElementById('govClimateDataRow');
     if (dataRow && govIntelligenceContextUrl) {
       dataRow.innerHTML = '<p class="text-secondary small mb-0">…</p>';
-      fetch(govAppendAuthorityQuery(govIntelligenceContextUrl), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var ctxUrl = govAppendAuthorityQuery(govIntelligenceContextUrl);
+      ctxUrl += (ctxUrl.indexOf('?') >= 0 ? '&' : '?') + 'lite=1';
+      fetch(ctxUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
         if (!j.ok || !j.data) {
           dataRow.innerHTML = '<p class="text-secondary small mb-0">' + (Lb.load_error || '—') + '</p>';
           return;
@@ -4193,7 +4272,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         var v = d.viirs || {};
         if (v.ok) cards.push({ t: 'VIIRS', v: (v.light_pollution_index != null ? v.light_pollution_index : '—'), s: 'fényszennyezés' });
         if (!cards.length) {
-          dataRow.innerHTML = '<p class="text-secondary small mb-0">—</p>';
+          dataRow.innerHTML = '<p class="text-secondary small mb-0">' + (Lb.data_empty || '—') + '</p>';
           return;
         }
         dataRow.innerHTML = cards.map(function(c){
@@ -4752,12 +4831,161 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     if (cat === 'ai_vision') return L.category_ai_vision || cat;
     return cat;
   }
+  function govDashSetHeroValue(wrapId, value){
+    var wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    var valEl = wrap.querySelector('.dash-tile-value');
+    if (valEl) valEl.textContent = (value != null && value !== '') ? String(value) : '—';
+  }
+  var govDashStatusChartInst = null;
+  var govDashCategoryChartInst = null;
+  var govDashClimateComponentsChartInst = null;
+  function govChartThemeColors(){
+    var theme = document.documentElement.getAttribute('data-bs-theme') || document.documentElement.getAttribute('data-theme') || 'dark';
+    return {
+      text: theme === 'light' ? '#334155' : '#cbd5e1',
+      grid: theme === 'light' ? 'rgba(51,65,85,0.12)' : 'rgba(203,213,225,0.12)',
+    };
+  }
+  function initGovDashboardCharts(){
+    if (typeof Chart === 'undefined') return;
+    var data = window.govDashChartData || {};
+    var colors = govChartThemeColors();
+    var ctxStatus = document.getElementById('govDashStatusChart');
+    if (ctxStatus) {
+      if (govDashStatusChartInst) { try { govDashStatusChartInst.destroy(); } catch (_) {} govDashStatusChartInst = null; }
+      if (data.status && data.status.length) {
+        govDashStatusChartInst = new Chart(ctxStatus, {
+          type: 'doughnut',
+          data: {
+            labels: data.status.map(function(x){ return x.label; }),
+            datasets: [{ data: data.status.map(function(x){ return x.value; }), backgroundColor: data.status.map(function(x){ return x.color; }), borderWidth: 2, borderColor: 'transparent' }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { color: colors.text, boxWidth: 10, font: { size: 10 } } } }
+          }
+        });
+      } else {
+        ctxStatus.parentNode.innerHTML = '<p class="text-secondary small mb-0">' + (data.no_data || '—') + '</p>';
+      }
+    }
+    var ctxCat = document.getElementById('govDashCategoryChart');
+    if (ctxCat) {
+      if (govDashCategoryChartInst) { try { govDashCategoryChartInst.destroy(); } catch (_) {} govDashCategoryChartInst = null; }
+      if (data.category && data.category.length) {
+        govDashCategoryChartInst = new Chart(ctxCat, {
+          type: 'bar',
+          data: {
+            labels: data.category.map(function(x){ return x.label; }),
+            datasets: [{ data: data.category.map(function(x){ return x.value; }), backgroundColor: data.category.map(function(x){ return x.color; }), borderRadius: 6, borderSkipped: false }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: colors.text, font: { size: 10 } }, grid: { color: colors.grid } },
+              y: { ticks: { color: colors.text, font: { size: 10 } }, grid: { display: false } }
+            }
+          }
+        });
+      } else {
+        ctxCat.parentNode.innerHTML = '<p class="text-secondary small mb-0">' + (data.no_data || '—') + '</p>';
+      }
+    }
+  }
+  function drawGovClimateComponentsChart(ci){
+    var canvas = document.getElementById('govDashClimateComponentsChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    if (govDashClimateComponentsChartInst) { try { govDashClimateComponentsChartInst.destroy(); } catch (_) {} govDashClimateComponentsChartInst = null; }
+    var comps = (ci && ci.components) ? ci.components : {};
+    var keys = Object.keys(comps);
+    if (!keys.length) return;
+    var palette = ['#2563eb','#16a34a','#d97706','#7c3aed','#0891b2','#ea580c','#dc2626','#64748b','#db2777','#0d9488'];
+    var colors = govChartThemeColors();
+    govDashClimateComponentsChartInst = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: keys.map(function(k){ return k.replace(/_/g, ' '); }),
+        datasets: [{ data: keys.map(function(k, i){ return comps[k].score != null ? comps[k].score : 0; }), backgroundColor: keys.map(function(_, i){ return palette[i % palette.length]; }), borderRadius: 6 }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { max: 100, ticks: { color: colors.text, font: { size: 10 } }, grid: { color: colors.grid } },
+          x: { ticks: { color: colors.text, font: { size: 9 }, maxRotation: 45, minRotation: 0 }, grid: { display: false } }
+        }
+      }
+    });
+  }
+  function renderDashIntelTile(cfg){
+    return '<div class="col-6 col-md-4 col-xl-2"><div class="dash-intel-tile ' + cfg.cls + ' h-100">'
+      + '<div class="dash-intel-top"><i class="bi ' + cfg.icon + ' dash-intel-icon"></i></div>'
+      + '<div class="dash-intel-value">' + (typeof escStr === 'function' ? escStr(cfg.value) : String(cfg.value).replace(/</g,'&lt;')) + '</div>'
+      + '<div class="dash-intel-label">' + (typeof escStr === 'function' ? escStr(cfg.label) : String(cfg.label).replace(/</g,'&lt;')) + '</div>'
+      + (cfg.sub ? '<div class="dash-intel-sub">' + (typeof escStr === 'function' ? escStr(cfg.sub) : String(cfg.sub).replace(/</g,'&lt;')) + '</div>' : '')
+      + '</div></div>';
+  }
+  function loadGovDashIntelTiles(){
+    var row = document.getElementById('govDashIntelTiles');
+    var L = govIntelLabels || {};
+    var Lc = govClimateLabels || {};
+    if (!row || !govIntelligenceContextUrl) return;
+    var ctxUrl = govAppendAuthorityQuery(govIntelligenceContextUrl);
+    ctxUrl += (ctxUrl.indexOf('?') >= 0 ? '&' : '?') + 'lite=1';
+    fetch(ctxUrl, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.data) {
+        row.innerHTML = '<div class="col-12"><p class="text-secondary small mb-0">' + (Lc.load_error || L.load_error || '—') + '</p></div>';
+        return;
+      }
+      var d = j.data;
+      var tiles = [];
+      var w = d.weather || {};
+      if (w.ok) {
+        tiles.push({ cls: 'dash-intel-tile--weather', icon: 'bi-cloud-sun', value: (w.temp_c != null ? w.temp_c + '°C' : '—'), label: L.tile_weather || 'Weather', sub: (w.precip_mm != null ? w.precip_mm + ' mm' : '') });
+      } else {
+        tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-cloud-sun', value: '—', label: L.tile_weather || 'Weather', sub: L.tile_inactive || '' });
+      }
+      var g = d.gbif || {};
+      if (g.ok) {
+        tiles.push({ cls: 'dash-intel-tile--gbif', icon: 'bi-flower1', value: g.occurrence_count != null ? g.occurrence_count : 0, label: L.tile_gbif || 'GBIF', sub: 'HU' });
+      } else {
+        tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-flower1', value: '—', label: L.tile_gbif || 'GBIF', sub: L.tile_inactive || '' });
+      }
+      var p = d.pvgis || {};
+      if (p.ok) {
+        tiles.push({ cls: 'dash-intel-tile--pvgis', icon: 'bi-sun', value: (p.annual_kwh != null ? p.annual_kwh : '—'), label: L.tile_pvgis || 'PVGIS', sub: 'kWh/kWp' });
+      } else {
+        tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-sun', value: '—', label: L.tile_pvgis || 'PVGIS', sub: L.tile_inactive || '' });
+      }
+      var o = d.ocm || {};
+      if (o.ok) {
+        tiles.push({ cls: 'dash-intel-tile--ev', icon: 'bi-ev-front', value: o.charger_count != null ? o.charger_count : 0, label: L.tile_ev || 'EV', sub: '25 km' });
+      } else {
+        tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-ev-front', value: '—', label: L.tile_ev || 'EV', sub: L.tile_inactive || '' });
+      }
+      var v = d.viirs || {};
+      if (v.ok) {
+        tiles.push({ cls: 'dash-intel-tile--viirs', icon: 'bi-moon-stars', value: v.light_pollution_index != null ? v.light_pollution_index : '—', label: L.tile_viirs || 'VIIRS', sub: '' });
+      } else {
+        tiles.push({ cls: 'dash-intel-tile--inactive', icon: 'bi-moon-stars', value: '—', label: L.tile_viirs || 'VIIRS', sub: L.tile_inactive || '' });
+      }
+      row.innerHTML = tiles.map(renderDashIntelTile).join('');
+    }).catch(function(){
+      row.innerHTML = '<div class="col-12"><p class="text-secondary small mb-0">' + (Lc.load_error || '—') + '</p></div>';
+    });
+  }
   function loadGovIntelligenceDashboard(){
     var col = document.getElementById('govClimateIndexCol');
-    var kpi = document.getElementById('govIntelKpiRow');
     var rec = document.getElementById('govIntelRecommendations');
     var badges = document.getElementById('govIntelModuleBadges');
     var L = govIntelLabels || {};
+    loadGovDashIntelTiles();
     if (!govIntelligenceDashboardUrl) return;
     var q = (typeof govEuAuthorityQuery === 'function' ? govEuAuthorityQuery() : '');
     fetch(govIntelligenceDashboardUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
@@ -4768,26 +4996,21 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       var ci = j.data.climate_index || {};
       var cat = ci.category || 'moderate';
       var catLabel = L['cat_' + cat] || cat;
-      var catClass = (cat === 'critical' || cat === 'weak') ? 'danger' : (cat === 'excellent' || cat === 'good') ? 'success' : 'warning';
+      govDashSetHeroValue('govDashHeroClimate', ci.score != null ? ci.score : '—');
+      govDashSetHeroValue('govDashHeroModules', ci.active_modules != null ? ci.active_modules : '—');
       if (col) {
         if (window.CivicKpi && typeof CivicKpi.renderGaugeCard === 'function') {
-          col.innerHTML = CivicKpi.renderGaugeCard({ title: L.climate_index || '', value: ci.score || 0, max: 100, subtitle: catLabel });
+          col.innerHTML = CivicKpi.renderGaugeCard({ label: L.climate_index || '', value: ci.score || 0, max: 100, colClass: 'col-12' })
+            + '<div class="text-center mt-2"><span class="badge text-bg-' + ((cat === 'critical' || cat === 'weak') ? 'danger' : (cat === 'excellent' || cat === 'good') ? 'success' : 'warning') + '">' + String(catLabel).replace(/</g,'&lt;') + '</span></div>';
         } else {
-          col.innerHTML = '<div class="text-center p-2 border rounded"><div class="display-6 fw-bold text-' + catClass + '">' + (ci.score || '—') + '</div><div class="small text-secondary">' + (L.climate_index || '') + '</div><span class="badge text-bg-' + catClass + '">' + catLabel + '</span></div>';
+          col.innerHTML = '<div class="text-center p-3 border rounded"><div class="display-5 fw-bold">' + (ci.score || '—') + '</div><div class="small text-secondary">' + String(L.climate_index || '').replace(/</g,'&lt;') + '</div><span class="badge mt-1">' + String(catLabel).replace(/</g,'&lt;') + '</span></div>';
         }
       }
       if (badges) {
-        badges.innerHTML = '<span class="badge text-bg-success">' + (L.active_modules || '') + ': ' + (ci.active_modules || 0) + '</span>'
-          + '<span class="badge text-bg-' + ((ci.error_modules || 0) > 0 ? 'danger' : 'secondary') + '">' + (L.error_modules || '') + ': ' + (ci.error_modules || 0) + '</span>';
+        badges.innerHTML = '<span class="badge rounded-pill text-bg-success"><i class="bi bi-check-circle me-1"></i>' + (L.active_modules || '') + ': ' + (ci.active_modules || 0) + '</span>'
+          + '<span class="badge rounded-pill text-bg-' + ((ci.error_modules || 0) > 0 ? 'danger' : 'secondary') + '"><i class="bi bi-exclamation-triangle me-1"></i>' + (L.error_modules || '') + ': ' + (ci.error_modules || 0) + '</span>';
       }
-      if (kpi && ci.components) {
-        var comps = ci.components;
-        var keys = Object.keys(comps).slice(0, 4);
-        kpi.innerHTML = keys.map(function(k){
-          var c = comps[k];
-          return '<div class="col-6 col-md-3"><div class="border rounded p-2 text-center"><div class="fw-bold">' + (c.score != null ? c.score : '—') + '</div><div class="text-secondary small">' + k.replace(/_/g, ' ') + '</div></div></div>';
-        }).join('');
-      }
+      drawGovClimateComponentsChart(ci);
       if (rec) {
         var recs = ci.recommendations || [];
         if (!recs.length) {
@@ -4795,7 +5018,8 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         } else {
           rec.innerHTML = '<ul class="small mb-0 ps-3">' + recs.map(function(r){
             var p = r.priority === 'high' ? 'text-danger' : (r.priority === 'medium' ? 'text-warning-emphasis' : 'text-secondary');
-            return '<li class="' + p + ' mb-1">' + String(r.text || '').replace(/</g,'&lt;') + '</li>';
+            var icon = r.priority === 'high' ? 'bi-exclamation-octagon' : (r.priority === 'medium' ? 'bi-info-circle' : 'bi-dot');
+            return '<li class="' + p + ' mb-1"><i class="bi ' + icon + ' me-1"></i>' + String(r.text || '').replace(/</g,'&lt;') + '</li>';
           }).join('') + '</ul>';
         }
       }
@@ -5137,7 +5361,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       loadGovMapLayersTab();
     }
     if (key === 'intel-reports') loadGovIntelReport();
-    if (key === 'dashboard') { loadGovIntelligenceDashboard(); loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
+    if (key === 'dashboard') { initGovDashboardCharts(); loadGovIntelligenceDashboard(); loadGovExecutiveSummary(); loadGovMorningBrief(); loadGovInsights(); loadGovCityHealth(); loadGovWeather(); loadGovEuEeaInspire('govDashboardEeaInspireContent'); if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true }); }
     if (key === 'citybrain-live') loadCitybrainLive();
     if (key === 'citybrain-predictive') loadCitybrainPredictive();
     if (key === 'citybrain-hotspot') { if (typeof citybrainHotspotMap !== 'undefined' && citybrainHotspotMap) loadCitybrainHotspot(); else initCitybrainHotspot(); }

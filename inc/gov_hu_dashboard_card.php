@@ -4,7 +4,7 @@ if (empty($govHuOpenDataTabEnabled)) {
     return;
 }
 ?>
-          <div class="card mb-3 border-start border-success border-3" id="govHuOpenDataDashboardCard">
+          <div class="card h-100 mb-0 gov-dash-panel border-start border-success border-3 shadow-sm" id="govHuOpenDataDashboardCard">
             <div class="card-body py-2 px-3">
               <h6 class="card-title mb-1 small fw-semibold"><?= h(t('gov.hu_dashboard_card_title')) ?></h6>
               <div id="govHuOpenDataDashboardContent">

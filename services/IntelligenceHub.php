@@ -17,7 +17,7 @@ require_once __DIR__ . '/intelligence/ViirsDataService.php';
 class IntelligenceHub
 {
     /** @return array<string,mixed> */
-    public function fetchFullContext(?int $authorityId): array
+    public function fetchFullContext(?int $authorityId, bool $lite = false): array
     {
         $bbox = null;
         if ($authorityId > 0) {
@@ -37,18 +37,38 @@ class IntelligenceHub
             }
         }
 
-        return [
+        $out = [
             'authority_id' => $authorityId,
             'bbox' => $bbox,
-            'climate_index' => (new ClimateIndexService())->compute($authorityId),
-            'modules' => IntelligenceModuleRegistry::listWithStatus(),
-            'gfw' => (new GlobalForestWatchService())->fetchContext($bbox),
-            'gbif' => (new GbifDataService())->fetchContext($authorityId),
-            'weather' => (new HungaroMetDataService())->fetchContext($authorityId),
-            'pvgis' => (new PvgisDataService())->fetchContext($authorityId),
-            'ocm' => (new OpenChargeMapDataService())->fetchContext($authorityId),
-            'viirs' => (new ViirsDataService())->fetchContext($authorityId),
+            'modules' => $this->safeCall(static function () {
+                return IntelligenceModuleRegistry::listWithStatus();
+            }, []),
+            'gbif' => $this->safeCall(static fn () => (new GbifDataService())->fetchContext($authorityId), ['ok' => false]),
+            'weather' => $this->safeCall(static fn () => (new HungaroMetDataService())->fetchContext($authorityId), ['ok' => false]),
+            'pvgis' => $this->safeCall(static fn () => (new PvgisDataService())->fetchContext($authorityId), ['ok' => false]),
+            'ocm' => $this->safeCall(static fn () => (new OpenChargeMapDataService())->fetchContext($authorityId), ['ok' => false]),
+            'viirs' => $this->safeCall(static fn () => (new ViirsDataService())->fetchContext($authorityId), ['ok' => false]),
         ];
+
+        if (!$lite) {
+            $out['climate_index'] = $this->safeCall(static fn () => (new ClimateIndexService())->compute($authorityId), ['score' => 0, 'category' => 'moderate']);
+            $out['gfw'] = $this->safeCall(static fn () => (new GlobalForestWatchService())->fetchContext($bbox), ['ok' => false]);
+        }
+
+        return $out;
+    }
+
+    /** @template T @param callable():T $fn @param T $fallback @return T */
+    private function safeCall(callable $fn, $fallback)
+    {
+        try {
+            return $fn();
+        } catch (Throwable $e) {
+            if (function_exists('log_error')) {
+                log_error('IntelligenceHub: ' . $e->getMessage());
+            }
+            return $fallback;
+        }
     }
 
     /** @return array{type:string,features:array,meta:array} */

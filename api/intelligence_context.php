@@ -24,4 +24,12 @@ if (isset($_GET['authority_id']) && (int)$_GET['authority_id'] > 0) {
 }
 
 $hub = new IntelligenceHub();
-json_response(['ok' => true, 'data' => $hub->fetchFullContext($aid)]);
+$lite = isset($_GET['lite']) && (string)$_GET['lite'] !== '' && (string)$_GET['lite'] !== '0';
+try {
+    json_response(['ok' => true, 'data' => $hub->fetchFullContext($aid, $lite)]);
+} catch (Throwable $e) {
+    if (function_exists('log_error')) {
+        log_error('intelligence_context: ' . $e->getMessage());
+    }
+    json_response(['ok' => false, 'error' => 'context_unavailable'], 500);
+}
