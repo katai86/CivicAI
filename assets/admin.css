@@ -1,3 +1,113 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap");
+
+/* CivicAI design tokens – egységes startup megjelenés (gov + admin) */
+:root, [data-theme="dark"], [data-bs-theme="dark"] {
+  --civic-bg: #1E2A38;
+  --civic-bg-2: #16212D;
+  --civic-bg-3: #0F1721;
+  --civic-card: rgba(22, 33, 45, 0.78);
+  --civic-border: rgba(255, 255, 255, 0.09);
+  --civic-text: #E6EEF7;
+  --civic-muted: #9FB0C3;
+  --civic-primary: #00C48C;
+  --civic-accent: #FF7A00;
+  --civic-purple: #8E44FF;
+  --civic-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+  --civic-radius: 14px;
+  --civic-ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+[data-theme="light"], [data-bs-theme="light"] {
+  --civic-bg: #f8fafc;
+  --civic-bg-2: #f1f5f9;
+  --civic-bg-3: #e2e8f0;
+  --civic-card: #ffffff;
+  --civic-border: rgba(15, 23, 42, 0.1);
+  --civic-text: #0f172a;
+  --civic-muted: #64748b;
+  --civic-primary: #059669;
+  --civic-accent: #ea580c;
+  --civic-purple: #7c3aed;
+  --civic-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+body.layout-fixed,
+.app-wrapper {
+  font-family: "Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: 0.01em;
+}
+.app-wrapper .content-wrapper,
+.app-wrapper .app-main {
+  background:
+    radial-gradient(1200px 500px at 8% -10%, rgba(0, 196, 140, 0.08), transparent 55%),
+    radial-gradient(900px 420px at 100% 0%, rgba(255, 122, 0, 0.06), transparent 50%),
+    var(--bs-body-bg, var(--civic-bg-2));
+}
+.app-wrapper .app-content-header h1,
+.app-wrapper .app-content-header h3,
+.app-wrapper .admin-tab-body > .mb-3 > h5,
+.app-wrapper .admin-tab-body h5.fw-semibold {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.app-wrapper .card {
+  border-radius: var(--civic-radius);
+  border-color: var(--civic-border);
+  box-shadow: var(--civic-shadow);
+  backdrop-filter: blur(10px);
+  transition: transform 180ms var(--civic-ease), box-shadow 180ms var(--civic-ease);
+}
+.app-wrapper .card:hover {
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+}
+.app-wrapper .btn {
+  border-radius: 10px;
+  font-weight: 700;
+  transition: transform 150ms var(--civic-ease), box-shadow 150ms var(--civic-ease), background 150ms var(--civic-ease);
+}
+.app-wrapper .btn-primary {
+  background: linear-gradient(135deg, var(--civic-primary), #00a877);
+  border-color: transparent;
+  box-shadow: 0 6px 18px rgba(0, 196, 140, 0.28);
+}
+.app-wrapper .btn-primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+.app-wrapper .btn-outline-secondary:hover,
+.app-wrapper .btn-outline-primary:hover {
+  transform: translateY(-1px);
+}
+.app-sidebar .brand-link {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.app-sidebar .nav-link.tab.active {
+  background: linear-gradient(90deg, rgba(0, 196, 140, 0.22), rgba(0, 196, 140, 0.05));
+  border-left: 3px solid var(--civic-primary);
+  font-weight: 700;
+}
+.app-sidebar .sidebar-section-header {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 800;
+  opacity: 0.85;
+}
+.app-header .nav-link.btn-link {
+  font-weight: 700;
+  color: var(--civic-primary) !important;
+}
+#btnStartTour {
+  border-radius: 999px !important;
+  padding: 0.35rem 0.9rem !important;
+  background: linear-gradient(135deg, rgba(0, 196, 140, 0.2), rgba(255, 122, 0, 0.15)) !important;
+  border: 1px solid rgba(0, 196, 140, 0.4) !important;
+  color: var(--civic-text) !important;
+}
+#btnStartTour:hover {
+  background: linear-gradient(135deg, rgba(0, 196, 140, 0.35), rgba(255, 122, 0, 0.25)) !important;
+}
+
 /* Téma váltó ikon: sötét módban nap, világosban hold */
 .theme-icon.theme-moon{display:none}
 [data-theme="light"] .theme-icon.theme-sun{display:none}
@@ -162,26 +272,29 @@
   background: rgba(3, 10, 20, 0.66) !important;
 }
 .driver-popover.civic-tour-popover {
-  background: linear-gradient(180deg, #152334 0%, #0f1b29 100%);
-  border: 1px solid rgba(86, 137, 255, 0.45);
-  border-radius: 14px;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+  background: linear-gradient(165deg, #152a38 0%, #0f1b29 55%, #12261f 100%);
+  border: 1px solid rgba(0, 196, 140, 0.45);
+  border-radius: 16px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 122, 0, 0.12);
   color: #e7edf7;
   min-width: 300px;
-  max-width: 420px;
+  max-width: 440px;
+  font-family: "Montserrat", system-ui, sans-serif;
 }
 .driver-popover.civic-tour-popover .driver-popover-title {
   color: #f3f7ff;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 .driver-popover.civic-tour-popover .driver-popover-description {
   color: #c6d3e8;
-  line-height: 1.45;
+  line-height: 1.5;
   padding-right: 28px;
   padding-top: 6px;
+  font-size: 0.92rem;
 }
 .driver-popover.civic-tour-popover .driver-popover-footer {
-  border-top: 1px solid rgba(137, 169, 231, 0.25);
+  border-top: 1px solid rgba(0, 196, 140, 0.22);
   margin-top: 10px;
   padding-top: 10px;
 }
@@ -189,19 +302,30 @@
 .driver-popover.civic-tour-popover .driver-popover-prev-btn,
 .driver-popover.civic-tour-popover .driver-popover-close-btn {
   border-radius: 10px;
-  border: 1px solid rgba(133, 171, 255, 0.35);
-  background: #1a2a40;
+  border: 1px solid rgba(0, 196, 140, 0.35);
+  background: #16302a;
   color: #eaf2ff;
   text-shadow: none;
+  font-weight: 700;
+}
+.driver-popover.civic-tour-popover .driver-popover-next-btn {
+  background: linear-gradient(135deg, #00C48C, #00a877);
+  border-color: transparent;
+  color: #062218;
 }
 .driver-popover.civic-tour-popover .driver-popover-next-btn:hover,
 .driver-popover.civic-tour-popover .driver-popover-prev-btn:hover,
 .driver-popover.civic-tour-popover .driver-popover-close-btn:hover {
-  background: #234067;
+  background: #1e4a3d;
   color: #ffffff;
+}
+.driver-popover.civic-tour-popover .driver-popover-next-btn:hover {
+  background: linear-gradient(135deg, #12d9a0, #00b984);
+  color: #062218;
 }
 .driver-popover.civic-tour-popover .driver-popover-progress-text {
   color: #9fb5d8;
+  font-weight: 600;
 }
 .driver-popover.civic-tour-popover .driver-popover-close-btn {
   position: absolute;
@@ -275,12 +399,18 @@
 
 /* Gov Áttekintés – színes hero csempék és Intelligence feed */
 .dash-hero-tile {
-  border-radius: 14px;
+  border-radius: var(--civic-radius, 14px);
   padding: 0.85rem 1rem;
   color: #fff;
   position: relative;
   overflow: hidden;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  transition: transform 200ms var(--civic-ease, ease), box-shadow 200ms var(--civic-ease, ease);
+  animation: civicTileIn 420ms var(--civic-ease, ease) both;
+}
+.dash-hero-tile:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
 }
 .dash-hero-tile::after {
   content: '';
@@ -288,6 +418,36 @@
   inset: 0;
   background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 55%);
   pointer-events: none;
+}
+@keyframes civicTileIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+#govDashHeroKpis .col-6:nth-child(1) .dash-hero-tile { animation-delay: 40ms; }
+#govDashHeroKpis .col-6:nth-child(2) .dash-hero-tile { animation-delay: 80ms; }
+#govDashHeroKpis .col-6:nth-child(3) .dash-hero-tile { animation-delay: 120ms; }
+#govDashHeroKpis .col-6:nth-child(4) .dash-hero-tile { animation-delay: 160ms; }
+#govDashHeroKpis .col-6:nth-child(5) .dash-hero-tile { animation-delay: 200ms; }
+#govDashHeroKpis .col-6:nth-child(6) .dash-hero-tile { animation-delay: 240ms; }
+.gov-dash-panel {
+  border-radius: var(--civic-radius, 14px);
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  transition: transform 180ms var(--civic-ease, ease), box-shadow 180ms var(--civic-ease, ease);
+}
+.gov-page-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--civic-primary);
+  background: rgba(0, 196, 140, 0.12);
+  border: 1px solid rgba(0, 196, 140, 0.28);
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  margin-bottom: 0.45rem;
 }
 .dash-tile-icon {
   font-size: 1.15rem;
@@ -314,10 +474,6 @@
 .dash-tile-green { background: linear-gradient(135deg, #16a34a, #15803d); }
 .dash-tile-amber { background: linear-gradient(135deg, #d97706, #b45309); }
 
-.gov-dash-panel {
-  border-radius: 14px;
-  border: 1px solid rgba(128, 128, 128, 0.15);
-}
 .gov-dash-panel--intel {
   border: 1px solid rgba(25, 135, 84, 0.35);
   background: linear-gradient(180deg, rgba(25, 135, 84, 0.06) 0%, transparent 120px);

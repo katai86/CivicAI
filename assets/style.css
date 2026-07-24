@@ -579,24 +579,27 @@ body.intro-open #mapWrap{
   background: rgba(3, 10, 20, 0.66) !important;
 }
 .driver-popover.civic-tour-popover {
-  background: linear-gradient(180deg, #152334 0%, #0f1b29 100%);
-  border: 1px solid rgba(86, 137, 255, 0.45);
-  border-radius: 14px;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+  background: linear-gradient(165deg, #152a38 0%, #0f1b29 55%, #12261f 100%);
+  border: 1px solid rgba(0, 196, 140, 0.45);
+  border-radius: 16px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 122, 0, 0.12);
   color: #e7edf7;
   min-width: 300px;
-  max-width: 420px;
+  max-width: 440px;
+  font-family: "Montserrat", system-ui, sans-serif;
 }
 .driver-popover.civic-tour-popover .driver-popover-title {
   color: #f3f7ff;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 .driver-popover.civic-tour-popover .driver-popover-description {
   color: #c6d3e8;
-  line-height: 1.45;
+  line-height: 1.5;
+  font-size: 0.92rem;
 }
 .driver-popover.civic-tour-popover .driver-popover-footer {
-  border-top: 1px solid rgba(137, 169, 231, 0.25);
+  border-top: 1px solid rgba(0, 196, 140, 0.22);
   margin-top: 10px;
   padding-top: 10px;
 }
@@ -604,19 +607,30 @@ body.intro-open #mapWrap{
 .driver-popover.civic-tour-popover .driver-popover-prev-btn,
 .driver-popover.civic-tour-popover .driver-popover-close-btn {
   border-radius: 10px;
-  border: 1px solid rgba(133, 171, 255, 0.35);
-  background: #1a2a40;
+  border: 1px solid rgba(0, 196, 140, 0.35);
+  background: #16302a;
   color: #eaf2ff;
   text-shadow: none;
+  font-weight: 700;
+}
+.driver-popover.civic-tour-popover .driver-popover-next-btn {
+  background: linear-gradient(135deg, #00C48C, #00a877);
+  border-color: transparent;
+  color: #062218;
 }
 .driver-popover.civic-tour-popover .driver-popover-next-btn:hover,
 .driver-popover.civic-tour-popover .driver-popover-prev-btn:hover,
 .driver-popover.civic-tour-popover .driver-popover-close-btn:hover {
-  background: #234067;
+  background: #1e4a3d;
   color: #ffffff;
+}
+.driver-popover.civic-tour-popover .driver-popover-next-btn:hover {
+  background: linear-gradient(135deg, #12d9a0, #00b984);
+  color: #062218;
 }
 .driver-popover.civic-tour-popover .driver-popover-progress-text {
   color: #9fb5d8;
+  font-weight: 600;
 }
 .driver-popover.civic-tour-popover,
 .driver-popover.civic-tour-popover * {

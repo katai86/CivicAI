@@ -1,7 +1,6 @@
 /**
- * CivicAI bemutató túra – Driver.js alapú lépésről lépésre súgó.
- * Használat: töltődjon be a Driver.js (CDN), majd ez a script; a "Bemutató indítása" gomb meghívja a start() függvényt.
- * Lang kulcsok: tour.intro_title, tour.intro_body_*, tour.progress, tour.start, tour.next, tour.prev, tour.done, tour.step_* (lásd docs/INTRO_TOUR.md).
+ * CivicAI bemutató túra – Driver.js (startup pitch minőség).
+ * Lang: tour.intro_*, tour.outro_*, tour.step_*, tour.progress, tour.next/prev/done
  */
 (function () {
   'use strict';
@@ -13,7 +12,6 @@
   }
 
   function getDriverFactory() {
-    // Driver.js különböző buildjei eltérő globális neveket adhatnak.
     if (typeof window.driver === 'function') return window.driver;
     if (window.driver && window.driver.js && typeof window.driver.js.driver === 'function') return window.driver.js.driver;
     if (window.Driver && typeof window.Driver === 'function') return window.Driver;
@@ -42,21 +40,43 @@
     steps.push({ element: sel, popover: pop });
   }
 
+  function activateTabIfNeeded(element) {
+    try {
+      if (!element || !element.getAttribute) return;
+      var tabKey = element.getAttribute('data-tab');
+      if (!tabKey) return;
+      if (typeof window.govSidebarRevealTab === 'function') {
+        window.govSidebarRevealTab(tabKey);
+      }
+      if (!element.classList.contains('active')) {
+        element.click();
+      }
+    } catch (_) {}
+  }
+
   function getMapSteps() {
     var steps = [];
     pushStep(
       steps,
       ['#btnStartTour', '#mapWrap'],
-      t('tour.intro_body_map', 'A túra a térkép fő funkcióit mutatja be. A Következő gombbal lépsz.'),
+      t('tour.intro_body_map', 'A túra a közösségi térkép fő funkcióit mutatja.'),
       'bottom',
       'center',
-      t('tour.intro_title', 'Rövid bemutató')
+      t('tour.intro_title', 'CivicAI bemutató')
     );
-    pushStep(steps, ['#mapWrap'], t('tour.step_map', 'Itt látod a bejelentéseket, ötleteket és fákat a térképen.'), 'bottom', 'center');
-    pushStep(steps, ['#btnNewReport', '.fab-report-desktop', '.fab-report'], t('tour.step_report', 'Új bejelentés: kattints ide, válassz kategóriát, majd add meg a részleteket.'), 'left', 'center');
-    pushStep(steps, ['#legendMenuBtn', '#legendToggle'], t('tour.step_legend', 'Jelmagyarázat és szűrők: kategóriák, ötletek, fák, gyors műveletek.'), 'bottom', 'center');
-    pushStep(steps, ['#mapSearchForm', '.topbar-search'], t('tour.step_search', 'Keresés címre vagy helyre a térképen.'), 'bottom', 'center');
-    pushStep(steps, ['.topbar-links'], t('tour.step_menu', 'Fő menü: GYIK, költségvetés, felmérések, beállítások és egyéb oldalak.'), 'bottom', 'start');
+    pushStep(steps, ['#mapWrap'], t('tour.step_map', 'Itt látod a bejelentéseket, ötleteket és fákat a térképen.'), 'bottom', 'center', t('tour.step_map_title', 'Közösségi térkép'));
+    pushStep(steps, ['#btnNewReport', '.fab-report-desktop', '.fab-report'], t('tour.step_report', 'Új bejelentés indítása.'), 'left', 'center', t('tour.step_report_title', 'Bejelentés'));
+    pushStep(steps, ['#legendMenuBtn', '#legendToggle'], t('tour.step_legend', 'Jelmagyarázat és szűrők.'), 'bottom', 'center', t('tour.step_legend_title', 'Szűrők'));
+    pushStep(steps, ['#mapSearchForm', '.topbar-search'], t('tour.step_search', 'Keresés címre.'), 'bottom', 'center', t('tour.step_search_title', 'Keresés'));
+    pushStep(steps, ['.topbar-links'], t('tour.step_menu', 'Fő menü.'), 'bottom', 'start', t('tour.step_menu_title', 'Menü'));
+    pushStep(
+      steps,
+      ['#mapWrap', '#btnStartTour'],
+      t('tour.outro_map', 'Ennyi a polgári élmény – próbáld ki a bejelentést, vagy nézd meg a közigazgatási dashboardot.'),
+      'bottom',
+      'center',
+      t('tour.outro_title', 'Készen állsz')
+    );
     return steps;
   }
 
@@ -65,34 +85,35 @@
     pushStep(
       steps,
       ['#btnStartTour', '.sidebar-menu', '.app-sidebar'],
-      t('tour.intro_body_gov', 'A túra a bal oldali menüpontokat mutatja be. A Következő gombbal lépsz; egyes elemek csak bekapcsolt modulnál látszanak.'),
+      t('tour.intro_body_gov', 'A bal menü szekciókra bontva vezet végig a platformon.'),
       'bottom',
       'center',
-      t('tour.intro_title', 'Rövid bemutató')
+      t('tour.intro_title', 'CivicAI bemutató')
     );
+
+    // Pitch + hero KPI
+    pushStep(
+      steps,
+      ['#govDashHeroKpis', '[data-tab="dashboard"]', '#tab-dashboard'],
+      t('tour.step_gov_hero', 'Színes KPI-k: ügyek, klímaindex, városi egészség – egy pillantásra.'),
+      'bottom',
+      'start',
+      t('tour.step_gov_hero_title', 'Áttekintés')
+    );
+
+    // Lean demo path – key modules only (City Brain consolidated)
     var govTabSteps = [
-      { tab: 'dashboard', key: 'tour.step_gov_dashboard', fallback: 'Áttekintés: klímaindex, városi egészség, időjárás.' },
-      { tab: 'reports', key: 'tour.step_gov_reports', fallback: 'Bejelentések kezelése.' },
-      { tab: 'ideas', key: 'tour.step_gov_ideas', fallback: 'Ötletek és szavazatok.' },
-      { tab: 'surveys', key: 'tour.step_gov_surveys', fallback: 'Felmérések.' },
-      { tab: 'budget', key: 'tour.step_gov_budget', fallback: 'Részvételi költségvetés.' },
-      { tab: 'trees', key: 'tour.step_gov_trees', fallback: 'Zöld & fák.' },
-      { tab: 'eu-open-data', key: 'tour.step_gov_eu_open_data', fallback: 'EU adatok.' },
-      { tab: 'map-layers', key: 'tour.step_gov_map_layers', fallback: 'Térképes rétegek.' },
-      { tab: 'climate', key: 'tour.step_gov_climate', fallback: 'Klíma platform.' },
-      { tab: 'hu-open-data', key: 'tour.step_gov_hu_open_data', fallback: 'KSH & magyar adat.' },
-      { tab: 'iot', key: 'tour.step_gov_iot', fallback: 'Szenzorok (IoT).' },
-      { tab: 'ai', key: 'tour.step_gov_ai', fallback: 'AI Copilot és elemzések.' },
-      { tab: 'analytics', key: 'tour.step_gov_analytics', fallback: 'Elemzés és trendek.' },
-      { tab: 'intel-reports', key: 'tour.step_gov_intel_reports', fallback: 'Automatikus jelentések.' },
-      { tab: 'citybrain-live', key: 'tour.step_gov_citybrain_live', fallback: 'City Brain – élő.' },
-      { tab: 'citybrain-predictive', key: 'tour.step_gov_citybrain_predictive', fallback: 'City Brain – előrejelzés.' },
-      { tab: 'citybrain-hotspot', key: 'tour.step_gov_citybrain_hotspot', fallback: 'City Brain – gócpontok.' },
-      { tab: 'citybrain-behavior', key: 'tour.step_gov_citybrain_behavior', fallback: 'City Brain – trendek.' },
-      { tab: 'citybrain-environmental', key: 'tour.step_gov_citybrain_environmental', fallback: 'City Brain – környezet.' },
-      { tab: 'citybrain-insights', key: 'tour.step_gov_citybrain_insights', fallback: 'City Brain – AI összefoglaló.' },
-      { tab: 'citybrain-risk', key: 'tour.step_gov_citybrain_risk', fallback: 'City Brain – rizikók.' },
-      { tab: 'modules', key: 'tour.step_gov_modules', fallback: 'Modulok.' }
+      { tab: 'reports', key: 'tour.step_gov_reports', titleKey: 'tour.step_gov_reports_title', fallback: 'Bejelentések kezelése.', titleFb: 'Ügyek' },
+      { tab: 'ideas', key: 'tour.step_gov_ideas', titleKey: 'tour.step_gov_ideas_title', fallback: 'Ötletek és szavazatok.', titleFb: 'Ötletek' },
+      { tab: 'budget', key: 'tour.step_gov_budget', titleKey: 'tour.step_gov_budget_title', fallback: 'Részvételi költségvetés.', titleFb: 'Költségvetés' },
+      { tab: 'trees', key: 'tour.step_gov_trees', titleKey: 'tour.step_gov_trees_title', fallback: 'Zöld & fák.', titleFb: 'Zöld' },
+      { tab: 'climate', key: 'tour.step_gov_climate', titleKey: 'tour.step_gov_climate_title', fallback: 'Klíma platform.', titleFb: 'Klíma' },
+      { tab: 'hu-open-data', key: 'tour.step_gov_hu_open_data', titleKey: 'tour.step_gov_hu_open_data_title', fallback: 'KSH & magyar adat.', titleFb: 'KSH' },
+      { tab: 'ai', key: 'tour.step_gov_ai', titleKey: 'tour.step_gov_ai_title', fallback: 'AI Copilot.', titleFb: 'AI' },
+      { tab: 'analytics', key: 'tour.step_gov_analytics', titleKey: 'tour.step_gov_analytics_title', fallback: 'Elemzés.', titleFb: 'Elemzés' },
+      { tab: 'intel-reports', key: 'tour.step_gov_intel_reports', titleKey: 'tour.step_gov_intel_reports_title', fallback: 'Automatikus jelentések.', titleFb: 'Jelentések' },
+      { tab: 'citybrain-live', key: 'tour.step_gov_citybrain_overview', titleKey: 'tour.step_gov_citybrain_title', fallback: 'City Brain – élő intelligencia, predikció, hotspotok.', titleFb: 'City Brain' },
+      { tab: 'modules', key: 'tour.step_gov_modules', titleKey: 'tour.step_gov_modules_title', fallback: 'Modulok.', titleFb: 'Modulok' }
     ];
     govTabSteps.forEach(function (stepDef) {
       pushStep(
@@ -100,19 +121,26 @@
         ['[data-tab="' + stepDef.tab + '"]'],
         t(stepDef.key, stepDef.fallback),
         'right',
-        'center'
+        'center',
+        t(stepDef.titleKey, stepDef.titleFb)
       );
     });
 
-    // Záró áttekintés a dashboard jelentéséről.
-    pushStep(steps, ['#govCityHealthCard', '#tab-dashboard'], t('tour.step_gov_dashboard_explain', 'Zárásként: az Áttekintés menüpontban a Városi egészség index egy összesített mutató, az Időjárás kártya aktuális helyi adatokat ad, a státusz/kategória blokkok pedig a bejelentések eloszlását és trendjeit mutatják.'), 'bottom', 'start');
+    pushStep(
+      steps,
+      ['#govDashHeroKpis', '#govCityHealthCard', '#tab-dashboard', '[data-tab="dashboard"]'],
+      t('tour.outro_gov', 'A CivicAI egy moduláris civic-tech platform: polgár + önkormányzat + AI + nyílt adatok. Indíts demo-t, vagy kapcsold be a modulokat.'),
+      'bottom',
+      'start',
+      t('tour.outro_title', 'MVP kész')
+    );
     return steps;
   }
 
   function start() {
     var createDriver = getDriverFactory();
     if (!createDriver) {
-      console.warn('CivicAI tour: Driver.js not loaded. Include driver.js and driver.css from CDN.');
+      console.warn('CivicAI tour: Driver.js not loaded.');
       return;
     }
     var isGov = document.querySelector('[data-tab="dashboard"]') && window.location.pathname.indexOf('/gov/') !== -1;
@@ -132,16 +160,16 @@
       prevBtnText: t('tour.prev', 'Előző'),
       doneBtnText: t('tour.done', 'Kész'),
       showButtons: ['previous', 'next', 'close'],
+      onHighlightStarted: function (element) {
+        activateTabIfNeeded(element);
+      },
       onHighlighted: function (element) {
         try {
           var active = document.querySelector('.nav-link.tab.civic-tour-sidebar-active');
           if (active) active.classList.remove('civic-tour-sidebar-active');
           if (element && element.classList && element.classList.contains('tab')) {
             element.classList.add('civic-tour-sidebar-active');
-            var tabKey = element.getAttribute('data-tab');
-            if (tabKey && typeof window.govSidebarRevealTab === 'function') {
-              window.govSidebarRevealTab(tabKey);
-            }
+            activateTabIfNeeded(element);
           }
         } catch (_) {}
       },

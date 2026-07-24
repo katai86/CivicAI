@@ -770,6 +770,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         <div class="admin-tab-body" id="tab-dashboard">
           <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
             <div>
+              <div class="gov-page-badge"><i class="bi bi-lightning-charge-fill"></i><?= h(t('gov.dash_mvp_badge')) ?></div>
               <h5 class="mb-1 fw-semibold"><?= h(t('gov.dash_overview_title')) ?></h5>
               <p class="text-secondary small mb-0"><?= h(t('gov.dash_overview_subtitle')) ?></p>
             </div>
