@@ -3,7 +3,7 @@
 /.DS_Store
 /Thumbs.db
 *.log
-/uploads/
+/uploads/*
 !/uploads/.htaccess
 !/uploads/index.php
 /data/gov_api_cache/
