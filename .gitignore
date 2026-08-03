@@ -4,6 +4,8 @@
 /Thumbs.db
 *.log
 /uploads/
+!/uploads/.htaccess
+!/uploads/index.php
 /data/gov_api_cache/
 .env
 config.local.php
