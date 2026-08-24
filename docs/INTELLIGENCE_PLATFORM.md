@@ -10,7 +10,7 @@ A **CivicAI Intelligence Platform** a gov felületen klíma-, környezeti, energ
 | M2 | Dashboard klímaindex + menü átrendezés | Kész | `api/intelligence_dashboard.php`, `gov/index.php` |
 | M3 | Modulkezelő (ki/be, dashboard/map/report) | Kész | `api/intelligence_module_settings.php`, gov Modulkezelő fül |
 | M4 | Adatforrás adapterek | Kész | `services/intelligence/*.php` |
-| M5 | AI Vision réteg (mock/preview) | Kész | `services/AiVisionService.php`, `api/ai_vision_analyze.php` |
+| M5 | AI Vision réteg (élő felhő vision) | Kész | `services/AiVisionService.php`, `api/ai_vision_analyze.php`, `api/report_vision_analyze.php` – lásd `docs/AI_VISION_MILESTONE.md` |
 | M6 | Térképes réteg-kezelő | Kész | `api/intelligence_map_layers.php`, gov „Térképes rétegek” fül |
 | M7 | CivicAI Klímaindex | Kész | `services/ClimateIndexService.php` |
 | M8 | Jelentésgenerátor (HTML + PDF) | Kész | `api/intelligence_report.php`, gov „Intelligence jelentések” |
@@ -28,7 +28,8 @@ A **CivicAI Intelligence Platform** a gov felületen klíma-, környezeti, energ
 | `GET api/intelligence_report.php?format=html` | HTML jelentés |
 | `POST api/intelligence_test_module.php` | Admin modul teszt (admin) |
 | `GET api/intelligence_provider_logs.php` | Provider napló |
-| `POST api/ai_vision_analyze.php` | Képelemzés (mock) |
+| `POST api/ai_vision_analyze.php` | Képelemzés (élő Mistral/OpenAI vision) |
+| `POST api/report_vision_analyze.php` | Polgári bejelentés fotó → kategória/prioritás/leírás |
 
 ## Bekapcsolás
 

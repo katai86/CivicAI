@@ -80,6 +80,19 @@ if (in_array($role, ['admin', 'superadmin'], true) && isset($_GET['authority_id'
 }
 
 $pdo = db();
+
+$adminRequested = null;
+if (in_array($role, ['admin', 'superadmin'], true)) {
+  $reqAid = isset($_GET['authority_id']) ? (int)$_GET['authority_id'] : 0;
+  $adminRequested = $reqAid > 0 ? $reqAid : null;
+}
+$cacheKey = gov_api_cache_scope_key('esg_snap', $role ?: '', $uid, $adminRequested);
+$cacheHit = gov_api_cache_get($cacheKey);
+if ($cacheHit !== null) {
+  header('X-Gov-Api-Cache: HIT');
+  json_response($cacheHit);
+}
+
 $snap = gov_compute_esg_snapshot($pdo, $treeScopeIds, $baseWhere, $baseParams);
 try {
   $q0 = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $baseWhere");
@@ -89,11 +102,14 @@ try {
   $snap['governance']['reports_total'] = 0;
 }
 
-json_response([
+$out = [
   'ok' => true,
   'data' => [
     'environment' => $snap['environment'],
     'social' => $snap['social'],
     'governance' => $snap['governance'],
   ],
-]);
+];
+gov_api_cache_set($cacheKey, $out);
+header('X-Gov-Api-Cache: MISS');
+json_response($out);

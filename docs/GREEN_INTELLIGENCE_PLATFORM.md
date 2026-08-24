@@ -90,6 +90,7 @@ Fák mint önálló entitások. A bejelentések továbbra is külön táblában 
 ## MILESTONE 8 – Image Classification (képfelismerés)
 
 - Feltöltött kép → AI. Címkék: tree, garbage, pothole, lighting, graffiti, other; fa esetén: possible_dry_tree, possible_damage, possible_tilt_risk. Csak tanácsadó.
+- **Megvalósítva (felhő vision):** `AiVisionService` + `api/report_vision_analyze.php` + `report_upload` best-effort; eredmény: kategória, urgency, hazard, description, objects, `ai_results` (`image_classification`). Részletek: `docs/AI_VISION_MILESTONE.md`.
 
 ---
 

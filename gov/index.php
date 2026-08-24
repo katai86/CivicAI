@@ -401,18 +401,10 @@ if ($isAdmin || $authorityIds) {
       $stats['by_category'][(string)$row['category']] = (int)$row['cnt'];
     }
   } catch (Throwable $e) { /* ignore */ }
-  // Environment + ESG kártya (Elemzés, Zöld fül): gov_compute_esg_snapshot – fa scope mint gov_trees_list
-  $treeScopeIdsForStats = [];
-  if (!empty($authorityIds)) {
-    $treeScopeIdsForStats = array_values(array_filter(array_map('intval', $authorityIds), static fn ($x) => $x > 0));
-  }
-  if ($adminRequestAuthorityId > 0) {
-    $treeScopeIdsForStats = [$adminRequestAuthorityId];
-  }
-  $snap = gov_compute_esg_snapshot($pdo, $treeScopeIdsForStats, $baseWhere, $baseParams);
-  $stats['environment'] = $snap['environment'];
-  $stats['social'] = $snap['social'];
-  $stats['governance'] = array_merge($snap['governance'], ['reports_total' => $stats['reports_total']]);
+  // ESG snapshot: lazy – API tölti (analytics/zöld fül), ne lassítsa a TTFB-t
+  $stats['environment'] = ['trees_total' => 0, 'trees_needing_inspection' => 0, 'trees_needing_water' => 0, 'trees_dangerous' => 0, 'green_reports' => 0];
+  $stats['social'] = ['active_citizens_30d' => 0, 'tree_adopters' => 0, 'green_events_active' => 0, 'watering_actions_30d' => 0];
+  $stats['governance'] = ['reports_total' => $stats['reports_total'] ?? 0, 'reports_open' => 0, 'reports_solved_30d' => 0, 'avg_resolution_days' => null];
 } else {
   $stats['environment'] = ['trees_total' => 0, 'trees_needing_inspection' => 0, 'trees_needing_water' => 0, 'trees_dangerous' => 0, 'green_reports' => 0];
   $stats['social'] = ['active_citizens_30d' => 0, 'tree_adopters' => 0, 'green_events_active' => 0, 'watering_actions_30d' => 0];
@@ -679,6 +671,12 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
             </a>
           </li>
           <li class="nav-header mt-3 mb-1 px-3 small text-uppercase text-muted sidebar-section-header" role="button" tabindex="0"><span><?= h(t('gov.nav_section_legacy')) ?></span><i class="bi bi-chevron-down nav-section-chevron"></i></li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="citybrain-copilot">
+              <i class="nav-icon bi bi-camera-reels-fill"></i>
+              <p><?= h(t('gov.city_brain_copilot')) ?></p>
+            </a>
+          </li>
           <li class="nav-item">
             <a href="#" class="nav-link tab" data-tab="citybrain-live">
               <i class="nav-icon bi bi-speedometer2"></i>
@@ -1450,10 +1448,10 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
                 <div class="col-md-4">
                   <label class="small" for="govAiVisionModel"><?= h(t('intel.ai_model')) ?></label>
                   <select id="govAiVisionModel" class="form-select form-select-sm">
-                    <option value="ai_blip">BLIP</option>
-                    <option value="ai_sam2">SAM 2</option>
-                    <option value="ai_yolo">YOLO</option>
-                    <option value="ai_depth">Depth Anything</option>
+                    <option value="ai_blip"><?= h(t('intel.ai_mode_full')) ?></option>
+                    <option value="ai_yolo"><?= h(t('intel.ai_mode_objects')) ?></option>
+                    <option value="ai_sam2"><?= h(t('intel.ai_mode_scene')) ?></option>
+                    <option value="ai_depth"><?= h(t('intel.ai_mode_depth')) ?></option>
                   </select>
                 </div>
                 <div class="col-md-5">
@@ -1668,6 +1666,77 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         </div>
         <?php endif; ?>
 
+        <div class="admin-tab-body" id="tab-citybrain-copilot" hidden>
+          <p class="text-secondary small mb-3"><?= h(t('gov.citybrain_copilot_intro')) ?></p>
+          <div class="card mb-4 border-primary border-2 shadow-sm gov-dash-panel">
+            <div class="card-body">
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <h5 class="card-title mb-0"><i class="bi bi-stars text-primary"></i> <?= h(t('gov.citybrain_vision_title')) ?></h5>
+                <span class="badge text-bg-primary"><?= h(t('gov.citybrain_vision_badge')) ?></span>
+              </div>
+              <p class="text-secondary small mb-3"><?= h(t('gov.citybrain_vision_desc')) ?></p>
+              <div class="row g-3 align-items-start">
+                <div class="col-md-5">
+                  <label class="small fw-semibold" for="citybrainVisionFile"><?= h(t('gov.citybrain_vision_upload')) ?></label>
+                  <input type="file" id="citybrainVisionFile" class="form-control form-control-sm mb-2" accept="image/*">
+                  <img id="citybrainVisionPreview" alt="" class="img-fluid rounded border mb-2" style="max-height:220px; display:none;">
+                  <button type="button" class="btn btn-primary btn-sm w-100" id="citybrainVisionAnalyze">
+                    <i class="bi bi-magic"></i> <?= h(t('gov.citybrain_vision_analyze')) ?>
+                  </button>
+                  <p id="citybrainVisionStatus" class="small text-secondary mt-2 mb-0"></p>
+                </div>
+                <div class="col-md-7">
+                  <div id="citybrainVisionWow" class="mb-3" style="display:none;">
+                    <h6 class="small text-uppercase text-muted mb-2"><?= h(t('gov.citybrain_vision_wow')) ?></h6>
+                    <ul id="citybrainVisionWowList" class="list-unstyled mb-0"></ul>
+                  </div>
+                  <div id="citybrainVisionResult" class="small" style="display:none;">
+                    <div class="row g-2">
+                      <div class="col-md-6">
+                        <div class="border rounded p-2 h-100 bg-light bg-opacity-50">
+                          <strong><?= h(t('gov.citybrain_vision_street')) ?></strong>
+                          <div id="citybrainVisionStreet" class="mt-1"></div>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="border rounded p-2 h-100 bg-light bg-opacity-50">
+                          <strong><?= h(t('gov.citybrain_vision_green')) ?></strong>
+                          <div id="citybrainVisionGreen" class="mt-1"></div>
+                        </div>
+                      </div>
+                      <div class="col-12">
+                        <div class="border rounded p-2 bg-light bg-opacity-50">
+                          <strong><?= h(t('gov.citybrain_vision_trees')) ?></strong>
+                          <div id="citybrainVisionTrees" class="mt-1"></div>
+                        </div>
+                      </div>
+                      <div class="col-12">
+                        <div class="border rounded p-2">
+                          <strong><?= h(t('gov.citybrain_vision_action')) ?></strong>
+                          <div id="citybrainVisionAction" class="mt-1 text-secondary"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p id="citybrainVisionEmpty" class="text-secondary small mb-0"><?= h(t('gov.citybrain_vision_empty')) ?></p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card mb-3" id="govCitybrainCopilotCard">
+            <div class="card-body">
+              <h6 class="card-title mb-2"><?= h(t('gov.copilot_title')) ?></h6>
+              <p class="text-secondary small mb-2"><?= h(t('gov.copilot_desc')) ?></p>
+              <div class="d-flex flex-column gap-2">
+                <textarea id="govCitybrainCopilotQuestion" class="form-control" rows="2" placeholder="<?= h(t('gov.copilot_placeholder')) ?>"></textarea>
+                <button type="button" class="btn btn-outline-primary btn-sm align-self-start" id="govCitybrainCopilotSend"><?= h(t('gov.copilot_send')) ?></button>
+              </div>
+              <div id="govCitybrainCopilotAnswer" class="mt-3 p-2 rounded bg-light small" style="display:none; white-space: pre-wrap;"></div>
+              <div id="govCitybrainCopilotError" class="mt-2 text-danger small" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="admin-tab-body" id="tab-citybrain-live" hidden>
           <div class="card">
             <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_live')) ?></h6></div>
@@ -1803,6 +1872,14 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
 (function(){
   var aiUrl = <?= json_encode(app_url('/api/gov_ai.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govCopilotUrl = <?= json_encode(app_url('/api/gov_copilot.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var citybrainVisionUrl = <?= json_encode(app_url('/api/citybrain_vision_analyze.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var citybrainVisionLabels = <?= json_encode([
+    'analyzing' => t('gov.citybrain_vision_analyzing'),
+    'empty' => t('gov.citybrain_vision_empty'),
+    'street_ok' => t('gov.citybrain_vision_street_ok'),
+    'load_error' => t('common.error_load'),
+    'need_ai' => t('intel.ai_vision_need_provider'),
+  ], JSON_UNESCAPED_UNICODE) ?>;
   var modulesUrl = <?= json_encode(app_url('/api/gov_modules.php'), JSON_UNESCAPED_SLASHES) ?>;
   var esgExportUrl = <?= json_encode(app_url('/api/esg_export.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govSurveysUrl = <?= json_encode(app_url('/api/gov_surveys.php'), JSON_UNESCAPED_SLASHES) ?>;
@@ -2096,6 +2173,12 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     'ai_analyze' => t('intel.ai_analyze'),
     'ai_model' => t('intel.ai_model'),
     'ai_result' => t('intel.ai_result'),
+    'ai_title' => t('intel.ai_title'),
+    'ai_category' => t('intel.ai_category'),
+    'ai_urgency' => t('intel.ai_urgency'),
+    'ai_hazard' => t('intel.ai_hazard'),
+    'ai_confidence' => t('intel.ai_confidence'),
+    'ai_model_used' => t('intel.ai_model_used'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govGreenMetricsLabels = <?= json_encode([
     'canopy_coverage' => t('gov.green_canopy_coverage'),
@@ -2464,7 +2547,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       var key = btn.getAttribute('data-tab');
       document.querySelectorAll('.tab[data-tab]').forEach(function(x){ x.classList.toggle('active', x===btn); });
       govSidebarRevealTab(key);
-      ['dashboard','ai','reports','ideas','surveys','budget','trees','analytics','eu-open-data','hu-open-data','map-layers','climate','iot','citybrain-live','citybrain-predictive','citybrain-hotspot','citybrain-behavior','citybrain-environmental','citybrain-insights','citybrain-risk','intel-reports','modules'].forEach(function(k){
+      ['dashboard','ai','reports','ideas','surveys','budget','trees','analytics','eu-open-data','hu-open-data','map-layers','climate','iot','citybrain-copilot','citybrain-live','citybrain-predictive','citybrain-hotspot','citybrain-behavior','citybrain-environmental','citybrain-insights','citybrain-risk','intel-reports','modules'].forEach(function(k){
         var el = document.getElementById('tab-' + k);
         if (el) el.hidden = (k !== key);
       });
@@ -2477,11 +2560,12 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         initGovHeatmapTab();
         invalidateGovTrendsCache();
         initGovStatisticsTab();
+        loadGovEsgSnapshot();
         loadGovSentiment();
         loadGovPredictions();
         loadGovPriorities();
-        loadGovEsgMetrics();
         loadGovGreenDashboard();
+        setTimeout(function(){ loadGovEsgMetrics(); }, 700);
       }
       if (key === 'eu-open-data') { loadGovGreenMetrics(); loadGovEuAirQuality(); loadGovEuClimate(); loadGovEuCountryContext(); initGovEuGreenMap(); loadGovEuGreenMapOverlay(); }
       if (key === 'hu-open-data' && typeof loadGovHuOpenDataContext === 'function') { loadGovHuOpenDataContext({ lite: false }); }
@@ -2496,6 +2580,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     }
     if (key === 'intel-reports') initGovIntelReports();
     if (key === 'dashboard') loadGovDashboardBundle();
+    if (key === 'citybrain-copilot') initCitybrainCopilotTab();
     if (key === 'citybrain-live') loadCitybrainLive();
     if (key === 'citybrain-predictive') loadCitybrainPredictive();
       if (key === 'citybrain-hotspot') initCitybrainHotspot();
@@ -2585,16 +2670,23 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
 
   function loadGovDashboardBundle(){
     initGovDashboardCharts();
-    loadGovIntelligenceDashboard();
+    // 1. fázis – fő KPI-k (egy dashboard hívás tartalmazza az intel tile-okat is)
     loadGovExecutiveSummary();
+    loadGovIntelligenceDashboard();
     loadGovMorningBrief();
     loadGovInsights();
-    loadGovCityHealth();
-    loadGovWeather();
-    if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true });
-    if (document.getElementById('govDashboardEeaInspireContent')) {
-      loadGovEuEeaInspire('govDashboardEeaInspireContent');
-    }
+    // 2. fázis – késleltetve, ne terhelje egyszerre a szervert
+    setTimeout(function(){
+      loadGovCityHealth();
+      loadGovWeather();
+    }, 350);
+    // 3. fázis – külső / nehéz források
+    setTimeout(function(){
+      if (typeof loadGovHuOpenDataContext === 'function') loadGovHuOpenDataContext({ lite: true });
+      if (document.getElementById('govDashboardEeaInspireContent')) {
+        loadGovEuEeaInspire('govDashboardEeaInspireContent');
+      }
+    }, 900);
   }
   var govDashActive = document.querySelector('.app-sidebar .nav-link.tab.active[data-tab="dashboard"]');
   if (govDashActive) loadGovDashboardBundle();
@@ -2632,6 +2724,145 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       });
     });
   })();
+
+  var citybrainCopilotInited = false;
+  function initCitybrainCopilotTab(){
+    if (citybrainCopilotInited) return;
+    citybrainCopilotInited = true;
+    var Lv = citybrainVisionLabels || {};
+    var fileEl = document.getElementById('citybrainVisionFile');
+    var previewEl = document.getElementById('citybrainVisionPreview');
+    var btn = document.getElementById('citybrainVisionAnalyze');
+    var statusEl = document.getElementById('citybrainVisionStatus');
+    if (fileEl && previewEl) {
+      fileEl.addEventListener('change', function(){
+        if (!fileEl.files || !fileEl.files[0]) {
+          previewEl.style.display = 'none';
+          previewEl.removeAttribute('src');
+          return;
+        }
+        previewEl.src = URL.createObjectURL(fileEl.files[0]);
+        previewEl.style.display = 'block';
+      });
+    }
+    if (btn && fileEl && citybrainVisionUrl) {
+      btn.addEventListener('click', function(){
+        if (!fileEl.files || !fileEl.files[0]) {
+          if (statusEl) statusEl.textContent = Lv.empty || '';
+          return;
+        }
+        var fd = new FormData();
+        fd.append('photo', fileEl.files[0]);
+        btn.disabled = true;
+        if (statusEl) statusEl.textContent = Lv.analyzing || '…';
+        fetch(citybrainVisionUrl, { method: 'POST', body: fd, credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+          btn.disabled = false;
+          if (!j.ok || !j.data) {
+            if (statusEl) statusEl.textContent = (j && j.error) ? String(j.error) : (Lv.load_error || '—');
+            return;
+          }
+          renderCitybrainVisionResult(j.data);
+          if (statusEl) statusEl.textContent = '';
+        }).catch(function(){
+          btn.disabled = false;
+          if (statusEl) statusEl.textContent = Lv.load_error || '—';
+        });
+      });
+    }
+    var cbBtn = document.getElementById('govCitybrainCopilotSend');
+    var cbQ = document.getElementById('govCitybrainCopilotQuestion');
+    var cbAns = document.getElementById('govCitybrainCopilotAnswer');
+    var cbErr = document.getElementById('govCitybrainCopilotError');
+    if (cbBtn && cbQ && govCopilotUrl) {
+      cbBtn.addEventListener('click', function(){
+        var q = (cbQ.value || '').trim();
+        if (!q) return;
+        cbErr.style.display = 'none';
+        cbAns.style.display = 'block';
+        cbAns.textContent = <?= json_encode(t('gov.generating'), JSON_UNESCAPED_UNICODE) ?>;
+        cbBtn.disabled = true;
+        postJson(govCopilotUrl, { question: q }).then(function(x){
+          cbBtn.disabled = false;
+          if (x.ok && x.j && x.j.ok && x.j.data && x.j.data.answer) {
+            cbAns.textContent = x.j.data.answer;
+          } else {
+            cbAns.style.display = 'none';
+            cbErr.style.display = 'block';
+            cbErr.textContent = (x.j && x.j.error) ? x.j.error : (Lv.load_error || '—');
+          }
+        }).catch(function(){
+          cbBtn.disabled = false;
+          cbAns.style.display = 'none';
+          cbErr.style.display = 'block';
+          cbErr.textContent = Lv.load_error || '—';
+        });
+      });
+    }
+  }
+
+  function renderCitybrainVisionResult(d){
+    var esc = function(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); };
+    var emptyEl = document.getElementById('citybrainVisionEmpty');
+    var wowWrap = document.getElementById('citybrainVisionWow');
+    var wowList = document.getElementById('citybrainVisionWowList');
+    var resWrap = document.getElementById('citybrainVisionResult');
+    if (emptyEl) emptyEl.style.display = 'none';
+    if (wowWrap && wowList) {
+      var highlights = d.wow_highlights || [];
+      if (highlights.length) {
+        wowList.innerHTML = highlights.map(function(h){
+          return '<li class="mb-2"><span class="badge text-bg-primary me-1">AI</span> ' + esc(h) + '</li>';
+        }).join('');
+        wowWrap.style.display = 'block';
+      } else {
+        wowWrap.style.display = 'none';
+      }
+    }
+    var streetEl = document.getElementById('citybrainVisionStreet');
+    if (streetEl) {
+      var lines = [];
+      if (d.scene_summary) lines.push('<p class="mb-1">' + esc(d.scene_summary) + '</p>');
+      if (d.street_condition) lines.push('<p class="mb-1"><strong>' + esc(d.street_condition) + '</strong></p>');
+      (d.street_issues || []).forEach(function(i){ lines.push('<span class="badge text-bg-warning me-1 mb-1">' + esc(i) + '</span>'); });
+      (d.objects || []).slice(0, 6).forEach(function(o){
+        if (o.class) lines.push('<span class="badge text-bg-secondary me-1 mb-1">' + esc(o.class) + (o.confidence != null ? (' ' + Math.round(o.confidence * 100) + '%') : '') + '</span>');
+      });
+      streetEl.innerHTML = lines.length ? lines.join('') : '—';
+    }
+    var greenEl = document.getElementById('citybrainVisionGreen');
+    if (greenEl) {
+      var gs = d.green_surfaces || {};
+      var gLines = [];
+      ['vegetation_pct','pavement_pct','building_pct','sky_pct','water_pct'].forEach(function(k){
+        if (gs[k] != null) gLines.push('<div class="d-flex justify-content-between"><span>' + esc(k.replace('_pct','')) + '</span><strong>' + gs[k] + '%</strong></div>');
+      });
+      greenEl.innerHTML = gLines.length ? gLines.join('') : '—';
+    }
+    var treesEl = document.getElementById('citybrainVisionTrees');
+    if (treesEl) {
+      var trees = d.trees || [];
+      if (!trees.length) {
+        treesEl.textContent = '—';
+      } else {
+        treesEl.innerHTML = trees.map(function(t){
+          var parts = [];
+          if (t.species) parts.push('<strong>' + esc(t.species) + '</strong>');
+          if (t.health) parts.push(esc(t.health));
+          if (t.trunk_diameter_cm != null) parts.push('Ø ' + esc(t.trunk_diameter_cm) + ' cm');
+          if (t.canopy_diameter_m != null) parts.push('korona ' + esc(t.canopy_diameter_m) + ' m');
+          if (t.health_note) parts.push('<em>' + esc(t.health_note) + '</em>');
+          return '<div class="mb-1 border-bottom pb-1">' + parts.join(' · ') + '</div>';
+        }).join('');
+      }
+    }
+    var actEl = document.getElementById('citybrainVisionAction');
+    if (actEl) {
+      var act = d.recommended_action || '';
+      if (d.suggested_category) act += (act ? ' ' : '') + '(' + esc(d.suggested_category) + ', ' + esc(d.urgency_level || '') + ')';
+      actEl.textContent = act || '—';
+    }
+    if (resWrap) resWrap.style.display = 'block';
+  }
 
   function govZoomFromBboxSpan(span){
     if (span >= 0.4) return 10;
@@ -4591,7 +4822,14 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         }
         var d = j.data;
         var lines = [];
+        if (d.short_title) lines.push((Lb.ai_title || 'Cím') + ': ' + String(d.short_title));
         if (d.description) lines.push(String(d.description));
+        if (d.suggested_category) lines.push((Lb.ai_category || 'Kategória') + ': ' + String(d.suggested_category) + (d.suggested_subcategory ? (' / ' + String(d.suggested_subcategory)) : ''));
+        if (d.urgency_level) lines.push((Lb.ai_urgency || 'Prioritás') + ': ' + String(d.urgency_level));
+        if (d.hazard_level) lines.push((Lb.ai_hazard || 'Veszély') + ': ' + String(d.hazard_level));
+        if (d.confidence_score != null) lines.push((Lb.ai_confidence || 'Bizonyosság') + ': ' + Math.round(Number(d.confidence_score) * 100) + '%');
+        if (d.provider_model) lines.push((Lb.ai_model_used || 'Modell') + ': ' + String(d.provider_model));
+        if (d.depth_notes) lines.push(String(d.depth_notes));
         (d.segments || []).forEach(function(s){
           if (s.kind && s.coverage_pct != null) lines.push(s.kind + ': ' + s.coverage_pct + '%');
           if (s.kind && s.value != null) lines.push(s.kind + ': ' + s.value);
@@ -4599,7 +4837,9 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         (d.objects || []).forEach(function(o){
           if (o.class) lines.push(o.class + (o.confidence != null ? (' (' + Math.round(o.confidence * 100) + '%)') : ''));
         });
-        (d.notes || []).forEach(function(n){ lines.push('[' + n + ']'); });
+        (d.notes || []).forEach(function(n){
+          if (n !== 'preview_mock') lines.push('[' + n + ']');
+        });
         if (out) out.innerHTML = lines.length ? ('<strong>' + (Lb.ai_result || '') + ':</strong><br>' + lines.map(function(x){ return (typeof escStr === 'function' ? escStr(x) : String(x).replace(/</g,'&lt;')); }).join('<br>')) : '—';
       }).catch(function(){
         if (out) out.textContent = Lb.load_error || '—';
@@ -4996,7 +5236,6 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     var rec = document.getElementById('govIntelRecommendations');
     var badges = document.getElementById('govIntelModuleBadges');
     var L = govIntelLabels || {};
-    loadGovDashIntelTiles();
     if (!govIntelligenceDashboardUrl) return;
     var q = (typeof govEuAuthorityQuery === 'function' ? govEuAuthorityQuery() : '');
     govFetchJsonWithTimeout(govIntelligenceDashboardUrl + q, 25000).then(function(j){
@@ -5005,7 +5244,14 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         if (rec) rec.innerHTML = '<p class="text-secondary small mb-0">' + (L.load_error || '—') + '</p>';
         govDashSetHeroValue('govDashHeroClimate', '—');
         govDashSetHeroValue('govDashHeroModules', '—');
+        loadGovDashIntelTiles();
         return;
+      }
+      if (j.data.context_lite) {
+        var row = document.getElementById('govDashIntelTiles');
+        if (row) row.innerHTML = buildIntelFeedTilesHtml(j.data.context_lite);
+      } else {
+        loadGovDashIntelTiles();
       }
       var ci = j.data.climate_index || {};
       var cat = ci.category || 'moderate';
@@ -5379,6 +5625,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     }
     if (key === 'intel-reports') initGovIntelReports();
     if (key === 'dashboard') loadGovDashboardBundle();
+    if (key === 'citybrain-copilot') initCitybrainCopilotTab();
     if (key === 'citybrain-live') loadCitybrainLive();
     if (key === 'citybrain-predictive') loadCitybrainPredictive();
     if (key === 'citybrain-hotspot') { if (typeof citybrainHotspotMap !== 'undefined' && citybrainHotspotMap) loadCitybrainHotspot(); else initCitybrainHotspot(); }

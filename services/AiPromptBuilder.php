@@ -211,5 +211,75 @@ class AiPromptBuilder
             "Fields: a single key \"text\" (string).\n\n" .
             'JSON:';
     }
+
+    /**
+     * Közterületi fotó → civic bejelentés javaslatok (vision).
+     * $mode: ai_blip|ai_yolo|ai_sam2|ai_depth – elemzési fókusz (ugyanaz a felhő vision modell).
+     */
+    public static function civicImageAnalysis(string $mode = 'ai_blip', string $outputLang = 'hu'): string
+    {
+        $langName = self::languageNameForCode($outputLang);
+        if ($mode === 'ai_yolo') {
+            $focus = 'Focus on detecting discrete civic issues/objects (pothole, trash, graffiti, damaged street furniture, traffic sign, cracked sidewalk, damaged/dry tree). List objects with confidence.';
+        } elseif ($mode === 'ai_sam2') {
+            $focus = 'Focus on scene composition: estimate rough coverage percentages for vegetation, pavement, building, sky, water if visible.';
+        } elseif ($mode === 'ai_depth') {
+            $focus = 'Focus on spatial/depth cues useful for maintenance (relative distance of issues, canopy height estimate in meters if trees visible).';
+        } else {
+            $focus = 'Provide a balanced civic analysis: description, category, urgency, hazard, and main objects.';
+        }
+        return
+            "You analyse a photo for a Hungarian municipal civic reporting app (CivicAI).\n" .
+            "Return ONLY a compact JSON object, no markdown fences, no prose.\n\n" .
+            "Important: Write description, short_title, and suggested_subcategory in " . $langName . ".\n\n" .
+            "Analysis focus: " . $focus . "\n\n" .
+            "Detect if relevant: road pothole, sidewalk damage, illegal trash/dumping, graffiti, damaged street furniture, dry/diseased/damaged tree or plants, traffic sign issues, lighting, general environmental condition.\n\n" .
+            "Fields:\n" .
+            "- description: 1–3 sentences what is visible, in " . $langName . "\n" .
+            "- short_title: max 80 chars suitable as report title, in " . $langName . "\n" .
+            "- suggested_category: one of ['road','sidewalk','lighting','trash','green','traffic','idea','civil_event']\n" .
+            "- suggested_subcategory: short string in " . $langName . "\n" .
+            "- urgency_level: one of ['low','medium','high']\n" .
+            "- hazard_level: one of ['none','low','medium','high']\n" .
+            "- confidence_score: number 0–1\n" .
+            "- objects: array of up to 8 items {class, confidence} – class in English snake_case (pothole, trash, graffiti, tree, sidewalk_crack, street_furniture, traffic_sign, lighting, other)\n" .
+            "- segments: array of up to 6 items {kind, coverage_pct} – kind in English (vegetation, pavement, building, sky, water); coverage_pct 0–100; omit if unknown\n" .
+            "- depth_notes: optional short string in " . $langName . " (only if depth/spatial focus)\n\n" .
+            "JSON:";
+    }
+
+    public static function civicImageSystemPrompt(): string
+    {
+        return 'You are a civic infrastructure vision analyst. Reply with a JSON object only. Never invent text outside JSON. Be conservative with confidence when the image is unclear.';
+    }
+
+    /** City Brain WOW demo – utca + zöld + fa egy képen. */
+    public static function citybrainVisionAnalysis(string $outputLang = 'hu'): string
+    {
+        $langName = self::languageNameForCode($outputLang);
+        return
+            "You analyse a street / public-space photo for CivicAI City Brain (municipal demo).\n" .
+            "Return ONLY one JSON object, no markdown.\n\n" .
+            "Write scene_summary, street_issues, wow_highlights, recommended_action, tree entries (species, health_note) in " . $langName . ".\n\n" .
+            "Fields:\n" .
+            "- scene_summary: 2–4 sentences describing the scene in " . $langName . "\n" .
+            "- street_condition: one of ['excellent','good','fair','poor']\n" .
+            "- street_issues: array of up to 6 short strings in " . $langName . " (potholes, cracks, missing signs, etc.)\n" .
+            "- green_surfaces: {vegetation_pct,pavement_pct,building_pct,sky_pct,water_pct} each 0–100 (estimate)\n" .
+            "- trees: array up to 5 items {species, health: healthy|dry|disease_suspected|unknown, trunk_diameter_cm, canopy_diameter_m, confidence 0–1, health_note short string in " . $langName . "}\n" .
+            "- objects: array up to 10 {class, confidence} – pothole, trash, graffiti, tree, sidewalk_crack, street_furniture, traffic_sign, lighting, vegetation, other\n" .
+            "- suggested_category: road|sidewalk|lighting|trash|green|traffic|idea|civil_event\n" .
+            "- urgency_level: low|medium|high\n" .
+            "- hazard_level: none|low|medium|high\n" .
+            "- confidence_score: 0–1 overall\n" .
+            "- wow_highlights: array of 3–5 impressive one-liners for a live demo in " . $langName . "\n" .
+            "- recommended_action: one sentence maintenance suggestion in " . $langName . "\n\n" .
+            "JSON:";
+    }
+
+    public static function citybrainVisionSystemPrompt(): string
+    {
+        return 'You are City Brain vision AI for smart cities. Analyse street photos holistically: pavement, greenery, trees (species, health, size), hazards. JSON only.';
+    }
 }
 

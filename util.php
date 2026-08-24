@@ -370,12 +370,41 @@ function ai_store_result(string $entityType, ?int $entityId, string $taskType, s
 // --------------------
 // Beépülő modulok – beállítások DB-ből (admin felületről), env fallback
 // --------------------
-function get_module_setting(string $moduleKey, string $settingKey): ?string {
+/** @return array<string,?string> module_key.setting_key => value */
+function &module_settings_cache(): array {
     static $cache = [];
+    static $allLoaded = false;
+    if (!$allLoaded) {
+        $allLoaded = true;
+        try {
+            $rows = db()->query('SELECT module_key, setting_key, value FROM module_settings')->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as $row) {
+                $mk = (string)($row['module_key'] ?? '');
+                $sk = (string)($row['setting_key'] ?? '');
+                if ($mk === '' || $sk === '') {
+                    continue;
+                }
+                $v = $row['value'] ?? null;
+                $cache[$mk . '.' . $sk] = ($v !== false && $v !== null) ? (string)$v : null;
+            }
+        } catch (Throwable $e) {
+            // tábla hiányzik vagy nincs jog – marad üres cache
+        }
+    }
+    return $cache;
+}
+
+function preload_module_settings(): void {
+    module_settings_cache();
+}
+
+function get_module_setting(string $moduleKey, string $settingKey): ?string {
+    $cache = &module_settings_cache();
     $k = $moduleKey . '.' . $settingKey;
     if (array_key_exists($k, $cache)) {
         return $cache[$k];
     }
+    // Ritka új kulcs mentés után – egyedi SELECT fallback
     try {
         $stmt = db()->prepare("SELECT value FROM module_settings WHERE module_key = :mk AND setting_key = :sk LIMIT 1");
         $stmt->execute([':mk' => $moduleKey, ':sk' => $settingKey]);
@@ -393,10 +422,14 @@ function set_module_setting(string $moduleKey, string $settingKey, ?string $valu
     $pdo = db();
     if ($value === null || $value === '') {
         $pdo->prepare('DELETE FROM module_settings WHERE module_key = ? AND setting_key = ?')->execute([$moduleKey, $settingKey]);
+        $cache = &module_settings_cache();
+        $cache[$moduleKey . '.' . $settingKey] = null;
         return;
     }
     $pdo->prepare('INSERT INTO module_settings (module_key, setting_key, value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)')
         ->execute([$moduleKey, $settingKey, $value]);
+    $cache = &module_settings_cache();
+    $cache[$moduleKey . '.' . $settingKey] = $value;
 }
 
 /** EU Open Data modul (admin → Beépülő modulok → EU nyílt adatok). */

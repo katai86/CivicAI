@@ -1,7 +1,7 @@
 <?php
 /**
- * AI Vision – feltöltött kép élő multimodális elemzése (gov / admin).
- * GET: elérhető módok. POST multipart: image + model.
+ * City Brain – WOW AI Vision: utcaállapot, zöld felületek, fa fajta/egészség/méret.
+ * POST multipart: image|photo (file). Gov/admin.
  */
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
@@ -9,26 +9,21 @@ require_once __DIR__ . '/../services/AiVisionService.php';
 
 require_gov_or_admin();
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    json_response(['ok' => true, 'data' => ['models' => AiVisionService::models()]]);
-}
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
+    json_response(['ok' => false, 'error' => function_exists('t') ? t('api.method_not_allowed') : 'Method not allowed'], 405);
 }
 
-$model = trim((string)($_POST['model'] ?? $_GET['model'] ?? 'ai_blip'));
-$raw = file_get_contents('php://input');
-$body = json_decode($raw ?: '{}', true);
-if (is_array($body) && isset($body['model'])) {
-    $model = trim((string)$body['model']);
+$fileKey = null;
+if (!empty($_FILES['photo']['tmp_name'])) {
+    $fileKey = 'photo';
+} elseif (!empty($_FILES['image']['tmp_name'])) {
+    $fileKey = 'image';
 }
-
-if (empty($_FILES['image']['tmp_name']) || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+if ($fileKey === null) {
     json_response(['ok' => false, 'error' => function_exists('t') ? t('intel.ai_vision_need_image') : 'Image required'], 400);
 }
 
-$f = $_FILES['image'];
+$f = $_FILES[$fileKey];
 if (($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || (int)($f['size'] ?? 0) <= 0) {
     json_response(['ok' => false, 'error' => function_exists('t') ? t('intel.ai_vision_need_image') : 'Image required'], 400);
 }
@@ -47,16 +42,12 @@ if (function_exists('finfo_open')) {
         finfo_close($fi);
     }
 }
-if ($mime === '' && function_exists('mime_content_type')) {
-    $mime = (string)mime_content_type($tmp);
-}
 $allowed = defined('UPLOAD_ALLOWED_MIME') ? UPLOAD_ALLOWED_MIME : ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
 if (!isset($allowed[$mime])) {
     json_response(['ok' => false, 'error' => function_exists('t') ? t('api.upload_images_only') : 'Images only'], 400);
 }
 
-$fn = (string)($f['name'] ?? 'upload.jpg');
-$result = (new AiVisionService())->analyzeFile($model, $tmp, $mime, $fn, null, 'gov_vision');
+$result = (new AiVisionService())->analyzeCitybrain($tmp, $mime, (string)($f['name'] ?? 'street.jpg'));
 
 if (empty($result['ok'])) {
     json_response([

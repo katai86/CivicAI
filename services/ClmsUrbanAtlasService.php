@@ -76,6 +76,12 @@ class ClmsUrbanAtlasService
             'max_lng' => round($maxLng, 4),
         ];
         $cacheKey = 'ua2018_stats_' . md5(json_encode($keyBBox));
+        $failKey = 'ua_fail_' . md5(json_encode($keyBBox));
+        if (ExternalDataCache::isInErrorCooldown('clms', $failKey)) {
+            $empty['error'] = 'cooldown_after_failure';
+            $empty['notes'][] = 'clms_error_cooldown';
+            return $empty;
+        }
         $hit = ExternalDataCache::getValid('clms', $cacheKey);
         if ($hit && isset($hit['payload']['ok']) && $hit['payload']['ok']) {
             $p = $hit['payload'];
@@ -110,10 +116,11 @@ class ClmsUrbanAtlasService
             'returnGeometry' => 'false',
         ];
         $url = self::QUERY_URL . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
-        $resp = ExternalHttpClient::get($url);
+        $resp = ExternalHttpClient::get($url, 10);
         if (!$resp['ok']) {
             $err = $resp['error'] ?? ('http_' . ($resp['status'] ?? 0));
             ExternalDataCache::logProvider('clms', 'urban_atlas_query', 'error', $err);
+            ExternalDataCache::setErrorCooldown('clms', $failKey, 45, mb_substr((string)$err, 0, 200));
             $empty['error'] = $err;
             $empty['notes'][] = 'eea_urban_atlas_request_failed';
             return $empty;

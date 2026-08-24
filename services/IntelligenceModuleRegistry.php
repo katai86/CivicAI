@@ -30,11 +30,11 @@ final class IntelligenceModuleRegistry
     private static function aiVisionModules(): array
     {
         return [
-            self::def('sam2', 'ai_sam2', 'Meta SAM 2', 'Képszegmentálás – fa, víz, épület, burkolt felület.', 'ai_vision', 'planned', '', false),
-            self::def('segment_anything', 'ai_sam', 'Segment Anything', 'Univerzális képszegmentálás.', 'ai_vision', 'planned', '', false),
-            self::def('yolo', 'ai_yolo', 'YOLO objektumfelismerés', 'Kátyú, hulladék, kidőlt fa, közterületi problémák.', 'ai_vision', 'planned', '', false),
-            self::def('depth_anything', 'ai_depth', 'Depth Anything', 'Terep és lombkorona mélység becslés.', 'ai_vision', 'planned', '', false),
-            self::def('blip', 'ai_blip', 'BLIP képleírás', 'Automatikus képleírás jelentésekhez.', 'ai_vision', 'planned', '', false),
+            self::def('sam2', 'ai_sam2', 'Meta SAM 2', 'Jelenet / felületbecslés (felhő vision fókusz).', 'ai_vision', 'active', '', false),
+            self::def('segment_anything', 'ai_sam', 'Segment Anything', 'Univerzális képszegmentálás (felhő vision fókusz).', 'ai_vision', 'active', '', false),
+            self::def('yolo', 'ai_yolo', 'YOLO objektumfelismerés', 'Kátyú, hulladék, közterületi problémák (felhő vision).', 'ai_vision', 'active', '', false),
+            self::def('depth_anything', 'ai_depth', 'Depth Anything', 'Térbeli / mélység becslés (felhő vision).', 'ai_vision', 'active', '', false),
+            self::def('blip', 'ai_blip', 'Civic AI Vision', 'Teljes közterületi képelemzés (Mistral/OpenAI).', 'ai_vision', 'active', '', false),
         ];
     }
 
@@ -89,6 +89,9 @@ final class IntelligenceModuleRegistry
     /** @return list<array<string,mixed>> */
     public static function listWithStatus(): array
     {
+        if (function_exists('preload_module_settings')) {
+            preload_module_settings();
+        }
         $out = [];
         foreach (self::definitions() as $def) {
             $key = (string)$def['module_key'];

@@ -33,6 +33,9 @@ class CopernicusDataService
         if ($cid === '' || $sec === '') {
             return null;
         }
+        if (ExternalDataCache::isInErrorCooldown('copernicus', 'oauth_fail_' . md5($cid))) {
+            return null;
+        }
         $cached = ExternalDataCache::getValid('copernicus', 'oauth_access_token');
         if ($cached && !empty($cached['payload']['access_token'])) {
             return (string)$cached['payload']['access_token'];
@@ -43,7 +46,11 @@ class CopernicusDataService
             'client_secret' => $sec,
         ]);
         if (!$resp['ok']) {
-            ExternalDataCache::logProvider('copernicus', 'oauth_token', 'error', $resp['error'] ?? ('http_' . ($resp['status'] ?? 0)));
+            $err = $resp['error'] ?? ('http_' . ($resp['status'] ?? 0));
+            ExternalDataCache::logProvider('copernicus', 'oauth_token', 'error', $err);
+            if ((int)($resp['status'] ?? 0) === 401 || strpos((string)$err, '401') !== false) {
+                ExternalDataCache::setErrorCooldown('copernicus', 'oauth_fail_' . md5($cid), 60, 'http_401');
+            }
             return null;
         }
         $j = json_decode($resp['body'], true);

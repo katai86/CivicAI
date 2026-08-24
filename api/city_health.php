@@ -31,10 +31,25 @@ if (in_array($role, ['admin', 'superadmin'], true)) {
   }
 }
 
+$adminRequested = null;
+if (in_array($role, ['admin', 'superadmin'], true)) {
+  $adminRequested = $authorityId;
+}
+
+$cacheKey = gov_api_cache_scope_key('city_health', $role ?: '', $uid, $adminRequested);
+$cacheHit = gov_api_cache_get($cacheKey);
+if ($cacheHit !== null) {
+  header('X-Gov-Api-Cache: HIT');
+  json_response($cacheHit);
+}
+
 try {
   $service = new CityHealthScore();
   $data = $service->compute($authorityId);
-  json_response(['ok' => true, 'data' => $data]);
+  $out = ['ok' => true, 'data' => $data];
+  gov_api_cache_set($cacheKey, $out);
+  header('X-Gov-Api-Cache: MISS');
+  json_response($out);
 } catch (Throwable $e) {
   if (function_exists('log_error')) {
     log_error('city_health: ' . $e->getMessage());

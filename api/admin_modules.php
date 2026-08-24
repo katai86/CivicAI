@@ -134,6 +134,7 @@ $MODULE_DEFS = array_merge($MODULE_DEFS, IntelligenceModuleRegistry::adminModule
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   try {
+    preload_module_settings();
     $list = [];
     foreach ($MODULE_DEFS as $moduleKey => $def) {
       $settingsList = [];

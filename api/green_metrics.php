@@ -31,6 +31,18 @@ if (in_array($role, ['admin', 'superadmin'], true)) {
   }
 }
 
+$adminRequested = null;
+if (in_array($role, ['admin', 'superadmin'], true)) {
+  $adminRequested = $authorityId;
+}
+
+$cacheKey = gov_api_cache_scope_key('green_metrics', $role ?: '', $uid, $adminRequested);
+$cacheHit = gov_api_cache_get($cacheKey);
+if ($cacheHit !== null) {
+  header('X-Gov-Api-Cache: HIT');
+  json_response($cacheHit);
+}
+
 try {
   $service = new GreenIntelligence();
   $data = $service->compute($authorityId);
@@ -88,7 +100,7 @@ try {
       }
     } catch (Throwable $e) {}
   }
-  json_response([
+  $out = [
     'ok' => true,
     'source' => (function () use ($sources, $hasHuKsh) {
       $c = in_array('copernicus_stac_sentinel2_l2a', $sources, true) || in_array('copernicus_cdse_oauth', $sources, true);
@@ -120,7 +132,10 @@ try {
       'notes' => array_values(array_merge($euNotes, $huNotes)),
       'data_sources' => $sources,
     ],
-  ]);
+  ];
+  gov_api_cache_set($cacheKey, $out);
+  header('X-Gov-Api-Cache: MISS');
+  json_response($out);
 } catch (Throwable $e) {
   if (function_exists('log_error')) {
     log_error('green_metrics: ' . $e->getMessage());

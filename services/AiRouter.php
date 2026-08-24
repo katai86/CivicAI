@@ -204,14 +204,15 @@ class AiRouter
      */
     /**
      * @param string|null $systemOverride Optional system message (e.g. for tree species/size analysis instead of health).
+     * @param array{timeout?:int,temperature?:float,max_tokens?:int} $extra Provider options override.
      */
-    public function callWithImage(string $taskType, string $prompt, string $imagePath, string $mimeType = 'image/jpeg', ?string $systemOverride = null): array
+    public function callWithImage(string $taskType, string $prompt, string $imagePath, string $mimeType = 'image/jpeg', ?string $systemOverride = null, array $extra = []): array
     {
         if (!$this->isEnabled() || !$this->withinLimit('image_classification')) {
             return ['ok' => false, 'error' => 'AI disabled or image analysis limit reached'];
         }
         if (!($this->provider instanceof \OpenAIProvider) && !($this->provider instanceof \MistralProvider)) {
-            return ['ok' => false, 'error' => 'Tree health analysis requires OpenAI or Mistral (vision).'];
+            return ['ok' => false, 'error' => 'Vision analysis requires OpenAI or Mistral (vision-capable model).'];
         }
         if (!is_file($imagePath) || !is_readable($imagePath)) {
             return ['ok' => false, 'error' => 'Image file not found or not readable'];
@@ -236,9 +237,9 @@ class AiRouter
 
         $system = $systemOverride ?? 'You are a tree health analyst. Reply with a JSON object only. Use keys: status (exactly one of: healthy, dry, disease_suspected), confidence (0-1), suggestion (short string).';
         $options = [
-            'timeout' => 15,
-            'temperature' => 0.2,
-            'max_tokens' => 256,
+            'timeout' => isset($extra['timeout']) ? (int)$extra['timeout'] : 20,
+            'temperature' => isset($extra['temperature']) ? (float)$extra['temperature'] : 0.2,
+            'max_tokens' => isset($extra['max_tokens']) ? (int)$extra['max_tokens'] : 512,
             'system' => $system,
             'image_base64' => $base64,
             'image_mime' => $mimeType,
@@ -260,6 +261,10 @@ class AiRouter
             return ['ok' => false, 'error' => $resp['error'] ?? 'Vision API failed'];
         }
         $content = (string)($resp['content'] ?? '');
+        // Models sometimes wrap JSON in ``` fences
+        if (!is_array(json_decode($content, true)) && preg_match('/\{[\s\S]*\}/', $content, $m)) {
+            $content = $m[0];
+        }
         $parsed = json_decode($content, true);
         if (!is_array($parsed)) {
             $parsed = null;

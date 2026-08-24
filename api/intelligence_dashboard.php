@@ -6,9 +6,11 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 require_once __DIR__ . '/../services/ClimateIndexService.php';
 require_once __DIR__ . '/../services/IntelligenceModuleRegistry.php';
+require_once __DIR__ . '/../services/IntelligenceHub.php';
 require_once __DIR__ . '/../services/ExternalDataCache.php';
 
 require_gov_or_admin();
+preload_module_settings();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     json_response(['ok' => false, 'error' => 'Method not allowed'], 405);
@@ -50,9 +52,26 @@ try {
 }
 $modules = IntelligenceModuleRegistry::listWithStatus();
 
+$contextLite = null;
+$ctxKey = 'ctx_' . (int)($aid ?? 0) . '_lite';
+$ctxHit = ExternalDataCache::getValid('intel_context', $ctxKey);
+if ($ctxHit && !empty($ctxHit['payload']) && is_array($ctxHit['payload'])) {
+    $contextLite = $ctxHit['payload'];
+} else {
+    try {
+        $contextLite = (new IntelligenceHub())->fetchFullContext($aid, true);
+        ExternalDataCache::set('intel_context', $ctxKey, $contextLite, 15, 'ok', null);
+    } catch (Throwable $e) {
+        if (function_exists('log_error')) {
+            log_error('intelligence_dashboard context_lite: ' . $e->getMessage());
+        }
+    }
+}
+
 $payload = [
     'climate_index' => $climate,
     'modules' => $modules,
+    'context_lite' => $contextLite,
     'authority_id' => $aid,
     'cached' => false,
 ];

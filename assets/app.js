@@ -15,6 +15,7 @@ const API_TREE_WATER = `${BASE}/api/tree_watering.php`;
 const API_TREE_CREATE = `${BASE}/api/tree_create.php`;
 const API_TREE_ANALYZE_PHOTO = `${BASE}/api/tree_analyze_photo.php`;
 const API_TREE_HEALTH_ANALYZE = `${BASE}/api/tree_health_analyze.php`;
+const API_REPORT_VISION = `${BASE}/api/report_vision_analyze.php`;
 const API_CIVIL_EVENT_CREATE = `${BASE}/api/civil_event_create.php`;
 const API_REPORT_LIKE = `${BASE}/api/report_like.php`;
 const API_IDEAS = `${BASE}/api/ideas_list.php`;
@@ -1239,7 +1240,7 @@ function openModal(latlng, options){
         <div id="mImageBlock">
           <label>${esc(t('modal.image_optional'))}</label>
           <input id="mImage" type="file" accept="image/*" class="modal-file">
-          <button type="button" id="mAnalyzePhotoBtn" class="btn-soft" style="display:none; margin-top:8px">${esc(t('tree.analyze_photo_btn') || 'Fotó elemzése (AI)')}</button>
+          <button type="button" id="mAnalyzePhotoBtn" class="btn-soft" style="display:none; margin-top:8px">${esc(t('modal.analyze_photo_btn') || t('tree.analyze_photo_btn') || 'Fotó elemzése (AI)')}</button>
           <div id="mTreeAnalyzeResult" class="tree-analyze-result" style="display:none" aria-live="polite"></div>
         </div>
 
@@ -1470,7 +1471,13 @@ function openModal(latlng, options){
     const mTreeSizes = modal.querySelector('#mTreeSizes');
     const mAnalyzePhotoBtn = modal.querySelector('#mAnalyzePhotoBtn');
     if (mTreeSizes) mTreeSizes.style.display = isTree ? 'block' : 'none';
-    if (mAnalyzePhotoBtn) mAnalyzePhotoBtn.style.display = isTree ? 'block' : 'none';
+    // AI Vision: fa + közterületi bejelentés (civil eseménynél rejtve)
+    if (mAnalyzePhotoBtn) {
+      mAnalyzePhotoBtn.style.display = isCivil ? 'none' : 'block';
+      mAnalyzePhotoBtn.textContent = isTree
+        ? (t('tree.analyze_photo_btn') || 'Fotó elemzése (AI)')
+        : (t('modal.analyze_photo_btn') || 'Fotó elemzése (AI)');
+    }
     if (mImageBlock) {
       const scroll = modal.querySelector('.modal-scroll');
       const target = isTree ? mTitleLabel : (modal.querySelector('#mTreeSizes') || mReportFields);
@@ -1504,48 +1511,79 @@ function openModal(latlng, options){
   modal.querySelector('#mAnalyzePhotoBtn')?.addEventListener('click', async () => {
     const fileInput = modal.querySelector('#mImage');
     if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-      civicUiToast(t('tree.health_analyze_need_photo'), 'info');
+      civicUiToast(t('tree.health_analyze_need_photo') || t('intel.ai_vision_need_image'), 'info');
+      return;
+    }
+    if (!IS_LOGGED_IN) {
+      civicUiToast(t('modal.report_requires_login') || t('auth.login_required'), 'info');
       return;
     }
     const btn = modal.querySelector('#mAnalyzePhotoBtn');
     const origText = btn?.textContent;
     const resultEl = modal.querySelector('#mTreeAnalyzeResult');
+    const isTree = elCategory && elCategory.value === 'tree_upload';
     if (resultEl) { resultEl.style.display = 'none'; resultEl.textContent = ''; }
-    if (btn) { btn.disabled = true; btn.textContent = t('tree.analyze_photo_analyzing'); }
+    if (btn) { btn.disabled = true; btn.textContent = t('tree.analyze_photo_analyzing') || '…'; }
     try {
       const fd = new FormData();
       fd.append('photo', fileInput.files[0]);
-      const res = await fetch(API_TREE_ANALYZE_PHOTO, { method: 'POST', body: fd, credentials: 'same-origin' });
-      const j = await res.json().catch(() => null);
-      if (j && j.ok) {
-        const mTitle = modal.querySelector('#mTitle');
-        if (j.species && mTitle) mTitle.value = j.species;
-        const mTrunk = modal.querySelector('#mTrunkDiameter');
-        if (j.trunk_diameter_cm != null && mTrunk) mTrunk.value = String(j.trunk_diameter_cm);
-        const mCanopy = modal.querySelector('#mCanopyDiameter');
-        if (j.canopy_diameter_m != null && mCanopy) mCanopy.value = String(j.canopy_diameter_m);
-        const resultEl = modal.querySelector('#mTreeAnalyzeResult');
-        if (resultEl) {
-          const hasAny = (j.species && j.species.trim()) || j.trunk_diameter_cm != null || j.canopy_diameter_m != null;
-          if (hasAny) {
-            resultEl.style.display = 'none';
-            resultEl.textContent = '';
-          } else {
-            resultEl.textContent = t('tree.analyze_no_result');
-            resultEl.style.display = 'block';
+      if (isTree) {
+        const res = await fetch(API_TREE_ANALYZE_PHOTO, { method: 'POST', body: fd, credentials: 'same-origin' });
+        const j = await res.json().catch(() => null);
+        if (j && j.ok) {
+          const mTitle = modal.querySelector('#mTitle');
+          if (j.species && mTitle) mTitle.value = j.species;
+          const mTrunk = modal.querySelector('#mTrunkDiameter');
+          if (j.trunk_diameter_cm != null && mTrunk) mTrunk.value = String(j.trunk_diameter_cm);
+          const mCanopy = modal.querySelector('#mCanopyDiameter');
+          if (j.canopy_diameter_m != null && mCanopy) mCanopy.value = String(j.canopy_diameter_m);
+          if (resultEl) {
+            const hasAny = (j.species && j.species.trim()) || j.trunk_diameter_cm != null || j.canopy_diameter_m != null;
+            if (!hasAny) {
+              resultEl.textContent = t('tree.analyze_no_result');
+              resultEl.style.display = 'block';
+            }
           }
+        } else {
+          civicUiToast(civicToastFromApiPayload(j, typeof j?.error === 'string' ? j.error : t('common.error_server')), 'error');
         }
       } else {
-        const resultEl = modal.querySelector('#mTreeAnalyzeResult');
-        if (resultEl) { resultEl.style.display = 'none'; resultEl.textContent = ''; }
-        civicUiToast(civicToastFromApiPayload(j, typeof j.error === 'string' ? j.error : t('common.error_server')), 'error');
+        fd.append('model', 'ai_blip');
+        const res = await fetch(API_REPORT_VISION, { method: 'POST', body: fd, credentials: 'same-origin' });
+        const j = await res.json().catch(() => null);
+        if (j && j.ok) {
+          if (j.suggested_category && elCategory && elCategory.querySelector(`option[value="${j.suggested_category}"]`)) {
+            elCategory.value = j.suggested_category;
+            syncCategory();
+          }
+          const mTitle = modal.querySelector('#mTitle');
+          if (j.short_title && mTitle && !mTitle.value.trim()) mTitle.value = String(j.short_title).slice(0, 120);
+          const mDesc = modal.querySelector('#mDesc');
+          if (j.description && mDesc && !mDesc.value.trim()) mDesc.value = String(j.description).slice(0, 5000);
+          if (resultEl) {
+            const bits = [];
+            if (j.suggested_category) bits.push((t('modal.suggested_category_intro') || 'Kategória:') + ' ' + j.suggested_category);
+            if (j.urgency_level) bits.push((t('modal.vision_urgency') || 'Prioritás:') + ' ' + j.urgency_level);
+            if (j.hazard_level && j.hazard_level !== 'none') bits.push((t('modal.vision_hazard') || 'Veszély:') + ' ' + j.hazard_level);
+            if (j.confidence_score != null) bits.push((t('modal.vision_confidence') || 'Bizonyosság:') + ' ' + Math.round(Number(j.confidence_score) * 100) + '%');
+            if (j.description) bits.push(String(j.description));
+            resultEl.textContent = bits.join('\n') || (t('tree.analyze_no_result') || '—');
+            resultEl.style.display = 'block';
+            resultEl.style.whiteSpace = 'pre-wrap';
+          }
+          civicUiToast(t('modal.vision_done') || 'AI elemzés kész', 'success');
+        } else {
+          civicUiToast(civicToastFromApiPayload(j, typeof j?.error === 'string' ? j.error : t('common.error_server')), 'error');
+        }
       }
     } catch (e) {
-      const re = modal.querySelector('#mTreeAnalyzeResult');
-      if (re) { re.style.display = 'none'; re.textContent = ''; }
+      if (resultEl) { resultEl.style.display = 'none'; resultEl.textContent = ''; }
       civicUiToast(t('common.error_server'), 'error');
     }
-    if (btn) { btn.disabled = false; btn.textContent = origText || t('tree.analyze_photo_btn'); }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = origText || (isTree ? t('tree.analyze_photo_btn') : t('modal.analyze_photo_btn')) || 'Fotó elemzése (AI)';
+    }
   });
 
   // Kategória javaslat a leírás alapján (Phase 4 – szabályalapú javaslat)

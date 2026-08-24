@@ -179,6 +179,32 @@ class ExternalDataCache
         }
     }
 
+    /** Aktív hiba-cooldown (status=error, még nem járt le) – ne ismételjük a lassú külső hívást. */
+    public static function isInErrorCooldown(string $sourceKey, string $cacheKey): bool
+    {
+        if (!self::tablesAvailable()) {
+            return false;
+        }
+        $sourceKey = self::sanitizeKey($sourceKey, 64);
+        $cacheKey = self::sanitizeKey($cacheKey, 255);
+        try {
+            $stmt = db()->prepare('
+                SELECT 1 FROM external_data_cache
+                WHERE source_key = ? AND cache_key = ? AND status = \'error\' AND expires_at > NOW()
+                LIMIT 1
+            ');
+            $stmt->execute([$sourceKey, $cacheKey]);
+            return (bool)$stmt->fetchColumn();
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    public static function setErrorCooldown(string $sourceKey, string $cacheKey, int $ttlMinutes = 30, ?string $message = null): void
+    {
+        self::set($sourceKey, $cacheKey, ['cooldown' => true], max(5, min(1440, $ttlMinutes)), 'error', $message);
+    }
+
     private static function sanitizeKey(string $key, int $maxLen): string
     {
         $key = trim($key);

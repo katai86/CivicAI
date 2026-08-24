@@ -100,6 +100,38 @@ try {
 // XP: foto csatolas
 add_user_xp($uid, 10, 'photo_upload', $rid);
 
+// Best-effort AI Vision a feltöltött képre (nem törheti el a feltöltést)
+$vision = null;
+try {
+  require_once __DIR__ . '/../services/AiVisionService.php';
+  $visionResult = (new AiVisionService())->analyzeFile('ai_blip', $dest, $mime, $origName, $rid, 'report');
+  if (!empty($visionResult['ok'])) {
+    $vision = [
+      'suggested_category' => $visionResult['suggested_category'] ?? null,
+      'urgency_level' => $visionResult['urgency_level'] ?? null,
+      'hazard_level' => $visionResult['hazard_level'] ?? null,
+      'short_title' => $visionResult['short_title'] ?? null,
+      'description' => $visionResult['description'] ?? null,
+      'confidence_score' => $visionResult['confidence_score'] ?? null,
+      'provider_model' => $visionResult['provider_model'] ?? null,
+    ];
+    if (!empty($visionResult['suggested_category']) || !empty($visionResult['urgency_level'])) {
+      try {
+        $stmtAi = db()->prepare("UPDATE reports SET ai_category = COALESCE(NULLIF(ai_category, ''), :cat), ai_priority = COALESCE(NULLIF(ai_priority, ''), :prio) WHERE id = :id");
+        $stmtAi->execute([
+          ':cat' => isset($visionResult['suggested_category']) ? (string)$visionResult['suggested_category'] : null,
+          ':prio' => isset($visionResult['urgency_level']) ? (string)$visionResult['urgency_level'] : null,
+          ':id' => $rid,
+        ]);
+      } catch (Throwable $eAi) {
+        log_error('report_upload AI update failed: ' . $eAi->getMessage());
+      }
+    }
+  }
+} catch (Throwable $eVis) {
+  log_error('report_upload vision: ' . $eVis->getMessage());
+}
+
 json_response([
   'ok'=>true,
   'file'=>[
@@ -108,5 +140,6 @@ json_response([
     'mime'=>$mime,
     'size'=>$size,
     'url'=>rtrim(UPLOAD_PUBLIC, '/').'/'.$stored,
-  ]
+  ],
+  'vision' => $vision,
 ]);
