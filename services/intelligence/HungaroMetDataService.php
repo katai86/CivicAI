@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../db.php';
-require_once __DIR__ . '/../util.php';
+require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../util.php';
 require_once __DIR__ . '/../ExternalHttpClient.php';
 require_once __DIR__ . '/../ExternalDataCache.php';
 require_once __DIR__ . '/IntelligenceModuleTrait.php';

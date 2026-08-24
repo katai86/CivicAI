@@ -346,6 +346,20 @@ require_once __DIR__ . '/services/AiRouter.php';
 require_once __DIR__ . '/services/AiPromptBuilder.php';
 require_once __DIR__ . '/services/AiResultParser.php';
 
+function ai_json_for_db(?array $data): ?string {
+    if (!$data) {
+        return null;
+    }
+    $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    if ($json === false) {
+        return null;
+    }
+    if (!mb_check_encoding($json, 'UTF-8')) {
+        $json = mb_convert_encoding($json, 'UTF-8', 'UTF-8');
+    }
+    return $json;
+}
+
 function ai_store_result(string $entityType, ?int $entityId, string $taskType, string $model, string $inputHash, ?array $data, ?float $confidence): void {
     try {
         $stmt = db()->prepare("
@@ -358,7 +372,7 @@ function ai_store_result(string $entityType, ?int $entityId, string $taskType, s
             ':tt' => $taskType,
             ':m'  => $model,
             ':h'  => $inputHash,
-            ':out'=> $data ? json_encode($data, JSON_UNESCAPED_UNICODE) : null,
+            ':out'=> ai_json_for_db($data),
             ':c'  => $confidence,
         ]);
     } catch (Throwable $e) {
