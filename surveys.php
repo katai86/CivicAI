@@ -43,7 +43,7 @@ $pageTitle = t('survey.page_title');
     .surveys-back { display: inline-block; margin-top: 24px; color: var(--primary); }
   </style>
 </head>
-<body data-logged-in="<?= $uid > 0 ? '1' : '0' ?>" data-role="<?= htmlspecialchars($role, ENT_QUOTES, 'UTF-8') ?>" data-lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>" data-app-base="<?= htmlspecialchars(defined('APP_BASE') ? APP_BASE : '/terkep', ENT_QUOTES, 'UTF-8') ?>" data-surveys-active="<?= $surveysActive ? '1' : '0' ?>">
+<body data-logged-in="<?= $uid > 0 ? '1' : '0' ?>" data-role="<?= htmlspecialchars($role, ENT_QUOTES, 'UTF-8') ?>" data-lang="<?= htmlspecialchars($currentLang, ENT_QUOTES, 'UTF-8') ?>" data-app-base="<?= htmlspecialchars(defined('APP_BASE') ? APP_BASE : '', ENT_QUOTES, 'UTF-8') ?>" data-surveys-active="<?= $surveysActive ? '1' : '0' ?>">
 
 <?php $desktop_topbar_show_search = false; require __DIR__ . '/inc_desktop_topbar.php'; ?>
 

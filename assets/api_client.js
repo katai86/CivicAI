@@ -1,15 +1,18 @@
 /**
  * Shared fetch + JSON helpers for public map, admin, and user report UIs.
- * Configure per page via window.CIVIC_API = { loginUrl: '...', base: '/terkep' } (optional).
+ * Configure per page via window.CIVIC_API = { loginUrl: '...', base: '' } (optional).
  */
 (function (global) {
   'use strict';
 
   function getBase() {
     var cfg = global.CIVIC_API || {};
-    if (cfg.base) return String(cfg.base).replace(/\/$/, '');
-    var b = global.document && global.document.body && global.document.body.dataset && global.document.body.dataset.appBase;
-    return String(b || '/terkep').replace(/\/$/, '');
+    if (cfg.base != null && String(cfg.base) !== '') return String(cfg.base).replace(/\/$/, '');
+    var body = global.document && global.document.body;
+    if (body && body.getAttribute && body.hasAttribute('data-app-base')) {
+      return String(body.getAttribute('data-app-base') || '').replace(/\/$/, '');
+    }
+    return '';
   }
 
   /** Full URL to send the user when a request returns 401. */

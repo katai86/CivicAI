@@ -1,5 +1,5 @@
 // Public map (bejelentés + jóváhagyott jelölők)
-const BASE = document.body?.dataset?.appBase || '/terkep';
+const BASE = (document.body?.dataset?.appBase != null ? document.body.dataset.appBase : '') || '';
 const IS_LOGGED_IN = document.body?.dataset?.loggedIn === '1' || !!window.TERKEP_LOGGED_IN;
 const USER_ROLE = document.body?.dataset?.role || window.TERKEP_ROLE || 'guest';
 const API_LIST   = `${BASE}/api/reports_list.php`;

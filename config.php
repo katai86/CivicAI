@@ -55,6 +55,13 @@ if (!function_exists('civic_resolve_app_base_url')) {
      * a DOCUMENT_ROOT és a projekt mappa alapján felismeri (pl. https://kataiattila.hu/CivicAI).
      */
     function civic_resolve_app_base_url(): string {
+        // 1) config.local.php (civic_cfg), 2) .env / getenv, 3) auto-detect
+        if (function_exists('civic_cfg')) {
+            $local = civic_cfg('APP_BASE_URL', null);
+            if (is_string($local) && $local !== '' && stripos($local, 'example.com') === false) {
+                return rtrim($local, '/');
+            }
+        }
         $env = getenv('APP_BASE_URL');
         if (is_string($env) && $env !== '' && stripos($env, 'example.com') === false) {
             return rtrim($env, '/');
@@ -91,7 +98,7 @@ if (!function_exists('civic_resolve_app_base_url')) {
             return rtrim($env, '/');
         }
 
-        return 'https://example.com/terkep';
+        return 'https://civicai.hu';
     }
 }
 

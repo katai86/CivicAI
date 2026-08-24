@@ -155,9 +155,13 @@ set_exception_handler(function(Throwable $e) {
 // --------------------
 
 if (!defined('APP_BASE')) {
+    // Gyökérdomain (https://civicai.hu) → path null/'' → APP_BASE = '' (NE /terkep!)
     $path = parse_url(APP_BASE_URL, PHP_URL_PATH);
-    $path = is_string($path) ? $path : '/terkep';
-    define('APP_BASE', rtrim($path, '/'));
+    if (!is_string($path) || $path === '' || $path === '/') {
+        define('APP_BASE', '');
+    } else {
+        define('APP_BASE', rtrim($path, '/'));
+    }
 }
 
 function app_url(string $path = ''): string {
@@ -203,7 +207,7 @@ function start_secure_session(): void {
 
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => APP_BASE . '/', // keep session limited to /terkep
+        'path' => (APP_BASE === '' ? '/' : (APP_BASE . '/')), // gyökérdomain: / ; alkönyvtár: /CivicAI/
         'domain' => $cookieParams['domain'] ?? '',
         'secure' => $secure,
         'httponly' => true,
