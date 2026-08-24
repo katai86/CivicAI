@@ -9,7 +9,7 @@ return [
     'DB_USER' => 'kataia_civicai',
     'DB_PASS' => 'ide_a_mysql_jelszo',
 
-    'APP_BASE_URL' => 'https://kataiattila.hu/CivicAI',
+    'APP_BASE_URL' => 'https://civicai.hu',
 
     'ADMIN_USER' => 'admin',
     'ADMIN_PASS' => 'ide_az_admin_jelszo',
