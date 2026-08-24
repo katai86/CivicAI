@@ -202,7 +202,7 @@ final class IntelligenceHub
                 $enabled = function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled()
                     && function_exists('eu_open_data_feature_enabled') && eu_open_data_feature_enabled('copernicus_enabled');
             } else {
-                $enabled = get_module_setting($mod, 'enabled') === '1'
+                $enabled = intelligence_module_enabled($mod)
                     && (get_module_setting($mod, 'map_layer') === null || get_module_setting($mod, 'map_layer') === '' || get_module_setting($mod, 'map_layer') === '1');
             }
             $out[] = [

@@ -10,7 +10,9 @@ trait IntelligenceModuleTrait
 
     protected function isModuleEnabled(): bool
     {
-        return get_module_setting($this->moduleKey(), 'enabled') === '1';
+        return function_exists('intelligence_module_enabled')
+            ? intelligence_module_enabled($this->moduleKey())
+            : get_module_setting($this->moduleKey(), 'enabled') === '1';
     }
 
     /** Lite dashboard: cache vagy referencia, élő HTTP nélkül. */

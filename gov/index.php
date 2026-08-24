@@ -4465,10 +4465,12 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         }
         mod.innerHTML = j.data.modules.map(function(m){
           var st = m.runtimeStatus || 'inactive';
-          var badge = st === 'active' ? 'success' : (st === 'preview' ? 'warning' : 'secondary');
+          var Li = govIntelLabels || {};
+          var stLabel = Li['status_' + st] || st;
+          var badge = intelStatusBadge(st);
           var nm = (typeof escStr === 'function') ? escStr(m.name || '') : String(m.name || '');
           var ds = (typeof escStr === 'function') ? escStr(m.description || '') : String(m.description || '');
-          return '<div class="d-flex justify-content-between align-items-start border-bottom py-2 small"><div><b>' + nm + '</b><br><span class="text-secondary">' + ds + '</span></div><span class="badge text-bg-' + badge + '">' + st + '</span></div>';
+          return '<div class="d-flex justify-content-between align-items-start border-bottom py-2 small"><div><b>' + nm + '</b><br><span class="text-secondary">' + ds + '</span></div><span class="badge text-bg-' + badge + '">' + stLabel + '</span></div>';
         }).join('');
       }).catch(function(){
         mod.innerHTML = '<p class="text-secondary small mb-0">' + (Lb.load_error || '—') + '</p>';

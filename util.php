@@ -536,7 +536,59 @@ function hu_open_data_snapshot_fallback_enabled(): bool
 /** Global Forest Watch (Klíma modul) – ingyenes erdő/adat API. */
 function climate_gfw_module_enabled(): bool
 {
-    return get_module_setting('climate_gfw', 'enabled') === '1';
+    return intelligence_module_enabled('climate_gfw');
+}
+
+/**
+ * Intelligence Platform modul – alapértelmezés: be, kivéve ha admin explicit kikapcsolta (0).
+ */
+function intelligence_module_enabled(string $moduleKey): bool
+{
+    $v = get_module_setting($moduleKey, 'enabled');
+    return $v !== '0' && $v !== 'false';
+}
+
+/**
+ * Új telepítés / demo: intelligence modulok és EU/HU adat alapértelmezések (csak hiányzó beállítások).
+ */
+function ensure_intelligence_demo_defaults(): void
+{
+    static $ran = false;
+    if ($ran) {
+        return;
+    }
+    $ran = true;
+
+    $intelKeys = [
+        'climate_gfw', 'climate_hungaromet', 'climate_eea', 'climate_gbif',
+        'climate_pvgis', 'climate_viirs', 'climate_ocm',
+        'ai_sam2', 'ai_sam', 'ai_yolo', 'ai_depth', 'ai_blip',
+    ];
+    foreach ($intelKeys as $key) {
+        $v = get_module_setting($key, 'enabled');
+        if ($v === null || $v === '') {
+            set_module_setting($key, 'enabled', '1');
+        }
+    }
+
+    if (get_module_setting('hu_open_data', 'enabled') === null || get_module_setting('hu_open_data', 'enabled') === '') {
+        set_module_setting('hu_open_data', 'enabled', '1');
+    }
+
+    if (get_module_setting('eu_open_data', 'enabled') === null || get_module_setting('eu_open_data', 'enabled') === '') {
+        set_module_setting('eu_open_data', 'enabled', '1');
+    }
+
+    $copId = trim((string)(get_module_setting('eu_open_data', 'copernicus_client_id') ?? ''));
+    $copSec = trim((string)(get_module_setting('eu_open_data', 'copernicus_client_secret') ?? ''));
+    $hasCop = $copId !== '' && $copSec !== '';
+
+    if (get_module_setting('eu_open_data', 'copernicus_enabled') === null || get_module_setting('eu_open_data', 'copernicus_enabled') === '') {
+        set_module_setting('eu_open_data', 'copernicus_enabled', $hasCop ? '1' : '0');
+    }
+    if (get_module_setting('eu_open_data', 'clms_enabled') === null || get_module_setting('eu_open_data', 'clms_enabled') === '') {
+        set_module_setting('eu_open_data', 'clms_enabled', $hasCop ? '1' : '0');
+    }
 }
 
 /** Részvételi költségvetés – modul ki/be (időszakos szavazás). Alapértelmezett: be. */

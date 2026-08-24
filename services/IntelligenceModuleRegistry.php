@@ -16,13 +16,13 @@ final class IntelligenceModuleRegistry
     private static function dataSourceModules(): array
     {
         return [
-            self::def('global_forest_watch', 'climate_gfw', 'Global Forest Watch', 'Erdővesztés, zöldborítás – ingyenes GFW Data API.', 'climate', 'preview', 'https://data-api.globalforestwatch.org/', false),
-            self::def('hungaromet', 'climate_hungaromet', 'HungaroMet', 'Időjárás, aszály, hőség – Open-Meteo proxy.', 'climate', 'preview', '', false),
+            self::def('global_forest_watch', 'climate_gfw', 'Global Forest Watch', 'Erdővesztés, zöldborítás – ingyenes GFW Data API.', 'climate', 'active', 'https://data-api.globalforestwatch.org/', false),
+            self::def('hungaromet', 'climate_hungaromet', 'HungaroMet', 'Időjárás, aszály, hőség – Open-Meteo proxy.', 'climate', 'active', '', false),
             self::def('eea', 'climate_eea', 'European Environment Agency', 'EU környezeti indikátorok – EU nyílt adatok modullal összekapcsolva.', 'climate', 'linked_eu_open_data', 'https://www.eea.europa.eu/', false),
-            self::def('gbif', 'climate_gbif', 'GBIF', 'Biodiverzitás, fajmegfigyelések.', 'climate', 'preview', 'https://api.gbif.org/v1/', false),
-            self::def('pvgis', 'climate_pvgis', 'PVGIS', 'Napenergia-potenciál becslés.', 'climate', 'preview', 'https://re.jrc.ec.europa.eu/api/', false),
-            self::def('nasa_viirs', 'climate_viirs', 'NASA VIIRS Night Lights', 'Éjszakai fények, fényszennyezés.', 'climate', 'preview', '', false),
-            self::def('open_charge_map', 'climate_ocm', 'OpenChargeMap', 'EV töltőpontok térképezése.', 'mobility', 'preview', 'https://api.openchargemap.io/v3/', true),
+            self::def('gbif', 'climate_gbif', 'GBIF', 'Biodiverzitás, fajmegfigyelések.', 'climate', 'active', 'https://api.gbif.org/v1/', false),
+            self::def('pvgis', 'climate_pvgis', 'PVGIS', 'Napenergia-potenciál becslés.', 'climate', 'active', 'https://re.jrc.ec.europa.eu/api/', false),
+            self::def('nasa_viirs', 'climate_viirs', 'NASA VIIRS Night Lights', 'Éjszakai fények, fényszennyezés.', 'climate', 'active', '', false),
+            self::def('open_charge_map', 'climate_ocm', 'OpenChargeMap', 'EV töltőpontok térképezése.', 'mobility', 'active', 'https://api.openchargemap.io/v3/', true),
         ];
     }
 
@@ -89,13 +89,16 @@ final class IntelligenceModuleRegistry
     /** @return list<array<string,mixed>> */
     public static function listWithStatus(): array
     {
+        if (function_exists('ensure_intelligence_demo_defaults')) {
+            ensure_intelligence_demo_defaults();
+        }
         if (function_exists('preload_module_settings')) {
             preload_module_settings();
         }
         $out = [];
         foreach (self::definitions() as $def) {
             $key = (string)$def['module_key'];
-            $enabled = get_module_setting($key, (string)$def['enabled_setting']) === '1';
+            $enabled = intelligence_module_enabled($key);
             $out[] = array_merge($def, [
                 'enabled' => $enabled,
                 'apiKey' => null,
@@ -126,15 +129,13 @@ final class IntelligenceModuleRegistry
         if (!$enabled) {
             return 'inactive';
         }
+        $cat = (string)($def['category'] ?? '');
+        if ($cat === 'ai_vision') {
+            return function_exists('ai_configured') && ai_configured() ? 'active' : 'config_required';
+        }
         $st = (string)($def['status'] ?? '');
-        if ($st === 'linked_eu_open_data' && function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled()) {
-            return 'active';
-        }
-        if ($st === 'preview') {
-            return 'preview';
-        }
-        if ($st === 'planned') {
-            return 'config_required';
+        if ($st === 'linked_eu_open_data') {
+            return function_exists('eu_open_data_module_enabled') && eu_open_data_module_enabled() ? 'active' : 'config_required';
         }
         return 'active';
     }
