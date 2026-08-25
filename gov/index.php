@@ -1750,7 +1750,9 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
           <div class="card">
             <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_predictive')) ?></h6></div>
             <div class="card-body">
-              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_predictive_desc')) ?></p>
+              <p class="text-secondary small mb-2"><?= h(t('gov.city_brain_predictive_desc')) ?></p>
+              <p class="text-secondary small mb-3"><?= h(t('gov.citybrain_heuristic_note')) ?></p>
+              <div id="citybrainPredictiveMap" style="height:360px; border-radius:6px;" class="mb-3"></div>
               <div id="citybrainPredictiveContent"><p class="text-secondary small mb-0"><?= h(t('admin.load')) ?></p></div>
             </div>
           </div>
@@ -1782,6 +1784,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
             </div>
             <div class="card-body">
               <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_behavior_desc')) ?></p>
+              <div class="mb-3" style="height:220px;"><canvas id="citybrainBehaviorChart"></canvas></div>
               <div id="citybrainBehaviorContent"><p class="text-secondary small mb-0"><?= h(t('admin.load')) ?></p></div>
             </div>
           </div>
@@ -1829,7 +1832,8 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
           <div class="card">
             <div class="card-header"><h6 class="card-title mb-0"><?= h(t('gov.city_brain_risk')) ?></h6></div>
             <div class="card-body">
-              <p class="text-secondary small mb-3"><?= h(t('gov.city_brain_risk_desc')) ?></p>
+              <p class="text-secondary small mb-2"><?= h(t('gov.city_brain_risk_desc')) ?></p>
+              <p class="text-secondary small mb-3"><?= h(t('gov.citybrain_heuristic_note')) ?></p>
               <div id="citybrainRiskContent"><p class="text-secondary small mb-0"><?= h(t('admin.load')) ?></p></div>
             </div>
           </div>
@@ -2044,8 +2048,23 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     'predictive_issues_title' => t('gov.citybrain_predictive_issues_title'),
     'predictive_tree_title' => t('gov.citybrain_predictive_tree_title'),
     'predictive_more' => t('gov.citybrain_predictive_more'),
+    'predictive_map_legend' => t('gov.citybrain_predictive_map_legend'),
     'risk_no_alerts' => t('gov.citybrain_risk_no_alerts'),
+    'risk_method' => t('gov.citybrain_heuristic_note'),
     'environmental_by_provider' => t('iot.sensors_by_provider'),
+    'green_title' => t('gov.citybrain_green_title'),
+    'green_canopy' => t('gov.green_canopy_coverage'),
+    'green_carbon' => t('gov.green_carbon_absorption'),
+    'green_drought' => t('gov.green_drought_risk'),
+    'green_bio' => t('gov.green_biodiversity_index'),
+    'risk_aqi_high' => t('gov.citybrain_risk_aqi_high'),
+    'risk_stale_sensors' => t('gov.citybrain_risk_stale_sensors'),
+    'risk_backlog_category' => t('gov.citybrain_risk_backlog_category'),
+    'risk_zone_open' => t('gov.citybrain_risk_zone_open'),
+    'risk_high_clusters' => t('gov.citybrain_risk_high_clusters'),
+    'risk_tree_candidates' => t('gov.citybrain_risk_tree_candidates'),
+    'created' => t('gov.trends_created'),
+    'resolved' => t('gov.trends_resolved'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govSentimentUrl = <?= json_encode(app_url('/api/sentiment_analysis.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govSentimentLabels = <?= json_encode([
@@ -4282,7 +4301,9 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     var container = document.getElementById('citybrainPredictiveContent');
     if (!container || !govPredictionsUrl) return;
     container.innerHTML = '<p class="text-secondary small mb-0"><?= json_encode(t('admin.load'), JSON_UNESCAPED_UNICODE) ?></p>';
-    fetch(govPredictionsUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+    ensureCitybrainPredictiveMap();
+    var q = (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : '');
+    fetch(govPredictionsUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       var noData = (govStatisticsLabels && govStatisticsLabels.no_data) || '—';
       if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
       var d = j.data;
@@ -4292,11 +4313,68 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       var trees = Array.isArray(d.predicted_tree_failures) ? d.predicted_tree_failures : [];
       var summ = (P.predictive_summary || '').replace('%1', String(issues.length)).replace('%2', String(zones.length)).replace('%3', String(trees.length));
       var html = '<p class="small mb-2">' + summ + '</p>';
-      if (issues.length > 0) { html += '<p class="small fw-semibold">' + (P.predictive_issues_title || '') + '</p><ul class="small mb-2">'; issues.slice(0, 5).forEach(function(x){ html += '<li>' + (x.category || '') + ' ' + (x.risk_level || '') + '</li>'; }); if (issues.length > 5) html += '<li class="text-secondary">' + (P.predictive_more || '').replace('%n', String(issues.length - 5)) + '</li>'; html += '</ul>'; }
+      if (P.predictive_map_legend) html += '<p class="text-secondary small mb-2">' + P.predictive_map_legend + '</p>';
+      if (issues.length > 0) { html += '<p class="small fw-semibold">' + (P.predictive_issues_title || '') + '</p><ul class="small mb-2">'; issues.slice(0, 5).forEach(function(x){ html += '<li>' + (x.category || '') + ' · ' + (x.risk_level || '') + (x.lat != null ? (' @ ' + x.lat + ',' + x.lng) : '') + '</li>'; }); if (issues.length > 5) html += '<li class="text-secondary">' + (P.predictive_more || '').replace('%n', String(issues.length - 5)) + '</li>'; html += '</ul>'; }
       if (trees.length > 0) { html += '<p class="small fw-semibold">' + (P.predictive_tree_title || '') + '</p><ul class="small mb-0">'; trees.slice(0, 5).forEach(function(x){ html += '<li>#' + (x.tree_id || '') + ' ' + (x.risk || '') + '</li>'; }); if (trees.length > 5) html += '<li class="text-secondary">' + (P.predictive_more || '').replace('%n', String(trees.length - 5)) + '</li>'; html += '</ul>'; }
       if (issues.length === 0 && trees.length === 0) html += '<p class="text-secondary small mb-0">' + noData + '</p>';
       container.innerHTML = html;
+      renderCitybrainPredictiveMarkers(issues, trees);
     }).catch(function(){ if (container) container.innerHTML = '<p class="text-danger small">—</p>'; });
+  }
+  var citybrainPredictiveMap = null;
+  var citybrainPredictiveLayer = null;
+  function ensureCitybrainPredictiveMap(){
+    var mapEl = document.getElementById('citybrainPredictiveMap');
+    if (!mapEl || typeof L === 'undefined') return;
+    if (!citybrainPredictiveMap) {
+      var hv = govMapViewFromAuthorityId(typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0);
+      citybrainPredictiveMap = L.map('citybrainPredictiveMap').setView([hv.lat, hv.lng], hv.zoom);
+      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OSM' }).addTo(citybrainPredictiveMap);
+      citybrainPredictiveLayer = L.layerGroup().addTo(citybrainPredictiveMap);
+    }
+    setTimeout(function(){ if (citybrainPredictiveMap) citybrainPredictiveMap.invalidateSize(); }, 80);
+  }
+  function renderCitybrainPredictiveMarkers(issues, trees){
+    if (!citybrainPredictiveMap || !citybrainPredictiveLayer) return;
+    citybrainPredictiveLayer.clearLayers();
+    var bounds = [];
+    var colorFor = function(level){
+      if (level === 'high') return '#dc2626';
+      if (level === 'medium') return '#d97706';
+      return '#2563eb';
+    };
+    (issues || []).forEach(function(x){
+      var lat = parseFloat(x.lat); var lng = parseFloat(x.lng);
+      if (isNaN(lat) || isNaN(lng)) return;
+      bounds.push([lat, lng]);
+      L.circleMarker([lat, lng], {
+        radius: (x.risk_level === 'high') ? 10 : 7,
+        color: colorFor(x.risk_level),
+        fillColor: colorFor(x.risk_level),
+        fillOpacity: 0.65,
+        weight: 1
+      }).bindPopup((x.category || '') + ' · ' + (x.risk_level || '')).addTo(citybrainPredictiveLayer);
+    });
+    (trees || []).forEach(function(x){
+      var lat = parseFloat(x.lat); var lng = parseFloat(x.lng);
+      if (isNaN(lat) || isNaN(lng)) return;
+      bounds.push([lat, lng]);
+      L.circleMarker([lat, lng], {
+        radius: 6,
+        color: '#166534',
+        fillColor: '#22c55e',
+        fillOpacity: 0.7,
+        weight: 1
+      }).bindPopup('tree #' + (x.tree_id || '') + ' · ' + (x.risk || '')).addTo(citybrainPredictiveLayer);
+    });
+    var hv = govMapViewFromAuthorityId(typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0);
+    try {
+      if (hv.bbox && hv.bbox.min_lat != null) {
+        citybrainPredictiveMap.fitBounds([[hv.bbox.min_lat, hv.bbox.min_lng], [hv.bbox.max_lat, hv.bbox.max_lng]], { maxZoom: 15, padding: [24, 24] });
+      } else if (bounds.length > 0) {
+        citybrainPredictiveMap.fitBounds(bounds, { maxZoom: 15, padding: [24, 24] });
+      }
+    } catch (_) {}
   }
   var citybrainHotspotMap = null;
   var citybrainHotspotLayer = null;
@@ -4330,6 +4408,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       }
     }).catch(function(){ if (citybrainHotspotLayer) citybrainHotspotLayer.setLatLngs([]); });
   }
+  var citybrainBehaviorChartInstance = null;
   function loadCitybrainBehavior(){
     var container = document.getElementById('citybrainBehaviorContent');
     if (!container || !govStatisticsUrl) return;
@@ -4355,16 +4434,45 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.participation || 'Participation') + '</h6><p class="mb-0 small">' + (L.active_users_7d || 'Active 7d') + ': <b>' + (d.citizen_participation_rate && d.citizen_participation_rate.active_users_7d) + '</b> · ' + (L.reports_7d || 'Reports 7d') + ': ' + (d.citizen_participation_rate && d.citizen_participation_rate.reports_7d) + '</p></div></div></div>';
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="card-title small">' + (L.trees || 'Trees') + '</h6><p class="mb-0 small">' + (L.trees_total || 'Total') + ': ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.total_trees) + ' · ' + (L.trees_watered || 'Watered 7d') + ': ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.watered_7d) + ' · ' + (L.trees_adopted || 'Adopted') + ': ' + (d.tree_maintenance_stats && d.tree_maintenance_stats.adopted) + '</p></div></div></div>';
       html += '</div>';
-      if (Array.isArray(d.issue_trends) && d.issue_trends.length > 0) {
-        html += '<h6 class="small mt-2">' + (L.issue_trend || 'Issue trend') + '</h6><ul class="small list-unstyled mb-0">';
-        var byDate = {};
-        d.issue_trends.forEach(function(t){ byDate[t.date] = (byDate[t.date] || 0) + t.count; });
-        var issueWord = L.issue_plural || '';
-        Object.keys(byDate).sort().slice(-14).forEach(function(date){ html += '<li>' + date + ': <b>' + byDate[date] + '</b> ' + issueWord + '</li>'; });
-        html += '</ul>';
-      }
       container.innerHTML = html;
     }).catch(function(){ var Le = govStatisticsLabels || {}; if (container) container.innerHTML = '<p class="text-danger small">' + (Le.load_error || '—') + '</p>'; });
+    loadCitybrainBehaviorTrends();
+  }
+  function loadCitybrainBehaviorTrends(){
+    if (!govTrendsUrl || typeof Chart === 'undefined') return;
+    var canvas = document.getElementById('citybrainBehaviorChart');
+    if (!canvas) return;
+    var q = (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) ? ('?authority_id=' + authorityIdForHeatmap) : '';
+    fetch(govTrendsUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      if (!j.ok || !j.data) return;
+      var series = j.data.range_30d || { labels: [], created: [], resolved: [] };
+      var CB = govCitybrainLabels || {};
+      var L = govTrendsLabels || {};
+      var tc = (typeof govChartTickColor === 'function') ? govChartTickColor() : '#64748b';
+      if (citybrainBehaviorChartInstance) {
+        citybrainBehaviorChartInstance.destroy();
+        citybrainBehaviorChartInstance = null;
+      }
+      citybrainBehaviorChartInstance = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: series.labels || [],
+          datasets: [
+            { label: CB.created || L.created || 'Created', data: series.created || [], borderColor: '#2563eb', tension: 0.25, fill: false },
+            { label: CB.resolved || L.resolved || 'Resolved', data: series.resolved || [], borderColor: '#16a34a', tension: 0.25, fill: false }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: tc } } },
+          scales: {
+            x: { ticks: { color: tc, maxTicksLimit: 8 } },
+            y: { ticks: { color: tc }, beginAtZero: true }
+          }
+        }
+      });
+    }).catch(function(){});
   }
   document.getElementById('citybrainBehaviorRefresh') && document.getElementById('citybrainBehaviorRefresh').addEventListener('click', loadCitybrainBehavior);
   function loadCitybrainEnvironmental(){
@@ -4377,7 +4485,17 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       var CB = govCitybrainLabels || {};
       var s = j.environmental.summary || {};
       var byProvider = j.environmental.by_provider || {};
-      var html = '<div class="row g-3 mb-3">';
+      var g = j.environmental.green || null;
+      var html = '';
+      if (g) {
+        html += '<h6 class="small mb-2">' + (CB.green_title || 'Green') + '</h6><div class="row g-3 mb-3">';
+        html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (CB.green_canopy || '') + '</h6><p class="mb-0 fs-5">' + (g.canopy_coverage_pct != null ? g.canopy_coverage_pct + '%' : '—') + '</p></div></div></div>';
+        html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (CB.green_carbon || '') + '</h6><p class="mb-0 fs-5">' + (g.carbon_absorption_t != null ? g.carbon_absorption_t : '—') + '</p></div></div></div>';
+        html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (CB.green_drought || '') + '</h6><p class="mb-0 fs-5">' + (g.drought_risk_pct != null ? g.drought_risk_pct + '%' : '—') + '</p></div></div></div>';
+        html += '<div class="col-md-3"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (CB.green_bio || '') + '</h6><p class="mb-0 fs-5">' + (g.biodiversity_index_pct != null ? g.biodiversity_index_pct + '%' : '—') + '</p></div></div></div>';
+        html += '</div>';
+      }
+      html += '<div class="row g-3 mb-3">';
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_aqi || 'Átlag AQI') + '</h6><p class="mb-0 fs-5">' + (s.avg_aqi != null ? s.avg_aqi : '—') + '</p></div></div></div>';
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_pm25 || 'PM2.5') + '</h6><p class="mb-0 fs-5">' + (s.avg_pm25 != null ? s.avg_pm25 + ' µg/m³' : '—') + '</p></div></div></div>';
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (L.avg_temperature || 'Hőmérséklet') + '</h6><p class="mb-0 fs-5">' + (normalizeUiTempCelsius(s.avg_temperature) != null ? normalizeUiTempCelsius(s.avg_temperature) + ' °C' : '—') + '</p></div></div></div>';
@@ -4407,6 +4525,21 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       }).catch(function(){ btn.disabled = false; resultEl.textContent = '—'; });
     });
   }
+  function citybrainRiskMessage(r, R){
+    var key = r.message || '';
+    var p = r.message_params || {};
+    if (key === 'avg_aqi_high') return (R.risk_aqi_high || 'AQI high: %v').replace('%v', String(p.value != null ? p.value : (r.detail || '')));
+    if (key === 'stale_sensors') return (R.risk_stale_sensors || 'Stale sensors: %n').replace('%n', String(p.count != null ? p.count : (r.detail || '')));
+    if (key === 'backlog_category') return (R.risk_backlog_category || '%c · open %o · age %a · score %s')
+      .replace('%c', String(p.category || ''))
+      .replace('%o', String(p.open != null ? p.open : ''))
+      .replace('%a', String(p.avg_age != null ? p.avg_age : ''))
+      .replace('%s', String(p.score != null ? p.score : ''));
+    if (key === 'zone_open') return (R.risk_zone_open || '%z · open %o').replace('%z', String(p.zone || '')).replace('%o', String(p.open != null ? p.open : ''));
+    if (key === 'high_clusters') return (R.risk_high_clusters || 'High clusters: %n').replace('%n', String(p.count != null ? p.count : (r.detail || '')));
+    if (key === 'tree_risk_candidates') return (R.risk_tree_candidates || 'Tree risk: %n').replace('%n', String(p.count != null ? p.count : (r.detail || '')));
+    return r.detail || key || '—';
+  }
   function loadCitybrainRisk(){
     var container = document.getElementById('citybrainRiskContent');
     if (!container || !citybrainDashboardUrl) return;
@@ -4417,8 +4550,9 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       if (j.risks.length === 0) { container.innerHTML = '<p class="text-success small mb-0">' + (R.risk_no_alerts || '') + '</p>'; return; }
       var html = '<ul class="list-group list-group-flush">';
       j.risks.forEach(function(r){
-        var severityClass = (r.severity === 'high') ? 'list-group-item-danger' : 'list-group-item-warning';
-        html += '<li class="list-group-item ' + severityClass + '">' + (r.message || '') + (r.since ? ' <small>(' + r.since + ')</small>' : '') + '</li>';
+        var severityClass = (r.severity === 'high') ? 'list-group-item-danger' : ((r.severity === 'low') ? 'list-group-item-secondary' : 'list-group-item-warning');
+        var src = r.source ? (' <span class="badge text-bg-light border">' + String(r.source).replace(/_/g, ' ') + '</span>') : '';
+        html += '<li class="list-group-item ' + severityClass + '">' + citybrainRiskMessage(r, R) + src + (r.since ? ' <small>(' + r.since + ')</small>' : '') + '</li>';
       });
       html += '</ul>';
       container.innerHTML = html;

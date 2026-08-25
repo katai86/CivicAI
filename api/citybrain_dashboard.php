@@ -6,6 +6,9 @@
  */
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
+require_once __DIR__ . '/../services/PrioritizationEngine.php';
+require_once __DIR__ . '/../services/UrbanPredictionEngine.php';
+require_once __DIR__ . '/../services/GreenIntelligence.php';
 
 start_secure_session();
 $uid = (int)($_SESSION['user_id'] ?? 0);
@@ -72,7 +75,13 @@ $now = time();
 try {
   $pdo->query("SELECT 1 FROM virtual_sensors LIMIT 1");
 } catch (Throwable $e) {
-  json_response(['ok' => true, 'live' => build_live($sensorsSummary, 0, 0, 0), 'environmental' => ['summary' => $sensorsSummary, 'by_provider' => $byProvider], 'risks' => []]);
+  json_response([
+    'ok' => true,
+    'live' => build_live($sensorsSummary, 0, 0, 0),
+    'environmental' => ['summary' => $sensorsSummary, 'by_provider' => $byProvider, 'green' => null],
+    'risks' => [],
+    'meta' => ['risk_method' => 'heuristic', 'authority_id' => null],
+  ]);
 }
 
 $sql = "SELECT vs.id, vs.source_provider, vs.last_seen_at FROM virtual_sensors vs WHERE $where";
@@ -164,18 +173,148 @@ try {
   $open_reports = (int)$stmt->fetchColumn();
 } catch (Throwable $e) {}
 try {
-  $ideas_24h = (int)$pdo->query("SELECT COUNT(*) FROM ideas WHERE created_at >= (NOW() - INTERVAL 24 HOUR)")->fetchColumn();
+  if (!empty($authorityIds)) {
+    $in = implode(',', array_fill(0, count($authorityIds), '?'));
+    $stIdeas = $pdo->prepare("SELECT COUNT(*) FROM ideas WHERE authority_id IN ($in) AND created_at >= (NOW() - INTERVAL 24 HOUR)");
+    $stIdeas->execute($authorityIds);
+    $ideas_24h = (int)$stIdeas->fetchColumn();
+  }
 } catch (Throwable $e) {}
 
+$primaryAid = !empty($authorityIds) ? (int)$authorityIds[0] : null;
+if ($requestedAid > 0) {
+  $primaryAid = $requestedAid;
+}
+
 $risks = [];
+$riskMethod = 'heuristic';
+
+// Sensor thresholds (honest heuristic)
 if ($sensorsSummary['avg_aqi'] !== null && $sensorsSummary['avg_aqi'] > 100) {
-  $risks[] = ['type' => 'aqi', 'severity' => 'high', 'message' => 'Átlagos AQI magas: ' . $sensorsSummary['avg_aqi'], 'since' => date('Y-m-d H:i')];
+  $risks[] = [
+    'type' => 'aqi',
+    'severity' => 'high',
+    'source' => 'sensor_threshold',
+    'message' => 'avg_aqi_high',
+    'message_params' => ['value' => $sensorsSummary['avg_aqi']],
+    'detail' => 'AQI ' . $sensorsSummary['avg_aqi'],
+    'since' => date('Y-m-d H:i'),
+  ];
 }
 if ($sensorsSummary['stale_count'] > 0) {
-  $risks[] = ['type' => 'stale_sensors', 'severity' => 'medium', 'message' => $sensorsSummary['stale_count'] . ' szenzor 24 órája nem frissült', 'since' => null];
+  $risks[] = [
+    'type' => 'stale_sensors',
+    'severity' => 'medium',
+    'source' => 'sensor_threshold',
+    'message' => 'stale_sensors',
+    'message_params' => ['count' => $sensorsSummary['stale_count']],
+    'detail' => (string)$sensorsSummary['stale_count'],
+    'since' => null,
+  ];
 }
-if ($open_reports > 50) {
-  $risks[] = ['type' => 'backlog', 'severity' => 'medium', 'message' => $open_reports . ' nyitott bejelentés', 'since' => null];
+
+// Prioritization engine → intervention priorities
+try {
+  if ($reportWhere !== '1=0') {
+    $prio = (new PrioritizationEngine())->compute($pdo, $reportWhere, $reportParams, $primaryAid);
+    foreach (array_slice($prio['by_category'] ?? [], 0, 5) as $it) {
+      $score = (float)($it['priority_score'] ?? 0);
+      $openCnt = (int)($it['open_count'] ?? 0);
+      if ($openCnt <= 0) {
+        continue;
+      }
+      $sev = $score >= 80 ? 'high' : ($score >= 40 ? 'medium' : 'low');
+      $risks[] = [
+        'type' => 'backlog_priority',
+        'severity' => $sev,
+        'source' => 'prioritization_engine',
+        'message' => 'backlog_category',
+        'message_params' => [
+          'category' => (string)($it['category'] ?? ''),
+          'open' => $openCnt,
+          'avg_age' => (float)($it['avg_age_days'] ?? 0),
+          'score' => $score,
+        ],
+        'detail' => ($it['category'] ?? '') . ' · open ' . $openCnt . ' · score ' . $score,
+        'since' => null,
+      ];
+    }
+    foreach (array_slice($prio['by_zone'] ?? [], 0, 3) as $z) {
+      $zc = (int)($z['open_count'] ?? 0);
+      if ($zc < 3) {
+        continue;
+      }
+      $risks[] = [
+        'type' => 'zone_concentration',
+        'severity' => $zc >= 10 ? 'high' : 'medium',
+        'source' => 'prioritization_engine',
+        'message' => 'zone_open',
+        'message_params' => [
+          'zone' => (string)($z['zone'] ?? ''),
+          'open' => $zc,
+        ],
+        'detail' => ($z['zone'] ?? '') . ': ' . $zc,
+        'since' => null,
+      ];
+    }
+  }
+} catch (Throwable $e) {}
+
+// Spatial prediction clusters
+try {
+  if ($reportWhere !== '1=0') {
+    $pred = (new UrbanPredictionEngine())->predict($reportWhere, $reportParams, []);
+    $highClusters = 0;
+    foreach ($pred['predicted_issues'] ?? [] as $iss) {
+      if (($iss['risk_level'] ?? '') === 'high') {
+        $highClusters++;
+      }
+    }
+    if ($highClusters > 0) {
+      $risks[] = [
+        'type' => 'spatial_cluster',
+        'severity' => 'high',
+        'source' => 'prediction_engine',
+        'message' => 'high_clusters',
+        'message_params' => ['count' => $highClusters],
+        'detail' => (string)$highClusters,
+        'since' => null,
+      ];
+    }
+    $treeRisk = count($pred['predicted_tree_failures'] ?? []);
+    if ($treeRisk >= 3) {
+      $risks[] = [
+        'type' => 'tree_risk',
+        'severity' => $treeRisk >= 10 ? 'high' : 'medium',
+        'source' => 'prediction_engine',
+        'message' => 'tree_risk_candidates',
+        'message_params' => ['count' => $treeRisk],
+        'detail' => (string)$treeRisk,
+        'since' => null,
+      ];
+    }
+  }
+} catch (Throwable $e) {}
+
+// Severity sort: high first
+usort($risks, static function ($a, $b) {
+  $rank = ['high' => 0, 'medium' => 1, 'low' => 2];
+  return ($rank[$a['severity'] ?? 'low'] ?? 3) <=> ($rank[$b['severity'] ?? 'low'] ?? 3);
+});
+$risks = array_slice($risks, 0, 12);
+
+$greenBlock = null;
+try {
+  $g = (new GreenIntelligence())->compute($primaryAid);
+  $greenBlock = [
+    'canopy_coverage_pct' => round((float)($g['canopy_coverage'] ?? 0) * 100, 1),
+    'carbon_absorption_t' => round((float)($g['carbon_absorption'] ?? 0), 1),
+    'drought_risk_pct' => round((float)($g['drought_risk'] ?? 0) * 100, 0),
+    'biodiversity_index_pct' => round((float)($g['biodiversity_index'] ?? 0) * 100, 0),
+    'source' => 'green_intelligence',
+  ];
+} catch (Throwable $e) {
+  $greenBlock = null;
 }
 
 function build_live($sensorsSummary, $reports_24h, $ideas_24h, $open_reports) {
@@ -190,6 +329,14 @@ function build_live($sensorsSummary, $reports_24h, $ideas_24h, $open_reports) {
 json_response([
   'ok' => true,
   'live' => build_live($sensorsSummary, $reports_24h, $ideas_24h, $open_reports),
-  'environmental' => ['summary' => $sensorsSummary, 'by_provider' => $byProvider],
+  'environmental' => [
+    'summary' => $sensorsSummary,
+    'by_provider' => $byProvider,
+    'green' => $greenBlock,
+  ],
   'risks' => $risks,
+  'meta' => [
+    'risk_method' => $riskMethod,
+    'authority_id' => $primaryAid,
+  ],
 ]);
