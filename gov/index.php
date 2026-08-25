@@ -3150,6 +3150,10 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       var noData = (typeof govStatisticsLabels !== 'undefined' && govStatisticsLabels.no_data) ? govStatisticsLabels.no_data : '—';
       if (!j.ok || !j.data) { container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>'; return; }
       var d = j.data;
+      if (d.no_data) {
+        container.innerHTML = '<p class="text-secondary small mb-0">' + noData + '</p>';
+        return;
+      }
       var pos = parseInt(d.positive_percent, 10) || 0, neu = parseInt(d.neutral_percent, 10) || 0, neg = parseInt(d.negative_percent, 10) || 0;
       var html = '<div class="admin-chart mb-2">';
       html += '<div class="admin-chart-bar"><span class="label">' + (typeof govSentimentLabels !== 'undefined' ? govSentimentLabels.positive : 'Pozitív') + '</span><div class="bar-wrap"><div class="bar" style="width:' + pos + '%;background:#198754"></div></div><span class="val">' + pos + '%</span></div>';
