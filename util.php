@@ -319,19 +319,49 @@ function set_lang(string $code): void {
 
 function t(string $key): string {
     static $lang = null;
+    static $fallback = null;
     if ($lang === null) {
         $code = current_lang();
         $file = __DIR__ . '/lang/' . $code . '.php';
         $lang = is_file($file) ? (require $file) : [];
+        $fallback = [];
+        // Hiányzó kulcsnál EN (majd HU), hogy ne nyers kulcs jelenjen meg más nyelveken
+        if ($code !== 'en') {
+            $enFile = __DIR__ . '/lang/en.php';
+            if (is_file($enFile)) {
+                $fallback = require $enFile;
+            }
+        }
+        if ($code !== 'hu') {
+            $huFile = __DIR__ . '/lang/hu.php';
+            if (is_file($huFile)) {
+                $hu = require $huFile;
+                $fallback = array_merge($hu, $fallback);
+            }
+        }
     }
-    return $lang[$key] ?? $key;
+    return $lang[$key] ?? $fallback[$key] ?? $key;
 }
 
-/** Nyelvi tömb JS számára (pl. window.LANG) */
+/** Nyelvi tömb JS számára (pl. window.LANG) – aktuális + EN/HU fallback */
 function lang_array_for_js(): array {
     $code = current_lang();
     $file = __DIR__ . '/lang/' . $code . '.php';
-    return is_file($file) ? (require $file) : [];
+    $primary = is_file($file) ? (require $file) : [];
+    $merged = [];
+    if ($code !== 'hu') {
+        $huFile = __DIR__ . '/lang/hu.php';
+        if (is_file($huFile)) {
+            $merged = require $huFile;
+        }
+    }
+    if ($code !== 'en') {
+        $enFile = __DIR__ . '/lang/en.php';
+        if (is_file($enFile)) {
+            $merged = array_merge($merged, require $enFile);
+        }
+    }
+    return array_merge($merged, $primary);
 }
 
 // --------------------

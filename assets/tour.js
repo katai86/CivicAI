@@ -91,7 +91,6 @@
       t('tour.intro_title', 'CivicAI bemutató')
     );
 
-    // Pitch + hero KPI
     pushStep(
       steps,
       ['#govDashHeroKpis', '[data-tab="dashboard"]', '#tab-dashboard'],
@@ -101,18 +100,19 @@
       t('tour.step_gov_hero_title', 'Áttekintés')
     );
 
-    // Lean demo path – key modules only (City Brain consolidated)
+    // Demo path – frissítve: Rétegek, EU, Copilot+Vision WOW, City Brain
     var govTabSteps = [
       { tab: 'reports', key: 'tour.step_gov_reports', titleKey: 'tour.step_gov_reports_title', fallback: 'Bejelentések kezelése.', titleFb: 'Ügyek' },
-      { tab: 'ideas', key: 'tour.step_gov_ideas', titleKey: 'tour.step_gov_ideas_title', fallback: 'Ötletek és szavazatok.', titleFb: 'Ötletek' },
-      { tab: 'budget', key: 'tour.step_gov_budget', titleKey: 'tour.step_gov_budget_title', fallback: 'Részvételi költségvetés.', titleFb: 'Költségvetés' },
       { tab: 'trees', key: 'tour.step_gov_trees', titleKey: 'tour.step_gov_trees_title', fallback: 'Zöld & fák.', titleFb: 'Zöld' },
+      { tab: 'map-layers', key: 'tour.step_gov_map_layers', titleKey: 'tour.step_gov_map_layers_title', fallback: 'Rétegek a térképen.', titleFb: 'Rétegek' },
+      { tab: 'eu-open-data', key: 'tour.step_gov_eu_open_data', titleKey: 'tour.step_gov_eu_open_data_title', fallback: 'EU nyílt adatok.', titleFb: 'EU adatok' },
       { tab: 'climate', key: 'tour.step_gov_climate', titleKey: 'tour.step_gov_climate_title', fallback: 'Klíma platform.', titleFb: 'Klíma' },
       { tab: 'hu-open-data', key: 'tour.step_gov_hu_open_data', titleKey: 'tour.step_gov_hu_open_data_title', fallback: 'KSH & magyar adat.', titleFb: 'KSH' },
       { tab: 'ai', key: 'tour.step_gov_ai', titleKey: 'tour.step_gov_ai_title', fallback: 'AI Copilot.', titleFb: 'AI' },
       { tab: 'analytics', key: 'tour.step_gov_analytics', titleKey: 'tour.step_gov_analytics_title', fallback: 'Elemzés.', titleFb: 'Elemzés' },
       { tab: 'intel-reports', key: 'tour.step_gov_intel_reports', titleKey: 'tour.step_gov_intel_reports_title', fallback: 'Automatikus jelentések.', titleFb: 'Jelentések' },
-      { tab: 'citybrain-live', key: 'tour.step_gov_citybrain_overview', titleKey: 'tour.step_gov_citybrain_title', fallback: 'City Brain – élő intelligencia, predikció, hotspotok.', titleFb: 'City Brain' },
+      { tab: 'citybrain-copilot', key: 'tour.step_gov_citybrain_copilot', titleKey: 'tour.step_gov_citybrain_copilot_title', fallback: 'Copilot & AI Vision.', titleFb: 'Copilot & Vision' },
+      { tab: 'citybrain-live', key: 'tour.step_gov_citybrain_overview', titleKey: 'tour.step_gov_citybrain_title', fallback: 'City Brain – élő intelligencia.', titleFb: 'City Brain' },
       { tab: 'modules', key: 'tour.step_gov_modules', titleKey: 'tour.step_gov_modules_title', fallback: 'Modulok.', titleFb: 'Modulok' }
     ];
     govTabSteps.forEach(function (stepDef) {
@@ -129,10 +129,10 @@
     pushStep(
       steps,
       ['#govDashHeroKpis', '#govCityHealthCard', '#tab-dashboard', '[data-tab="dashboard"]'],
-      t('tour.outro_gov', 'A CivicAI egy moduláris civic-tech platform: polgár + önkormányzat + AI + nyílt adatok. Indíts demo-t, vagy kapcsold be a modulokat.'),
+      t('tour.outro_gov', 'A CivicAI egy moduláris civic-tech platform: polgár + önkormányzat + AI + nyílt adatok.'),
       'bottom',
       'start',
-      t('tour.outro_title', 'MVP kész')
+      t('tour.outro_title', 'Készen állsz')
     );
     return steps;
   }

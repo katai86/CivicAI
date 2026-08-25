@@ -453,6 +453,35 @@ body.intro-open #mapWrap{
   .page .grid.cols-2,
   .page .grid.cols-3,
   .page .grid.cols-split{grid-template-columns:1fr}
+  .topbar-search,
+  .search-wrap{
+    min-width:0;
+    flex:1 1 100%;
+    width:100%;
+  }
+  .map-search-provider{
+    min-width:0;
+    max-width:100%;
+    flex:1 1 auto;
+  }
+  .topbar-legend-dropdown{
+    min-width:0;
+    max-width:min(320px, calc(100vw - 16px));
+    right:0;
+    left:auto;
+  }
+  .topbar-inner{
+    max-width:100%;
+  }
+  .topbar-right,
+  .topbar-links{
+    max-width:100%;
+    flex-wrap:wrap;
+  }
+  .topbar-links .topbtn{
+    font-size:12px;
+    padding:6px 8px;
+  }
 }
 .page .title{font-size:16px;font-weight:800;margin:0 0 6px 0}
 .page .muted{color:var(--muted)}
@@ -584,8 +613,10 @@ body.intro-open #mapWrap{
   border-radius: 16px;
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 122, 0, 0.12);
   color: #e7edf7;
-  min-width: 300px;
-  max-width: 440px;
+  min-width: 0;
+  max-width: min(440px, calc(100vw - 24px));
+  width: min(440px, calc(100vw - 24px));
+  box-sizing: border-box;
   font-family: "Montserrat", system-ui, sans-serif;
 }
 .driver-popover.civic-tour-popover .driver-popover-title {
@@ -691,4 +722,26 @@ body.intro-open #mapWrap{
 }
 [data-theme="light"] .modal-inline-error {
   background: rgba(239, 68, 68, 0.08);
+}
+
+@media (max-width: 560px) {
+  .legend,
+  .leaderboard-mini {
+    width: min(260px, calc(100vw - 28px));
+    max-width: calc(100vw - 28px);
+    right: 8px;
+  }
+  .page .kv {
+    grid-template-columns: 1fr;
+  }
+  .gov-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .gov-actions .select,
+  .gov-actions .input,
+  .tree-create-form {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
 }

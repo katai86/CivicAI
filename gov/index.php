@@ -856,29 +856,29 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
           <!-- Grafikonok + vezetői pillanatkép -->
           <div class="row g-3 mb-3">
             <div class="col-md-6 col-lg-4">
-              <div class="card h-100 gov-dash-panel shadow-sm">
+              <div class="card h-100 gov-dash-panel gov-dash-panel--status shadow-sm">
                 <div class="card-body">
                   <h6 class="card-title mb-2 fw-semibold"><i class="bi bi-pie-chart-fill text-primary me-1"></i><?= h(t('gov.by_status')) ?></h6>
-                  <div class="gov-chart-wrap gov-chart-wrap--donut">
+                  <div class="gov-chart-wrap gov-chart-wrap--donut" id="govDashStatusChartWrap">
                     <canvas id="govDashStatusChart"></canvas>
                   </div>
                 </div>
               </div>
             </div>
             <div class="col-md-6 col-lg-4">
-              <div class="card h-100 gov-dash-panel shadow-sm">
+              <div class="card h-100 gov-dash-panel gov-dash-panel--category shadow-sm">
                 <div class="card-body">
                   <h6 class="card-title mb-2 fw-semibold"><i class="bi bi-bar-chart-fill text-success me-1"></i><?= h(t('gov.by_category')) ?></h6>
-                  <div class="gov-chart-wrap">
+                  <div class="gov-chart-wrap" id="govDashCategoryChartWrap">
                     <canvas id="govDashCategoryChart"></canvas>
                   </div>
                 </div>
               </div>
             </div>
             <div class="col-lg-4">
-              <div class="card h-100 gov-dash-panel exec-hero-card shadow-sm" id="govExecutiveHeroCard">
+              <div class="card h-100 gov-dash-panel gov-dash-panel--exec exec-hero-card shadow-sm" id="govExecutiveHeroCard">
                 <div class="card-body py-3">
-                  <h6 class="card-title mb-2 fw-semibold"><?= h(t('gov.executive_title')) ?></h6>
+                  <h6 class="card-title mb-2 fw-semibold"><i class="bi bi-building-check text-info me-1"></i><?= h(t('gov.executive_title')) ?></h6>
                   <p class="text-secondary small mb-2"><?= h(t('gov.executive_subtitle')) ?></p>
                   <div id="govExecutiveHeroContent">
                     <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
@@ -891,7 +891,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
           <!-- Napi brief + betekintés -->
           <div class="row g-3 mb-3">
             <div class="col-lg-6">
-              <div class="card h-100 gov-dash-panel border-start border-primary border-3 shadow-sm" id="govMorningBriefCard">
+              <div class="card h-100 gov-dash-panel gov-dash-panel--morning shadow-sm" id="govMorningBriefCard">
                 <div class="card-body py-3 px-3">
                   <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
                     <h6 class="card-title mb-0 fw-semibold"><i class="bi bi-sunrise text-warning me-1"></i><?= h(t('gov.morning_brief_title')) ?></h6>
@@ -907,18 +907,18 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
               </div>
             </div>
             <div class="col-lg-6">
-              <div class="card h-100 gov-dash-panel shadow-sm" id="govInsightsCard">
+              <div class="card h-100 gov-dash-panel gov-dash-panel--insights shadow-sm" id="govInsightsCard">
                 <div class="card-body py-3 px-3">
                   <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                     <h6 class="card-title mb-0 fw-semibold"><i class="bi bi-lightbulb text-info me-1"></i><?= h(t('gov.insights_title')) ?></h6>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="govInsightsRefresh"><?= h(t('admin.refresh')) ?></button>
+                    <button type="button" class="btn btn-sm btn-outline-info" id="govInsightsRefresh"><?= h(t('admin.refresh')) ?></button>
                   </div>
                   <div id="govInsightsContent">
                     <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
                   </div>
                   <?php if ($govAiUiEnabled && ai_configured()): ?>
                   <div class="mt-2 pt-2 border-top" id="govInsightsAiBlock">
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnGovInsightsAiExplain"><?= h(t('gov.insights_ai_explain')) ?></button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btnGovInsightsAiExplain"><?= h(t('gov.insights_ai_explain')) ?></button>
                     <p class="text-secondary small mb-0 mt-2" id="govInsightsAiStatus" hidden></p>
                     <div class="small mt-2 mb-0 text-body-secondary" id="govInsightsAiOutput" style="white-space:pre-wrap;"></div>
                     <p class="text-secondary small mb-0 mt-2" id="govInsightsAiDisclaimer"><?= h(t('gov.insights_ai_disclaimer')) ?></p>
@@ -935,7 +935,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
           <!-- Kiegészítő panelek -->
           <div class="row g-3 mb-3">
             <div class="col-md-4">
-              <div class="card h-100 gov-dash-panel border-primary border-opacity-25 shadow-sm" id="govCityHealthCard">
+              <div class="card h-100 gov-dash-panel gov-dash-panel--health shadow-sm" id="govCityHealthCard">
                 <div class="card-body">
                   <h6 class="card-title mb-2 fw-semibold"><i class="bi bi-heart-pulse text-danger me-1"></i><?= h(t('gov.city_health_index')) ?></h6>
                   <div id="govCityHealthContent">
@@ -946,11 +946,11 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
             </div>
             <?php if (defined('WEATHER_ENABLED') && WEATHER_ENABLED): ?>
             <div class="col-md-4">
-              <div class="card h-100 gov-dash-panel shadow-sm" id="govWeatherCard">
+              <div class="card h-100 gov-dash-panel gov-dash-panel--weather shadow-sm" id="govWeatherCard">
                 <div class="card-body">
-                  <h6 class="card-title mb-2 fw-semibold"><i class="bi bi-cloud-sun text-info me-1"></i><?= h(t('gov.weather_title')) ?></h6>
+                  <h6 class="card-title mb-2 fw-semibold text-white-50"><i class="bi bi-cloud-sun me-1"></i><?= h(t('gov.weather_title')) ?></h6>
                   <div id="govWeatherContent">
-                    <p class="text-secondary small mb-0"><?= h(t('gov.loading')) ?></p>
+                    <p class="text-white-50 small mb-0"><?= h(t('gov.loading')) ?></p>
                   </div>
                 </div>
               </div>
@@ -1106,7 +1106,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
                 <div class="modal-body">
                   <input type="hidden" id="govTreeEditId" value="">
                   <div class="row g-2">
-                    <div class="col-md-6"><label class="form-label small"><?= h(t('tree.species_label')) ?></label><input type="text" id="govTreeSpecies" class="form-control form-control-sm" maxlength="120" placeholder="pl. kőris"></div>
+                    <div class="col-md-6"><label class="form-label small"><?= h(t('tree.species_label')) ?></label><input type="text" id="govTreeSpecies" class="form-control form-control-sm" maxlength="120" placeholder="<?= h(t('tree.species_placeholder')) ?>"></div>
                     <div class="col-md-6"><label class="form-label small"><?= h(t('gov.tree_address')) ?></label><input type="text" id="govTreeAddress" class="form-control form-control-sm" maxlength="255"></div>
                     <div class="col-md-4"><label class="form-label small"><?= h(t('tree.age')) ?></label><input type="number" id="govTreeEstimatedAge" class="form-control form-control-sm" min="0" max="500" placeholder="–"></div>
                     <div class="col-md-4"><label class="form-label small"><?= h(t('gov.tree_planting_year')) ?></label><input type="number" id="govTreePlantingYear" class="form-control form-control-sm" min="1900" max="2100" placeholder="–"></div>
@@ -2216,6 +2216,8 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     'status' => $dashStatusChart,
     'category' => $dashCategoryChart,
     'no_data' => t('gov.no_data'),
+    'empty_title' => t('gov.dash_chart_empty_title'),
+    'empty_hint' => t('gov.dash_chart_empty_hint'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govClimateLabels = <?= json_encode([
     'load_error' => t('intel.climate_data_load_error'),
@@ -3677,10 +3679,10 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       function esc(s){
         return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       }
-      var html = '<div class="d-flex flex-wrap gap-3 mb-2 small">';
-      html += '<span><span class="text-secondary">' + esc(L.created_24h || '') + '</span> <strong>' + cr + '</strong></span>';
-      html += '<span><span class="text-secondary">' + esc(L.resolved_24h || '') + '</span> <strong>' + rr + '</strong></span>';
-      html += '<span><span class="text-secondary">' + esc(L.open_backlog || '') + '</span> <strong>' + backlog + '</strong></span>';
+      var html = '<div class="d-flex flex-wrap gap-2 mb-2">';
+      html += '<span class="badge rounded-pill text-bg-primary px-3 py-2">' + esc(L.created_24h || '') + ': <strong>' + cr + '</strong></span>';
+      html += '<span class="badge rounded-pill text-bg-success px-3 py-2">' + esc(L.resolved_24h || '') + ': <strong>' + rr + '</strong></span>';
+      html += '<span class="badge rounded-pill text-bg-warning px-3 py-2">' + esc(L.open_backlog || '') + ': <strong>' + backlog + '</strong></span>';
       html += '</div>';
       var focus = Array.isArray(d.priority_focus) ? d.priority_focus : [];
       if (focus.length) {
@@ -3808,12 +3810,13 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       }
       var d = j.data;
       var overall = (d.city_health_score != null) ? parseInt(d.city_health_score, 10) : 0;
-      var html = '<div class="d-flex align-items-center flex-wrap gap-3 mb-3"><span class="display-4 fw-bold text-primary">' + overall + '</span><span class="text-secondary small">/ 100</span></div>';
+      var html = '<div class="gov-health-score"><span class="display-4 fw-bold">' + overall + '</span><span class="text-secondary small">/ 100</span></div>';
       html += '<div class="admin-chart">';
+      var barClass = { infrastructure: 'bar--infra', environment: 'bar--env', engagement: 'bar--engage', maintenance: 'bar--maint' };
       ['infrastructure','environment','engagement','maintenance'].forEach(function(k){
         var score = (d[k + '_score'] != null) ? parseInt(d[k + '_score'], 10) : 0;
         var label = L[k] || k;
-        html += '<div class="admin-chart-bar"><span class="label">' + label + '</span><div class="bar-wrap"><div class="bar" style="width:' + Math.min(100, score) + '%;background:#0d6efd"></div></div><span class="val">' + score + '</span></div>';
+        html += '<div class="admin-chart-bar"><span class="label">' + label + '</span><div class="bar-wrap"><div class="bar ' + (barClass[k] || '') + '" style="width:' + Math.min(100, score) + '%"></div></div><span class="val">' + score + '</span></div>';
       });
       html += '</div>';
       var sig = d.signals || {};
@@ -3835,7 +3838,12 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       var temp = d.temp != null ? d.temp + ' °C' : '—';
       var humidity = d.humidity != null ? d.humidity + '%' : '—';
       var desc = (d.description || '—').replace(/</g,'&lt;');
-      container.innerHTML = '<div class="d-flex flex-wrap gap-3 align-items-center"><span class="fs-4 fw-bold">' + temp + '</span><span class="text-secondary small">' + desc + '</span><span class="text-secondary small">' + (typeof govWeatherHumidityLabel !== 'undefined' ? govWeatherHumidityLabel : 'Páratartalom') + ': ' + humidity + '</span></div>';
+      var humLbl = (typeof govWeatherHumidityLabel !== 'undefined' ? govWeatherHumidityLabel : 'Páratartalom');
+      container.innerHTML = '<div class="gov-weather-hero">'
+        + '<div class="gov-weather-temp">' + temp + '</div>'
+        + '<div class="gov-weather-desc"><i class="bi bi-clouds me-1"></i>' + desc + '</div>'
+        + '<div class="gov-weather-meta"><i class="bi bi-droplet-half"></i>' + humLbl + ': ' + humidity + '</div>'
+        + '</div>';
     }).catch(function(){ var c = document.getElementById('govWeatherContent'); if (c) c.innerHTML = '<p class="text-danger small">—</p>'; });
   }
   var govIotMap = null;
@@ -4843,7 +4851,8 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       { color: '#ffc107', label: Lb.layer_night_lights || 'VIIRS' },
       { color: '#fd7e14', label: Lb.layer_solar_potential || 'PVGIS' },
       { color: '#6ea8fe', label: Lb.layer_weather_station || 'Weather' },
-      { color: '#0d6efd', label: Lb.layer_planting_priority || 'Copernicus' }
+      { color: '#0d6efd', label: Lb.layer_planting_priority || 'Copernicus' },
+      { color: '#6f42c1', label: Lb.layer_green_deficit || 'Deficit' }
     ];
     leg.innerHTML = '<span class="fw-semibold me-1">' + (Lb.layer_legend || '') + ':</span>' + items.map(function(it){
       return '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + it.color + ';margin-right:4px;"></span>' + it.label + '</span>';
@@ -5393,12 +5402,26 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       grid: theme === 'light' ? 'rgba(51,65,85,0.12)' : 'rgba(203,213,225,0.12)',
     };
   }
+  function govDashEmptyStateHtml(kind, title, hint){
+    var icon = kind === 'category' ? 'bi-bar-chart-fill' : 'bi-pie-chart-fill';
+    var cls = kind === 'category' ? 'gov-dash-empty--category' : 'gov-dash-empty--status';
+    var t = (title || '').replace(/</g, '&lt;');
+    var h = (hint || '').replace(/</g, '&lt;');
+    return '<div class="gov-dash-empty ' + cls + '" role="status">'
+      + '<i class="bi ' + icon + '" aria-hidden="true"></i>'
+      + '<p>' + t + '</p>'
+      + (h ? '<span class="gov-dash-empty-hint">' + h + '</span>' : '')
+      + '</div>';
+  }
   function initGovDashboardCharts(){
     if (typeof Chart === 'undefined') return;
     var data = window.govDashChartData || {};
     var colors = govChartThemeColors();
+    var emptyTitle = data.empty_title || data.no_data || '—';
+    var emptyHint = data.empty_hint || '';
     var ctxStatus = document.getElementById('govDashStatusChart');
-    if (ctxStatus) {
+    var statusWrap = document.getElementById('govDashStatusChartWrap') || (ctxStatus && ctxStatus.parentNode);
+    if (ctxStatus && statusWrap) {
       if (govDashStatusChartInst) { try { govDashStatusChartInst.destroy(); } catch (_) {} govDashStatusChartInst = null; }
       if (data.status && data.status.length) {
         govDashStatusChartInst = new Chart(ctxStatus, {
@@ -5414,11 +5437,12 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
           }
         });
       } else {
-        ctxStatus.parentNode.innerHTML = '<p class="text-secondary small mb-0">' + (data.no_data || '—') + '</p>';
+        statusWrap.innerHTML = govDashEmptyStateHtml('status', emptyTitle, emptyHint);
       }
     }
     var ctxCat = document.getElementById('govDashCategoryChart');
-    if (ctxCat) {
+    var catWrap = document.getElementById('govDashCategoryChartWrap') || (ctxCat && ctxCat.parentNode);
+    if (ctxCat && catWrap) {
       if (govDashCategoryChartInst) { try { govDashCategoryChartInst.destroy(); } catch (_) {} govDashCategoryChartInst = null; }
       if (data.category && data.category.length) {
         govDashCategoryChartInst = new Chart(ctxCat, {
@@ -5439,7 +5463,7 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
           }
         });
       } else {
-        ctxCat.parentNode.innerHTML = '<p class="text-secondary small mb-0">' + (data.no_data || '—') + '</p>';
+        catWrap.innerHTML = govDashEmptyStateHtml('category', emptyTitle, emptyHint);
       }
     }
   }
