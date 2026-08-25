@@ -948,9 +948,9 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
             <div class="col-md-4">
               <div class="card h-100 gov-dash-panel gov-dash-panel--weather shadow-sm" id="govWeatherCard">
                 <div class="card-body">
-                  <h6 class="card-title mb-2 fw-semibold text-white-50"><i class="bi bi-cloud-sun me-1"></i><?= h(t('gov.weather_title')) ?></h6>
+                  <h6 class="card-title mb-2 fw-semibold"><i class="bi bi-cloud-sun me-1"></i><?= h(t('gov.weather_title')) ?></h6>
                   <div id="govWeatherContent">
-                    <p class="text-white-50 small mb-0"><?= h(t('gov.loading')) ?></p>
+                    <p class="small mb-0 opacity-75"><?= h(t('gov.loading')) ?></p>
                   </div>
                 </div>
               </div>
@@ -5967,4 +5967,20 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
 <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
 <script src="<?= h(app_url('/assets/tour.js?v=' . $tourJsVer)) ?>"></script>
 <script>(function(){ var b = document.getElementById('btnStartTour'); if (b && window.civicaiTour) b.addEventListener('click', function(){ window.civicaiTour.start(); }); })();</script>
+<script>
+(function () {
+  function enhanceGovTabCards() {
+    document.querySelectorAll('.admin-tab-body .card').forEach(function (card) {
+      if (!card.classList.contains('gov-dash-panel')) {
+        card.classList.add('gov-dash-panel');
+      }
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', enhanceGovTabCards);
+  } else {
+    enhanceGovTabCards();
+  }
+})();
+</script>
 </body></html>

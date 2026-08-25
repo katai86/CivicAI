@@ -133,14 +133,120 @@ body.layout-fixed,
 [data-theme="light"] .app-wrapper .btn:hover{background:#e2e8f0}
 [data-theme="light"] .bg-body-tertiary{background:#f1f5f9!important}
 
-/* Light: card és szöveges blokkok mindig olvashatók */
-[data-theme="light"] .card,[data-theme="light"] .card .card-body{
-  background-color:#fff!important;color:#0f172a!important;
+/* Light: card és szöveges blokkok mindig olvashatók (kivéve színes hero kártyák) */
+[data-theme="light"] .card:not(.gov-dash-panel--weather),
+[data-theme="light"] .card:not(.gov-dash-panel--weather) .card-body,
+[data-bs-theme="light"] .card:not(.gov-dash-panel--weather),
+[data-bs-theme="light"] .card:not(.gov-dash-panel--weather) .card-body{
+  background-color: var(--civic-card, #fff);
+  color: #0f172a !important;
 }
-[data-theme="light"] .card .card-title,[data-theme="light"] .card .text-secondary,[data-theme="light"] .card .small{
-  color:#334155!important;
+[data-theme="light"] .card:not(.gov-dash-panel--weather) .card-title,
+[data-theme="light"] .card:not(.gov-dash-panel--weather) .text-secondary,
+[data-theme="light"] .card:not(.gov-dash-panel--weather) .small,
+[data-bs-theme="light"] .card:not(.gov-dash-panel--weather) .card-title,
+[data-bs-theme="light"] .card:not(.gov-dash-panel--weather) .text-secondary,
+[data-bs-theme="light"] .card:not(.gov-dash-panel--weather) .small{
+  color: #334155 !important;
 }
-[data-theme="light"] .card .text-secondary{color:#64748b!important}
+[data-theme="light"] .card:not(.gov-dash-panel--weather) .text-secondary,
+[data-bs-theme="light"] .card:not(.gov-dash-panel--weather) .text-secondary{color:#64748b!important}
+[data-theme="light"] .gov-dash-panel--weather,
+[data-theme="light"] .gov-dash-panel--weather .card-body,
+[data-bs-theme="light"] .gov-dash-panel--weather,
+[data-bs-theme="light"] .gov-dash-panel--weather .card-body {
+  background: linear-gradient(145deg, #0284c7 0%, #38bdf8 100%) !important;
+  color: #f0f9ff !important;
+}
+[data-theme="light"] .gov-dash-panel--weather .card-title,
+[data-theme="light"] .gov-dash-panel--weather .card-title *,
+[data-theme="light"] .gov-dash-panel--weather .text-secondary,
+[data-theme="light"] .gov-dash-panel--weather .small,
+[data-theme="light"] .gov-dash-panel--weather .text-white-50,
+[data-bs-theme="light"] .gov-dash-panel--weather .card-title,
+[data-bs-theme="light"] .gov-dash-panel--weather .card-title *,
+[data-bs-theme="light"] .gov-dash-panel--weather .text-secondary,
+[data-bs-theme="light"] .gov-dash-panel--weather .small,
+[data-bs-theme="light"] .gov-dash-panel--weather .text-white-50 {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+/* Színes panelek: ne legyen flat fehér !important a gradiens fölött */
+[data-theme="light"] .gov-dash-panel--status,
+[data-theme="light"] .gov-dash-panel--status .card-body,
+[data-theme="light"] .gov-dash-panel--category,
+[data-theme="light"] .gov-dash-panel--category .card-body,
+[data-theme="light"] .gov-dash-panel--exec,
+[data-theme="light"] .gov-dash-panel--exec .card-body,
+[data-theme="light"] .gov-dash-panel--morning,
+[data-theme="light"] .gov-dash-panel--morning .card-body,
+[data-theme="light"] .gov-dash-panel--insights,
+[data-theme="light"] .gov-dash-panel--insights .card-body,
+[data-theme="light"] .gov-dash-panel--health,
+[data-theme="light"] .gov-dash-panel--health .card-body,
+[data-theme="light"] .gov-dash-panel--intel,
+[data-theme="light"] .gov-dash-panel--intel .card-body,
+[data-theme="light"] #govHuOpenDataDashboardCard,
+[data-theme="light"] #govHuOpenDataDashboardCard .card-body,
+[data-bs-theme="light"] .gov-dash-panel--status,
+[data-bs-theme="light"] .gov-dash-panel--status .card-body,
+[data-bs-theme="light"] .gov-dash-panel--category,
+[data-bs-theme="light"] .gov-dash-panel--category .card-body,
+[data-bs-theme="light"] .gov-dash-panel--exec,
+[data-bs-theme="light"] .gov-dash-panel--exec .card-body,
+[data-bs-theme="light"] .gov-dash-panel--morning,
+[data-bs-theme="light"] .gov-dash-panel--morning .card-body,
+[data-bs-theme="light"] .gov-dash-panel--insights,
+[data-bs-theme="light"] .gov-dash-panel--insights .card-body,
+[data-bs-theme="light"] .gov-dash-panel--health,
+[data-bs-theme="light"] .gov-dash-panel--health .card-body,
+[data-bs-theme="light"] .gov-dash-panel--intel,
+[data-bs-theme="light"] .gov-dash-panel--intel .card-body,
+[data-bs-theme="light"] #govHuOpenDataDashboardCard,
+[data-bs-theme="light"] #govHuOpenDataDashboardCard .card-body {
+  background-color: transparent !important;
+}
+[data-theme="light"] .app-wrapper .btn-primary,
+[data-bs-theme="light"] .app-wrapper .btn-primary {
+  background: #059669 !important;
+  border-color: #047857 !important;
+  color: #fff !important;
+}
+[data-theme="light"] .app-wrapper .btn-outline-primary,
+[data-bs-theme="light"] .app-wrapper .btn-outline-primary {
+  background: transparent !important;
+  border-color: #059669 !important;
+  color: #047857 !important;
+}
+[data-theme="light"] .app-wrapper .btn-outline-info,
+[data-bs-theme="light"] .app-wrapper .btn-outline-info {
+  background: transparent !important;
+  border-color: #0891b2 !important;
+  color: #0e7490 !important;
+}
+[data-theme="light"] .app-wrapper .btn-outline-secondary,
+[data-bs-theme="light"] .app-wrapper .btn-outline-secondary {
+  background: #fff !important;
+  border-color: rgba(15, 23, 42, 0.18) !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .dash-hero-tile,
+[data-theme="light"] .dash-intel-tile,
+[data-bs-theme="light"] .dash-hero-tile,
+[data-bs-theme="light"] .dash-intel-tile {
+  color: #fff !important;
+}
+[data-theme="light"] .dash-hero-tile .dash-tile-label,
+[data-theme="light"] .dash-hero-tile .dash-tile-value,
+[data-theme="light"] .dash-intel-tile .dash-intel-label,
+[data-theme="light"] .dash-intel-tile .dash-intel-value,
+[data-theme="light"] .dash-intel-tile .dash-intel-sub,
+[data-bs-theme="light"] .dash-hero-tile .dash-tile-label,
+[data-bs-theme="light"] .dash-hero-tile .dash-tile-value,
+[data-bs-theme="light"] .dash-intel-tile .dash-intel-label,
+[data-bs-theme="light"] .dash-intel-tile .dash-intel-value,
+[data-bs-theme="light"] .dash-intel-tile .dash-intel-sub {
+  color: #fff !important;
+}
 /* AI eredmény dobozok és bg-light blokkok – világos téma */
 [data-theme="light"] .gov-ai-result,[data-theme="light"] .app-wrapper .bg-light{
   background-color:#f1f5f9!important;color:#0f172a!important;border-color:rgba(0,0,0,.1)!important;
@@ -478,60 +584,119 @@ body.layout-fixed,
 
 .gov-dash-panel--intel {
   border: 1px solid rgba(25, 135, 84, 0.35);
-  background: linear-gradient(180deg, rgba(25, 135, 84, 0.06) 0%, transparent 120px);
-}
-[data-bs-theme="dark"] .gov-dash-panel--intel,
-[data-theme="dark"] .gov-dash-panel--intel {
-  background: linear-gradient(180deg, rgba(25, 135, 84, 0.12) 0%, transparent 140px);
+  background: linear-gradient(180deg, rgba(25, 135, 84, 0.1) 0%, var(--civic-card, transparent) 55%);
 }
 
-/* Alsó Áttekintés panelek – színes „befejezett” érzés üres adatnál is */
+/* Alsó Áttekintés + közös színes panelek (dark alap) */
 .gov-dash-panel--status {
-  border: 1px solid rgba(37, 99, 235, 0.35);
-  background: linear-gradient(165deg, rgba(37, 99, 235, 0.14) 0%, rgba(15, 23, 42, 0.35) 55%, transparent 100%);
+  border: 1px solid rgba(37, 99, 235, 0.4);
+  background: linear-gradient(165deg, rgba(37, 99, 235, 0.18) 0%, var(--civic-card, transparent) 62%);
 }
 .gov-dash-panel--category {
-  border: 1px solid rgba(22, 163, 74, 0.35);
-  background: linear-gradient(165deg, rgba(22, 163, 74, 0.14) 0%, rgba(15, 23, 42, 0.35) 55%, transparent 100%);
+  border: 1px solid rgba(22, 163, 74, 0.4);
+  background: linear-gradient(165deg, rgba(22, 163, 74, 0.16) 0%, var(--civic-card, transparent) 62%);
 }
 .gov-dash-panel--exec {
-  border: 1px solid rgba(14, 165, 233, 0.35);
-  background: linear-gradient(165deg, rgba(14, 165, 233, 0.12) 0%, rgba(15, 23, 42, 0.3) 60%, transparent 100%);
+  border: 1px solid rgba(14, 165, 233, 0.4);
+  background: linear-gradient(165deg, rgba(14, 165, 233, 0.14) 0%, var(--civic-card, transparent) 62%);
 }
 .gov-dash-panel--morning {
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(234, 88, 12, 0.08) 45%, transparent 100%);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(234, 88, 12, 0.08) 40%, var(--civic-card, transparent) 100%);
 }
 .gov-dash-panel--insights {
-  border: 1px solid rgba(6, 182, 212, 0.4);
-  background: linear-gradient(135deg, rgba(6, 182, 212, 0.14) 0%, rgba(37, 99, 235, 0.08) 50%, transparent 100%);
+  border: 1px solid rgba(6, 182, 212, 0.45);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.14) 0%, rgba(37, 99, 235, 0.08) 45%, var(--civic-card, transparent) 100%);
 }
 .gov-dash-panel--health {
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  background: linear-gradient(165deg, rgba(239, 68, 68, 0.12) 0%, rgba(37, 99, 235, 0.08) 55%, transparent 100%);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: linear-gradient(165deg, rgba(239, 68, 68, 0.12) 0%, rgba(37, 99, 235, 0.08) 50%, var(--civic-card, transparent) 100%);
 }
 .gov-dash-panel--weather {
-  border: 1px solid rgba(14, 165, 233, 0.45);
-  background: linear-gradient(145deg, #0369a1 0%, #0ea5e9 48%, #38bdf8 100%);
+  border: 1px solid rgba(2, 132, 199, 0.55);
+  background: linear-gradient(145deg, #0369a1 0%, #0ea5e9 48%, #38bdf8 100%) !important;
   color: #f0f9ff;
 }
 .gov-dash-panel--weather .card-title,
-.gov-dash-panel--weather .text-white-50 { color: rgba(240, 249, 255, 0.88) !important; }
+.gov-dash-panel--weather .card-title *,
+.gov-dash-panel--weather .text-white-50,
+.gov-dash-panel--weather .text-secondary,
+.gov-dash-panel--weather .small {
+  color: rgba(240, 249, 255, 0.92) !important;
+}
 #govHuOpenDataDashboardCard {
   border: 1px solid rgba(34, 197, 94, 0.45) !important;
-  background: linear-gradient(165deg, rgba(34, 197, 94, 0.14) 0%, rgba(15, 23, 42, 0.25) 60%, transparent 100%);
+  background: linear-gradient(165deg, rgba(34, 197, 94, 0.14) 0%, var(--civic-card, transparent) 62%);
 }
+
+/* Világos téma: panelek – sötét szöveg, világos gradiens (nem sötét slate) */
 [data-theme="light"] .gov-dash-panel--status,
 [data-bs-theme="light"] .gov-dash-panel--status {
-  background: linear-gradient(165deg, rgba(37, 99, 235, 0.1) 0%, #fff 70%);
+  background: linear-gradient(165deg, rgba(37, 99, 235, 0.12) 0%, #ffffff 68%);
+  border-color: rgba(37, 99, 235, 0.28);
+  color: #0f172a;
 }
 [data-theme="light"] .gov-dash-panel--category,
 [data-bs-theme="light"] .gov-dash-panel--category {
-  background: linear-gradient(165deg, rgba(22, 163, 74, 0.1) 0%, #fff 70%);
+  background: linear-gradient(165deg, rgba(22, 163, 74, 0.12) 0%, #ffffff 68%);
+  border-color: rgba(22, 163, 74, 0.28);
+  color: #0f172a;
 }
+[data-theme="light"] .gov-dash-panel--exec,
+[data-bs-theme="light"] .gov-dash-panel--exec,
+[data-theme="light"] .gov-dash-panel--morning,
+[data-bs-theme="light"] .gov-dash-panel--morning,
+[data-theme="light"] .gov-dash-panel--insights,
+[data-bs-theme="light"] .gov-dash-panel--insights,
+[data-theme="light"] .gov-dash-panel--health,
+[data-bs-theme="light"] .gov-dash-panel--health,
+[data-theme="light"] .gov-dash-panel--intel,
+[data-bs-theme="light"] .gov-dash-panel--intel,
+[data-theme="light"] #govHuOpenDataDashboardCard,
+[data-bs-theme="light"] #govHuOpenDataDashboardCard {
+  color: #0f172a;
+}
+[data-theme="light"] .gov-dash-panel--exec,
+[data-bs-theme="light"] .gov-dash-panel--exec {
+  background: linear-gradient(165deg, rgba(14, 165, 233, 0.12) 0%, #ffffff 68%);
+}
+[data-theme="light"] .gov-dash-panel--morning,
+[data-bs-theme="light"] .gov-dash-panel--morning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, #ffffff 70%);
+}
+[data-theme="light"] .gov-dash-panel--insights,
+[data-bs-theme="light"] .gov-dash-panel--insights {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, #ffffff 70%);
+}
+[data-theme="light"] .gov-dash-panel--health,
+[data-bs-theme="light"] .gov-dash-panel--health {
+  background: linear-gradient(165deg, rgba(239, 68, 68, 0.1) 0%, #ffffff 70%);
+}
+[data-theme="light"] .gov-dash-panel--intel,
+[data-bs-theme="light"] .gov-dash-panel--intel {
+  background: linear-gradient(180deg, rgba(5, 150, 105, 0.1) 0%, #ffffff 55%);
+}
+[data-theme="light"] #govHuOpenDataDashboardCard,
+[data-bs-theme="light"] #govHuOpenDataDashboardCard {
+  background: linear-gradient(165deg, rgba(34, 197, 94, 0.12) 0%, #ffffff 68%) !important;
+}
+/* Időjárás: mindkét témában kék hero + fehér szöveg (ne örököljön sötét card-title szabályt) */
 [data-theme="light"] .gov-dash-panel--weather,
 [data-bs-theme="light"] .gov-dash-panel--weather {
-  background: linear-gradient(145deg, #0284c7 0%, #38bdf8 100%);
+  background: linear-gradient(145deg, #0284c7 0%, #38bdf8 100%) !important;
+  color: #f0f9ff !important;
+}
+[data-theme="light"] .gov-dash-panel--weather .card-title,
+[data-theme="light"] .gov-dash-panel--weather .card-title *,
+[data-theme="light"] .gov-dash-panel--weather .text-secondary,
+[data-theme="light"] .gov-dash-panel--weather .small,
+[data-theme="light"] .gov-dash-panel--weather .text-white-50,
+[data-bs-theme="light"] .gov-dash-panel--weather .card-title,
+[data-bs-theme="light"] .gov-dash-panel--weather .card-title *,
+[data-bs-theme="light"] .gov-dash-panel--weather .text-secondary,
+[data-bs-theme="light"] .gov-dash-panel--weather .small,
+[data-bs-theme="light"] .gov-dash-panel--weather .text-white-50 {
+  color: rgba(255, 255, 255, 0.95) !important;
 }
 
 .gov-dash-empty {
@@ -559,7 +724,7 @@ body.layout-fixed,
 }
 .gov-dash-empty .gov-dash-empty-hint {
   font-size: 0.75rem;
-  opacity: 0.8;
+  opacity: 0.85;
   font-weight: 500;
   max-width: 17rem;
 }
@@ -577,6 +742,25 @@ body.layout-fixed,
   border-color: rgba(74, 222, 128, 0.35);
 }
 .gov-dash-empty--category i { color: #86efac; }
+[data-theme="light"] .gov-dash-empty--status,
+[data-bs-theme="light"] .gov-dash-empty--status {
+  background: radial-gradient(circle at 30% 20%, rgba(59, 130, 246, 0.18), transparent 55%),
+              linear-gradient(160deg, #dbeafe, #eff6ff);
+  color: #1e3a8a;
+  border-color: rgba(37, 99, 235, 0.35);
+}
+[data-theme="light"] .gov-dash-empty--status i,
+[data-bs-theme="light"] .gov-dash-empty--status i { color: #2563eb; }
+[data-theme="light"] .gov-dash-empty--category,
+[data-bs-theme="light"] .gov-dash-empty--category {
+  background: radial-gradient(circle at 70% 15%, rgba(34, 197, 94, 0.16), transparent 55%),
+              linear-gradient(160deg, #dcfce7, #f0fdf4);
+  color: #14532d;
+  border-color: rgba(22, 163, 74, 0.35);
+}
+[data-theme="light"] .gov-dash-empty--category i,
+[data-bs-theme="light"] .gov-dash-empty--category i { color: #16a34a; }
+
 .gov-chart-wrap {
   min-height: 200px;
 }
@@ -629,11 +813,122 @@ body.layout-fixed,
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+[data-theme="light"] .gov-health-score,
+[data-bs-theme="light"] .gov-health-score {
+  background: linear-gradient(135deg, #dbeafe, #e0f2fe);
+  border-color: rgba(37, 99, 235, 0.35);
+}
+[data-theme="light"] .gov-health-score .display-4,
+[data-bs-theme="light"] .gov-health-score .display-4 {
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  color: #1d4ed8;
+  -webkit-text-fill-color: #1d4ed8;
+}
+[data-theme="light"] .gov-health-score .text-secondary,
+[data-bs-theme="light"] .gov-health-score .text-secondary {
+  color: #64748b !important;
 }
 .admin-chart-bar .bar.bar--infra { background: linear-gradient(90deg, #2563eb, #3b82f6); }
 .admin-chart-bar .bar.bar--env { background: linear-gradient(90deg, #16a34a, #4ade80); }
 .admin-chart-bar .bar.bar--engage { background: linear-gradient(90deg, #d97706, #fbbf24); }
 .admin-chart-bar .bar.bar--maint { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+
+/* Minden gov aloldal kártyája – színes keret + egységes radius (dark/light) */
+.app-wrapper .admin-tab-body > .card,
+.app-wrapper .admin-tab-body .row > [class*="col"] > .card {
+  border-radius: var(--civic-radius, 14px);
+  box-shadow: var(--civic-shadow);
+  transition: transform 180ms var(--civic-ease, ease), box-shadow 180ms var(--civic-ease, ease);
+}
+.app-wrapper .admin-tab-body > .card:not([class*="gov-dash-panel--"]):not(.gov-dash-panel--weather),
+.app-wrapper .admin-tab-body .row > [class*="col"] > .card:not([class*="gov-dash-panel--"]) {
+  background: var(--civic-card);
+  border: 1px solid var(--civic-border);
+}
+.app-wrapper .admin-tab-body > .card:nth-of-type(6n+1):not([class*="gov-dash-panel--"]),
+.app-wrapper .admin-tab-body > .card.gov-accent-blue {
+  border-top: 3px solid #2563eb;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.1) 0%, var(--civic-card) 42%);
+}
+.app-wrapper .admin-tab-body > .card:nth-of-type(6n+2):not([class*="gov-dash-panel--"]),
+.app-wrapper .admin-tab-body > .card.gov-accent-green {
+  border-top: 3px solid #16a34a;
+  background: linear-gradient(180deg, rgba(22, 163, 74, 0.1) 0%, var(--civic-card) 42%);
+}
+.app-wrapper .admin-tab-body > .card:nth-of-type(6n+3):not([class*="gov-dash-panel--"]),
+.app-wrapper .admin-tab-body > .card.gov-accent-amber {
+  border-top: 3px solid #d97706;
+  background: linear-gradient(180deg, rgba(217, 119, 6, 0.12) 0%, var(--civic-card) 42%);
+}
+.app-wrapper .admin-tab-body > .card:nth-of-type(6n+4):not([class*="gov-dash-panel--"]),
+.app-wrapper .admin-tab-body > .card.gov-accent-cyan {
+  border-top: 3px solid #0891b2;
+  background: linear-gradient(180deg, rgba(8, 145, 178, 0.12) 0%, var(--civic-card) 42%);
+}
+.app-wrapper .admin-tab-body > .card:nth-of-type(6n+5):not([class*="gov-dash-panel--"]),
+.app-wrapper .admin-tab-body > .card.gov-accent-purple {
+  border-top: 3px solid #7c3aed;
+  background: linear-gradient(180deg, rgba(124, 58, 237, 0.12) 0%, var(--civic-card) 42%);
+}
+.app-wrapper .admin-tab-body > .card:nth-of-type(6n):not([class*="gov-dash-panel--"]),
+.app-wrapper .admin-tab-body > .card.gov-accent-rose {
+  border-top: 3px solid #e11d48;
+  background: linear-gradient(180deg, rgba(225, 29, 72, 0.1) 0%, var(--civic-card) 42%);
+}
+.app-wrapper .admin-tab-body .row > [class*="col"] > .card:nth-child(6n+1):not([class*="gov-dash-panel--"]) {
+  border-top: 3px solid #2563eb;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.1) 0%, var(--civic-card) 42%);
+}
+.app-wrapper .admin-tab-body .row > [class*="col"] > .card:nth-child(6n+2):not([class*="gov-dash-panel--"]) {
+  border-top: 3px solid #16a34a;
+  background: linear-gradient(180deg, rgba(22, 163, 74, 0.1) 0%, var(--civic-card) 42%);
+}
+.app-wrapper .admin-tab-body .row > [class*="col"] > .card:nth-child(6n+3):not([class*="gov-dash-panel--"]) {
+  border-top: 3px solid #d97706;
+  background: linear-gradient(180deg, rgba(217, 119, 6, 0.12) 0%, var(--civic-card) 42%);
+}
+.app-wrapper .admin-tab-body .row > [class*="col"] > .card:nth-child(6n+4):not([class*="gov-dash-panel--"]) {
+  border-top: 3px solid #0891b2;
+  background: linear-gradient(180deg, rgba(8, 145, 178, 0.12) 0%, var(--civic-card) 42%);
+}
+.app-wrapper .admin-tab-body .row > [class*="col"] > .card:nth-child(6n+5):not([class*="gov-dash-panel--"]) {
+  border-top: 3px solid #7c3aed;
+  background: linear-gradient(180deg, rgba(124, 58, 237, 0.12) 0%, var(--civic-card) 42%);
+}
+.app-wrapper .admin-tab-body .row > [class*="col"] > .card:nth-child(6n):not([class*="gov-dash-panel--"]) {
+  border-top: 3px solid #e11d48;
+  background: linear-gradient(180deg, rgba(225, 29, 72, 0.1) 0%, var(--civic-card) 42%);
+}
+[data-theme="light"] .app-wrapper .admin-tab-body > .card:not(.gov-dash-panel--weather),
+[data-bs-theme="light"] .app-wrapper .admin-tab-body > .card:not(.gov-dash-panel--weather),
+[data-theme="light"] .app-wrapper .admin-tab-body .row > [class*="col"] > .card:not(.gov-dash-panel--weather),
+[data-bs-theme="light"] .app-wrapper .admin-tab-body .row > [class*="col"] > .card:not(.gov-dash-panel--weather) {
+  color: #0f172a;
+}
+[data-theme="light"] .app-wrapper .admin-tab-body .card .card-title,
+[data-bs-theme="light"] .app-wrapper .admin-tab-body .card .card-title {
+  color: #0f172a;
+}
+[data-theme="light"] .app-wrapper .admin-tab-body .gov-dash-panel--weather .card-title,
+[data-bs-theme="light"] .app-wrapper .admin-tab-body .gov-dash-panel--weather .card-title {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+.app-wrapper .admin-tab-body .card-header {
+  background: transparent;
+  border-bottom-color: var(--civic-border);
+}
+.app-wrapper .admin-tab-body .bg-light {
+  background: rgba(148, 163, 184, 0.12) !important;
+}
+[data-theme="light"] .app-wrapper .admin-tab-body .bg-light,
+[data-bs-theme="light"] .app-wrapper .admin-tab-body .bg-light {
+  background: #f1f5f9 !important;
+  color: #0f172a;
+}
 
 .dash-intel-tile {
   border-radius: 12px;
