@@ -1,7 +1,7 @@
 <?php
 /**
  * Executive summary aggregation (Milestone 1) – reuses CityHealthScore, GreenIntelligence,
- * gov_compute_esg_snapshot, UrbanPredictionEngine. No duplicate SQL beyond thin wrappers.
+ * gov_compute_esg_snapshot, UrbanPredictionEngine. Optional LLM narrative with template fallback.
  */
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
@@ -12,7 +12,7 @@ require_once __DIR__ . '/UrbanPredictionEngine.php';
 final class ExecutiveSummaryService
 {
     /**
-     * @return array{reportWhere:string,reportParams:array,treeScopeIds:array<int,int>,healthAuthorityId:?int}
+     * @return array{0:string,1:array,2:array<int,int>,3:?int}
      */
     public static function resolveScopes(PDO $pdo, string $role, int $uid, ?int $adminRequestedAuthorityId): array
     {
@@ -40,9 +40,7 @@ final class ExecutiveSummaryService
         return [$reportWhere, $reportParams, $treeScopeIds, $healthAuthorityId];
     }
 
-    /**
-     * @return array<string,mixed>
-     */
+    /** @return array<string,mixed> */
     public function build(string $role, int $uid, ?int $adminRequestedAuthorityId): array
     {
         $pdo = db();
@@ -106,8 +104,9 @@ final class ExecutiveSummaryService
         $topZones = self::buildTopZones($pred);
 
         $aiSummary = self::buildAiSummary($cityHealth, $trend, $openIssues, $resolved30, $climateRisk, $greenDeficit, $engagement);
+        $summaryMeta = ['ai_summary_source' => 'template'];
 
-        return [
+        $payload = [
             'city_health_score' => $cityHealth,
             'trend' => $trend,
             'open_issues' => $openIssues,
@@ -120,6 +119,55 @@ final class ExecutiveSummaryService
             'top_priority_zones' => $topZones,
             'ai_summary' => $aiSummary,
         ];
+
+        $llm = self::tryLlmNarrative($payload);
+        if ($llm !== null) {
+            $payload['ai_summary'] = $llm;
+            $summaryMeta['ai_summary_source'] = 'llm';
+        }
+        $payload['meta'] = $summaryMeta;
+
+        return $payload;
+    }
+
+    /** @param array<string,mixed> $payload */
+    private static function tryLlmNarrative(array $payload): ?string
+    {
+        try {
+            require_once __DIR__ . '/AiRouter.php';
+            require_once __DIR__ . '/AiPromptBuilder.php';
+            $router = new AiRouter();
+            if (!$router->isEnabled()) {
+                return null;
+            }
+            $lang = function_exists('current_lang') ? current_lang() : 'hu';
+            $langName = AiPromptBuilder::languageNameForCode($lang);
+            $ctx = json_encode([
+                'city_health_score' => $payload['city_health_score'] ?? null,
+                'trend' => $payload['trend'] ?? null,
+                'open_issues' => $payload['open_issues'] ?? null,
+                'resolved_last_30_days' => $payload['resolved_last_30_days'] ?? null,
+                'climate_risk_score' => $payload['climate_risk_score'] ?? null,
+                'green_deficit_score' => $payload['green_deficit_score'] ?? null,
+                'citizen_engagement_score' => $payload['citizen_engagement_score'] ?? null,
+                'top_risks' => array_slice($payload['top_risks'] ?? [], 0, 5),
+            ], JSON_UNESCAPED_UNICODE);
+            $prompt = "You are a municipal executive briefing assistant. Write 2-4 short sentences in {$langName} "
+                . "for decision makers based ONLY on this JSON. No markdown. No invented numbers.\nJSON:\n" . $ctx
+                . "\nReturn ONLY JSON: {\"summary\":\"...\"}";
+            $resp = $router->callJson('gov_summary', $prompt, [
+                'max_tokens' => 280,
+                'temperature' => 0.25,
+                'timeout' => 12,
+            ]);
+            if (empty($resp['ok']) || !is_array($resp['data'] ?? null)) {
+                return null;
+            }
+            $s = trim((string)($resp['data']['summary'] ?? ''));
+            return $s !== '' ? $s : null;
+        } catch (Throwable $e) {
+            return null;
+        }
     }
 
     private static function inferTrend(int $open, int $resolved30, float $maintenance, float $infra): string

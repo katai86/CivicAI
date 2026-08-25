@@ -137,6 +137,53 @@ class AiVisionService
             );
         }
 
+        // Gov / report vision → tartós observation (ne vesszen el az elemzés)
+        if (in_array($entityType, ['gov_vision', 'report', 'user_vision'], true)) {
+            try {
+                require_once __DIR__ . '/UrbanObservationService.php';
+                $aid = null;
+                $lat = null;
+                $lng = null;
+                if ($entityType === 'report' && $entityId) {
+                    $st = db()->prepare('SELECT authority_id, lat, lng FROM reports WHERE id = ? LIMIT 1');
+                    $st->execute([$entityId]);
+                    $row = $st->fetch(PDO::FETCH_ASSOC);
+                    if ($row) {
+                        $aid = $row['authority_id'] !== null ? (int)$row['authority_id'] : null;
+                        $lat = $row['lat'] !== null ? (float)$row['lat'] : null;
+                        $lng = $row['lng'] !== null ? (float)$row['lng'] : null;
+                    }
+                } elseif (function_exists('gov_primary_authority_id')) {
+                    $aid = gov_primary_authority_id();
+                }
+                $merged = array_merge($norm, [
+                    'scene_summary' => $norm['description'] ?? null,
+                    'recommended_action' => null,
+                    'street_condition' => ['condition' => $norm['urgency_level'] ?? null],
+                    'green_surfaces' => [],
+                    'trees' => [],
+                    'wow_highlights' => array_filter([
+                        $norm['short_title'] ?? null,
+                        $norm['suggested_category'] ?? null,
+                    ]),
+                ]);
+                foreach ($norm['segments'] ?? [] as $seg) {
+                    if (($seg['kind'] ?? '') === 'vegetation' || ($seg['kind'] ?? '') === 'green') {
+                        if (isset($seg['coverage_pct'])) {
+                            $merged['green_surfaces']['vegetation_pct'] = (float)$seg['coverage_pct'];
+                        }
+                    }
+                }
+                $src = $entityType === 'report' ? 'report_vision' : ($entityType === 'gov_vision' ? 'gov_vision' : 'user_vision');
+                $saved = (new UrbanObservationService())->save($merged, $aid, $lat, $lng, $src, null, function_exists('current_user_id') ? current_user_id() : null);
+                if (!empty($saved['ok']) && !empty($saved['id'])) {
+                    $out['observation_id'] = (int)$saved['id'];
+                    $out['notes'][] = 'observation_saved';
+                }
+            } catch (Throwable $e) {
+            }
+        }
+
         try {
             ExternalDataCache::set('ai_vision', $cacheKey, $out, 120, 'ok', 'live');
             set_module_setting($modelId === 'ai_sam' ? 'ai_sam2' : $modelId, 'last_sync_at', gmdate('c'));
@@ -149,9 +196,10 @@ class AiVisionService
 
     /**
      * City Brain WOW – utca + zöld + fa teljes elemzés egy képen.
+     * @param array{authority_id?:?int,lat?:?float,lng?:?float,persist?:bool,image_public_path?:?string,created_by?:?int} $opts
      * @return array<string,mixed>
      */
-    public function analyzeCitybrain(string $imagePath, string $mimeType = 'image/jpeg', ?string $filename = null): array
+    public function analyzeCitybrain(string $imagePath, string $mimeType = 'image/jpeg', ?string $filename = null, array $opts = []): array
     {
         $empty = [
             'ok' => false,
@@ -177,6 +225,10 @@ class AiVisionService
         if ($hit && !empty($hit['payload']) && !empty($hit['payload']['ok'])) {
             $cached = $hit['payload'];
             $cached['notes'] = array_values(array_unique(array_merge($cached['notes'] ?? [], ['cache_hit'])));
+            // Cache hit esetén is mentsük, ha még nincs observation (új authority/geo)
+            if (!empty($opts['persist'])) {
+                $this->persistCitybrainObservation($cached, $opts);
+            }
             return $cached;
         }
 
@@ -211,7 +263,8 @@ class AiVisionService
         ]);
 
         if (function_exists('ai_store_result')) {
-            ai_store_result('citybrain', null, 'image_classification', $providerModel ?: 'citybrain', $hash, $norm, $norm['confidence_score'] ?? null);
+            $aid = isset($opts['authority_id']) ? (int)$opts['authority_id'] : null;
+            ai_store_result('citybrain', $aid > 0 ? $aid : null, 'image_classification', $providerModel ?: 'citybrain', $hash, $norm, $norm['confidence_score'] ?? null);
         }
 
         try {
@@ -219,7 +272,34 @@ class AiVisionService
         } catch (Throwable $e) {
         }
 
+        if (!empty($opts['persist'])) {
+            $persist = $this->persistCitybrainObservation($out, $opts);
+            if (!empty($persist['observation_id'])) {
+                $out['observation_id'] = $persist['observation_id'];
+                $out['notes'][] = 'observation_saved';
+            }
+        }
+
         return $out;
+    }
+
+    /**
+     * @param array<string,mixed> $vision
+     * @param array<string,mixed> $opts
+     * @return array{observation_id:?int}
+     */
+    private function persistCitybrainObservation(array $vision, array $opts): array
+    {
+        require_once __DIR__ . '/UrbanObservationService.php';
+        $svc = new UrbanObservationService();
+        $aid = isset($opts['authority_id']) && (int)$opts['authority_id'] > 0 ? (int)$opts['authority_id'] : null;
+        $lat = isset($opts['lat']) && is_numeric($opts['lat']) ? (float)$opts['lat'] : null;
+        $lng = isset($opts['lng']) && is_numeric($opts['lng']) ? (float)$opts['lng'] : null;
+        $img = isset($opts['image_public_path']) ? (string)$opts['image_public_path'] : null;
+        $uid = isset($opts['created_by']) ? (int)$opts['created_by'] : null;
+        $saved = $svc->save($vision, $aid, $lat, $lng, 'citybrain_vision', $img, $uid);
+        $svc->writeBackHints($vision, $aid);
+        return ['observation_id' => $saved['ok'] ? ($saved['id'] ?? null) : null];
     }
 
     /**

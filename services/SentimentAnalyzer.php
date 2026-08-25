@@ -21,11 +21,13 @@ class SentimentAnalyzer
     public function analyze(string $reportWhere, array $reportParams, string $dateFrom, string $dateTo, string $scopeTitle = 'Municipality', string $outputLang = 'hu'): array
     {
         $out = [
-            'positive_percent' => 34,
-            'neutral_percent' => 33,
-            'negative_percent' => 33,
+            'positive_percent' => 0,
+            'neutral_percent' => 0,
+            'negative_percent' => 0,
             'top_concerns' => [],
             'emerging_issues' => [],
+            'no_data' => true,
+            'ai_used' => false,
         ];
 
         $pdo = db();
@@ -70,6 +72,9 @@ class SentimentAnalyzer
 
         $router = new \AiRouter();
         if (!$router->isEnabled()) {
+            $out['no_data'] = false;
+            $out['ai_used'] = false;
+            $out['sample_count'] = count($flatTexts);
             return $out;
         }
 
@@ -77,13 +82,16 @@ class SentimentAnalyzer
         $resp = $router->callJson('gov_sentiment', $prompt, ['max_tokens' => 600]);
 
         if (empty($resp['ok']) || !is_array($resp['data'])) {
+            $out['no_data'] = false;
+            $out['ai_used'] = false;
+            $out['sample_count'] = count($flatTexts);
             return $out;
         }
 
         $d = $resp['data'];
-        $pos = isset($d['positive_percent']) ? (int)round((float)$d['positive_percent']) : 34;
-        $neu = isset($d['neutral_percent']) ? (int)round((float)$d['neutral_percent']) : 33;
-        $neg = isset($d['negative_percent']) ? (int)round((float)$d['negative_percent']) : 33;
+        $pos = isset($d['positive_percent']) ? (int)round((float)$d['positive_percent']) : 0;
+        $neu = isset($d['neutral_percent']) ? (int)round((float)$d['neutral_percent']) : 0;
+        $neg = isset($d['negative_percent']) ? (int)round((float)$d['negative_percent']) : 0;
         $sum = $pos + $neu + $neg;
         if ($sum !== 100 && $sum > 0) {
             $pos = (int)round(100 * $pos / $sum);
@@ -93,6 +101,9 @@ class SentimentAnalyzer
         $out['positive_percent'] = max(0, min(100, $pos));
         $out['neutral_percent'] = max(0, min(100, $neu));
         $out['negative_percent'] = max(0, min(100, $neg));
+        $out['no_data'] = false;
+        $out['ai_used'] = true;
+        $out['sample_count'] = count($flatTexts);
 
         if (!empty($d['top_concerns']) && is_array($d['top_concerns'])) {
             $out['top_concerns'] = array_slice(array_map('strval', $d['top_concerns']), 0, 8);

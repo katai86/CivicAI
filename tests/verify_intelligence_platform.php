@@ -38,6 +38,7 @@ $files = [
     'api/intelligence_provider_logs.php',
     'api/ai_vision_analyze.php',
     'api/citybrain_vision_analyze.php',
+    'api/urban_observations_list.php',
     'api/report_vision_analyze.php',
 ];
 

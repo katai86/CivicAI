@@ -317,6 +317,78 @@ try {
   $greenBlock = null;
 }
 
+// Cross-module insights (honest heuristics – not ML)
+$crossInsights = [];
+$droughtPct = (float)($greenBlock['drought_risk_pct'] ?? 0);
+$canopyPct = (float)($greenBlock['canopy_coverage_pct'] ?? 0);
+$avgTemp = $sensorsSummary['avg_temperature'];
+$avgAqi = $sensorsSummary['avg_aqi'];
+$greenReports = 0;
+try {
+  if ($reportWhere !== '1=0') {
+    $stG = $pdo->prepare("SELECT COUNT(*) FROM reports r WHERE $reportWhere AND r.category = 'green' AND r.status NOT IN ('solved','closed','rejected')");
+    $stG->execute($reportParams);
+    $greenReports = (int)$stG->fetchColumn();
+  }
+} catch (Throwable $e) {}
+
+if ($droughtPct >= 55 && $greenReports > 0) {
+  $crossInsights[] = [
+    'code' => 'drought_x_green_issues',
+    'severity' => $droughtPct >= 70 ? 'high' : 'medium',
+    'params' => ['drought' => $droughtPct, 'green_open' => $greenReports],
+  ];
+}
+if ($avgTemp !== null && $avgTemp >= 28 && $canopyPct > 0 && $canopyPct < 18) {
+  $crossInsights[] = [
+    'code' => 'heat_x_low_canopy',
+    'severity' => $avgTemp >= 32 ? 'high' : 'medium',
+    'params' => ['temp' => $avgTemp, 'canopy' => $canopyPct],
+  ];
+}
+if ($avgAqi !== null && $avgAqi >= 80 && $open_reports >= 10) {
+  $crossInsights[] = [
+    'code' => 'aqi_x_open_issues',
+    'severity' => $avgAqi >= 100 ? 'high' : 'medium',
+    'params' => ['aqi' => $avgAqi, 'open' => $open_reports],
+  ];
+}
+if ($canopyPct >= 25 && $open_reports === 0) {
+  $crossInsights[] = [
+    'code' => 'healthy_green_low_backlog',
+    'severity' => 'low',
+    'params' => ['canopy' => $canopyPct],
+  ];
+}
+
+$observationSummary = ['count' => 0, 'recent' => []];
+try {
+  require_once __DIR__ . '/../services/UrbanObservationService.php';
+  $obsSvc = new UrbanObservationService();
+  $obsIds = !empty($authorityIds) ? $authorityIds : [];
+  $recentObs = $obsSvc->listRecent($obsIds, 8);
+  $observationSummary = [
+    'count' => count($recentObs),
+    'recent' => $recentObs,
+  ];
+  if (count($recentObs) > 0) {
+    $poorStreet = 0;
+    foreach ($recentObs as $o) {
+      $sc = strtolower((string)($o['street_condition'] ?? ''));
+      if (in_array($sc, ['poor', 'fair', 'bad', 'critical'], true) || ($o['severity'] ?? '') === 'high') {
+        $poorStreet++;
+      }
+    }
+    if ($poorStreet > 0) {
+      $crossInsights[] = [
+        'code' => 'vision_street_concerns',
+        'severity' => $poorStreet >= 3 ? 'high' : 'medium',
+        'params' => ['count' => $poorStreet],
+      ];
+    }
+  }
+} catch (Throwable $e) {}
+
 function build_live($sensorsSummary, $reports_24h, $ideas_24h, $open_reports) {
   return [
     'sensors_summary' => $sensorsSummary,
@@ -335,6 +407,8 @@ json_response([
     'green' => $greenBlock,
   ],
   'risks' => $risks,
+  'cross_insights' => $crossInsights,
+  'observations' => $observationSummary,
   'meta' => [
     'risk_method' => $riskMethod,
     'authority_id' => $primaryAid,

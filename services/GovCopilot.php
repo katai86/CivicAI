@@ -216,6 +216,28 @@ class GovCopilot
             }
         } catch (Throwable $e) {}
 
+        try {
+            require_once __DIR__ . '/UrbanObservationService.php';
+            $aids = $this->authorityId ? [$this->authorityId] : [];
+            if (empty($aids)) {
+                $aids = array_map('intval', $pdo->query('SELECT id FROM authorities ORDER BY name LIMIT 50')->fetchAll(PDO::FETCH_COLUMN) ?: []);
+            }
+            $obs = (new UrbanObservationService())->listRecent($aids, 6);
+            if (!empty($obs)) {
+                $oparts = [];
+                foreach ($obs as $o) {
+                    $oparts[] = '#' . (int)$o['id']
+                        . ' ' . ($o['street_condition'] ?? '')
+                        . '/' . ($o['severity'] ?? '')
+                        . (isset($o['vegetation_pct']) ? (' veg=' . $o['vegetation_pct'] . '%') : '')
+                        . (!empty($o['scene_summary']) ? (' "' . mb_substr((string)$o['scene_summary'], 0, 60) . '"') : '');
+                }
+                $lines[] = "Recent street vision observations (stored): " . implode('; ', $oparts) . ".";
+            } else {
+                $lines[] = "Recent street vision observations: none stored yet.";
+            }
+        } catch (Throwable $e) {}
+
         $lines[] = "Note: priority and spatial clusters are heuristic (rule-based), not machine learning. Prefer numbers from this context.";
 
         return implode("\n", $lines);

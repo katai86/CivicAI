@@ -1680,6 +1680,17 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
                   <label class="small fw-semibold" for="citybrainVisionFile"><?= h(t('gov.citybrain_vision_upload')) ?></label>
                   <input type="file" id="citybrainVisionFile" class="form-control form-control-sm mb-2" accept="image/*">
                   <img id="citybrainVisionPreview" alt="" class="img-fluid rounded border mb-2" style="max-height:220px; display:none;">
+                  <div class="row g-2 mb-2">
+                    <div class="col-6">
+                      <label class="small" for="citybrainVisionLat"><?= h(t('gov.citybrain_vision_lat')) ?></label>
+                      <input type="number" step="any" id="citybrainVisionLat" class="form-control form-control-sm" placeholder="47.46">
+                    </div>
+                    <div class="col-6">
+                      <label class="small" for="citybrainVisionLng"><?= h(t('gov.citybrain_vision_lng')) ?></label>
+                      <input type="number" step="any" id="citybrainVisionLng" class="form-control form-control-sm" placeholder="18.95">
+                    </div>
+                  </div>
+                  <p class="text-secondary small mb-2"><?= h(t('gov.citybrain_vision_geo_hint')) ?></p>
                   <button type="button" class="btn btn-primary btn-sm w-100" id="citybrainVisionAnalyze">
                     <i class="bi bi-magic"></i> <?= h(t('gov.citybrain_vision_analyze')) ?>
                   </button>
@@ -1721,6 +1732,17 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
                   <p id="citybrainVisionEmpty" class="text-secondary small mb-0"><?= h(t('gov.citybrain_vision_empty')) ?></p>
                 </div>
               </div>
+            </div>
+          </div>
+          <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <h6 class="card-title mb-0"><?= h(t('gov.citybrain_obs_title')) ?></h6>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="citybrainObsRefresh"><?= h(t('common.refresh')) ?></button>
+            </div>
+            <div class="card-body">
+              <p class="text-secondary small mb-2"><?= h(t('gov.citybrain_obs_desc')) ?></p>
+              <div id="citybrainObsMap" style="height:280px; border-radius:6px;" class="mb-3"></div>
+              <div id="citybrainObsList"><p class="text-secondary small mb-0"><?= h(t('admin.load')) ?></p></div>
             </div>
           </div>
           <div class="card mb-3" id="govCitybrainCopilotCard">
@@ -1877,12 +1899,15 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
   var aiUrl = <?= json_encode(app_url('/api/gov_ai.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govCopilotUrl = <?= json_encode(app_url('/api/gov_copilot.php'), JSON_UNESCAPED_SLASHES) ?>;
   var citybrainVisionUrl = <?= json_encode(app_url('/api/citybrain_vision_analyze.php'), JSON_UNESCAPED_SLASHES) ?>;
+  var urbanObservationsUrl = <?= json_encode(app_url('/api/urban_observations_list.php'), JSON_UNESCAPED_SLASHES) ?>;
   var citybrainVisionLabels = <?= json_encode([
     'analyzing' => t('gov.citybrain_vision_analyzing'),
     'empty' => t('gov.citybrain_vision_empty'),
     'street_ok' => t('gov.citybrain_vision_street_ok'),
     'load_error' => t('common.error_load'),
     'need_ai' => t('intel.ai_vision_need_provider'),
+    'saved' => t('gov.citybrain_vision_saved'),
+    'obs_empty' => t('gov.citybrain_obs_empty'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var modulesUrl = <?= json_encode(app_url('/api/gov_modules.php'), JSON_UNESCAPED_SLASHES) ?>;
   var esgExportUrl = <?= json_encode(app_url('/api/esg_export.php'), JSON_UNESCAPED_SLASHES) ?>;
@@ -2065,6 +2090,13 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     'risk_tree_candidates' => t('gov.citybrain_risk_tree_candidates'),
     'created' => t('gov.trends_created'),
     'resolved' => t('gov.trends_resolved'),
+    'cross_title' => t('gov.citybrain_cross_title'),
+    'cross_drought_green' => t('gov.citybrain_cross_drought_green'),
+    'cross_heat_canopy' => t('gov.citybrain_cross_heat_canopy'),
+    'cross_aqi_open' => t('gov.citybrain_cross_aqi_open'),
+    'cross_healthy' => t('gov.citybrain_cross_healthy'),
+    'cross_vision' => t('gov.citybrain_cross_vision'),
+    'obs_count' => t('gov.citybrain_obs_count'),
   ], JSON_UNESCAPED_UNICODE) ?>;
   var govSentimentUrl = <?= json_encode(app_url('/api/sentiment_analysis.php'), JSON_UNESCAPED_SLASHES) ?>;
   var govSentimentLabels = <?= json_encode([
@@ -2772,6 +2804,13 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
         }
         var fd = new FormData();
         fd.append('photo', fileEl.files[0]);
+        if (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) {
+          fd.append('authority_id', String(authorityIdForHeatmap));
+        }
+        var latEl = document.getElementById('citybrainVisionLat');
+        var lngEl = document.getElementById('citybrainVisionLng');
+        if (latEl && latEl.value !== '') fd.append('lat', latEl.value);
+        if (lngEl && lngEl.value !== '') fd.append('lng', lngEl.value);
         btn.disabled = true;
         if (statusEl) statusEl.textContent = Lv.analyzing || '…';
         fetch(citybrainVisionUrl, { method: 'POST', body: fd, credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
@@ -2781,13 +2820,27 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
             return;
           }
           renderCitybrainVisionResult(j.data);
-          if (statusEl) statusEl.textContent = '';
+          if (statusEl) {
+            statusEl.textContent = (j.data.observation_id ? (Lv.saved || '') : '') + (j.data.observation_id ? (' #' + j.data.observation_id) : '');
+          }
+          loadCitybrainObservations();
         }).catch(function(){
           btn.disabled = false;
           if (statusEl) statusEl.textContent = Lv.load_error || '—';
         });
       });
     }
+    var obsBtn = document.getElementById('citybrainObsRefresh');
+    if (obsBtn) obsBtn.addEventListener('click', loadCitybrainObservations);
+    loadCitybrainObservations();
+    // Pre-fill geo from authority map center
+    try {
+      var hv = govMapViewFromAuthorityId(typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0);
+      var latEl0 = document.getElementById('citybrainVisionLat');
+      var lngEl0 = document.getElementById('citybrainVisionLng');
+      if (latEl0 && !latEl0.value && hv.lat != null) latEl0.value = String(hv.lat);
+      if (lngEl0 && !lngEl0.value && hv.lng != null) lngEl0.value = String(hv.lng);
+    } catch (_) {}
     var cbBtn = document.getElementById('govCitybrainCopilotSend');
     var cbQ = document.getElementById('govCitybrainCopilotQuestion');
     var cbAns = document.getElementById('govCitybrainCopilotAnswer');
@@ -2881,6 +2934,82 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       actEl.textContent = act || '—';
     }
     if (resWrap) resWrap.style.display = 'block';
+  }
+
+  var citybrainObsMap = null;
+  var citybrainObsLayer = null;
+  function ensureCitybrainObsMap(){
+    var mapEl = document.getElementById('citybrainObsMap');
+    if (!mapEl || typeof L === 'undefined') return;
+    if (!citybrainObsMap) {
+      var hv = govMapViewFromAuthorityId(typeof authorityIdForHeatmap !== 'undefined' ? authorityIdForHeatmap : 0);
+      citybrainObsMap = L.map('citybrainObsMap').setView([hv.lat, hv.lng], hv.zoom);
+      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OSM' }).addTo(citybrainObsMap);
+      citybrainObsLayer = L.layerGroup().addTo(citybrainObsMap);
+    }
+    setTimeout(function(){ if (citybrainObsMap) citybrainObsMap.invalidateSize(); }, 80);
+  }
+  function loadCitybrainObservations(){
+    var listEl = document.getElementById('citybrainObsList');
+    if (!listEl || typeof urbanObservationsUrl === 'undefined' || !urbanObservationsUrl) return;
+    ensureCitybrainObsMap();
+    var q = (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0) ? ('?authority_id=' + authorityIdForHeatmap) : '';
+    fetch(urbanObservationsUrl + q, { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
+      var Lv = citybrainVisionLabels || {};
+      if (!j.ok || !j.data || !Array.isArray(j.data.observations)) {
+        listEl.innerHTML = '<p class="text-secondary small mb-0">' + (Lv.obs_empty || '—') + '</p>';
+        return;
+      }
+      var rows = j.data.observations;
+      if (!rows.length) {
+        listEl.innerHTML = '<p class="text-secondary small mb-0">' + (Lv.obs_empty || '—') + '</p>';
+        if (citybrainObsLayer) citybrainObsLayer.clearLayers();
+        return;
+      }
+      var html = '<ul class="list-group list-group-flush small">';
+      rows.forEach(function(o){
+        html += '<li class="list-group-item px-0">'
+          + '<span class="badge text-bg-' + ((o.severity === 'high') ? 'danger' : (o.severity === 'medium' ? 'warning' : 'secondary')) + ' me-1">' + String(o.severity || '') + '</span>'
+          + '<strong>#' + o.id + '</strong> '
+          + String(o.street_condition || o.category || '')
+          + (o.vegetation_pct != null ? (' · veg ' + o.vegetation_pct + '%') : '')
+          + (o.scene_summary ? ('<div class="text-secondary">' + String(o.scene_summary).slice(0, 120).replace(/</g,'&lt;') + '</div>') : '')
+          + '</li>';
+      });
+      html += '</ul>';
+      listEl.innerHTML = html;
+      if (citybrainObsLayer && citybrainObsMap) {
+        citybrainObsLayer.clearLayers();
+        var bounds = [];
+        rows.forEach(function(o){
+          var lat = parseFloat(o.lat); var lng = parseFloat(o.lng);
+          if (isNaN(lat) || isNaN(lng)) return;
+          bounds.push([lat, lng]);
+          L.circleMarker([lat, lng], {
+            radius: 8,
+            color: o.severity === 'high' ? '#dc2626' : '#2563eb',
+            fillColor: o.severity === 'high' ? '#ef4444' : '#3b82f6',
+            fillOpacity: 0.7,
+            weight: 1
+          }).bindPopup('#' + o.id + ' · ' + (o.street_condition || '')).addTo(citybrainObsLayer);
+        });
+        try {
+          if (bounds.length) citybrainObsMap.fitBounds(bounds, { maxZoom: 15, padding: [20, 20] });
+        } catch (_) {}
+      }
+    }).catch(function(){
+      if (listEl) listEl.innerHTML = '<p class="text-danger small">—</p>';
+    });
+  }
+  function citybrainCrossInsightText(ci, CB){
+    var code = ci.code || '';
+    var p = ci.params || {};
+    if (code === 'drought_x_green_issues') return (CB.cross_drought_green || 'Drought %d% × green issues %g').replace('%d', p.drought).replace('%g', p.green_open);
+    if (code === 'heat_x_low_canopy') return (CB.cross_heat_canopy || 'Heat %t°C × low canopy %c%').replace('%t', p.temp).replace('%c', p.canopy);
+    if (code === 'aqi_x_open_issues') return (CB.cross_aqi_open || 'AQI %a × open %o').replace('%a', p.aqi).replace('%o', p.open);
+    if (code === 'healthy_green_low_backlog') return (CB.cross_healthy || 'Healthy canopy %c% · low backlog').replace('%c', p.canopy);
+    if (code === 'vision_street_concerns') return (CB.cross_vision || 'Vision street concerns: %n').replace('%n', p.count);
+    return code;
   }
 
   function govZoomFromBboxSpan(span){
@@ -4294,6 +4423,16 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (CB.live_ideas_24h || '') + '</h6><p class="mb-0">' + (j.live.ideas_24h || 0) + '</p></div></div></div>';
       html += '<div class="col-md-4"><div class="card"><div class="card-body py-2"><h6 class="small text-muted">' + (CB.live_open_reports || '') + '</h6><p class="mb-0">' + (j.live.open_reports || 0) + '</p></div></div></div>';
       html += '</div>';
+      if (j.observations && j.observations.count != null) {
+        html += '<p class="small text-secondary mt-2 mb-1">' + (CB.obs_count || 'Vision observations') + ': <b>' + j.observations.count + '</b></p>';
+      }
+      if (Array.isArray(j.cross_insights) && j.cross_insights.length) {
+        html += '<h6 class="small mt-3">' + (CB.cross_title || 'Cross insights') + '</h6><ul class="small mb-0">';
+        j.cross_insights.forEach(function(ci){
+          html += '<li class="mb-1"><span class="badge text-bg-' + (ci.severity === 'high' ? 'danger' : (ci.severity === 'low' ? 'success' : 'warning')) + ' me-1">' + (ci.severity || '') + '</span>' + citybrainCrossInsightText(ci, CB) + '</li>';
+        });
+        html += '</ul>';
+      }
       container.innerHTML = html;
     }).catch(function(){ if (container) container.innerHTML = '<p class="text-danger small">—</p>'; });
   }
@@ -4503,6 +4642,13 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
       Object.keys(byProvider).sort().forEach(function(p){ html += '<li>' + p + ': <b>' + byProvider[p] + '</b></li>'; });
       if (Object.keys(byProvider).length === 0) html += '<li class="text-secondary">—</li>';
       html += '</ul>';
+      if (Array.isArray(j.cross_insights) && j.cross_insights.length) {
+        html += '<h6 class="small mt-3">' + (CB.cross_title || 'Cross insights') + '</h6><ul class="small mb-0">';
+        j.cross_insights.forEach(function(ci){
+          html += '<li class="mb-1">' + citybrainCrossInsightText(ci, CB) + '</li>';
+        });
+        html += '</ul>';
+      }
       container.innerHTML = html;
     }).catch(function(){ if (container) container.innerHTML = '<p class="text-danger small">—</p>'; });
   }
@@ -4547,8 +4693,17 @@ $kpiJsVer = @filemtime(__DIR__ . '/../assets/js/components/kpi.js') ?: time();
     fetch(citybrainDashboardUrl + (typeof authorityIdForHeatmap !== 'undefined' && authorityIdForHeatmap > 0 ? '?authority_id=' + authorityIdForHeatmap : ''), { credentials: 'include' }).then(function(r){ return r.json(); }).then(function(j){
       if (!j.ok || !Array.isArray(j.risks)) { container.innerHTML = '<p class="text-secondary small mb-0">—</p>'; return; }
       var R = govCitybrainLabels || {};
-      if (j.risks.length === 0) { container.innerHTML = '<p class="text-success small mb-0">' + (R.risk_no_alerts || '') + '</p>'; return; }
-      var html = '<ul class="list-group list-group-flush">';
+      var html = '';
+      if (Array.isArray(j.cross_insights) && j.cross_insights.length) {
+        html += '<h6 class="small mb-2">' + (R.cross_title || 'Cross insights') + '</h6><ul class="list-group list-group-flush mb-3">';
+        j.cross_insights.forEach(function(ci){
+          var severityClass = (ci.severity === 'high') ? 'list-group-item-danger' : ((ci.severity === 'low') ? 'list-group-item-success' : 'list-group-item-warning');
+          html += '<li class="list-group-item ' + severityClass + '">' + citybrainCrossInsightText(ci, R) + ' <span class="badge text-bg-light border">cross</span></li>';
+        });
+        html += '</ul>';
+      }
+      if (j.risks.length === 0 && !html) { container.innerHTML = '<p class="text-success small mb-0">' + (R.risk_no_alerts || '') + '</p>'; return; }
+      html += '<ul class="list-group list-group-flush">';
       j.risks.forEach(function(r){
         var severityClass = (r.severity === 'high') ? 'list-group-item-danger' : ((r.severity === 'low') ? 'list-group-item-secondary' : 'list-group-item-warning');
         var src = r.source ? (' <span class="badge text-bg-light border">' + String(r.source).replace(/_/g, ' ') + '</span>') : '';

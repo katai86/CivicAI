@@ -43,12 +43,19 @@ if (function_exists('set_time_limit')) {
 }
 
 try {
-    $climate = (new ClimateIndexService())->compute($aid, true);
+    // Teljes ClimateIndex (modul merge) – 15 perc cache védi a demót a lassú újrahívástól
+    $climate = (new ClimateIndexService())->compute($aid, false);
+    $climate['mode'] = 'full';
 } catch (Throwable $e) {
     if (function_exists('log_error')) {
         log_error('intelligence_dashboard: ' . $e->getMessage());
     }
-    $climate = ['score' => 0, 'category' => 'moderate', 'label' => '—', 'recommendations' => [], 'components' => [], 'active_modules' => 0, 'error_modules' => 0];
+    try {
+        $climate = (new ClimateIndexService())->compute($aid, true);
+        $climate['mode'] = 'fast_fallback';
+    } catch (Throwable $e2) {
+        $climate = ['score' => 0, 'category' => 'moderate', 'label' => '—', 'recommendations' => [], 'components' => [], 'active_modules' => 0, 'error_modules' => 0, 'mode' => 'error'];
+    }
 }
 $modules = IntelligenceModuleRegistry::listWithStatus();
 

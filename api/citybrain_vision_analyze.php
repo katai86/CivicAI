@@ -1,7 +1,8 @@
 <?php
 /**
  * City Brain – WOW AI Vision: utcaállapot, zöld felületek, fa fajta/egészség/méret.
- * POST multipart: image|photo (file). Gov/admin.
+ * POST multipart: image|photo (file), opcionális authority_id, lat, lng.
+ * Eredmény tartósan mentve urban_observations-be.
  */
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
@@ -47,7 +48,66 @@ if (!isset($allowed[$mime])) {
     json_response(['ok' => false, 'error' => function_exists('t') ? t('api.upload_images_only') : 'Images only'], 400);
 }
 
-$result = (new AiVisionService())->analyzeCitybrain($tmp, $mime, (string)($f['name'] ?? 'street.jpg'));
+$role = current_user_role() ?: '';
+$uid = current_user_id() ? (int)current_user_id() : 0;
+$isAdmin = in_array($role, ['admin', 'superadmin'], true);
+$requestedAid = isset($_POST['authority_id']) ? (int)$_POST['authority_id'] : (isset($_GET['authority_id']) ? (int)$_GET['authority_id'] : 0);
+$authorityId = null;
+if ($isAdmin) {
+    $authorityId = $requestedAid > 0 ? $requestedAid : gov_primary_authority_id();
+} else {
+    $primary = gov_primary_authority_id();
+    if ($requestedAid > 0) {
+        $scope = gov_resolve_report_scope(db(), 'r', $requestedAid);
+        if (empty($scope['authority_ids']) || !in_array($requestedAid, $scope['authority_ids'], true)) {
+            json_response(['ok' => false, 'error' => 'Forbidden'], 403);
+        }
+        $authorityId = $requestedAid;
+    } else {
+        $authorityId = $primary;
+    }
+}
+
+$lat = null;
+$lng = null;
+if (isset($_POST['lat']) && is_numeric($_POST['lat'])) {
+    $lat = (float)$_POST['lat'];
+}
+if (isset($_POST['lng']) && is_numeric($_POST['lng'])) {
+    $lng = (float)$_POST['lng'];
+}
+
+// Persist copy under uploads for observation reference
+$imagePublic = null;
+$destFs = null;
+try {
+    $uploadDir = defined('UPLOAD_DIR') ? rtrim((string)UPLOAD_DIR, '/\\') : (__DIR__ . '/../uploads');
+    $obsDir = $uploadDir . DIRECTORY_SEPARATOR . 'observations';
+    if (!is_dir($obsDir)) {
+        @mkdir($obsDir, 0755, true);
+    }
+    $ext = $allowed[$mime] ?? 'jpg';
+    $base = 'obs_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    $destFs = $obsDir . DIRECTORY_SEPARATOR . $base;
+    if (@copy($tmp, $destFs)) {
+        $publicBase = defined('UPLOAD_PUBLIC') ? rtrim((string)UPLOAD_PUBLIC, '/') : 'uploads';
+        $imagePublic = $publicBase . '/observations/' . $base;
+    }
+} catch (Throwable $e) {
+    $destFs = null;
+    $imagePublic = null;
+}
+
+$analyzePath = $destFs && is_file($destFs) ? $destFs : $tmp;
+
+$result = (new AiVisionService())->analyzeCitybrain($analyzePath, $mime, (string)($f['name'] ?? 'street.jpg'), [
+    'persist' => true,
+    'authority_id' => $authorityId,
+    'lat' => $lat,
+    'lng' => $lng,
+    'image_public_path' => $imagePublic,
+    'created_by' => $uid > 0 ? $uid : null,
+]);
 
 if (empty($result['ok'])) {
     json_response([
