@@ -40,10 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($globalKey !== null) {
       try {
         $val = $enabled ? '1' : '0';
-        db()->prepare("
-          INSERT INTO module_settings (module_key, setting_key, value) VALUES (?, 'enabled', ?)
-          ON DUPLICATE KEY UPDATE value = VALUES(value)
-        ")->execute([$globalKey, $val]);
+        set_module_setting($globalKey, 'enabled', $val);
       } catch (Throwable $e) { /* ignore */ }
     }
   }
@@ -80,12 +77,7 @@ if ($key === 'surveys') {
 }
 if ($globalModuleKey !== null) {
   try {
-    $val = $enabled ? '1' : '0';
-    $pdo = db();
-    $pdo->prepare("
-      INSERT INTO module_settings (module_key, setting_key, value) VALUES (?, 'enabled', ?)
-      ON DUPLICATE KEY UPDATE value = VALUES(value)
-    ")->execute([$globalModuleKey, $val]);
+    set_module_setting($globalModuleKey, 'enabled', $enabled ? '1' : '0');
   } catch (Throwable $e) {
     // module_settings tábla hiányozhat
   }

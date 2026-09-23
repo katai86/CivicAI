@@ -71,6 +71,22 @@ try {
     ];
   }
 
+  $cityIntel = [];
+  if ($healthAuthorityId > 0 && class_exists('CityIntelligenceOrchestrator')) {
+    try {
+      require_once __DIR__ . '/../services/cityintel/CityIntelligenceOrchestrator.php';
+      $dash = (new CityIntelligenceOrchestrator())->dashboard($healthAuthorityId);
+      $cityIntel = [
+        'insights_high' => (int)(($dash['summary'] ?? [])['insights_high'] ?? 0),
+        'anomalies' => count($dash['anomalies'] ?? []),
+        'top_actions' => array_slice($dash['actions'] ?? [], 0, 3),
+        'priorities' => array_slice($dash['priorities'] ?? [], 0, 5),
+      ];
+    } catch (Throwable $e) {
+      $cityIntel = [];
+    }
+  }
+
   $out = [
     'ok' => true,
     'data' => [
@@ -81,6 +97,7 @@ try {
       ],
       'open_backlog' => (int)($prio['totals']['open_reports'] ?? 0),
       'priority_focus' => $focus,
+      'city_intelligence' => $cityIntel,
     ],
   ];
   gov_api_cache_set($cacheKey, $out);

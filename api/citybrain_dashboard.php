@@ -313,6 +313,14 @@ try {
     'biodiversity_index_pct' => round((float)($g['biodiversity_index'] ?? 0) * 100, 0),
     'source' => 'green_intelligence',
   ];
+  if (isset($g['ndvi_score'])) {
+    $greenBlock['ndvi_score'] = round((float)$g['ndvi_score'], 2);
+    $greenBlock['ndvi_raw'] = isset($g['ndvi_raw']) ? $g['ndvi_raw'] : null;
+    $greenBlock['green_deficit_score'] = round((float)($g['green_deficit_score'] ?? 0), 2);
+    $greenBlock['vegetation_health_score'] = round((float)($g['vegetation_health_score'] ?? 0), 2);
+    $greenBlock['satellite_ndvi_ok'] = !empty($g['satellite_ndvi_ok']);
+    $greenBlock['data_sources'] = $g['data_sources'] ?? [];
+  }
 } catch (Throwable $e) {
   $greenBlock = null;
 }
@@ -344,6 +352,19 @@ if ($avgTemp !== null && $avgTemp >= 28 && $canopyPct > 0 && $canopyPct < 18) {
     'code' => 'heat_x_low_canopy',
     'severity' => $avgTemp >= 32 ? 'high' : 'medium',
     'params' => ['temp' => $avgTemp, 'canopy' => $canopyPct],
+  ];
+}
+$ndviPct = isset($greenBlock['ndvi_score']) ? round((float)$greenBlock['ndvi_score'] * 100, 0) : null;
+$greenDeficitScore = isset($greenBlock['green_deficit_score']) ? (float)$greenBlock['green_deficit_score'] : null;
+if ($greenDeficitScore !== null && $greenDeficitScore >= 0.45 && !empty($greenBlock['satellite_ndvi_ok'])) {
+  $crossInsights[] = [
+    'code' => 'sat_ndvi_green_deficit',
+    'severity' => $greenDeficitScore >= 0.65 ? 'high' : 'medium',
+    'params' => [
+      'deficit' => round($greenDeficitScore * 100, 0),
+      'ndvi' => $ndviPct,
+      'ndvi_raw' => $greenBlock['ndvi_raw'] ?? null,
+    ],
   ];
 }
 if ($avgAqi !== null && $avgAqi >= 80 && $open_reports >= 10) {

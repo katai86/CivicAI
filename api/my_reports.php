@@ -24,7 +24,7 @@ $stmt->execute([':uid' => $userId]);
 $rows = $stmt->fetchAll();
 
 foreach ($rows as &$r) {
-  $r['case'] = case_number((int)$r['id'], (string)$r['created_at']);
+  $r['case'] = case_number((int)$r['id'], (string)$r['created_at'], $r['case_no'] ?? null);
   $r['track_url'] = ($r['notify_enabled'] == 1 && !empty($r['notify_token']))
     ? app_url('/case.php?token=' . rawurlencode((string)$r['notify_token']))
     : null;

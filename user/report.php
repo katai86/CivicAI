@@ -17,7 +17,7 @@ if ($rid <= 0) {
   exit;
 }
 
-$stmt = db()->prepare("\n  SELECT\n    id, category, title, description, status, created_at,\n    address_approx, road, suburb, city, postcode,\n    lat, lng,\n    notify_enabled, notify_token\n  FROM reports\n  WHERE id = :id AND user_id = :uid\n  LIMIT 1\n");
+$stmt = db()->prepare("\n  SELECT\n    id, case_no, category, title, description, status, created_at,\n    address_approx, road, suburb, city, postcode,\n    lat, lng,\n    notify_enabled, notify_token\n  FROM reports\n  WHERE id = :id AND user_id = :uid\n  LIMIT 1\n");
 $stmt->execute([':id' => $rid, ':uid' => $userId]);
 $r = $stmt->fetch();
 
@@ -27,7 +27,7 @@ if (!$r) {
   exit;
 }
 
-$caseNo = case_number((int)$r['id'], (string)$r['created_at']);
+$caseNo = case_number((int)$r['id'], (string)$r['created_at'], $r['case_no'] ?? null);
 
 $statusLabel = [
   'pending' => t('status.pending'),

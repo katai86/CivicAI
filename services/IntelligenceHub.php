@@ -13,6 +13,7 @@ require_once __DIR__ . '/intelligence/HungaroMetDataService.php';
 require_once __DIR__ . '/intelligence/PvgisDataService.php';
 require_once __DIR__ . '/intelligence/OpenChargeMapDataService.php';
 require_once __DIR__ . '/intelligence/ViirsDataService.php';
+require_once __DIR__ . '/intelligence/ReferenceDataPolicy.php';
 
 final class IntelligenceHub
 {
@@ -89,6 +90,27 @@ final class IntelligenceHub
             }, ['ok' => false]);
         }
 
+        return $this->sanitizeContextModules($out);
+    }
+
+    /** @param array<string,mixed> $out */
+    private function sanitizeContextModules(array $out): array
+    {
+        $moduleKeys = ['gbif', 'weather', 'pvgis', 'ocm', 'viirs', 'gfw'];
+        $nullMap = [
+            'gbif' => ['occurrence_count'],
+            'weather' => ['temp_c', 'precip_mm'],
+            'pvgis' => ['annual_kwh'],
+            'ocm' => ['charger_count'],
+            'viirs' => ['light_pollution_index'],
+            'gfw' => ['tree_cover_percent'],
+        ];
+        foreach ($moduleKeys as $key) {
+            if (!isset($out[$key]) || !is_array($out[$key])) {
+                continue;
+            }
+            $out[$key] = ReferenceDataPolicy::normalize($out[$key], $nullMap[$key] ?? []);
+        }
         return $out;
     }
 

@@ -44,15 +44,12 @@ if (!is_array($data) || !isset($data['current'])) {
 
 $cur = $data['current'];
 $code = (int)($cur['weather_code'] ?? 0);
-$descriptions = [
-  0 => 'Clear', 1 => 'Mainly clear', 2 => 'Partly cloudy', 3 => 'Overcast',
-  45 => 'Foggy', 48 => 'Rime fog', 51 => 'Drizzle', 53 => 'Drizzle', 55 => 'Drizzle',
-  61 => 'Slight rain', 63 => 'Rain', 65 => 'Heavy rain',
-  71 => 'Slight snow', 73 => 'Snow', 75 => 'Heavy snow',
-  80 => 'Slight showers', 81 => 'Showers', 82 => 'Heavy showers',
-  95 => 'Thunderstorm', 96 => 'Thunderstorm with hail',
-];
-$description = $descriptions[$code] ?? 'Unknown';
+$knownCodes = [0, 1, 2, 3, 45, 48, 51, 53, 55, 61, 63, 65, 71, 73, 75, 80, 81, 82, 95, 96];
+$descKey = in_array($code, $knownCodes, true) ? ('weather.wmo_' . $code) : 'weather.wmo_unknown';
+$description = t($descKey);
+if ($description === $descKey) {
+  $description = t('weather.wmo_unknown');
+}
 
 echo json_encode([
   'ok' => true,

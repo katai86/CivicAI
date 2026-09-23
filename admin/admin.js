@@ -2,6 +2,8 @@
 function t(key) { return (window.LANG && window.LANG[key]) || key; }
 const BASE = (document.body?.dataset?.appBase != null ? document.body.dataset.appBase : '') || '';
 const API_LIST        = `${BASE}/api/admin_reports.php`;
+const API_REASSIGN_GEO = `${BASE}/api/admin_reassign_report_authority.php`;
+const API_REPORT_ROUTING = `${BASE}/api/admin_report_routing.php`;
 const API_ACTION      = `${BASE}/api/admin_action.php`; // delete-hez (legacy)
 const API_SET_STATUS  = `${BASE}/api/report_set_status.php`;
 const API_STATUS_LOG  = `${BASE}/api/report_status_log.php`;
@@ -13,6 +15,9 @@ const API_LAYERS      = `${BASE}/api/admin_layers.php`;
 const API_AUTHORITIES = `${BASE}/api/admin_authorities.php`;
 const API_MODULES     = `${BASE}/api/admin_modules.php`;
 const API_IOT_SYNC    = `${BASE}/api/admin_iot_sync.php`;
+const API_CITY_INTEL  = `${BASE}/api/city_intel_dashboard.php`;
+const API_CITY_INTEL_SOURCES = `${BASE}/api/city_intel_sources.php`;
+const API_CITY_INTEL_CRON = `${BASE}/api/cron_city_intelligence_sync.php`;
 const API_BUDGET      = `${BASE}/api/admin_budget_projects.php`;
 const LOGOUT_URL      = `${BASE}/admin/logout.php`;
 // ========================================================
@@ -404,7 +409,50 @@ async function loadAttachmentsInto(el, reportId){
   }
 }
 
-function renderRow(r){
+function routingTargetOptions(selected){
+  const opts = [
+    ['__auto__', t('admin.routing_auto') || 'Automatikus'],
+    ['municipal_clerk', t('routing.municipal_clerk') || 'municipal_clerk'],
+    ['state_road', t('routing.state_road') || 'state_road'],
+    ['mvm_lumen', t('routing.mvm_lumen') || 'mvm_lumen'],
+    ['authority_inbox', t('routing.authority_inbox') || 'authority_inbox'],
+  ];
+  const sel = selected || '__auto__';
+  return opts.map(([v, lab]) => `<option value="${v}"${sel === v ? ' selected' : ''}>${esc(lab)}</option>`).join('');
+}
+
+function authorityOptions(authorities, selectedId){
+  let html = `<option value="">${esc(t('admin.routing_no_authority') || '— nincs —')}</option>`;
+  (authorities || []).forEach(a => {
+    html += `<option value="${a.id}"${Number(selectedId) === Number(a.id) ? ' selected' : ''}>${esc(a.name || a.city || ('#' + a.id))}</option>`;
+  });
+  return html;
+}
+
+async function loadRoutingLogInto(el, reportId){
+  el.textContent = t('admin.load') + '...';
+  try {
+    const j = await fetchJson(`${API_REPORT_ROUTING}?report_id=${encodeURIComponent(String(reportId))}`);
+    const log = j.log || [];
+    if (!log.length) {
+      el.innerHTML = '<span class="text-secondary small">' + esc(t('admin.routing_log_empty') || 'Nincs routing napló.') + '</span>';
+      return;
+    }
+    el.innerHTML = '<ul class="small mb-0 ps-3">' + log.map(row => {
+      const ts = esc(row.created_at || '');
+      const tgt = esc(row.routing_target || '');
+      const ch = esc(row.delivery_channel || '');
+      const rcpt = esc(row.recipient_email || '');
+      const sent = row.mail_sent ? '✓' : '✗';
+      const err = row.mail_error ? esc(row.mail_error) : '';
+      return `<li>${ts} · <b>${tgt}</b> · ${ch} · ${rcpt} · ${sent}${err ? ' · <span class="text-danger">' + err + '</span>' : ''}</li>`;
+    }).join('') + '</ul>';
+  } catch (e) {
+    el.textContent = t('admin.error_load') + ': ' + (e.message || e);
+  }
+}
+
+function renderRow(r, authorities){
   const wrap = document.createElement('div');
   wrap.className = 'card card-outline card-primary admin-item';
 
@@ -426,8 +474,22 @@ function renderRow(r){
       <div class="text-secondary mt-1" title="${esc(r.description)}">${esc(descriptionSummary(r.description))}</div>
       ${r.address_approx ? `<div class="text-secondary mt-1">${esc(r.address_approx)}</div>` : ''}
       ${r.authority_name ? `<div class="text-secondary small">${esc(t('admin.authority_label'))}: ${esc(r.authority_name)}</div>` : ''}
+      ${r.routing_target ? `<div class="text-secondary small">${esc(t('admin.routing_current') || 'Routing')}:
+        <span class="badge text-bg-info">${esc(t('routing.' + r.routing_target) !== 'routing.' + r.routing_target ? t('routing.' + r.routing_target) : r.routing_target)}</span>
+        ${r.external_ticket_id ? `<span class="badge text-bg-light border ms-1">${esc(t('admin.external_ticket') || 'Külső')}: ${esc(r.external_ticket_id)}</span>` : ''}
+      </div>` : ''}
       ${reporterLine(r)}
       <div class="text-secondary mt-1">${Number(r.lat).toFixed(6)}, ${Number(r.lng).toFixed(6)} • ${esc(r.created_at || '')}</div>
+
+      <div class="d-flex flex-wrap gap-2 align-items-center mt-2 border-top pt-2">
+        <label class="small text-secondary mb-0">${esc(t('admin.routing_authority_select') || 'Hatóság')}</label>
+        <select data-role="authority" class="form-select form-select-sm" style="min-width:200px">${authorityOptions(authorities, r.authority_id)}</select>
+        <label class="small text-secondary mb-0">${esc(t('admin.routing_target_select') || 'Routing cél')}</label>
+        <select data-role="routing-target" class="form-select form-select-sm" style="min-width:180px">${routingTargetOptions(r.routing_override_target || '__auto__')}</select>
+        <button data-action="save-routing" class="btn btn-outline-primary btn-sm">${esc(t('admin.routing_save') || 'Mentés + routing')}</button>
+        <button data-action="reroute" class="btn btn-outline-secondary btn-sm">${esc(t('admin.routing_rerun') || 'Újrouting')}</button>
+        <button data-action="geo-authority" class="btn btn-outline-warning btn-sm" title="${esc(t('admin.reassign_geo_hint') || '')}">${esc(t('admin.routing_geo') || 'GPS hatóság')}</button>
+      </div>
 
       <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
         <select data-role="status" class="form-select form-select-sm" style="min-width:220px">${optionsHtml}</select>
@@ -437,6 +499,10 @@ function renderRow(r){
         <button data-action="export-fms" class="btn btn-outline-secondary btn-sm" title="${t('admin.export_fms_title')}">${t('admin.export_fms')}</button>
       </div>
 
+      <div class="mt-2">
+        <button class="btn btn-outline-secondary btn-sm" data-action="routing-log-toggle">${esc(t('admin.routing_log') || 'Routing napló')}</button>
+        <div data-role="routing-log" class="text-secondary mt-2" style="display:none"></div>
+      </div>
       <div class="mt-2">
         <button class="btn btn-outline-secondary btn-sm" data-action="log-toggle">${t('admin.status_log')}</button>
         <div data-role="log" class="text-secondary mt-2" style="display:none"></div>
@@ -468,6 +534,19 @@ function renderRow(r){
     if (!isOpen && !attLoaded) {
       attLoaded = true;
       await loadAttachmentsInto(attList, r.id);
+    }
+  });
+
+  const routingLogEl = wrap.querySelector('[data-role="routing-log"]');
+  const routingLogToggle = wrap.querySelector('[data-action="routing-log-toggle"]');
+  let routingLogLoaded = false;
+
+  routingLogToggle?.addEventListener('click', async () => {
+    const isOpen = routingLogEl.style.display !== 'none';
+    routingLogEl.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen && !routingLogLoaded) {
+      routingLogLoaded = true;
+      await loadRoutingLogInto(routingLogEl, r.id);
     }
   });
 
@@ -506,6 +585,50 @@ function renderRow(r){
         if (!isOpen && !logLoaded){
           logLoaded = true;
           await loadLogInto(logEl, r.id);
+        }
+        return;
+      }
+
+      if (action === 'save-routing' || action === 'reroute' || action === 'geo-authority'){
+        const aid = Number(wrap.querySelector('[data-role="authority"]')?.value || 0);
+        const rt = wrap.querySelector('[data-role="routing-target"]')?.value || '__auto__';
+        try {
+          if (action === 'geo-authority') {
+            const gj = await fetchJson(API_REPORT_ROUTING, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'reassign_geo', report_id: r.id })
+            });
+            if (gj.authority_id) {
+              r.authority_id = gj.authority_id;
+              const sel = wrap.querySelector('[data-role="authority"]');
+              if (sel) sel.value = String(gj.authority_id);
+            }
+            alert((t('admin.routing_geo_done') || 'GPS hatóság frissítve') + (gj.changed ? '' : ' (nincs változás)'));
+            return;
+          }
+          const payload = {
+            action: action === 'reroute' ? 'reroute' : 'save_and_reroute',
+            report_id: r.id,
+            authority_id: aid > 0 ? aid : null,
+            routing_override_target: rt,
+            force_target: rt !== '__auto__' ? rt : undefined,
+          };
+          const rj = await fetchJson(API_REPORT_ROUTING, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          r.routing_target = rj.target || r.routing_target;
+          alert((t('admin.routing_done') || 'Routing kész') + ': ' + (rj.target_label || rj.target || '') +
+            (rj.mail_sent ? ' ✓' : (rj.mail_error ? ' (' + rj.mail_error + ')' : '')));
+          routingLogLoaded = false;
+          if (routingLogEl && routingLogEl.style.display !== 'none') {
+            await loadRoutingLogInto(routingLogEl, r.id);
+            routingLogLoaded = true;
+          }
+        } catch (e) {
+          alert(t('admin.error_generic') + ': ' + (e.message || e));
         }
         return;
       }
@@ -558,14 +681,22 @@ function renderRow(r){
   return wrap;
 }
 
-function renderReports(rows){
+function renderReports(rows, authorities){
   const list = document.getElementById('reportList');
   list.innerHTML = '';
   if (!rows.length){
     list.innerHTML = '<div class="text-secondary">' + t('admin.no_filter_results') + '</div>';
     return;
   }
-  rows.forEach(r => list.appendChild(renderRow(r)));
+  rows.forEach(r => list.appendChild(renderRow(r, authorities)));
+}
+
+let _allAuthoritiesCache = null;
+async function getAuthoritiesCache(){
+  if (_allAuthoritiesCache) return _allAuthoritiesCache;
+  const j = await fetchJson(API_AUTHORITIES);
+  _allAuthoritiesCache = j.authorities || [];
+  return _allAuthoritiesCache;
 }
 
 let _authorityOptionsLoaded = false;
@@ -599,6 +730,7 @@ async function loadReports(){
 
   try{
     await ensureAuthorityFilterOptions();
+    const authorities = await getAuthoritiesCache();
     const qs = new URLSearchParams();
     qs.set('status', status);
     if (q) qs.set('q', q);
@@ -606,7 +738,7 @@ async function loadReports(){
     if (limit) qs.set('limit', String(limit));
     const j = await fetchJson(`${API_LIST}?${qs.toString()}`);
     const rows = (j && j.data) ? j.data : [];
-    renderReports(rows);
+    renderReports(rows, authorities);
 
     if (map) {
       for(const r of rows){
@@ -884,6 +1016,8 @@ async function loadAuthorities(){
     const authorities = j.authorities || [];
     const contacts = j.contacts || [];
     const assignments = j.assignments || [];
+    const joinRequests = j.join_requests || [];
+    const joinRequestList = document.getElementById('joinRequestList');
 
     select.innerHTML = authorities.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
     assignSelect.innerHTML = authorities.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
@@ -1010,6 +1144,51 @@ async function loadAuthorities(){
       });
     }
 
+    if (joinRequestList) {
+      if (!joinRequests.length) {
+        joinRequestList.innerHTML = '<div class="text-secondary">' + t('admin.no_data') + '</div>';
+      } else {
+        joinRequestList.innerHTML = joinRequests.map(r => {
+          const authOpts = authorities.map(a => `<option value="${a.id}"${Number(r.authority_id) === Number(a.id) ? ' selected' : ''}>${esc(a.name)}</option>`).join('');
+          return `
+          <div class="admin-item join-req-row" data-id="${r.id}">
+            <div class="meta"><b>${esc(r.display_name || r.email)}</b> • ${esc(r.email)}</div>
+            <div class="text-secondary small">${esc(r.municipality_city || '')}${r.organization_name ? ' • ' + esc(r.organization_name) : ''}</div>
+            <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+              <select class="form-select form-select-sm join-req-authority" style="max-width:220px">${authOpts}</select>
+              <button type="button" class="btn btn-sm btn-primary join-req-approve">${t('admin.join_approve')}</button>
+              <button type="button" class="btn btn-sm btn-outline-danger join-req-reject">${t('admin.join_reject')}</button>
+            </div>
+          </div>`;
+        }).join('');
+        joinRequestList.querySelectorAll('.join-req-approve').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const row = btn.closest('.join-req-row');
+            const id = row ? Number(row.dataset.id) : 0;
+            const aid = row ? Number(row.querySelector('.join-req-authority')?.value || 0) : 0;
+            await fetchJson(API_AUTHORITIES, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'approve_join', request_id: id, authority_id: aid })
+            });
+            await loadAuthorities();
+          });
+        });
+        joinRequestList.querySelectorAll('.join-req-reject').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const row = btn.closest('.join-req-row');
+            const id = row ? Number(row.dataset.id) : 0;
+            await fetchJson(API_AUTHORITIES, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'reject_join', request_id: id })
+            });
+            await loadAuthorities();
+          });
+        });
+      }
+    }
+
     if (!assignments.length){
       assignList.innerHTML = '<div class="text-secondary">' + t('admin.no_data') + '</div>';
     } else {
@@ -1083,6 +1262,7 @@ async function loadModules(){
       const isMistral = (m.id === 'mistral');
       const isOpenai = (m.id === 'openai');
       const isIot = (m.id === 'iot');
+      const isPlantTree = (m.id === 'plant_tree');
       const isEu = (m.id === 'eu_open_data');
       return `
         ${sectionPrefix}
@@ -1101,10 +1281,12 @@ async function loadModules(){
               <button type="button" class="btn btn-sm btn-primary module-save" data-module-id="${esc(m.id)}">${t('admin.module_save')}</button>
               ${isMistral ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTestMistral">' + t('admin.test_mistral') + '</button>' : ''}
               ${isOpenai ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="btnTestOpenai">' + t('admin.test_openai') + '</button>' : ''}
+              ${isPlantTree ? '<button type="button" class="btn btn-sm btn-outline-secondary btn-test-plantnet">' + (t('plant_tree.test_plantnet') || 'Teszt PlantNet') + '</button><button type="button" class="btn btn-sm btn-outline-secondary btn-test-huggingface">' + (t('plant_tree.test_huggingface') || 'Teszt HuggingFace') + '</button><button type="button" class="btn btn-sm btn-outline-primary btn-test-plant-tree">' + (t('plant_tree.test_health') || 'Provider állapot') + '</button>' : ''}
               ${isIot ? '<button type="button" class="btn btn-sm btn-outline-primary" id="btnIotSync">' + (t('admin.iot_sync_now') || 'Szinkronizálás most') + '</button>' : ''}
             </div>
             ${isMistral ? '<div id="mistralTestResult" class="small mt-2 text-secondary"></div>' : ''}
             ${isOpenai ? '<div id="openaiTestResult" class="small mt-2 text-secondary"></div>' : ''}
+            ${isPlantTree ? '<div class="plant-tree-test-result small mt-2 text-secondary"></div>' : ''}
             ${isIot ? '<div id="iotSyncResult" class="small mt-2 text-secondary"></div>' : ''}
           </div>
         </div>
@@ -1181,7 +1363,7 @@ async function loadModules(){
             openaiTestResult.textContent = (j.message || t('admin.openai_ok'));
             openaiTestResult.className = 'small mt-2 text-success';
           } else {
-            openaiTestResult.textContent = (j && j.error) ? j.error : 'Ismeretlen hiba';
+            openaiTestResult.textContent = (j && j.error) ? j.error : (t('admin.unknown_error') || '');
             openaiTestResult.className = 'small mt-2 text-danger';
           }
         } catch (e) {
@@ -1191,6 +1373,62 @@ async function loadModules(){
         btnTestOpenai.disabled = false;
       });
     }
+    list.querySelectorAll('.btn-test-plantnet').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('.card');
+        const resultEl = card?.querySelector('.plant-tree-test-result');
+        if (resultEl) resultEl.textContent = t('admin.testing');
+        btn.disabled = true;
+        try {
+          const j = await fetchJson(API_MODULES, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'test_plantnet' }) });
+          if (resultEl) {
+            resultEl.textContent = j?.ok ? (j.message || t('plant_tree.plantnet_ok')) : (j?.error || t('admin.unknown_error'));
+            resultEl.className = 'plant-tree-test-result small mt-2 ' + (j?.ok ? 'text-success' : 'text-danger');
+          }
+        } catch (e) {
+          if (resultEl) { resultEl.textContent = t('admin.error_generic') + ': ' + (e.message || e); resultEl.className = 'plant-tree-test-result small mt-2 text-danger'; }
+        }
+        btn.disabled = false;
+      });
+    });
+    list.querySelectorAll('.btn-test-huggingface').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('.card');
+        const resultEl = card?.querySelector('.plant-tree-test-result');
+        if (resultEl) resultEl.textContent = t('admin.testing');
+        btn.disabled = true;
+        try {
+          const j = await fetchJson(API_MODULES, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'test_huggingface' }) });
+          if (resultEl) {
+            resultEl.textContent = j?.ok ? (j.message || t('plant_tree.huggingface_ok')) : (j?.error || t('admin.unknown_error'));
+            resultEl.className = 'plant-tree-test-result small mt-2 ' + (j?.ok ? 'text-success' : 'text-danger');
+          }
+        } catch (e) {
+          if (resultEl) { resultEl.textContent = t('admin.error_generic') + ': ' + (e.message || e); resultEl.className = 'plant-tree-test-result small mt-2 text-danger'; }
+        }
+        btn.disabled = false;
+      });
+    });
+    list.querySelectorAll('.btn-test-plant-tree').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('.card');
+        const resultEl = card?.querySelector('.plant-tree-test-result');
+        if (resultEl) resultEl.textContent = t('admin.testing');
+        btn.disabled = true;
+        try {
+          const j = await fetchJson(API_MODULES, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'test_plant_tree' }) });
+          if (resultEl) {
+            const health = j?.health ? JSON.stringify(j.health, null, 2) : '';
+            resultEl.textContent = j?.ok ? ((j.message || '') + (health ? '\n' + health : '')) : (j?.error || t('admin.unknown_error'));
+            resultEl.className = 'plant-tree-test-result small mt-2 ' + (j?.ok ? 'text-success' : 'text-danger');
+            resultEl.style.whiteSpace = 'pre-wrap';
+          }
+        } catch (e) {
+          if (resultEl) { resultEl.textContent = t('admin.error_generic') + ': ' + (e.message || e); resultEl.className = 'plant-tree-test-result small mt-2 text-danger'; }
+        }
+        btn.disabled = false;
+      });
+    });
     const btnIotSync = document.getElementById('btnIotSync');
     const iotSyncResult = document.getElementById('iotSyncResult');
     if (btnIotSync && iotSyncResult) {
@@ -1203,12 +1441,16 @@ async function loadModules(){
           if (j && j.ok && j.providers) {
             const parts = Object.entries(j.providers).map(([k, v]) => {
               const err = v.error ? ' (' + v.error + ')' : '';
-              return k + ': ' + (v.imported || 0) + ' szenzor' + (v.updated ? ', ' + v.updated + ' metrika' : '') + err;
+              const extra = (v.updated ? (t('admin.iot_sync_metrics_suffix') || ', %u metrics').replace('%u', String(v.updated)) : '') + err;
+              return (t('admin.iot_sync_provider_line') || '%k: %i sensors%extra')
+                .replace('%k', k)
+                .replace('%i', String(v.imported || 0))
+                .replace('%extra', extra);
             });
             iotSyncResult.textContent = (t('admin.iot_sync_done') || 'Kész.') + ' ' + (parts.length ? parts.join('; ') : (t('admin.iot_sync_no_providers') || 'Nincs konfigurált provider.'));
             iotSyncResult.className = 'small mt-2 text-success';
           } else {
-            iotSyncResult.textContent = (j && j.error) ? j.error : (t('admin.unknown_error') || 'Ismeretlen hiba');
+            iotSyncResult.textContent = (j && j.error) ? j.error : (t('admin.unknown_error') || '');
             iotSyncResult.className = 'small mt-2 text-danger';
           }
         } catch (e) {
@@ -1235,7 +1477,8 @@ function initTabs(){
     users: document.getElementById('tab-users'),
     layers: document.getElementById('tab-layers'),
     authorities: document.getElementById('tab-authorities'),
-    modules: document.getElementById('tab-modules')
+    modules: document.getElementById('tab-modules'),
+    'city-intel': document.getElementById('tab-city-intel')
   };
   tabs.forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -1249,7 +1492,7 @@ function initTabs(){
       } else {
         if (overviewEl) overviewEl.hidden = true;
         if (panelEl) panelEl.hidden = false;
-        ['reports','users','layers','authorities','modules'].forEach(k => {
+        ['reports','users','layers','authorities','modules','city-intel'].forEach(k => {
           const el = bodies[k];
           if (el) el.hidden = (k !== key);
         });
@@ -1276,9 +1519,49 @@ function initTabs(){
           loadAuthorities();
         }
         if (key === 'modules') loadModules();
+        if (key === 'city-intel') loadCityIntelAdmin(false);
       }
     });
   });
+}
+
+async function loadCityIntelAdmin(doSync) {
+  const box = document.getElementById('cityIntelAdminSources');
+  const fr = document.getElementById('cityIntelAdminFreshness');
+  if (!box) return;
+  box.textContent = t('admin.load') + '...';
+  try {
+    if (doSync) {
+      await fetch(API_CITY_INTEL + '?sync=1', { credentials: 'include' });
+    }
+    const r = await fetch(API_CITY_INTEL_SOURCES, { credentials: 'include' });
+    const j = await r.json();
+    if (!j.ok || !j.data) {
+      box.innerHTML = '<div class="text-danger">' + esc(j.error || '—') + '</div>';
+      return;
+    }
+    const freshness = j.data.freshness || {};
+    if (fr) {
+      fr.textContent = 'OK:' + (freshness.ok || 0) + ' · error:' + (freshness.error || 0) + ' · stale:' + (freshness.stale || 0);
+    }
+    const sources = j.data.sources || [];
+    if (!sources.length) {
+      box.innerHTML = '<div class="text-secondary">—</div>';
+      return;
+    }
+    let html = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Source</th><th>Status</th><th>Last OK</th><th>Records</th><th>Error</th></tr></thead><tbody>';
+    sources.forEach(s => {
+      html += '<tr><td><strong>' + esc(s.name || s.source_key) + '</strong><br><code class="small">' + esc(s.source_key) + '</code></td>'
+        + '<td>' + esc(s.status || '') + '</td>'
+        + '<td class="small">' + esc(s.last_success_at || '—') + '</td>'
+        + '<td>' + esc(s.records_processed != null ? s.records_processed : '—') + '</td>'
+        + '<td class="small text-danger">' + esc(s.last_error || '') + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    box.innerHTML = html;
+  } catch (e) {
+    box.innerHTML = '<div class="text-danger">—</div>';
+  }
 }
 
 function BUDGET_STATUS_LABEL() { return { draft: t('admin.budget_status_draft'), published: t('admin.budget_status_published'), closed: t('admin.budget_status_closed') }; }
@@ -1426,6 +1709,24 @@ function budgetEditRow(id, proj, authorities, listEl) {
 
 document.getElementById('loadReports')?.addEventListener('click', loadReports);
 document.getElementById('refreshReports')?.addEventListener('click', loadReports);
+document.getElementById('reassignReportsGeo')?.addEventListener('click', async () => {
+  if (!confirm(t('admin.reassign_geo_confirm') || 'Újrarendeled a bejelentéseket GPS/város alapján a helyes hatósághoz?')) return;
+  const btn = document.getElementById('reassignReportsGeo');
+  if (btn) btn.disabled = true;
+  try {
+    const j = await fetchJson(API_REASSIGN_GEO, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ all_misrouted: true, limit: 500 }),
+    });
+    alert((t('admin.reassign_geo_done') || 'Kész') + ': ' + (j.changed || 0) + ' / ' + (j.checked || 0));
+    await loadReports();
+  } catch (e) {
+    alert((t('admin.reassign_geo_error') || 'Hiba') + ': ' + (e && e.message ? e.message : e));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
 let searchTimer = null;
 document.getElementById('reportSearch')?.addEventListener('input', () => {
   clearTimeout(searchTimer);
@@ -1580,6 +1881,8 @@ document.getElementById('assignUser')?.addEventListener('click', async () => {
 document.getElementById('refreshStats')?.addEventListener('click', loadStats);
 
 initTabs();
+document.getElementById('cityIntelAdminRefresh')?.addEventListener('click', () => loadCityIntelAdmin(false));
+document.getElementById('cityIntelAdminSync')?.addEventListener('click', () => loadCityIntelAdmin(true));
 document.querySelectorAll('.app-sidebar .sidebar-section-header').forEach(function(header){
   header.addEventListener('click', function(){
     header.classList.toggle('sidebar-section-collapsed');

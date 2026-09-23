@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
+require_once __DIR__ . '/../services/ProfileAuthorityLinkService.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
   json_response(['ok'=>false,'error'=>'Method not allowed'], 405);
@@ -30,6 +31,11 @@ if (!$name) json_response(['ok'=>false,'error'=>t('api.facility_name_required')]
 if (!is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>t('api.facility_lat_lng_required')], 400);
 
 $userId = current_user_id();
+$cityFromAddr = null;
+if ($address && preg_match('/,\s*([^,]+)\s*$/u', $address, $m)) {
+  $cityFromAddr = trim($m[1]);
+}
+$authorityId = ProfileAuthorityLinkService::resolveAuthorityId((float)$lat, (float)$lng, $cityFromAddr);
 
 try {
   $stmt = db()->prepare("SELECT id FROM facilities WHERE user_id = :uid LIMIT 1");
@@ -39,19 +45,21 @@ try {
   if ($existing > 0) {
     db()->prepare("UPDATE facilities
       SET name=:n, service_type=:st, lat=:lat, lng=:lng, address=:addr, phone=:ph, email=:em,
-          hours_json=:hj, replacement_json=:rj, updated_at=NOW(), is_active=1
+          hours_json=:hj, replacement_json=:rj, updated_at=NOW(), is_active=1,
+          authority_id=COALESCE(:aid, authority_id)
       WHERE id=:id")
       ->execute([
         ':n'=>$name,':st'=>$serviceType,':lat'=>(float)$lat,':lng'=>(float)$lng,':addr'=>$address,
-        ':ph'=>$phone,':em'=>$email,':hj'=>$hoursJson,':rj'=>$replacementJson,':id'=>$existing
+        ':ph'=>$phone,':em'=>$email,':hj'=>$hoursJson,':rj'=>$replacementJson,':id'=>$existing,
+        ':aid'=>$authorityId,
       ]);
   } else {
     db()->prepare("INSERT INTO facilities
-      (user_id, name, service_type, lat, lng, address, phone, email, hours_json, replacement_json, updated_at)
-      VALUES (:uid,:n,:st,:lat,:lng,:addr,:ph,:em,:hj,:rj,NOW())")
+      (user_id, name, service_type, lat, lng, address, phone, email, hours_json, replacement_json, authority_id, updated_at)
+      VALUES (:uid,:n,:st,:lat,:lng,:addr,:ph,:em,:hj,:rj,:aid,NOW())")
       ->execute([
         ':uid'=>$userId,':n'=>$name,':st'=>$serviceType,':lat'=>(float)$lat,':lng'=>(float)$lng,':addr'=>$address,
-        ':ph'=>$phone,':em'=>$email,':hj'=>$hoursJson,':rj'=>$replacementJson
+        ':ph'=>$phone,':em'=>$email,':hj'=>$hoursJson,':rj'=>$replacementJson,':aid'=>$authorityId,
       ]);
   }
   json_response(['ok'=>true]);

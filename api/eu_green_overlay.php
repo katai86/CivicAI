@@ -96,13 +96,21 @@ if (!$cop->isActive()) {
 try {
     $gi = new GreenIntelligence();
     $metrics = $gi->compute($authorityId);
-    if (!empty($metrics['eu_notes'])) {
+    $notes = [];
+    if (!empty($metrics['eu_notes']) && is_array($metrics['eu_notes'])) {
+        $notes = $metrics['eu_notes'];
         unset($metrics['eu_notes']);
     }
     $geo = $cop->buildOverlayGeoJson($layerType, $authorityId, $bbox, $metrics);
+    $satOk = !empty($metrics['satellite_ndvi_ok']);
+    $featCount = isset($geo['features']) && is_array($geo['features']) ? count($geo['features']) : 0;
+    $featSource = 'local_proxy';
+    if ($featCount > 0 && !empty($geo['features'][0]['properties']['source'])) {
+        $featSource = (string)$geo['features'][0]['properties']['source'];
+    }
     json_response([
         'ok' => true,
-        'source' => 'copernicus',
+        'source' => $satOk ? 'copernicus_sentinelhub' : 'copernicus',
         'scope' => [
             'authority_id' => $authorityId,
             'bbox' => $bbox,
@@ -112,8 +120,14 @@ try {
         'meta' => [
             'fetched_at' => gmdate('c'),
             'cached' => false,
-            'confidence' => 'medium',
-            'notes' => ['imported_context_and_local_grid'],
+            'confidence' => $satOk ? 'high' : 'low',
+            'satellite_ndvi_ok' => $satOk,
+            'ndvi_raw' => $metrics['ndvi_raw'] ?? null,
+            'ndvi_score' => $metrics['ndvi_score'] ?? null,
+            'feature_source' => $featSource,
+            'notes' => array_values(array_merge($notes, [
+                $satOk ? 'sentinelhub_statistics_ndvi' : 'satellite_ndvi_unavailable_or_proxy',
+            ])),
         ],
     ]);
 } catch (Throwable $e) {

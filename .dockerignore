@@ -1,0 +1,7 @@
+.git
+uploads/*
+error.log
+config.local.php
+.env
+node_modules
+terminals

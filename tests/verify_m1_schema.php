@@ -36,7 +36,7 @@ if (!tableExists($db, 'tree_logs')) {
   echo "OK: Table tree_logs exists\n";
 }
 
-foreach (['related_tree_id', 'ai_category', 'ai_priority', 'gov_validated', 'impact_type'] as $col) {
+foreach (['related_tree_id', 'ai_category', 'ai_priority', 'report_gov_validated', 'impact_type'] as $col) {
   if (!columnExists($db, 'reports', $col)) {
     echo "FAIL: reports.$col missing. Run sql/2026-13-tree-cadastre.sql\n";
     $ok = false;

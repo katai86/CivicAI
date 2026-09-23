@@ -117,6 +117,12 @@ $geocodeClientUi = civic_geocode_client_config($adminUid);
               <p><?= htmlspecialchars(t('admin.modules'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link tab" data-tab="city-intel">
+              <i class="nav-icon bi bi-radar"></i>
+              <p><?= htmlspecialchars(t('admin.city_intel'), ENT_QUOTES, 'UTF-8') ?></p>
+            </a>
+          </li>
         </ul>
       </nav>
     </div>
@@ -190,6 +196,7 @@ $geocodeClientUi = civic_geocode_client_config($adminUid);
                     <div class="d-flex gap-2 ms-auto">
                       <button id="loadReports" class="btn btn-primary btn-sm" type="button"><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?></button>
                       <button id="refreshReports" class="btn btn-outline-secondary btn-sm" type="button"><?= htmlspecialchars(t('admin.refresh'), ENT_QUOTES, 'UTF-8') ?></button>
+                      <button id="reassignReportsGeo" class="btn btn-outline-warning btn-sm" type="button" title="<?= htmlspecialchars(t('admin.reassign_geo_hint'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('admin.reassign_geo'), ENT_QUOTES, 'UTF-8') ?></button>
                     </div>
                   </div>
 
@@ -304,6 +311,9 @@ $geocodeClientUi = civic_geocode_client_config($adminUid);
                   </div>
                   <div class="admin-list mt-2" id="contactList"><?= htmlspecialchars(t('admin.user_list_empty'), ENT_QUOTES, 'UTF-8') ?></div>
 
+                  <div class="fw-semibold mt-4"><?= htmlspecialchars(t('admin.join_requests_title'), ENT_QUOTES, 'UTF-8') ?></div>
+                  <div class="admin-list mt-2" id="joinRequestList"><?= htmlspecialchars(t('admin.user_list_empty'), ENT_QUOTES, 'UTF-8') ?></div>
+
                   <div class="fw-semibold mt-4"><?= htmlspecialchars(t('admin.assign_title'), ENT_QUOTES, 'UTF-8') ?></div>
                   <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
                     <select id="assignAuthoritySelect" class="form-select form-select-sm"></select>
@@ -316,6 +326,15 @@ $geocodeClientUi = civic_geocode_client_config($adminUid);
                 <div class="admin-tab-body" id="tab-modules" hidden>
                   <p class="text-secondary small mb-3"><?= htmlspecialchars(t('admin.modules_intro'), ENT_QUOTES, 'UTF-8') ?></p>
                   <div id="moduleList"><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?>...</div>
+                </div>
+                <div class="admin-tab-body" id="tab-city-intel" hidden>
+                  <p class="text-secondary small mb-2"><?= htmlspecialchars(t('admin.city_intel_intro'), ENT_QUOTES, 'UTF-8') ?></p>
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="cityIntelAdminRefresh"><?= htmlspecialchars(t('admin.refresh'), ENT_QUOTES, 'UTF-8') ?></button>
+                    <button type="button" class="btn btn-sm btn-primary" id="cityIntelAdminSync"><?= htmlspecialchars(t('admin.city_intel_sync'), ENT_QUOTES, 'UTF-8') ?></button>
+                    <span class="small text-secondary align-self-center" id="cityIntelAdminFreshness"></span>
+                  </div>
+                  <div id="cityIntelAdminSources" class="small"><?= htmlspecialchars(t('admin.load'), ENT_QUOTES, 'UTF-8') ?>...</div>
                 </div>
               </div>
             </div>
@@ -336,6 +355,6 @@ $geocodeClientUi = civic_geocode_client_config($adminUid);
 <script src="<?= htmlspecialchars(app_url('/assets/theme-lang.js'), ENT_QUOTES, 'UTF-8') ?>"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="<?= htmlspecialchars(app_url('/assets/api_client.js'), ENT_QUOTES, 'UTF-8') ?>?v=1"></script>
-<script src="admin.js?v=11"></script>
+<script src="admin.js?v=12"></script>
 </body>
 </html>

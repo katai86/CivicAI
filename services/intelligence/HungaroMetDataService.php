@@ -26,12 +26,12 @@ class HungaroMetDataService
         $bbox = self::authorityBbox($authorityId);
         $c = $bbox ? self::bboxCenter($bbox) : ['lat' => 47.16, 'lng' => 19.50];
         $cacheKey = 'wx_' . md5(json_encode($c));
-        $cached = $this->cacheGet($cacheKey);
-        if ($cached) return $cached;
+        $cached = $this->cacheGet($cacheKey, ['temp_c', 'precip_mm', 'drought_index', 'heat_risk']);
+        if ($cached) {
+            return $cached;
+        }
         if ($this->liteFetchGuard()) {
-            $mock = ['ok' => true, 'temp_c' => 24.0, 'precip_mm' => 12.0, 'drought_index' => 40, 'heat_risk' => 25, 'source' => 'reference', 'notes' => ['using_reference', 'lite_fetch'], 'cached' => false];
-            $this->cacheSet($cacheKey, $mock, 'reference');
-            return $mock;
+            return $this->noLiveDataResponse($out, ['temp_c', 'precip_mm'], 'lite_fetch_skipped');
         }
 
         $url = 'https://api.open-meteo.com/v1/forecast?latitude=' . $c['lat'] . '&longitude=' . $c['lng']
@@ -62,9 +62,7 @@ class HungaroMetDataService
             }
         }
         $this->recordError($resp['error'] ?? 'weather_unreachable');
-        $mock = ['ok' => true, 'temp_c' => 24.0, 'precip_mm' => 12.0, 'drought_index' => 40, 'heat_risk' => 25, 'source' => 'reference', 'notes' => ['using_reference'], 'cached' => false];
-        $this->cacheSet($cacheKey, $mock, 'reference');
-        return $mock;
+        return $this->noLiveDataResponse($out, ['temp_c', 'precip_mm'], 'weather_unreachable', $resp['error'] ?? null);
     }
 
     /** @return array{type:string,features:array} */

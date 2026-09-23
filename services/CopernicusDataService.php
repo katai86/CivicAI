@@ -1,8 +1,10 @@
 <?php
 /**
- * Copernicus Data Space (CDSE) – növényzet / NDVI kontextus (Milestone 2).
- * OAuth + STAC keresés (hivatalos katalógus); területi statisztika: helyi fa + bejelentés rács proxy,
- * műhold jelenlét meta. Process API / valós NDVI raster későbbi lépés.
+ * Copernicus Data Space (CDSE) + Sentinel Hub:
+ * - OAuth2 client credentials
+ * - STAC katalógus (jelenlét)
+ * - Statistical API → valódi Sentinel-2 L2A NDVI mean (Processing Units)
+ * Overlay / AI kontextus erre épül; helyi fa-proxy csak fallback, ha nincs token vagy API hiba.
  */
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
@@ -13,6 +15,58 @@ class CopernicusDataService
 {
     private const TOKEN_URL = 'https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token';
     private const STAC_SEARCH = 'https://stac.dataspace.copernicus.eu/v1/search';
+    /** CDSE Sentinel Hub Statistical API (Processing Units; külön service a Usage-ban) */
+    private const STATS_URL = 'https://sh.dataspace.copernicus.eu/statistics/v1';
+    /** CDSE Sentinel Hub Process API – a Usage „Processing API” sorába ez megy */
+    private const PROCESS_URL = 'https://sh.dataspace.copernicus.eu/api/v1/process';
+
+    /** NDVI evalscript – Statistical API (dataMask kötelező; víz/felhő kizárás) */
+    private const NDVI_EVALSCRIPT = <<<'JS'
+//VERSION=3
+function setup() {
+  return {
+    input: [{
+      bands: ["B04", "B08", "SCL", "dataMask"]
+    }],
+    output: [
+      { id: "data", bands: 1 },
+      { id: "dataMask", bands: 1 }
+    ]
+  };
+}
+function evaluatePixel(samples) {
+  let ndvi = (samples.B08 - samples.B04) / (samples.B08 + samples.B04);
+  var validNDVIMask = 1;
+  if (samples.B08 + samples.B04 == 0) {
+    validNDVIMask = 0;
+  }
+  var clearMask = 1;
+  // SCL: 6=water, 8/9/10=cloud, 11=snow
+  if (samples.SCL == 6 || samples.SCL == 8 || samples.SCL == 9 || samples.SCL == 10 || samples.SCL == 11) {
+    clearMask = 0;
+  }
+  return {
+    data: [ndvi],
+    dataMask: [samples.dataMask * validNDVIMask * clearMask]
+  };
+}
+JS;
+
+    /** Process API: egyszerű NDVI szürkeárnyalatos PNG (Usage → Processing API) */
+    private const NDVI_PROCESS_EVALSCRIPT = <<<'JS'
+//VERSION=3
+function setup() {
+  return {
+    input: ["B04", "B08", "dataMask"],
+    output: { bands: 4 }
+  };
+}
+function evaluatePixel(s) {
+  let ndvi = (s.B08 - s.B04) / (s.B08 + s.B04);
+  let v = Math.max(0, Math.min(1, (ndvi + 0.2) / 1.0));
+  return [v, v, v, s.dataMask];
+}
+JS;
 
     public function isActive(): bool
     {
@@ -20,19 +74,24 @@ class CopernicusDataService
             && function_exists('eu_open_data_feature_enabled') && eu_open_data_feature_enabled('copernicus_enabled');
     }
 
+    public function hasCredentials(): bool
+    {
+        $cid = trim((string)(get_module_setting('eu_open_data', 'copernicus_client_id') ?? ''));
+        $sec = trim((string)(get_module_setting('eu_open_data', 'copernicus_client_secret') ?? ''));
+        return $cid !== '' && $sec !== '';
+    }
+
     /**
-     * OAuth2 client credentials (cache: ~50 perc).
+     * OAuth2 client credentials (cache: ~45 perc).
+     * Sentinel Hub OAuth kliens kell a CDSE dashboardból (Processing / Statistical API).
      */
     public function getAccessToken(): ?string
     {
-        if (!$this->isActive()) {
+        if (!$this->isActive() || !$this->hasCredentials()) {
             return null;
         }
         $cid = trim((string)(get_module_setting('eu_open_data', 'copernicus_client_id') ?? ''));
         $sec = trim((string)(get_module_setting('eu_open_data', 'copernicus_client_secret') ?? ''));
-        if ($cid === '' || $sec === '') {
-            return null;
-        }
         if (ExternalDataCache::isInErrorCooldown('copernicus', 'oauth_fail_' . md5($cid))) {
             return null;
         }
@@ -47,9 +106,10 @@ class CopernicusDataService
         ]);
         if (!$resp['ok']) {
             $err = $resp['error'] ?? ('http_' . ($resp['status'] ?? 0));
-            ExternalDataCache::logProvider('copernicus', 'oauth_token', 'error', $err);
+            $snip = substr(preg_replace('/\s+/', ' ', (string)($resp['body'] ?? '')), 0, 120);
+            ExternalDataCache::logProvider('copernicus', 'oauth_token', 'error', $err . ($snip !== '' ? (';' . $snip) : ''));
             if ((int)($resp['status'] ?? 0) === 401 || strpos((string)$err, '401') !== false) {
-                ExternalDataCache::setErrorCooldown('copernicus', 'oauth_fail_' . md5($cid), 60, 'http_401');
+                ExternalDataCache::setErrorCooldown('copernicus', 'oauth_fail_' . md5($cid), 15, 'http_401');
             }
             return null;
         }
@@ -58,17 +118,16 @@ class CopernicusDataService
             ExternalDataCache::logProvider('copernicus', 'oauth_token', 'error', 'invalid_token_response');
             return null;
         }
-        $ttlMin = 50;
         ExternalDataCache::set('copernicus', 'oauth_access_token', [
             'access_token' => $j['access_token'],
             'token_type' => $j['token_type'] ?? 'Bearer',
-        ], $ttlMin);
+        ], 45);
         ExternalDataCache::logProvider('copernicus', 'oauth_token', 'ok', null);
         return (string)$j['access_token'];
     }
 
     /**
-     * STAC: Sentinel-2 L2A tételek száma a bbox-ban (műhold megfigyelés jelenléte, nem NDVI érték).
+     * STAC: Sentinel-2 L2A tételek száma (katalógus, nem NDVI érték).
      *
      * @param array{min_lat:float,max_lat:float,min_lng:float,max_lng:float} $bbox
      * @return array{ok:bool,item_count:int,features_sample:int,cached:bool,error:?string}
@@ -90,15 +149,10 @@ class CopernicusDataService
             return $out;
         }
 
-        $minLng = (float)$bbox['min_lng'];
-        $minLat = (float)$bbox['min_lat'];
-        $maxLng = (float)$bbox['max_lng'];
-        $maxLat = (float)$bbox['max_lat'];
         $df = $dateFrom ?: gmdate('Y-m-d\TH:i:s\Z', strtotime('-120 days'));
         $dt = $dateTo ?: gmdate('Y-m-d\TH:i:s\Z');
-
         $body = [
-            'bbox' => [$minLng, $minLat, $maxLng, $maxLat],
+            'bbox' => [(float)$bbox['min_lng'], (float)$bbox['min_lat'], (float)$bbox['max_lng'], (float)$bbox['max_lat']],
             'datetime' => $df . '/' . $dt,
             'collections' => ['sentinel-2-l2a'],
             'limit' => 10,
@@ -122,25 +176,346 @@ class CopernicusDataService
     }
 
     /**
-     * @return array{vegetation_health_score:float,notes:array<int,string>}
+     * Valódi Sentinel-2 NDVI mean a bbox-ra (Statistical API → Processing Units).
+     *
+     * @param array{min_lat:float,max_lat:float,min_lng:float,max_lng:float} $bbox
+     * @return array{ok:bool,mean:?float,min:?float,max:?float,sample_count:int,cached:bool,error:?string,source:string}
      */
-    public function fetchVegetationHealthForBBox(array $bbox, float $localCanopyScore, ?string $dateFrom = null, ?string $dateTo = null): array
+    public function fetchNdviMeanForBBox(array $bbox, int $lookbackDays = 90): array
     {
-        $stac = $this->fetchNdviTilesOrStatsForBBox($bbox, $dateFrom, $dateTo);
-        $satBoost = 0.0;
-        $notes = [];
-        if ($stac['ok'] && $stac['item_count'] > 0) {
-            $satBoost = min(0.15, log(1 + min(50, $stac['item_count'])) / 25);
-            $notes[] = 'stac_sentinel2_l2a_observations:' . $stac['item_count'];
-        } else {
-            $notes[] = 'no_recent_stac_match_or_api_error';
+        $out = [
+            'ok' => false,
+            'mean' => null,
+            'min' => null,
+            'max' => null,
+            'sample_count' => 0,
+            'cached' => false,
+            'error' => null,
+            'source' => 'sentinelhub_statistics',
+        ];
+        if (!$this->isActive()) {
+            $out['error'] = 'copernicus_disabled';
+            return $out;
         }
-        $vh = min(1.0, max(0.0, $localCanopyScore * 0.75 + $satBoost + 0.15 * min(1.0, $localCanopyScore * 1.2)));
-        return ['vegetation_health_score' => round($vh, 2), 'notes' => $notes];
+        $token = $this->getAccessToken();
+        if ($token === null) {
+            $out['error'] = $this->hasCredentials() ? 'oauth_unavailable' : 'oauth_credentials_missing';
+            return $out;
+        }
+
+        $lookbackDays = max(14, min(180, $lookbackDays));
+        $cacheKey = 'ndvi_mean_' . md5(json_encode([$bbox, $lookbackDays]));
+        $hit = ExternalDataCache::getValid('copernicus', $cacheKey);
+        if ($hit && isset($hit['payload']['mean'])) {
+            // Ha a Statistical már cache-ből jön, Process API ping-et akkor is lefuttatjuk (Usage Processing sor).
+            $fromCached = (string)($hit['payload']['period_from'] ?? gmdate('Y-m-d\T00:00:00\Z', strtotime('-90 days')));
+            $toCached = (string)($hit['payload']['period_to'] ?? gmdate('Y-m-d\T23:59:59\Z'));
+            $this->pingProcessApiNdvi($bbox, $token, $fromCached, $toCached);
+            return array_merge($out, $hit['payload'], ['ok' => true, 'cached' => true]);
+        }
+
+        $from = gmdate('Y-m-d\T00:00:00\Z', strtotime('-' . $lookbackDays . ' days'));
+        $to = gmdate('Y-m-d\T23:59:59\Z');
+        $width = 64;
+        $height = 64;
+        $request = [
+            'input' => [
+                'bounds' => [
+                    'bbox' => [
+                        (float)$bbox['min_lng'],
+                        (float)$bbox['min_lat'],
+                        (float)$bbox['max_lng'],
+                        (float)$bbox['max_lat'],
+                    ],
+                    'properties' => [
+                        'crs' => 'http://www.opengis.net/def/crs/EPSG/0/4326',
+                    ],
+                ],
+                'data' => [[
+                    'type' => 'sentinel-2-l2a',
+                    'dataFilter' => [
+                        'mosaickingOrder' => 'leastCC',
+                        'maxCloudCoverage' => 40,
+                    ],
+                ]],
+            ],
+            'aggregation' => [
+                'timeRange' => ['from' => $from, 'to' => $to],
+                'aggregationInterval' => ['of' => 'P' . max(30, (int)round($lookbackDays / 2)) . 'D'],
+                'evalscript' => self::NDVI_EVALSCRIPT,
+                'width' => $width,
+                'height' => $height,
+            ],
+        ];
+
+        $resp = ExternalHttpClient::postJson(
+            self::STATS_URL,
+            $request,
+            max(45, ExternalHttpClient::defaultTimeoutSeconds()),
+            ['Authorization: Bearer ' . $token]
+        );
+        if (!$resp['ok']) {
+            $out['error'] = $resp['error'] ?? ('http_' . $resp['status']);
+            $snip = substr(preg_replace('/\s+/', ' ', (string)($resp['body'] ?? '')), 0, 160);
+            ExternalDataCache::logProvider('copernicus', 'statistics_ndvi', 'error', $out['error'] . ($snip !== '' ? (';' . $snip) : ''));
+            return $out;
+        }
+
+        $parsed = $this->parseNdviStatsResponse((string)$resp['body']);
+        if ($parsed['mean'] === null) {
+            $out['error'] = 'no_ndvi_stats_in_response';
+            ExternalDataCache::logProvider('copernicus', 'statistics_ndvi', 'error', $out['error']);
+            return $out;
+        }
+
+        $pu = ExternalHttpClient::processingUnitsSpent($resp);
+        $payload = [
+            'mean' => $parsed['mean'],
+            'min' => $parsed['min'],
+            'max' => $parsed['max'],
+            'sample_count' => $parsed['sample_count'],
+            'source' => 'sentinelhub_statistics',
+            'period_from' => $from,
+            'period_to' => $to,
+            'pu_spent' => $pu,
+        ];
+        ExternalDataCache::set('copernicus', $cacheKey, $payload, 360, 'ok', null);
+        $puMsg = $pu !== null ? (';pu=' . $pu) : ';pu=n/a';
+        ExternalDataCache::logProvider(
+            'copernicus',
+            'statistics_ndvi',
+            'ok',
+            'mean=' . $parsed['mean'] . ';samples=' . $parsed['sample_count'] . $puMsg
+        );
+
+        // Process API: megjelenik a SH Usage „Processing API” sorában (Statistical külön service).
+        $this->pingProcessApiNdvi($bbox, $token, $from, $to);
+
+        return array_merge($out, $payload, ['ok' => true, 'cached' => false]);
     }
 
     /**
-     * Felszíni hő / zárt burkolat proxy: alacsony lombkorona + magas „nem zöld” bejelentés sűrűség.
+     * Kis Process API NDVI PNG – Usage dashboard Processing API + PU.
+     * Cache-elve, hogy ne spameljen; a válaszbody-t nem tároljuk.
+     */
+    private function pingProcessApiNdvi(array $bbox, string $token, string $from, string $to): void
+    {
+        $key = 'process_ndvi_ping_' . md5(json_encode($bbox));
+        if (ExternalDataCache::getValid('copernicus', $key)) {
+            return;
+        }
+        $request = [
+            'input' => [
+                'bounds' => [
+                    'bbox' => [
+                        (float)$bbox['min_lng'],
+                        (float)$bbox['min_lat'],
+                        (float)$bbox['max_lng'],
+                        (float)$bbox['max_lat'],
+                    ],
+                    'properties' => [
+                        'crs' => 'http://www.opengis.net/def/crs/EPSG/0/4326',
+                    ],
+                ],
+                'data' => [[
+                    'type' => 'sentinel-2-l2a',
+                    'dataFilter' => [
+                        'timeRange' => ['from' => $from, 'to' => $to],
+                        'mosaickingOrder' => 'leastCC',
+                        'maxCloudCoverage' => 40,
+                    ],
+                ]],
+            ],
+            'output' => [
+                'width' => 64,
+                'height' => 64,
+                'responses' => [[
+                    'identifier' => 'default',
+                    'format' => ['type' => 'image/png'],
+                ]],
+            ],
+            'evalscript' => self::NDVI_PROCESS_EVALSCRIPT,
+        ];
+        $resp = ExternalHttpClient::postJson(
+            self::PROCESS_URL,
+            $request,
+            max(45, ExternalHttpClient::defaultTimeoutSeconds()),
+            [
+                'Authorization: Bearer ' . $token,
+                'Accept: image/png',
+            ]
+        );
+        $pu = ExternalHttpClient::processingUnitsSpent($resp);
+        if (!$resp['ok']) {
+            $snip = substr(preg_replace('/\s+/', ' ', (string)($resp['body'] ?? '')), 0, 120);
+            ExternalDataCache::logProvider(
+                'copernicus',
+                'process_ndvi',
+                'error',
+                ($resp['error'] ?? 'fail') . ($snip !== '' ? (';' . $snip) : '')
+            );
+            // Rövid cooldown, ne ismételje folyamatosan hibásan
+            ExternalDataCache::set('copernicus', $key, ['ok' => false], 30, 'error', $resp['error'] ?? 'fail');
+            return;
+        }
+        $bytes = strlen((string)$resp['body']);
+        ExternalDataCache::set('copernicus', $key, ['ok' => true, 'bytes' => $bytes, 'pu_spent' => $pu], 360, 'ok', null);
+        ExternalDataCache::logProvider(
+            'copernicus',
+            'process_ndvi',
+            'ok',
+            'bytes=' . $bytes . ($pu !== null ? (';pu=' . $pu) : ';pu=n/a')
+        );
+    }
+
+    /**
+     * Rács: cellánként Statistical NDVI → zöldhiány / ültetési prioritás zónák.
+     * Alapból 2×2 (max 4 API hívás); eredmény 6 órára cache-elve.
+     *
+     * @return list<array{lat:float,lng:float,weight:float,kind:string,cell:string,ndvi:?float}>
+     */
+    public function fetchNdviGridZones(array $bbox, int $cols = 2, int $rows = 2): array
+    {
+        $cols = max(2, min(3, $cols));
+        $rows = max(2, min(3, $rows));
+        $gridKey = 'ndvi_grid_zones_' . md5(json_encode([$bbox, $cols, $rows]));
+        $hit = ExternalDataCache::getValid('copernicus', $gridKey);
+        if ($hit && isset($hit['payload']['zones']) && is_array($hit['payload']['zones'])) {
+            return $hit['payload']['zones'];
+        }
+        $zones = [];
+        $latStep = ((float)$bbox['max_lat'] - (float)$bbox['min_lat']) / $rows;
+        $lngStep = ((float)$bbox['max_lng'] - (float)$bbox['min_lng']) / $cols;
+        if ($latStep <= 0 || $lngStep <= 0) {
+            return [];
+        }
+        $calls = 0;
+        for ($i = 0; $i < $rows; $i++) {
+            for ($j = 0; $j < $cols; $j++) {
+                if ($calls >= 6) {
+                    break 2;
+                }
+                $cellBbox = [
+                    'min_lat' => (float)$bbox['min_lat'] + $i * $latStep,
+                    'max_lat' => (float)$bbox['min_lat'] + ($i + 1) * $latStep,
+                    'min_lng' => (float)$bbox['min_lng'] + $j * $lngStep,
+                    'max_lng' => (float)$bbox['min_lng'] + ($j + 1) * $lngStep,
+                ];
+                $stat = $this->fetchNdviMeanForBBox($cellBbox, 90);
+                $calls++;
+                if (!$stat['ok'] || $stat['mean'] === null) {
+                    continue;
+                }
+                $ndvi = (float)$stat['mean'];
+                // NDVI tipikusan -1…1; zöldhiány = alacsony NDVI
+                $deficit = max(0.0, min(1.0, (0.55 - $ndvi) / 0.85));
+                $plant = max(0.0, min(1.0, $deficit * 1.15));
+                $lat = round(($cellBbox['min_lat'] + $cellBbox['max_lat']) / 2, 5);
+                $lng = round(($cellBbox['min_lng'] + $cellBbox['max_lng']) / 2, 5);
+                $cell = $i . '_' . $j;
+                $zones[] = [
+                    'lat' => $lat,
+                    'lng' => $lng,
+                    'weight' => round($deficit, 3),
+                    'kind' => 'green_deficit',
+                    'cell' => $cell,
+                    'ndvi' => round($ndvi, 3),
+                ];
+                $zones[] = [
+                    'lat' => $lat,
+                    'lng' => $lng,
+                    'weight' => round($plant, 3),
+                    'kind' => 'planting_priority',
+                    'cell' => $cell,
+                    'ndvi' => round($ndvi, 3),
+                ];
+            }
+        }
+        usort($zones, static function ($a, $b) {
+            return ($b['weight'] <=> $a['weight']);
+        });
+        $zones = array_slice($zones, 0, 24);
+        if ($zones !== []) {
+            ExternalDataCache::set('copernicus', $gridKey, ['zones' => $zones], 360, 'ok', null);
+        }
+        return $zones;
+    }
+
+    /**
+     * @return array{mean:?float,min:?float,max:?float,sample_count:int}
+     */
+    private function parseNdviStatsResponse(string $body): array
+    {
+        $empty = ['mean' => null, 'min' => null, 'max' => null, 'sample_count' => 0];
+        $j = json_decode($body, true);
+        if (!is_array($j)) {
+            return $empty;
+        }
+        $data = $j['data'] ?? null;
+        if (!is_array($data) || $data === []) {
+            return $empty;
+        }
+        $means = [];
+        $mins = [];
+        $maxs = [];
+        $samples = 0;
+        foreach ($data as $interval) {
+            if (!is_array($interval)) {
+                continue;
+            }
+            $outputs = $interval['outputs'] ?? [];
+            if (!is_array($outputs)) {
+                continue;
+            }
+            foreach ($outputs as $outName => $outVal) {
+                if (!is_array($outVal)) {
+                    continue;
+                }
+                if (is_string($outName) && strtolower($outName) === 'datamask') {
+                    continue;
+                }
+                $bands = $outVal['bands'] ?? [];
+                if (!is_array($bands)) {
+                    continue;
+                }
+                foreach ($bands as $band) {
+                    if (!is_array($band)) {
+                        continue;
+                    }
+                    $stats = $band['stats'] ?? null;
+                    if (!is_array($stats) || !isset($stats['mean'])) {
+                        continue;
+                    }
+                    // Skip intervals with no valid samples
+                    $sc = (int)($stats['sampleCount'] ?? 0);
+                    $nd = (int)($stats['noDataCount'] ?? 0);
+                    if ($sc > 0 && $nd >= $sc) {
+                        continue;
+                    }
+                    $means[] = (float)$stats['mean'];
+                    if (isset($stats['min'])) {
+                        $mins[] = (float)$stats['min'];
+                    }
+                    if (isset($stats['max'])) {
+                        $maxs[] = (float)$stats['max'];
+                    }
+                    $samples += max(0, $sc - $nd);
+                }
+            }
+        }
+        if ($means === []) {
+            return $empty;
+        }
+        return [
+            'mean' => round(array_sum($means) / count($means), 4),
+            'min' => $mins !== [] ? round(min($mins), 4) : null,
+            'max' => $maxs !== [] ? round(max($maxs), 4) : null,
+            'sample_count' => $samples,
+        ];
+    }
+
+    /**
+     * Felszíni nyomás proxy (helyi bejelentés) – kiegészítő, nem helyettesíti az NDVI-t.
      *
      * @return array{score:float}
      */
@@ -166,16 +541,17 @@ class CopernicusDataService
             $n = (int)$st->fetchColumn();
             $density = $n / max(0.01, $area);
             $pressure = min(1.0, 0.2 + $density / 50);
-        } catch (Throwable $e) {}
+        } catch (Throwable $e) {
+        }
         return ['score' => round($pressure, 2)];
     }
 
     /**
-     * Rács alapú „zöld hiány” / ültetési prioritás (helyi adat).
+     * Helyi rács fallback (csak ha nincs sat NDVI).
      *
-     * @return list<array{lat:float,lng:float,weight:float,kind:string,cell:string}>
+     * @return list<array{lat:float,lng:float,weight:float,kind:string,cell:string,ndvi:?float}>
      */
-    public function getGreenDeficitZones(?int $authorityId, PDO $pdo, ?array $bbox, int $cols = 5, int $rows = 5): array
+    public function getGreenDeficitZonesLocal(?int $authorityId, PDO $pdo, ?array $bbox, int $cols = 5, int $rows = 5): array
     {
         if (!$bbox || $authorityId === null || $authorityId <= 0) {
             return [];
@@ -198,7 +574,7 @@ class CopernicusDataService
                 try {
                     $treeSql = 'SELECT COUNT(*) FROM trees WHERE public_visible = 1 AND lat BETWEEN ? AND ? AND lng BETWEEN ? AND ?';
                     $treeParams = [$cMinLat, $cMaxLat, $cMinLng, $cMaxLng];
-                    if ($authorityId > 0 && db_table_has_column($pdo, 'trees', 'authority_id')) {
+                    if ($authorityId > 0 && function_exists('db_table_has_column') && db_table_has_column($pdo, 'trees', 'authority_id')) {
                         $treeSql .= ' AND authority_id = ?';
                         $treeParams[] = $authorityId;
                     }
@@ -233,6 +609,7 @@ class CopernicusDataService
                     'weight' => round($deficit, 3),
                     'kind' => 'green_deficit',
                     'cell' => $cell,
+                    'ndvi' => null,
                 ];
                 $zones[] = [
                     'lat' => round(($cMinLat + $cMaxLat) / 2, 5),
@@ -240,6 +617,7 @@ class CopernicusDataService
                     'weight' => round($plant, 3),
                     'kind' => 'planting_priority',
                     'cell' => $cell,
+                    'ndvi' => null,
                 ];
             }
         }
@@ -249,79 +627,116 @@ class CopernicusDataService
         return array_slice($zones, 0, 24);
     }
 
+    /** @deprecated use getGreenDeficitZonesLocal or fetchNdviGridZones */
+    public function getGreenDeficitZones(?int $authorityId, PDO $pdo, ?array $bbox, int $cols = 5, int $rows = 5): array
+    {
+        return $this->getGreenDeficitZonesLocal($authorityId, $pdo, $bbox, $cols, $rows);
+    }
+
     /**
      * @param array<string,mixed> $local GreenIntelligence compute() tömb
-     * @return array<string,mixed> extra kulcsok + data_sources
+     * @return array<string,mixed>
      */
     public function augmentGreenMetrics(array $local, ?int $authorityId, ?array $bbox, PDO $pdo): array
     {
         if (!$this->isActive()) {
             return [];
         }
+        $notes = [];
         $sources = ['local_trees'];
         $canopy = (float)($local['canopy_coverage'] ?? 0);
-        $ndviProxy = round(min(1.0, $canopy * 0.92 + 0.05), 2);
-        $greenDeficit = round(min(1.0, max(0.0, 0.55 - $canopy * 1.2 + (float)($local['drought_risk'] ?? 0) * 0.15)), 2);
+        $satNdvi = null;
+        $satOk = false;
 
-        $stacOk = false;
         if ($bbox) {
             $st = $this->fetchNdviTilesOrStatsForBBox($bbox);
             if ($st['ok'] && $st['item_count'] > 0) {
                 $sources[] = 'copernicus_stac_sentinel2_l2a';
-                $stacOk = true;
-                $ndviProxy = round(min(1.0, $ndviProxy + min(0.12, log(1 + min(20, $st['item_count'])) / 30)), 2);
+                $notes[] = 'stac_observations:' . $st['item_count'];
             }
+            $ndviStat = $this->fetchNdviMeanForBBox($bbox, 90);
+            if ($ndviStat['ok'] && $ndviStat['mean'] !== null) {
+                $satNdvi = max(-1.0, min(1.0, (float)$ndviStat['mean']));
+                $satOk = true;
+                $sources[] = 'sentinelhub_statistics_ndvi';
+                $notes[] = 'ndvi_mean_sat:' . round($satNdvi, 3);
+                if (!empty($ndviStat['cached'])) {
+                    $notes[] = 'ndvi_cached_no_new_pu';
+                } else {
+                    $notes[] = 'ndvi_fresh_api_call';
+                }
+                if (isset($ndviStat['pu_spent']) && $ndviStat['pu_spent'] !== null) {
+                    $notes[] = 'statistics_pu_spent:' . $ndviStat['pu_spent'];
+                }
+            } else {
+                $notes[] = 'ndvi_sat_unavailable:' . (string)($ndviStat['error'] ?? 'unknown');
+            }
+        } else {
+            $notes[] = 'no_authority_bbox';
         }
+
         if ($this->getAccessToken()) {
             $sources[] = 'copernicus_cdse_oauth';
         }
-
-        $surface = $this->fetchSurfaceProxyForBBox($pdo, $bbox, $authorityId);
-        $sealed = round(min(1.0, (1.0 - $canopy) * 0.55 + $surface['score'] * 0.35), 2);
-
-        $vegNotes = [];
+        // Process API ping cache → Usage „Processing API”
         if ($bbox) {
-            $vh = $this->fetchVegetationHealthForBBoxSimple($bbox, $canopy, $stacOk);
-            $vegetationHealth = $vh['vegetation_health_score'];
-            $vegNotes = $vh['notes'];
-        } else {
-            $vegetationHealth = round(min(1.0, $canopy * 0.8 + (float)($local['biodiversity_index'] ?? 0) * 0.15), 2);
+            $pingKey = 'process_ndvi_ping_' . md5(json_encode($bbox));
+            $ping = ExternalDataCache::getValid('copernicus', $pingKey);
+            if ($ping && !empty($ping['payload']['ok'])) {
+                $sources[] = 'sentinelhub_process_api';
+                if (isset($ping['payload']['pu_spent']) && $ping['payload']['pu_spent'] !== null) {
+                    $notes[] = 'process_pu_spent:' . $ping['payload']['pu_spent'];
+                } else {
+                    $notes[] = 'process_ndvi_ok';
+                }
+            }
         }
 
-        $zones = $this->getGreenDeficitZones($authorityId, $pdo, $bbox);
+        // NDVI score 0–1: sat raw NDVI mapped from ~[-0.2, 0.8] → [0,1]
+        if ($satOk && $satNdvi !== null) {
+            $ndviScore = round(max(0.0, min(1.0, ($satNdvi + 0.2) / 1.0)), 2);
+            $greenDeficit = round(max(0.0, min(1.0, (0.55 - $satNdvi) / 0.85)), 2);
+            $vegetationHealth = $ndviScore;
+            $notes[] = 'metrics_from_sentinel2_ndvi';
+        } else {
+            $ndviScore = round(min(1.0, $canopy * 0.92 + 0.05), 2);
+            $greenDeficit = round(min(1.0, max(0.0, 0.55 - $canopy * 1.2 + (float)($local['drought_risk'] ?? 0) * 0.15)), 2);
+            $vegetationHealth = round(min(1.0, $canopy * 0.8 + (float)($local['biodiversity_index'] ?? 0) * 0.15), 2);
+            $notes[] = 'metrics_fallback_local_canopy_proxy';
+        }
+
+        $surface = $this->fetchSurfaceProxyForBBox($pdo, $bbox, $authorityId);
+        $sealed = round(min(1.0, (1.0 - ($satOk ? $ndviScore : $canopy)) * 0.55 + $surface['score'] * 0.35), 2);
+
+        // Metrikákhoz helyi rács (gyors); sat NDVI rács overlay-n / igény szerint (PU + latency).
+        $zones = $this->getGreenDeficitZonesLocal($authorityId, $pdo, $bbox);
+        $zoneSource = 'local_grid';
+        $notes[] = 'overlay_zones_local_for_metrics';
+        if ($satOk) {
+            $notes[] = 'sat_ndvi_grid_available_via_overlay';
+        }
+
         $plantingZones = array_values(array_filter($zones, static function ($z) {
             return ($z['kind'] ?? '') === 'planting_priority';
         }));
+        $deficitZones = array_values(array_filter($zones, static function ($z) {
+            return ($z['kind'] ?? '') === 'green_deficit';
+        }));
 
         return [
-            'ndvi_score' => $ndviProxy,
+            'ndvi_score' => $ndviScore,
+            'ndvi_raw' => $satNdvi,
             'green_deficit_score' => $greenDeficit,
             'sealed_surface_pressure' => $sealed,
             'vegetation_health_score' => $vegetationHealth,
             'canopy_proxy_score' => round($canopy, 2),
             'planting_priority_zones' => array_slice($plantingZones, 0, 12),
-            'green_deficit_zones' => array_values(array_filter($zones, static function ($z) {
-                return ($z['kind'] ?? '') === 'green_deficit';
-            })),
+            'green_deficit_zones' => array_slice($deficitZones, 0, 12),
             'data_sources' => $sources,
-            'eu_notes' => $vegNotes,
+            'satellite_ndvi_ok' => $satOk,
+            'zone_source' => $zoneSource,
+            'eu_notes' => $notes,
         ];
-    }
-
-    /**
-     * @return array{vegetation_health_score:float,notes:array<int,string>}
-     */
-    private function fetchVegetationHealthForBBoxSimple(array $bbox, float $localCanopyScore, bool $stacOk): array
-    {
-        $notes = [];
-        $satBoost = $stacOk ? 0.08 : 0.0;
-        if (!$stacOk) {
-            $notes[] = 'vegetation_proxy_local_canopy';
-        } else {
-            $notes[] = 'vegetation_blended_stac_presence';
-        }
-        $vh = min(1.0, max(0.0, $localCanopyScore * 0.78 + $satBoost + 0.12));
-        return ['vegetation_health_score' => round($vh, 2), 'notes' => $notes];
     }
 
     private function bboxAreaKm2(array $bbox): float
@@ -333,33 +748,82 @@ class CopernicusDataService
     }
 
     /**
-     * GeoJSON FeatureCollection (pontok + súly) – térkép overlay.
-     *
      * @param 'ndvi'|'green_deficit'|'planting_priority'|'vegetation_health' $layerType
      */
     public function buildOverlayGeoJson(string $layerType, ?int $authorityId, ?array $bbox, array $metrics): array
     {
         $features = [];
+        $satZones = [];
+        if (!empty($metrics['satellite_ndvi_ok']) && $bbox) {
+            $satZones = $this->fetchNdviGridZones($bbox, 2, 2);
+        }
         if ($layerType === 'planting_priority' || $layerType === 'green_deficit') {
-            $key = $layerType === 'planting_priority' ? 'planting_priority_zones' : 'green_deficit_zones';
-            $zones = $metrics[$key] ?? [];
+            $key = $layerType === 'planting_priority' ? 'planting_priority' : 'green_deficit';
+            $zones = [];
+            $zoneSource = (string)($metrics['zone_source'] ?? 'local_grid');
+            if ($satZones !== []) {
+                $zones = array_values(array_filter($satZones, static function ($z) use ($key) {
+                    return ($z['kind'] ?? '') === $key;
+                }));
+                $zoneSource = 'sentinelhub_ndvi_grid';
+            }
+            if ($zones === []) {
+                $metricsKey = $layerType === 'planting_priority' ? 'planting_priority_zones' : 'green_deficit_zones';
+                $zones = $metrics[$metricsKey] ?? [];
+            }
             foreach ($zones as $z) {
+                $props = [
+                    'weight' => (float)($z['weight'] ?? 0),
+                    'cell' => (string)($z['cell'] ?? ''),
+                    'layer' => $layerType,
+                    'source' => $zoneSource,
+                ];
+                if (isset($z['ndvi']) && $z['ndvi'] !== null) {
+                    $props['ndvi'] = (float)$z['ndvi'];
+                }
                 $features[] = [
                     'type' => 'Feature',
                     'geometry' => [
                         'type' => 'Point',
                         'coordinates' => [(float)$z['lng'], (float)$z['lat']],
                     ],
-                    'properties' => [
-                        'weight' => (float)($z['weight'] ?? 0),
-                        'cell' => (string)($z['cell'] ?? ''),
-                        'layer' => $layerType,
-                    ],
+                    'properties' => $props,
                 ];
             }
             return ['type' => 'FeatureCollection', 'features' => $features];
         }
         if ($bbox && ($layerType === 'ndvi' || $layerType === 'vegetation_health')) {
+            if ($satZones !== []) {
+                $seen = [];
+                foreach ($satZones as $z) {
+                    if (!is_array($z) || ($z['kind'] ?? '') !== 'green_deficit') {
+                        continue;
+                    }
+                    $cell = (string)($z['cell'] ?? '');
+                    if ($cell !== '' && isset($seen[$cell])) {
+                        continue;
+                    }
+                    $seen[$cell] = true;
+                    $ndvi = isset($z['ndvi']) ? (float)$z['ndvi'] : null;
+                    if ($ndvi === null) {
+                        continue;
+                    }
+                    $w = max(0.0, min(1.0, ($ndvi + 0.2) / 1.0));
+                    $features[] = [
+                        'type' => 'Feature',
+                        'geometry' => ['type' => 'Point', 'coordinates' => [(float)$z['lng'], (float)$z['lat']]],
+                        'properties' => [
+                            'weight' => round($w, 3),
+                            'layer' => $layerType,
+                            'ndvi' => round($ndvi, 3),
+                            'source' => 'sentinelhub_ndvi_grid',
+                        ],
+                    ];
+                }
+                if ($features !== []) {
+                    return ['type' => 'FeatureCollection', 'features' => $features];
+                }
+            }
             $cols = 4;
             $rows = 4;
             $latStep = ($bbox['max_lat'] - $bbox['min_lat']) / $rows;
@@ -369,12 +833,14 @@ class CopernicusDataService
                 for ($j = 0; $j < $cols; $j++) {
                     $lat = $bbox['min_lat'] + ($i + 0.5) * $latStep;
                     $lng = $bbox['min_lng'] + ($j + 0.5) * $lngStep;
-                    $jitter = 1.0 + (($i + $j * 3) % 5) * 0.02 - 0.04;
-                    $w = min(1.0, max(0.0, $base * $jitter));
                     $features[] = [
                         'type' => 'Feature',
                         'geometry' => ['type' => 'Point', 'coordinates' => [$lng, $lat]],
-                        'properties' => ['weight' => round($w, 3), 'layer' => $layerType],
+                        'properties' => [
+                            'weight' => round($base, 3),
+                            'layer' => $layerType,
+                            'source' => !empty($metrics['satellite_ndvi_ok']) ? 'sentinelhub_statistics' : 'local_proxy',
+                        ],
                     ];
                 }
             }

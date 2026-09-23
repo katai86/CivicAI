@@ -6,6 +6,11 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/util.php';
 
+if (!empty($_GET['lang'])) {
+  set_lang((string)$_GET['lang']);
+}
+$lang = current_lang();
+
 $base = app_url('');
 $discovery = app_url('open311/v2/discovery.php');
 $services = app_url('open311/v2/services.php');
@@ -15,11 +20,11 @@ $serviceDef = app_url('open311/v2/service_definition.php');
 header('Content-Type: text/html; charset=utf-8');
 ?>
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="<?= htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CivicAI – API dokumentáció</title>
+  <title>CivicAI – <?= htmlspecialchars(t('api_docs.title'), ENT_QUOTES, 'UTF-8') ?></title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; line-height: 1.5; }
     h1 { font-size: 1.5rem; }
@@ -31,15 +36,15 @@ header('Content-Type: text/html; charset=utf-8');
   </style>
 </head>
 <body>
-  <h1>CivicAI – API dokumentáció</h1>
-  <p>Ez a platform <strong>Open311</strong> kompatibilis API-t biztosít bejelentések fogadására és listázására. Külső alkalmazások (mobil app, partner portál) ezen végpontokon keresztül küldhetnek bejelentést vagy lekérhetik az adatokat.</p>
+  <h1>CivicAI – <?= htmlspecialchars(t('api_docs.title'), ENT_QUOTES, 'UTF-8') ?></h1>
+  <p><?= htmlspecialchars(t('api_docs.intro'), ENT_QUOTES, 'UTF-8') ?></p>
 
-  <h2>Discovery (szolgáltatás felderítés)</h2>
+  <h2><?= htmlspecialchars(t('api_docs.discovery'), ENT_QUOTES, 'UTF-8') ?></h2>
   <p>Az Open311 szabvány szerint a discovery végpont adja meg a többi URL-t:</p>
   <p class="url"><code><?= htmlspecialchars($discovery, ENT_QUOTES, 'UTF-8') ?></code></p>
   <p><a href="<?= htmlspecialchars($discovery, ENT_QUOTES, 'UTF-8') ?>" rel="noopener">Megnyitás (JSON)</a></p>
 
-  <h2>Végpontok</h2>
+  <h2><?= htmlspecialchars(t('api_docs.endpoints'), ENT_QUOTES, 'UTF-8') ?></h2>
   <ul>
     <li><strong>Szolgáltatástípusok (kategóriák):</strong> <code><?= htmlspecialchars($services, ENT_QUOTES, 'UTF-8') ?></code></li>
     <li><strong>Kérések (bejelentések) – GET (lista) / POST (új):</strong> <code><?= htmlspecialchars($requests, ENT_QUOTES, 'UTF-8') ?></code></li>
@@ -55,6 +60,6 @@ header('Content-Type: text/html; charset=utf-8');
   <h2>Részletes leírás</h2>
   <p>A FixMyStreet / Open311 integráció, saját API vs. külső bridge: <a href="<?= htmlspecialchars(app_url('docs/MILESTONE_7_FIXMYSTREET_OPEN311_EXPLAINED.md'), ENT_QUOTES, 'UTF-8') ?>">MILESTONE_7_FIXMYSTREET_OPEN311_EXPLAINED.md</a> (projekt docs mappában).</p>
 
-  <p><a href="<?= htmlspecialchars($base, ENT_QUOTES, 'UTF-8') ?>">← Vissza a térképre</a></p>
+  <p><a href="<?= htmlspecialchars($base, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(t('api_docs.back_map'), ENT_QUOTES, 'UTF-8') ?></a></p>
 </body>
 </html>

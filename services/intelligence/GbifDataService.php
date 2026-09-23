@@ -25,14 +25,12 @@ class GbifDataService
         }
         $bbox = self::authorityBbox($authorityId);
         $cacheKey = 'ctx_' . md5(json_encode($bbox ?: ['hu']));
-        $cached = $this->cacheGet($cacheKey);
+        $cached = $this->cacheGet($cacheKey, ['occurrence_count', 'species_sample']);
         if ($cached) {
             return $cached;
         }
         if ($this->liteFetchGuard()) {
-            $mock = ['ok' => true, 'occurrence_count' => 1240, 'species_sample' => [], 'source' => 'gbif_reference', 'notes' => ['using_reference', 'lite_fetch'], 'cached' => false];
-            $this->cacheSet($cacheKey, $mock, 'reference');
-            return $mock;
+            return $this->noLiveDataResponse($out, ['occurrence_count'], 'lite_fetch_skipped');
         }
         $c = $bbox ? self::bboxCenter($bbox) : ['lat' => 47.1625, 'lng' => 19.5033];
         $url = 'https://api.gbif.org/v1/occurrence/search?hasCoordinate=true&country=HU'
@@ -62,9 +60,7 @@ class GbifDataService
             }
         }
         $this->recordError($resp['error'] ?? 'gbif_unreachable');
-        $mock = ['ok' => true, 'occurrence_count' => 1240, 'species_sample' => [], 'source' => 'gbif_reference', 'notes' => ['using_reference'], 'cached' => false];
-        $this->cacheSet($cacheKey, $mock, 'reference');
-        return $mock;
+        return $this->noLiveDataResponse($out, ['occurrence_count'], 'gbif_unreachable', $resp['error'] ?? null);
     }
 
     /** @return array{type:string,features:array} */

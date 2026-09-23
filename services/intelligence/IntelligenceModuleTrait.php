@@ -15,11 +15,17 @@ trait IntelligenceModuleTrait
             : get_module_setting($this->moduleKey(), 'enabled') === '1';
     }
 
-    /** Lite dashboard: cache vagy referencia, élő HTTP nélkül. */
+    /**
+     * Lite dashboard: skip heavy/key-required HTTP.
+     * Free providers (Open-Meteo / GBIF / PVGIS) still fetch so tiles are not empty.
+     */
     protected function liteFetchGuard(): bool
     {
-        return class_exists('IntelligenceHub', false)
-            && IntelligenceHub::isLiteFetchMode();
+        if (!class_exists('IntelligenceHub', false) || !IntelligenceHub::isLiteFetchMode()) {
+            return false;
+        }
+        $free = ['climate_hungaromet', 'climate_gbif', 'climate_pvgis'];
+        return !in_array($this->moduleKey(), $free, true);
     }
 
     protected function cacheTtlMinutes(int $default = 360): int
@@ -38,15 +44,27 @@ trait IntelligenceModuleTrait
     }
 
     /** @param array<string,mixed> $payload */
-    protected function cacheGet(string $cacheKey): ?array
+    protected function cacheGet(string $cacheKey, array $nullKeysOnReference = []): ?array
     {
         $hit = ExternalDataCache::getValid($this->sourceKey(), $cacheKey);
         if ($hit && !empty($hit['payload']) && is_array($hit['payload'])) {
             $p = $hit['payload'];
             $p['cached'] = true;
-            return $p;
+            require_once __DIR__ . '/ReferenceDataPolicy.php';
+            return ReferenceDataPolicy::normalize($p, $nullKeysOnReference);
         }
         return null;
+    }
+
+    /** @return array<string,mixed> */
+    protected function noLiveDataResponse(array $base, array $nullKeys = [], string $reason = 'no_live_data', ?string $error = null): array
+    {
+        require_once __DIR__ . '/ReferenceDataPolicy.php';
+        $out = ReferenceDataPolicy::noData($reason, $error, $base);
+        foreach ($nullKeys as $k) {
+            $out[$k] = null;
+        }
+        return $out;
     }
 
     /** @param array<string,mixed> $payload */

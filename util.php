@@ -53,6 +53,31 @@ if (!function_exists('h')) {
     }
 }
 
+/**
+ * Prod dump encoding loss: accented HU chars became literal '?'.
+ * Safe display repair for known Budaörs / common municipality strings.
+ */
+function civic_fix_hu_mojibake(string $s): string
+{
+    if ($s === '' || !str_contains($s, '?')) {
+        return $s;
+    }
+    $map = [
+        'Buda?rsi' => 'Budaörsi',
+        'Buda?rs' => 'Budaörs',
+        'Polg?rmesteri' => 'Polgármesteri',
+        '?falu' => 'Ófalu',
+        'K?hegy' => 'Kőhegy',
+        'F?v?ros' => 'Főváros',
+        '?nkorm?nyzat' => 'önkormányzat',
+        'Orosh?za' => 'Orosháza',
+        'Nagysz?n?s' => 'Nagyszénás',
+        'T?tkoml?s' => 'Tótkomlós',
+        'Mez?kov?csh?za' => 'Mezőkovácsháza',
+    ];
+    return strtr($s, $map);
+}
+
 function json_response(array $data, int $code = 200): void {
     if (!headers_sent()) {
         http_response_code($code);
@@ -128,6 +153,11 @@ function gov_api_cache_set(string $cacheKey, array $responsePayload): void {
 
 set_error_handler(function(int $severity, string $message, string $file, int $line) {
     if (!(error_reporting() & $severity)) return false; // respect @
+    // Session edge-cases must not turn into API 500s
+    if (str_contains($message, 'session_') || str_contains($message, 'Session ')) {
+        log_error("PHP session notice ($severity): $message in $file:$line");
+        return true;
+    }
     $msg = "PHP error ($severity): $message in $file:$line";
     log_error($msg);
 
@@ -199,6 +229,14 @@ function is_https_request(): bool {
 function start_secure_session(): void {
     if (session_status() === PHP_SESSION_ACTIVE) return;
 
+    // CLI / late bootstrap: avoid flooding logs and API 500s after output started
+    if (headers_sent()) {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            @session_start();
+        }
+        return;
+    }
+
     $cookieParams = session_get_cookie_params();
     session_name(SESSION_NAME);
 
@@ -207,7 +245,7 @@ function start_secure_session(): void {
 
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => (APP_BASE === '' ? '/' : (APP_BASE . '/')), // gyökérdomain: / ; alkönyvtár: /CivicAI/
+        'path' => (defined('APP_BASE') && APP_BASE !== '' ? (APP_BASE . '/') : '/'),
         'domain' => $cookieParams['domain'] ?? '',
         'secure' => $secure,
         'httponly' => true,
@@ -414,6 +452,27 @@ function ai_store_result(string $entityType, ?int $entityId, string $taskType, s
 // --------------------
 // Beépülő modulok – beállítások DB-ből (admin felületről), env fallback
 // --------------------
+/** Prod dump uses setting_value; migrations use value. */
+function module_settings_value_column(): string
+{
+    static $col = null;
+    if ($col !== null) {
+        return $col;
+    }
+    $col = 'value';
+    try {
+        $fields = db()->query('SHOW COLUMNS FROM module_settings')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        if (in_array('value', $fields, true)) {
+            $col = 'value';
+        } elseif (in_array('setting_value', $fields, true)) {
+            $col = 'setting_value';
+        }
+    } catch (Throwable $e) {
+        $col = 'value';
+    }
+    return $col;
+}
+
 /** @return array<string,?string> module_key.setting_key => value */
 function &module_settings_cache(): array {
     static $cache = [];
@@ -421,7 +480,8 @@ function &module_settings_cache(): array {
     if (!$allLoaded) {
         $allLoaded = true;
         try {
-            $rows = db()->query('SELECT module_key, setting_key, value FROM module_settings')->fetchAll(PDO::FETCH_ASSOC);
+            $vc = module_settings_value_column();
+            $rows = db()->query("SELECT module_key, setting_key, `{$vc}` AS value FROM module_settings")->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $row) {
                 $mk = (string)($row['module_key'] ?? '');
                 $sk = (string)($row['setting_key'] ?? '');
@@ -450,7 +510,8 @@ function get_module_setting(string $moduleKey, string $settingKey): ?string {
     }
     // Ritka új kulcs mentés után – egyedi SELECT fallback
     try {
-        $stmt = db()->prepare("SELECT value FROM module_settings WHERE module_key = :mk AND setting_key = :sk LIMIT 1");
+        $vc = module_settings_value_column();
+        $stmt = db()->prepare("SELECT `{$vc}` FROM module_settings WHERE module_key = :mk AND setting_key = :sk LIMIT 1");
         $stmt->execute([':mk' => $moduleKey, ':sk' => $settingKey]);
         $v = $stmt->fetchColumn();
         $cache[$k] = $v !== false && $v !== null ? (string)$v : null;
@@ -470,7 +531,8 @@ function set_module_setting(string $moduleKey, string $settingKey, ?string $valu
         $cache[$moduleKey . '.' . $settingKey] = null;
         return;
     }
-    $pdo->prepare('INSERT INTO module_settings (module_key, setting_key, value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)')
+    $vc = module_settings_value_column();
+    $pdo->prepare("INSERT INTO module_settings (module_key, setting_key, `{$vc}`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `{$vc}` = VALUES(`{$vc}`)")
         ->execute([$moduleKey, $settingKey, $value]);
     $cache = &module_settings_cache();
     $cache[$moduleKey . '.' . $settingKey] = $value;
@@ -713,6 +775,44 @@ function openai_api_key(): string {
     return defined('OPENAI_API_KEY') ? (string)OPENAI_API_KEY : '';
 }
 
+/** Plant & Tree Intelligence modul bekapcsolva. */
+function plant_tree_enabled(): bool {
+    return get_module_setting('plant_tree', 'enabled') === '1';
+}
+
+function plantnet_api_key(): string {
+    $v = get_module_setting('plant_tree', 'plantnet_api_key');
+    if ($v !== null && $v !== '') return $v;
+    return defined('PLANTNET_API_KEY') ? (string)PLANTNET_API_KEY : '';
+}
+
+function huggingface_api_key(): string {
+    $v = get_module_setting('plant_tree', 'huggingface_api_key');
+    if ($v !== null && $v !== '') return $v;
+    return defined('HUGGINGFACE_API_KEY') ? (string)HUGGINGFACE_API_KEY : '';
+}
+
+function replicate_api_token(): string {
+    $v = get_module_setting('plant_tree', 'replicate_token');
+    if ($v !== null && $v !== '') return $v;
+    return defined('REPLICATE_API_TOKEN') ? (string)REPLICATE_API_TOKEN : '';
+}
+
+function plantid_api_key(): string {
+    $v = get_module_setting('plant_tree', 'plantid_api_key');
+    if ($v !== null && $v !== '') return $v;
+    return defined('PLANTID_API_KEY') ? (string)PLANTID_API_KEY : '';
+}
+
+/** @return 'plantnet'|'huggingface'|'plantid' */
+function plant_tree_species_provider(): string {
+    $v = get_module_setting('plant_tree', 'default_species_provider');
+    if (in_array($v, ['plantnet', 'huggingface', 'plantid'], true)) return $v;
+    if (plantnet_api_key() !== '') return 'plantnet';
+    if (huggingface_api_key() !== '') return 'huggingface';
+    return 'plantnet';
+}
+
 /**
  * AI hívási limit – először module_settings (mistral), ha nincs akkor env/config.
  * @param string $key 'summary' | 'reports_per_day' | 'image_analysis'
@@ -820,83 +920,160 @@ function fms_open311_get(string $path, array $query = []): array {
 // --------------------
 // Authority routing (local)
 // --------------------
+/**
+ * Hatóság a GPS / város alapján (multi-tenant).
+ * Elsőbbség: város → legkisebb bbox → (service_code + város). SOHA nem „első aktív hatóság” / service_code-only.
+ */
 function find_authority_for_report(?string $city, ?string $serviceCode = null): ?int {
+    $lat = null;
+    $lng = null;
+    if (isset($GLOBALS['__REPORT_LAT'], $GLOBALS['__REPORT_LNG'])
+        && is_numeric($GLOBALS['__REPORT_LAT'])
+        && is_numeric($GLOBALS['__REPORT_LNG'])) {
+        $lat = (float)$GLOBALS['__REPORT_LAT'];
+        $lng = (float)$GLOBALS['__REPORT_LNG'];
+    }
+    return resolve_authority_for_location($lat, $lng, $city, $serviceCode);
+}
+
+/**
+ * @return int|null authority id
+ */
+function resolve_authority_for_location(?float $lat, ?float $lng, ?string $city = null, ?string $serviceCode = null): ?int {
     try {
         $pdo = db();
-        $city = $city ? trim($city) : null;
+        $city = $city !== null ? trim($city) : null;
+        if ($city === '') {
+            $city = null;
+        }
 
-        // Prefer authority that explicitly supports the service_code
-        if ($serviceCode) {
-            if ($city) {
+        // 1) Város név – erősebb jel, mint az átfedő (nagy) bbox (pl. Budapest vs Budaörs)
+        if ($city !== null) {
+            try {
+                // Előbb pontosabb egyezés (city = Budaörs), aztán LIKE
+                $stmt = $pdo->prepare("
+                    SELECT id FROM authorities
+                    WHERE is_active = 1 AND city IS NOT NULL AND TRIM(city) <> ''
+                      AND (city = ? OR city LIKE ?)
+                    ORDER BY
+                      CASE WHEN city = ? THEN 0 WHEN city LIKE ? THEN 1 ELSE 2 END,
+                      id ASC
+                    LIMIT 1
+                ");
+                $like = '%' . $city . '%';
+                $stmt->execute([$city, $like, $city, $city . '%']);
+                $id = (int)$stmt->fetchColumn();
+                if ($id > 0) {
+                    return $id;
+                }
+            } catch (Throwable $e) {
+            }
+        }
+
+        // 2) BBox – legkisebb terület nyer (átfedő nagy bbox ne nyelje el a kis várost)
+        if ($lat !== null && $lng !== null && is_finite($lat) && is_finite($lng)) {
+            try {
+                $stmt = $pdo->prepare("
+                    SELECT id FROM authorities
+                    WHERE is_active = 1
+                      AND min_lat IS NOT NULL AND max_lat IS NOT NULL
+                      AND min_lng IS NOT NULL AND max_lng IS NOT NULL
+                      AND ? BETWEEN min_lat AND max_lat
+                      AND ? BETWEEN min_lng AND max_lng
+                    ORDER BY
+                      (ABS(max_lat - min_lat) * ABS(max_lng - min_lng)) ASC,
+                      id ASC
+                    LIMIT 1
+                ");
+                $stmt->execute([$lat, $lng]);
+                $id = (int)$stmt->fetchColumn();
+                if ($id > 0) {
+                    return $id;
+                }
+            } catch (Throwable $e) {
+            }
+        }
+
+        // 3) service_code + város (csak együtt)
+        if ($serviceCode && $city !== null) {
+            try {
                 $stmt = $pdo->prepare("
                     SELECT a.id
                     FROM authorities a
                     JOIN authority_contacts c ON c.authority_id = a.id
-                    WHERE a.is_active=1 AND c.is_active=1
-                      AND c.service_code = :code
-                      AND a.city LIKE :city
+                    WHERE a.is_active = 1 AND c.is_active = 1
+                      AND c.service_code = ?
+                      AND a.city LIKE ?
                     LIMIT 1
                 ");
-                $stmt->execute([
-                    ':code' => $serviceCode,
-                    ':city' => '%' . $city . '%'
-                ]);
+                $stmt->execute([$serviceCode, '%' . $city . '%']);
                 $id = (int)$stmt->fetchColumn();
-                if ($id > 0) return $id;
+                if ($id > 0) {
+                    return $id;
+                }
+            } catch (Throwable $e) {
             }
-
-            $stmt = $pdo->prepare("
-                SELECT a.id
-                FROM authorities a
-                JOIN authority_contacts c ON c.authority_id = a.id
-                WHERE a.is_active=1 AND c.is_active=1
-                  AND c.service_code = :code
-                ORDER BY a.id ASC
-                LIMIT 1
-            ");
-            $stmt->execute([':code' => $serviceCode]);
-            $id = (int)$stmt->fetchColumn();
-            if ($id > 0) return $id;
         }
 
-        // BBox routing (if report coords stored temporarily in globals)
-        if (!empty($GLOBALS['__REPORT_LAT']) && !empty($GLOBALS['__REPORT_LNG'])) {
-            $lat = (float)$GLOBALS['__REPORT_LAT'];
-            $lng = (float)$GLOBALS['__REPORT_LNG'];
-            $stmt = $pdo->prepare("
-                SELECT id FROM authorities
-                WHERE is_active=1
-                  AND min_lat IS NOT NULL AND max_lat IS NOT NULL
-                  AND min_lng IS NOT NULL AND max_lng IS NOT NULL
-                  AND :lat BETWEEN min_lat AND max_lat
-                  AND :lng BETWEEN min_lng AND max_lng
-                LIMIT 1
-            ");
-            $stmt->execute([':lat' => $lat, ':lng' => $lng]);
-            $id = (int)$stmt->fetchColumn();
-            if ($id > 0) return $id;
-        }
-
-        if ($city) {
-            $stmt = $pdo->prepare("SELECT id FROM authorities WHERE is_active=1 AND city LIKE :city LIMIT 1");
-            $stmt->execute([':city' => '%' . $city . '%']);
-            $id = (int)$stmt->fetchColumn();
-            if ($id > 0) return $id;
-        }
-
-        // fallback: first active authority
-        $stmt = $pdo->query("SELECT id FROM authorities WHERE is_active=1 ORDER BY id ASC LIMIT 1");
-        $id = (int)$stmt->fetchColumn();
-        return $id > 0 ? $id : null;
+        return null;
     } catch (Throwable $e) {
-        // Régi schema: nincs authority_contacts vagy authorities.is_active, hanem authorities.active
         try {
-            $stmt = $pdo->query("SELECT id FROM authorities WHERE active=1 ORDER BY id ASC LIMIT 1");
-            $id = (int)$stmt->fetchColumn();
-            return $id > 0 ? $id : null;
+            if ($city) {
+                $stmt = db()->prepare("SELECT id FROM authorities WHERE city LIKE ? LIMIT 1");
+                $stmt->execute(['%' . $city . '%']);
+                $id = (int)$stmt->fetchColumn();
+                return $id > 0 ? $id : null;
+            }
         } catch (Throwable $e2) {
-            return null;
         }
+        return null;
+    }
+}
+
+/**
+ * Meglévő bejelentés authority_id újraszámolása lat/lng/city alapján.
+ * @return array{ok:bool,authority_id:?int,changed:bool,error:?string}
+ */
+function reassign_report_authority_by_location(int $reportId): array
+{
+    $out = ['ok' => false, 'authority_id' => null, 'changed' => false, 'error' => null];
+    if ($reportId <= 0) {
+        $out['error'] = 'invalid_id';
+        return $out;
+    }
+    try {
+        $pdo = db();
+        $st = $pdo->prepare('SELECT id, lat, lng, city, authority_id FROM reports WHERE id = ? LIMIT 1');
+        $st->execute([$reportId]);
+        $r = $st->fetch(PDO::FETCH_ASSOC);
+        if (!$r) {
+            $out['error'] = 'not_found';
+            return $out;
+        }
+        $lat = isset($r['lat']) && $r['lat'] !== null ? (float)$r['lat'] : null;
+        $lng = isset($r['lng']) && $r['lng'] !== null ? (float)$r['lng'] : null;
+        $city = isset($r['city']) ? trim((string)$r['city']) : null;
+        $newId = resolve_authority_for_location($lat, $lng, $city !== '' ? $city : null, null);
+        $oldId = isset($r['authority_id']) && $r['authority_id'] !== null ? (int)$r['authority_id'] : null;
+        if ($newId === null) {
+            $out['ok'] = true;
+            $out['authority_id'] = $oldId;
+            $out['error'] = 'no_matching_authority';
+            return $out;
+        }
+        if ($oldId === $newId) {
+            $out['ok'] = true;
+            $out['authority_id'] = $newId;
+            return $out;
+        }
+        $pdo->prepare('UPDATE reports SET authority_id = ? WHERE id = ?')->execute([$newId, $reportId]);
+        $out['ok'] = true;
+        $out['authority_id'] = $newId;
+        $out['changed'] = true;
+        return $out;
+    } catch (Throwable $e) {
+        $out['error'] = $e->getMessage();
+        return $out;
     }
 }
 
@@ -1041,14 +1218,72 @@ function ip_hash(string $ip): string {
 }
 
 /**
- * Generate human friendly case number without DB schema changes.
- * Format: OH-YYYY-000123
+ * Város 2 betűs prefix ügyiratszámhoz (ékezet nélkül, nagybetű).
  */
-function case_number(int $id, ?string $createdAt = null): string {
+function case_city_prefix(?string $city): string
+{
+    if ($city === null || trim($city) === '') {
+        return 'XX';
+    }
+    $s = trim($city);
+    if (function_exists('transliterator_transliterate')) {
+        $s = transliterator_transliterate('Any-Latin; Latin-ASCII', $s) ?: $s;
+    } else {
+        $map = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ö' => 'o', 'ő' => 'o', 'ú' => 'u', 'ü' => 'u', 'ű' => 'u',
+            'Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ö' => 'O', 'Ő' => 'O', 'Ú' => 'U', 'Ü' => 'U', 'Ű' => 'U'];
+        $s = strtr($s, $map);
+    }
+    $s = preg_replace('/[^a-zA-Z]/', '', $s) ?? '';
+    if (strlen($s) >= 2) {
+        return strtoupper(substr($s, 0, 2));
+    }
+    if (strlen($s) === 1) {
+        return strtoupper($s) . 'X';
+    }
+    return 'XX';
+}
+
+/**
+ * Új ügyiratszám: CIV-{város2betű}-{YYYYMMDD}-{NNNN}
+ */
+function generate_case_number(PDO $pdo, ?string $city, ?string $createdAt = null): string
+{
+    $prefix = case_city_prefix($city);
+    $ts = $createdAt ? strtotime($createdAt) : false;
+    $date = ($ts !== false) ? date('Ymd', $ts) : date('Ymd');
+
+    $pdo->prepare('
+        INSERT INTO case_serials (city_prefix, case_date, last_seq)
+        VALUES (?, ?, 1)
+        ON DUPLICATE KEY UPDATE last_seq = last_seq + 1
+    ')->execute([$prefix, $date]);
+
+    $stmt = $pdo->prepare('SELECT last_seq FROM case_serials WHERE city_prefix = ? AND case_date = ? LIMIT 1');
+    $stmt->execute([$prefix, $date]);
+    $seq = (int)$stmt->fetchColumn();
+    if ($seq <= 0) {
+        $seq = 1;
+    }
+
+    return sprintf('CIV-%s-%s-%04d', $prefix, $date, $seq);
+}
+
+/**
+ * Human friendly case number.
+ * New: CIV-XX-YYYYMMDD-NNNN (stored in reports.case_no).
+ * Legacy fallback: OH-YYYY-000123
+ */
+function case_number(int $id, ?string $createdAt = null, ?string $storedCaseNo = null): string
+{
+    if ($storedCaseNo !== null && trim($storedCaseNo) !== '') {
+        return trim($storedCaseNo);
+    }
     $year = (int)date('Y');
     if ($createdAt) {
         $ts = strtotime($createdAt);
-        if ($ts !== false) $year = (int)date('Y', $ts);
+        if ($ts !== false) {
+            $year = (int)date('Y', $ts);
+        }
     }
     $num = str_pad((string)$id, 6, '0', STR_PAD_LEFT);
     return 'OH-' . $year . '-' . $num;
@@ -1449,7 +1684,7 @@ function gov_primary_authority_id(): ?int
 }
 
 /**
- * Bejelentések scope: szigorú authority_id szűrés (nincs város-alapú összefolyás).
+ * Bejelentések scope: saját authority_id + területén lévő, még nem rendelt (NULL) ügyek.
  *
  * @return array{authority_ids:int[],where:string,params:array}
  */
@@ -1491,10 +1726,39 @@ function gov_resolve_report_scope(PDO $pdo, string $alias = 'r', ?int $requested
     return ['authority_ids' => [], 'where' => '1=0', 'params' => []];
   }
   $ph = implode(',', array_fill(0, count($authorityIds), '?'));
+  $whereParts = [$alias . '.authority_id IN (' . $ph . ')'];
+  $params = $authorityIds;
+
+  // Nem rendelt (authority_id NULL) bejelentések a hatóság városában / bbox-ában
+  $nullParts = [];
+  try {
+    $st = $pdo->prepare('SELECT id, city, min_lat, max_lat, min_lng, max_lng FROM authorities WHERE id IN (' . $ph . ')');
+    $st->execute($authorityIds);
+    while ($a = $st->fetch(PDO::FETCH_ASSOC)) {
+      $city = trim((string)($a['city'] ?? ''));
+      if ($city !== '') {
+        $nullParts[] = '(' . $alias . '.authority_id IS NULL AND ' . $alias . '.city LIKE ?)';
+        $params[] = '%' . $city . '%';
+      }
+      if ($a['min_lat'] !== null && $a['max_lat'] !== null && $a['min_lng'] !== null && $a['max_lng'] !== null) {
+        $nullParts[] = '(' . $alias . '.authority_id IS NULL AND ' . $alias . '.lat IS NOT NULL AND ' . $alias . '.lng IS NOT NULL'
+          . ' AND ' . $alias . '.lat BETWEEN ? AND ? AND ' . $alias . '.lng BETWEEN ? AND ?)';
+        $params[] = (float)$a['min_lat'];
+        $params[] = (float)$a['max_lat'];
+        $params[] = (float)$a['min_lng'];
+        $params[] = (float)$a['max_lng'];
+      }
+    }
+  } catch (Throwable $e) {
+  }
+  if ($nullParts !== []) {
+    $whereParts[] = '(' . implode(' OR ', $nullParts) . ')';
+  }
+
   return [
     'authority_ids' => $authorityIds,
-    'where' => $alias . '.authority_id IN (' . $ph . ')',
-    'params' => $authorityIds,
+    'where' => '(' . implode(' OR ', $whereParts) . ')',
+    'params' => $params,
   ];
 }
 

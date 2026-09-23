@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
 require_once __DIR__ . '/../services/IntelligenceModuleRegistry.php';
+require_once __DIR__ . '/../services/ExternalHttpClient.php';
 
 require_admin();
 
@@ -128,6 +129,25 @@ $MODULE_DEFS = [
       ['key' => 'cache_ttl_minutes', 'label' => t('climate_gfw.lbl_cache_ttl'), 'type' => 'number', 'placeholder' => '1440'],
     ],
   ],
+  'plant_tree' => [
+    'name' => t('plant_tree.module_name'),
+    'description' => t('plant_tree.module_desc'),
+    'settings' => [
+      ['key' => 'enabled', 'label' => t('admin.enabled'), 'type' => 'checkbox'],
+      ['key' => 'default_species_provider', 'label' => t('plant_tree.default_species_provider'), 'type' => 'select', 'options' => [
+        'plantnet' => 'PlantNet',
+        'huggingface' => 'HuggingFace Inference',
+        'plantid' => 'Plant.id (Kindwise)',
+      ]],
+      ['key' => 'plantnet_api_key', 'label' => t('plant_tree.plantnet_api_key'), 'type' => 'password', 'mask' => true],
+      ['key' => 'plantnet_project', 'label' => t('plant_tree.plantnet_project'), 'type' => 'text', 'placeholder' => 'all'],
+      ['key' => 'huggingface_api_key', 'label' => t('plant_tree.huggingface_api_key'), 'type' => 'password', 'mask' => true],
+      ['key' => 'huggingface_model', 'label' => t('plant_tree.huggingface_model'), 'type' => 'text', 'placeholder' => 'google/vit-base-patch16-224'],
+      ['key' => 'plantid_api_key', 'label' => t('plant_tree.plantid_api_key'), 'type' => 'password', 'mask' => true],
+      ['key' => 'replicate_token', 'label' => t('plant_tree.replicate_token'), 'type' => 'password', 'mask' => true],
+      ['key' => 'daily_analysis_limit', 'label' => t('plant_tree.daily_analysis_limit'), 'type' => 'number', 'placeholder' => '200'],
+    ],
+  ],
 ];
 
 $MODULE_DEFS = array_merge($MODULE_DEFS, IntelligenceModuleRegistry::adminModuleDefinitions());
@@ -209,6 +229,39 @@ if ($action === 'test_openai') {
   json_response(['ok' => false, 'error' => $resp['error'] ?? 'OpenAI hiba (pl. érvénytelen kulcs).']);
 }
 
+if ($action === 'test_plantnet') {
+  require_once __DIR__ . '/../services/plant/PlantNetSpeciesProvider.php';
+  $key = plantnet_api_key();
+  if ($key === '') {
+    json_response(['ok' => false, 'error' => t('plant_tree.plantnet_key_missing')]);
+  }
+  $url = 'https://my-api.plantnet.org/v2/projects?api-key=' . rawurlencode($key);
+  $resp = ExternalHttpClient::get($url, 20);
+  if (!empty($resp['ok'])) {
+    json_response(['ok' => true, 'message' => t('plant_tree.plantnet_ok')]);
+  }
+  json_response(['ok' => false, 'error' => t('plant_tree.plantnet_fail') . ' (' . ($resp['error'] ?? 'http') . ')']);
+}
+
+if ($action === 'test_huggingface') {
+  $key = huggingface_api_key();
+  if ($key === '') {
+    json_response(['ok' => false, 'error' => t('plant_tree.huggingface_key_missing')]);
+  }
+  $url = 'https://huggingface.co/api/whoami-v2';
+  $resp = ExternalHttpClient::postRaw($url, '', ['Authorization: Bearer ' . $key], 15);
+  if (!empty($resp['ok'])) {
+    json_response(['ok' => true, 'message' => t('plant_tree.huggingface_ok')]);
+  }
+  json_response(['ok' => false, 'error' => t('plant_tree.huggingface_fail')]);
+}
+
+if ($action === 'test_plant_tree') {
+  require_once __DIR__ . '/../services/plant/PlantTreeVisionRouter.php';
+  $router = new PlantTreeVisionRouter();
+  json_response(['ok' => true, 'health' => $router->providerHealth(), 'message' => t('plant_tree.health_check_ok')]);
+}
+
 if ($action !== 'save_module') {
   json_response(['ok' => false, 'error' => 'Invalid action'], 400);
 }
@@ -223,10 +276,7 @@ $settings = is_array($body['settings'] ?? null) ? $body['settings'] : [];
 
 $pdo = db();
 // enabled mindig
-$pdo->prepare("
-  INSERT INTO module_settings (module_key, setting_key, value) VALUES (?, 'enabled', ?)
-  ON DUPLICATE KEY UPDATE value = VALUES(value)
-")->execute([$moduleId, $enabled]);
+set_module_setting($moduleId, 'enabled', $enabled);
 
 foreach ($MODULE_DEFS[$moduleId]['settings'] as $s) {
   if ($s['key'] === 'enabled') continue;
@@ -234,12 +284,9 @@ foreach ($MODULE_DEFS[$moduleId]['settings'] as $s) {
   // Jelszó mező: ha üres, ne írjuk felül (megtartjuk a meglévőt)
   if (!empty($s['mask']) && $value === '') continue;
   if ($value === '') {
-    $pdo->prepare("DELETE FROM module_settings WHERE module_key = ? AND setting_key = ?")->execute([$moduleId, $s['key']]);
+    set_module_setting($moduleId, $s['key'], null);
   } else {
-    $pdo->prepare("
-      INSERT INTO module_settings (module_key, setting_key, value) VALUES (?, ?, ?)
-      ON DUPLICATE KEY UPDATE value = VALUES(value)
-    ")->execute([$moduleId, $s['key'], $value]);
+    set_module_setting($moduleId, $s['key'], $value);
   }
 }
 

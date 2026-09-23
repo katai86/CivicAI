@@ -67,7 +67,16 @@ if ($ctxHit && !empty($ctxHit['payload']) && is_array($ctxHit['payload'])) {
 } else {
     try {
         $contextLite = (new IntelligenceHub())->fetchFullContext($aid, true);
-        ExternalDataCache::set('intel_context', $ctxKey, $contextLite, 15, 'ok', null);
+        $hasLive = false;
+        foreach (['weather', 'gbif', 'pvgis', 'ocm', 'viirs'] as $k) {
+            if (!empty($contextLite[$k]['ok'])) {
+                $hasLive = true;
+                break;
+            }
+        }
+        if ($hasLive) {
+            ExternalDataCache::set('intel_context', $ctxKey, $contextLite, 15, 'ok', null);
+        }
     } catch (Throwable $e) {
         if (function_exists('log_error')) {
             log_error('intelligence_dashboard context_lite: ' . $e->getMessage());

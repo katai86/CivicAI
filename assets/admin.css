@@ -121,6 +121,39 @@ body.layout-fixed,
 [data-bs-theme="light"] .civic-brand-img--light{display:none!important;}
 [data-bs-theme="light"] .civic-brand-img--dark{display:block!important;}
 
+.civic-sidebar-brand{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:0.15rem;
+  text-decoration:none !important;
+  line-height:1.1;
+  min-width:0;
+}
+.civic-sidebar-brand-logo{
+  display:flex;
+  align-items:center;
+}
+.civic-sidebar-brand-city{
+  display:block;
+  font-family:"Montserrat", system-ui, sans-serif;
+  font-weight:900;
+  font-size:0.72rem;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  color:var(--civic-text);
+  max-width:9.5rem;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  opacity:0.92;
+}
+[data-theme="light"] .civic-sidebar-brand-city,
+[data-bs-theme="light"] .civic-sidebar-brand-city{
+  color:var(--civic-text);
+}
+
 /* Admin light theme: form controls, inputs, navbar, sidebar */
 [data-theme="light"] .form-control,[data-theme="light"] .form-select,[data-theme="light"] .app-wrapper input,[data-theme="light"] .app-wrapper select,[data-theme="light"] .app-wrapper textarea{
   background-color:#fff!important;border-color:rgba(0,0,0,.12);color:#0f172a;
@@ -1070,4 +1103,18 @@ body.layout-fixed,
     flex-wrap: wrap;
     row-gap: 0.25rem;
   }
+}
+
+/* Predictive / situation map markers */
+.gov-pred-marker { background: transparent !important; border: none !important; }
+.gov-pred-pin {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.35);
+  border: 2px solid rgba(255,255,255,.85);
+}
+.gov-pred-dot {
+  display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  vertical-align: middle; margin-right: 4px;
 }

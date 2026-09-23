@@ -12,6 +12,7 @@ require_once __DIR__ . '/intelligence/HungaroMetDataService.php';
 require_once __DIR__ . '/intelligence/PvgisDataService.php';
 require_once __DIR__ . '/intelligence/OpenChargeMapDataService.php';
 require_once __DIR__ . '/intelligence/ViirsDataService.php';
+require_once __DIR__ . '/intelligence/ReferenceDataPolicy.php';
 
 class ClimateIndexService
 {
@@ -77,8 +78,31 @@ class ClimateIndexService
         $weights[] = ['score' => $moduleScore, 'weight' => 0.1];
 
         if (function_exists('climate_gfw_module_enabled') && climate_gfw_module_enabled()) {
-            $components['forest_watch'] = ['score' => 65, 'label' => 'forest_watch', 'weight' => 0.05, 'preview' => true];
-            $weights[] = ['score' => 65, 'weight' => 0.05];
+            try {
+                $bbox = null;
+                if ($authorityId > 0) {
+                    $st = db()->prepare('SELECT min_lat, max_lat, min_lng, max_lng FROM authorities WHERE id = ? LIMIT 1');
+                    $st->execute([$authorityId]);
+                    $row = $st->fetch(PDO::FETCH_ASSOC);
+                    if ($row && $row['min_lat'] !== null) {
+                        $bbox = [
+                            'min_lat' => (float)$row['min_lat'],
+                            'max_lat' => (float)$row['max_lat'],
+                            'min_lng' => (float)$row['min_lng'],
+                            'max_lng' => (float)$row['max_lng'],
+                        ];
+                    }
+                }
+                require_once __DIR__ . '/GlobalForestWatchService.php';
+                $gfw = (new GlobalForestWatchService())->fetchContext($bbox);
+                if (!empty($gfw['ok']) && isset($gfw['tree_cover_percent'])) {
+                    $tc = (float)$gfw['tree_cover_percent'];
+                    $gfwScore = (int)round(min(100, max(0, $tc * 2.5)));
+                    $components['forest_watch'] = ['score' => $gfwScore, 'label' => 'forest_watch', 'weight' => 0.05, 'source' => 'gfw_live'];
+                    $weights[] = ['score' => $gfwScore, 'weight' => 0.05];
+                }
+            } catch (Throwable $e) {
+            }
         }
 
         if (!$fast) {
@@ -132,6 +156,11 @@ class ClimateIndexService
         $score = $totalW > 0 ? (int)round($sum / $totalW) : 50;
         $score = max(0, min(100, $score));
 
+        foreach ($components as $key => &$comp) {
+            $comp['label'] = self::componentLabel((string)$key);
+        }
+        unset($comp);
+
         return [
             'score' => $score,
             'category' => self::categoryForScore($score),
@@ -142,6 +171,16 @@ class ClimateIndexService
             'error_modules' => $errors,
             'total_modules' => count($modules),
         ];
+    }
+
+    private static function componentLabel(string $key): string
+    {
+        if (!function_exists('t')) {
+            return $key;
+        }
+        $tKey = 'intel.comp_' . $key;
+        $lab = t($tKey);
+        return ($lab !== $tKey) ? $lab : str_replace('_', ' ', $key);
     }
 
     public static function categoryForScore(int $score): string
@@ -211,7 +250,7 @@ class ClimateIndexService
         }
         try {
             $ctx = $svc->fetchContext($authorityId);
-            if (empty($ctx['ok'])) {
+            if (empty($ctx['ok']) || ReferenceDataPolicy::isReferencePayload($ctx)) {
                 return;
             }
             $score = $scoreFn($ctx);

@@ -30,16 +30,21 @@ A **Zöld & fakataszter** fülön a helyi fák mellett opcionálisan ugyanaz az 
   - `services/ExternalDataCache.php` – cache olvasás/írás, lejárt törlés, provider napló.
 - **Segédfüggvények** (`util.php`): `eu_open_data_module_enabled()`, `eu_open_data_feature_enabled($key)`, `eu_open_data_request_timeout_seconds()`, `eu_open_data_cache_ttl_minutes()`, `eu_open_data_sync_enabled()`.
 
-## Milestone 2 (kész – Copernicus zöld / NDVI kontextus)
+## Milestone 2 (kész – Copernicus zöld / **valódi Sentinel-2 NDVI**)
 
-- **`services/CopernicusDataService.php`** – CDSE OAuth (client credentials, cache), **STAC** `POST https://stac.dataspace.copernicus.eu/v1/search` (Sentinel-2 L2A tételek száma a bbox-ban), helyi rács: zöld hiány / ültetési prioritás, NDVI-szerű és felszín proxy a fakataszter + bejelentések alapján.
-- **`services/GreenIntelligence.php`** – ha `eu_open_data` + `copernicus_enabled`: kiegészítés `ndvi_score`, `green_deficit_score`, `sealed_surface_pressure`, `vegetation_health_score`, `planting_priority_zones`, `data_sources`, stb.
-- **`api/green_metrics.php`** – válasz: `source`, `scope`, `data`, `meta` (confidence, data_sources).
-- **`api/eu_green_overlay.php`** – GeoJSON pontok (`layer_type`: `ndvi`, `green_deficit`, `planting_priority`, `vegetation_health`), csak gov/admin.
-- **Gov:** **EU nyílt adatok** fül – zöld metrika blokk (`govEuTabGreenMetrics`) és műholdas / Copernicus kontextus (`govEuGreenSatelliteContent`); a `loadGovGreenMetrics()` bővítve.
-- **Nyilvános térkép (desktop):** jelmagyarázat panelben EU réteg (csak govuser/admin/superadmin, ha Copernicus részmodul be van kapcsolva) – `inc_desktop_topbar.php` + `assets/app.js`.
+- **`services/CopernicusDataService.php`**
+  - CDSE OAuth2 client credentials (`identity.dataspace.copernicus.eu`)
+  - STAC katalógus: Sentinel-2 L2A jelenlét a bbox-ban
+  - **Sentinel Hub Statistical API** `POST https://sh.dataspace.copernicus.eu/statistics/v1` → **átlag NDVI** (B04/B08, SCL/dataMask; Processing Units)
+  - Overlay rács: 2×2 cellánkénti sat NDVI (cache); metrikákban helyi rács gyors fallback
+  - Ha nincs érvényes OAuth / API hiba: **egyértelműen jelölt** helyi fa-proxy (nem „műhold”)
+- **`services/GreenIntelligence.php`** – `ndvi_score`, `ndvi_raw`, `green_deficit_score`, `vegetation_health_score`, `satellite_ndvi_ok`, `data_sources`
+- **AI vonal:** `GovCopilot`, `citybrain_dashboard`, `ExecutiveSummaryService` megkapja a sat NDVI / deficit értékeket
+- **`api/green_metrics.php` / `api/eu_green_overlay.php`** – confidence `high` sat NDVI-nél; overlay meta: `satellite_ndvi_ok`, `feature_source`
+- **Usage / PU:** Statistical API + Process API (kis NDVI PNG). A CDSE Usage „Processing API” sora a **Process** hívást mutatja; a Statistical külön service (header: `x-processingunits-spent` → provider log `pu=`). Cache (6 óra) alatt nincs új PU.
+- **Admin:** `copernicus_client_id` / `copernicus_client_secret` = **Sentinel Hub OAuth kliens** a CDSE dashboardból (nem elég a STAC-only / rossz secret → 401, provider log)
 
-Valós **pixel NDVI / Process API** nem kötelező ehhez a lépéshez; a struktúra és a cache készen áll a későbbi bővítésre.
+Korábbi „csak STAC + fa-proxy” szakasz ezzel le van cserélve; a proxy csak fallback.
 
 ## Milestone 3 (kész – CLMS Urban Atlas 2018)
 

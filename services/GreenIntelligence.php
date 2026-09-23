@@ -2,7 +2,7 @@
 /**
  * M6 – Green Intelligence Module.
  * canopy_coverage, carbon_absorption, biodiversity_index, drought_risk.
- * M2 EU: opcionális Copernicus/STAC + helyi rács (ndvi_score, green_deficit_score, …) ha be van kapcsolva az EU modul.
+ * M2 EU: Copernicus Sentinel Hub Statistical NDVI (+ STAC), fallback helyi rács ha nincs sat.
  * M3 EU: opcionális CLMS Urban Atlas 2018 (terület-súlyozott megoszlás a bbox-ban) ha `clms_enabled`.
  */
 require_once __DIR__ . '/../db.php';

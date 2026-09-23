@@ -59,10 +59,13 @@ try {
   $sources = $data['data_sources'] ?? [];
   $hasStac = in_array('copernicus_stac_sentinel2_l2a', $sources, true);
   $hasOAuth = in_array('copernicus_cdse_oauth', $sources, true);
+  $hasSatNdvi = in_array('sentinelhub_statistics_ndvi', $sources, true) || !empty($data['satellite_ndvi_ok']);
   $hasClmsUa = in_array('clms_urban_atlas_2018_eea', $sources, true);
   $confidence = 'low';
-  if ($hasStac && $hasOAuth) {
+  if ($hasSatNdvi) {
     $confidence = 'high';
+  } elseif ($hasStac && $hasOAuth) {
+    $confidence = 'medium';
   } elseif ($hasStac || $hasOAuth) {
     $confidence = 'medium';
   }
@@ -70,7 +73,7 @@ try {
     if ($confidence === 'low') {
       $confidence = 'medium';
     }
-    if ($confidence === 'medium' && $hasStac) {
+    if ($confidence === 'medium' && ($hasStac || $hasSatNdvi)) {
       $confidence = 'high';
     }
   }
@@ -102,8 +105,10 @@ try {
   }
   $out = [
     'ok' => true,
-    'source' => (function () use ($sources, $hasHuKsh) {
-      $c = in_array('copernicus_stac_sentinel2_l2a', $sources, true) || in_array('copernicus_cdse_oauth', $sources, true);
+    'source' => (function () use ($sources, $hasHuKsh, $hasSatNdvi) {
+      $c = $hasSatNdvi
+        || in_array('copernicus_stac_sentinel2_l2a', $sources, true)
+        || in_array('copernicus_cdse_oauth', $sources, true);
       $u = in_array('clms_urban_atlas_2018_eea', $sources, true);
       if ($c && $u) {
         return 'eu_mixed';

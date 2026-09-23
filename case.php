@@ -18,7 +18,7 @@ if ($token === '' || strlen($token) < 16) {
 // Report lekérés token alapján (csak azoknak, akik kérték az értesítést -> van token)
 $stmt = db()->prepare("
   SELECT
-    id, category, title, description, status, created_at,
+    id, case_no, category, title, description, status, created_at,
     address_approx, road, suburb, city, postcode,
     lat, lng,
     reporter_name, reporter_is_anonymous,
@@ -38,7 +38,7 @@ if (!$r) {
 }
 
 $rid = (int)$r['id'];
-$caseNo = case_number($rid, (string)$r['created_at']);
+$caseNo = case_number($rid, (string)$r['created_at'], $r['case_no'] ?? null);
 
 $statusLabel = [
   'pending' => t('status.pending'),

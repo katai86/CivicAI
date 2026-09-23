@@ -15,11 +15,21 @@ if (is_file($localPath)) {
 
 if (!function_exists('civic_cfg')) {
     /**
-     * Sorrend: config.local.php → .env / környezet → alapértelmezés.
+     * Sorrend:
+     * - DB_HOST/DB_NAME/DB_USER/DB_PASS: .env elsőbbség (éles DB-váltás ne akadjon el a régi config.local.php-n)
+     * - egyéb kulcsok: config.local.php → .env → alapértelmezés
      */
     function civic_cfg(string $key, ?string $default = null): ?string
     {
         global $civicLocalConfig;
+        // Docker/local: ezeket a compose/.env mindig felülírhatja a production config.local.php-n
+        $envFirst = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASS', 'APP_BASE_URL', 'ADMIN_USER', 'ADMIN_PASS'];
+        if (in_array($key, $envFirst, true)) {
+            $fromEnv = civic_env($key, null);
+            if ($fromEnv !== null && $fromEnv !== '') {
+                return $fromEnv;
+            }
+        }
         if (array_key_exists($key, $civicLocalConfig)) {
             return (string)$civicLocalConfig[$key];
         }
@@ -32,8 +42,8 @@ define('ERROR_LOG_FILE', __DIR__ . '/error.log');
 
 // --- DB ---
 define('DB_HOST', civic_cfg('DB_HOST', 'localhost') ?? 'localhost');
-define('DB_NAME', civic_cfg('DB_NAME', 'kataia_civicai') ?? 'kataia_civicai');
-define('DB_USER', civic_cfg('DB_USER', 'kataia_civicai') ?? 'kataia_civicai');
+define('DB_NAME', civic_cfg('DB_NAME', 'civicai_core') ?? 'civicai_core');
+define('DB_USER', civic_cfg('DB_USER', 'civicai_core') ?? 'civicai_core');
 define('DB_PASS', civic_cfg('DB_PASS', '') ?? '');
 
 // --- Admin login (MVP) ---
@@ -55,16 +65,20 @@ if (!function_exists('civic_resolve_app_base_url')) {
      * a DOCUMENT_ROOT és a projekt mappa alapján felismeri (pl. https://kataiattila.hu/CivicAI).
      */
     function civic_resolve_app_base_url(): string {
-        // 1) config.local.php (civic_cfg), 2) .env / getenv, 3) auto-detect
+        // 1) env / Docker compose (helyi fejlesztés), 2) config.local.php, 3) auto-detect
+        // Fontos: Dockerben a config.local.php gyakran az éles URL-t tartalmazza — ne irányítson oda.
+        $env = getenv('APP_BASE_URL');
+        if ((!is_string($env) || $env === '') && function_exists('civic_env')) {
+            $env = civic_env('APP_BASE_URL', null);
+        }
+        if (is_string($env) && $env !== '' && stripos($env, 'example.com') === false) {
+            return rtrim($env, '/');
+        }
         if (function_exists('civic_cfg')) {
             $local = civic_cfg('APP_BASE_URL', null);
             if (is_string($local) && $local !== '' && stripos($local, 'example.com') === false) {
                 return rtrim($local, '/');
             }
-        }
-        $env = getenv('APP_BASE_URL');
-        if (is_string($env) && $env !== '' && stripos($env, 'example.com') === false) {
-            return rtrim($env, '/');
         }
 
         if (PHP_SAPI !== 'cli') {
@@ -178,6 +192,12 @@ define('AI_MAX_REPORTS_PER_DAY', (int)(getenv('AI_MAX_REPORTS_PER_DAY') ?: 1000)
 define('AI_SUMMARY_LIMIT', (int)(getenv('AI_SUMMARY_LIMIT') ?: 20));
 define('AI_IMAGE_ANALYSIS_LIMIT', (int)(getenv('AI_IMAGE_ANALYSIS_LIMIT') ?: 300));
 
+// Plant & Tree Intelligence (cloud APIs)
+define('PLANTNET_API_KEY', getenv('PLANTNET_API_KEY') ?: '');
+define('HUGGINGFACE_API_KEY', getenv('HUGGINGFACE_API_KEY') ?: '');
+define('REPLICATE_API_TOKEN', getenv('REPLICATE_API_TOKEN') ?: '');
+define('PLANTID_API_KEY', getenv('PLANTID_API_KEY') ?: '');
+
 // Időjárás API (Gov dashboard) – Open-Meteo használata, API kulcs nem kell
 define('WEATHER_ENABLED', filter_var(getenv('WEATHER_ENABLED'), FILTER_VALIDATE_BOOLEAN) ?: true);
 
@@ -196,6 +216,21 @@ define('SUBDIVISION_AWARE_CITIES', strtolower(preg_replace('/\s+/', '', (string)
 define('SUBDIVISION_ANALYTICS_USE_SUBCITY', filter_var(getenv('SUBDIVISION_ANALYTICS_USE_SUBCITY'), FILTER_VALIDATE_BOOLEAN) ?: false);
 // Beküldő JSON admin_subdivision egyesítése (TomTom/HERE/Google/Geoapify kliens oldali válaszból)
 define('SUBDIVISION_ALLOW_CLIENT_SNAPSHOT', filter_var(getenv('SUBDIVISION_ALLOW_CLIENT_SNAPSHOT'), FILTER_VALIDATE_BOOLEAN) ?: false);
+
+// --- Bejelentés routing (mock e-mail címek teszt / demo) ---
+define('ROUTING_MOCK_ENABLED', filter_var(civic_cfg('ROUTING_MOCK_ENABLED', '1'), FILTER_VALIDATE_BOOLEAN));
+define('ROUTING_EMAIL_MUNICIPAL', civic_cfg('ROUTING_EMAIL_MUNICIPAL', 'mock-jegyzo@civicai.test') ?? 'mock-jegyzo@civicai.test');
+define('ROUTING_EMAIL_STATE_ROAD', civic_cfg('ROUTING_EMAIL_STATE_ROAD', 'mock-kozut@civicai.test') ?? 'mock-kozut@civicai.test');
+define('ROUTING_EMAIL_MVM_LUMEN', civic_cfg('ROUTING_EMAIL_MVM_LUMEN', 'mock-mvm-lumen@civicai.test') ?? 'mock-mvm-lumen@civicai.test');
+// Egyértelmű város-egyezés esetén automatikus hatóság-kapcsolás gov regisztrációkor
+define('GOV_JOIN_AUTO_APPROVE', filter_var(civic_cfg('GOV_JOIN_AUTO_APPROVE', '1'), FILTER_VALIDATE_BOOLEAN));
+
+// Routing mód célenként: mock | email | webhook (üres = ROUTING_MOCK_ENABLED alapján)
+// civic_cfg('ROUTING_MODE_MUNICIPAL_CLERK', 'mock')
+// civic_cfg('ROUTING_MODE_STATE_ROAD', 'webhook')
+// civic_cfg('ROUTING_WEBHOOK_STATE_ROAD_URL', 'https://...')
+// civic_cfg('ROUTING_WEBHOOK_MVM_LUMEN_URL', 'https://...')
+// civic_cfg('ROUTING_WEBHOOK_TOKEN', 'secret')
 
 // Production bootstrap: kritikus beállítások ellenőrzése (nem blokkol, csak jelzés)
 if (!defined('DB_HOST') || !defined('DB_NAME') || !defined('APP_BASE_URL')) {

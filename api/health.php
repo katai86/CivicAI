@@ -18,6 +18,7 @@ require_once __DIR__ . '/../db.php';
 $payload = [
   'ok'    => true,
   'db'    => 'ok',
+  'db_name' => defined('DB_NAME') ? DB_NAME : null,
   'config_review' => defined('CONFIG_NEEDS_REVIEW') && CONFIG_NEEDS_REVIEW,
 ];
 

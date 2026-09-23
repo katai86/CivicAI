@@ -70,6 +70,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         award_badge($newUserId, 'level_1');
       }
 
+      $municipalityCity = trim((string)($_POST['municipality_city'] ?? ''));
+      if ($newUserId > 0 && $municipalityCity !== '') {
+        require_once __DIR__ . '/../services/ProfileAuthorityLinkService.php';
+        ProfileAuthorityLinkService::onRegister(
+          $newUserId,
+          $role,
+          $municipalityCity,
+          safe_str($_POST['organization_name'] ?? null, 160)
+        );
+      }
+
       $verifyUrl = app_url('/user/verify.php?token=' . $token);
       $siteName = defined('MAIL_FROM_NAME') ? (string)MAIL_FROM_NAME : (function_exists('t') ? t('site.name') : 'CivicAI');
       $subject = (function_exists('t') ? t('email.welcome_subject') : 'Üdvözölünk a ') . $siteName;
@@ -113,7 +124,7 @@ $role = 'guest';
     <input name="email" placeholder="<?= htmlspecialchars(t('auth.email'), ENT_QUOTES, 'UTF-8') ?>" required>
     <input name="name" placeholder="<?= htmlspecialchars(t('auth.name_optional'), ENT_QUOTES, 'UTF-8') ?>">
     <input name="pass" type="password" placeholder="<?= htmlspecialchars(t('auth.password_min'), ENT_QUOTES, 'UTF-8') ?>" required>
-    <select name="role" required>
+    <select name="role" id="regRole" required>
       <option value="user"><?= htmlspecialchars(t('auth.role_user'), ENT_QUOTES, 'UTF-8') ?></option>
       <?php if (defined('GOV_REGISTRATION_ENABLED') && GOV_REGISTRATION_ENABLED): ?>
       <option value="govuser"><?= htmlspecialchars(t('auth.role_gov'), ENT_QUOTES, 'UTF-8') ?></option>
@@ -121,6 +132,25 @@ $role = 'guest';
       <option value="communityuser"><?= htmlspecialchars(t('auth.role_community'), ENT_QUOTES, 'UTF-8') ?></option>
       <option value="civiluser"><?= htmlspecialchars(t('auth.role_civil'), ENT_QUOTES, 'UTF-8') ?></option>
     </select>
+
+    <div id="profileRegFields" style="display:none">
+      <input name="municipality_city" maxlength="120" placeholder="<?= htmlspecialchars(t('auth.municipality_city_ph'), ENT_QUOTES, 'UTF-8') ?>">
+      <input name="organization_name" maxlength="160" placeholder="<?= htmlspecialchars(t('auth.organization_name_ph'), ENT_QUOTES, 'UTF-8') ?>">
+    </div>
+
+    <script>
+    (function(){
+      var sel = document.getElementById('regRole');
+      var box = document.getElementById('profileRegFields');
+      if (!sel || !box) return;
+      function sync(){
+        var r = sel.value;
+        box.style.display = (r === 'govuser' || r === 'communityuser' || r === 'civiluser') ? '' : 'none';
+      }
+      sel.addEventListener('change', sync);
+      sync();
+    })();
+    </script>
 
     <div class="hr"></div>
 

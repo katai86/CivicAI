@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../util.php';
 require_once __DIR__ . '/../ExternalDataCache.php';
 require_once __DIR__ . '/IntelligenceModuleTrait.php';
 
-/** NASA VIIRS éjszakai fény – referencia rács (előkészítés, ingyenes adat később). */
+/** NASA VIIRS éjszakai fény – élő ingest még nincs bekötve. */
 class ViirsDataService
 {
     use IntelligenceModuleTrait;
@@ -14,35 +14,38 @@ class ViirsDataService
 
     public function isActive(): bool { return $this->isModuleEnabled(); }
 
-    /** @return array{ok:bool,light_pollution_index:int,source:string,notes:array,cached:bool} */
+    /** @return array{ok:bool,light_pollution_index:?int,source:string,notes:array,cached:bool} */
     public function fetchContext(?int $authorityId): array
     {
         if (!$this->isActive()) {
-            return ['ok' => false, 'light_pollution_index' => 0, 'source' => 'viirs', 'notes' => ['module_disabled'], 'cached' => false];
+            return ['ok' => false, 'light_pollution_index' => null, 'source' => 'viirs', 'notes' => ['module_disabled'], 'cached' => false, 'status' => 'disabled'];
         }
         $bbox = self::authorityBbox($authorityId);
         $cacheKey = 'viirs_' . md5(json_encode($bbox ?: []));
-        $cached = $this->cacheGet($cacheKey);
-        if ($cached) return $cached;
-
-        $center = $bbox ? self::bboxCenter($bbox) : ['lat' => 47.16, 'lng' => 19.50];
-        $urban = ($center['lat'] > 46.9 && $center['lat'] < 47.6 && $center['lng'] > 18.9 && $center['lng'] < 19.3);
-        $idx = $urban ? 72 : 38;
-        $out = ['ok' => true, 'light_pollution_index' => $idx, 'source' => 'viirs_reference_grid', 'notes' => ['preview_reference'], 'cached' => false];
-        $this->cacheSet($cacheKey, $out, 'reference');
-        return $out;
+        $cached = $this->cacheGet($cacheKey, ['light_pollution_index']);
+        if ($cached) {
+            return $cached;
+        }
+        return $this->noLiveDataResponse(
+            ['light_pollution_index' => null, 'source' => 'viirs', 'notes' => ['viirs_not_ingested']],
+            ['light_pollution_index'],
+            'viirs_not_ingested'
+        );
     }
 
     /** @return array{type:string,features:array} */
     public function mapGeoJson(?int $authorityId): array
     {
         $ctx = $this->fetchContext($authorityId);
+        if (empty($ctx['ok'])) {
+            return ['type' => 'FeatureCollection', 'features' => []];
+        }
         $bbox = self::authorityBbox($authorityId);
         if (!$bbox) {
             return ['type' => 'FeatureCollection', 'features' => []];
         }
         $c = self::bboxCenter($bbox);
-        $idx = (int)($ctx['light_pollution_index'] ?? 40);
+        $idx = (int)($ctx['light_pollution_index'] ?? 0);
         return [
             'type' => 'FeatureCollection',
             'features' => [[

@@ -56,15 +56,17 @@ class GlobalForestWatchService
         }
 
         $mock = [
-            'ok' => true,
-            'tree_cover_percent' => 22.5,
+            'ok' => false,
+            'status' => 'no_data',
+            'tree_cover_percent' => null,
             'tree_cover_loss_ha' => null,
-            'year' => 2023,
-            'source' => 'gfw_reference',
-            'notes' => ['gfw_using_reference'],
+            'year' => null,
+            'source' => 'gfw',
+            'notes' => ['gfw_live_unavailable'],
             'cached' => false,
+            'message' => function_exists('t') ? t('intel.status_no_data') : 'No live data',
         ];
-        ExternalDataCache::set('gfw', $cacheKey, $mock, $this->cacheTtlMinutes(), 'ok', 'reference');
+        ExternalDataCache::set('gfw', $cacheKey, $mock, $this->cacheTtlMinutes(), 'error', 'gfw_live_unavailable');
         return $mock;
     }
 

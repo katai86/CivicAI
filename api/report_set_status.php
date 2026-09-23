@@ -171,7 +171,7 @@ try {
   $token = (string)($r['notify_token'] ?? '');
 
   if ($notifyEnabled === 1 && $to !== '' && filter_var($to, FILTER_VALIDATE_EMAIL) && $token !== '') {
-    $case = case_number((int)$r['id'], (string)$r['created_at']);
+    $case = case_number((int)$r['id'], (string)$r['created_at'], $r['case_no'] ?? null);
 
     $trackUrl = app_url('/case.php?token=' . rawurlencode($token));
     $unsubscribeUrl = app_url('/api/notify_unsubscribe.php?token=' . rawurlencode($token));

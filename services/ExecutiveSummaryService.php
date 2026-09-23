@@ -98,6 +98,10 @@ final class ExecutiveSummaryService
         $deficitRaw = max(0.0, min(1.0, $deficitRaw));
         $greenDeficit = (int)round(100 * $deficitRaw);
 
+        $ndviScore = isset($green['ndvi_score']) ? max(0.0, min(1.0, (float)$green['ndvi_score'])) : null;
+        $ndviRaw = isset($green['ndvi_raw']) && $green['ndvi_raw'] !== null ? (float)$green['ndvi_raw'] : null;
+        $satNdviOk = !empty($green['satellite_ndvi_ok']);
+
         $trend = self::inferTrend($openIssues, $resolved30, (float)($health['maintenance_score'] ?? 50), (float)($health['infrastructure_score'] ?? 50));
 
         $topRisks = self::buildTopRisks($pred, $env);
@@ -105,6 +109,9 @@ final class ExecutiveSummaryService
 
         $aiSummary = self::buildAiSummary($cityHealth, $trend, $openIssues, $resolved30, $climateRisk, $greenDeficit, $engagement);
         $summaryMeta = ['ai_summary_source' => 'template'];
+        if ($satNdviOk) {
+            $summaryMeta['satellite_ndvi'] = true;
+        }
 
         $payload = [
             'city_health_score' => $cityHealth,
@@ -115,6 +122,9 @@ final class ExecutiveSummaryService
             'citizen_engagement_score' => $engagement,
             'climate_risk_score' => $climateRisk,
             'green_deficit_score' => $greenDeficit,
+            'ndvi_score' => $ndviScore !== null ? (int)round(100 * $ndviScore) : null,
+            'ndvi_raw' => $ndviRaw,
+            'satellite_ndvi_ok' => $satNdviOk,
             'top_risks' => $topRisks,
             'top_priority_zones' => $topZones,
             'ai_summary' => $aiSummary,
@@ -149,6 +159,9 @@ final class ExecutiveSummaryService
                 'resolved_last_30_days' => $payload['resolved_last_30_days'] ?? null,
                 'climate_risk_score' => $payload['climate_risk_score'] ?? null,
                 'green_deficit_score' => $payload['green_deficit_score'] ?? null,
+                'ndvi_score' => $payload['ndvi_score'] ?? null,
+                'ndvi_raw' => $payload['ndvi_raw'] ?? null,
+                'satellite_ndvi_ok' => $payload['satellite_ndvi_ok'] ?? null,
                 'citizen_engagement_score' => $payload['citizen_engagement_score'] ?? null,
                 'top_risks' => array_slice($payload['top_risks'] ?? [], 0, 5),
             ], JSON_UNESCAPED_UNICODE);

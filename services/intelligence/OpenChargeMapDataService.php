@@ -26,20 +26,23 @@ class OpenChargeMapDataService
         $bbox = self::authorityBbox($authorityId);
         $c = $bbox ? self::bboxCenter($bbox) : ['lat' => 47.16, 'lng' => 19.50];
         $cacheKey = 'ocm_' . md5(json_encode($c));
-        $cached = $this->cacheGet($cacheKey);
-        if ($cached) return $cached;
+        $cached = $this->cacheGet($cacheKey, ['charger_count', 'points']);
+        if ($cached) {
+            return $cached;
+        }
+        $apiKey = trim((string)(get_module_setting('climate_ocm', 'api_key') ?? ''));
+        if ($apiKey === '') {
+            $out['notes'][] = 'ocm_key_missing';
+            // Ne hívjuk a 403-as API-t, és ne spameljük a provider logot
+            return $this->noLiveDataResponse($out, ['charger_count', 'points'], 'api_key_missing');
+        }
         if ($this->liteFetchGuard()) {
-            $mock = ['ok' => true, 'charger_count' => 6, 'points' => [], 'source' => 'ocm_reference', 'notes' => ['using_reference', 'lite_fetch'], 'cached' => false];
-            $this->cacheSet($cacheKey, $mock, 'reference');
-            return $mock;
+            return $this->noLiveDataResponse($out, ['charger_count', 'points'], 'lite_fetch_skipped');
         }
 
-        $apiKey = trim((string)(get_module_setting('climate_ocm', 'api_key') ?? ''));
         $url = 'https://api.openchargemap.io/v3/poi/?output=json&latitude=' . $c['lat'] . '&longitude=' . $c['lng']
-            . '&distance=25&distanceunit=KM&maxresults=80';
-        if ($apiKey !== '') {
-            $url .= '&key=' . rawurlencode($apiKey);
-        }
+            . '&distance=25&distanceunit=KM&maxresults=80'
+            . '&key=' . rawurlencode($apiKey);
         $resp = ExternalHttpClient::get($url, 25);
         if ($resp['ok'] && $resp['body'] !== '') {
             $j = json_decode($resp['body'], true);
@@ -65,10 +68,18 @@ class OpenChargeMapDataService
                 return $out;
             }
         }
-        $this->recordError($resp['error'] ?? 'ocm_unreachable');
-        $mock = ['ok' => true, 'charger_count' => 6, 'points' => [], 'source' => 'ocm_reference', 'notes' => ['using_reference'], 'cached' => false];
-        $this->cacheSet($cacheKey, $mock, 'reference');
-        return $mock;
+        $err = $resp['error'] ?? 'ocm_unreachable';
+        // 403 = tipikusan érvénytelen/hiányzó kulcs – config, ne „fetch error” spam
+        if (stripos((string)$err, '403') !== false) {
+            $out['notes'][] = 'ocm_key_missing';
+            try {
+                set_module_setting($this->moduleKey(), 'last_error', 'http_403');
+            } catch (Throwable $e) {
+            }
+            return $this->noLiveDataResponse($out, ['charger_count', 'points'], 'api_key_missing', 'http_403');
+        }
+        $this->recordError($err);
+        return $this->noLiveDataResponse($out, ['charger_count', 'points'], 'ocm_unreachable', $err);
     }
 
     /** @return array{type:string,features:array} */

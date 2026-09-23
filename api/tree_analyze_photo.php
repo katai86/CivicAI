@@ -53,6 +53,41 @@ if (!@move_uploaded_file($tmp, $dest)) {
 }
 
 $outputLang = function_exists('current_lang') ? current_lang() : 'hu';
+
+if (plant_tree_enabled() || plantnet_api_key() !== '' || ai_configured()) {
+  require_once __DIR__ . '/../services/plant/PlantTreeVisionRouter.php';
+  $ptRouter = new PlantTreeVisionRouter();
+  $ptResult = $ptRouter->analyze($dest, $mime, ['lang' => $outputLang]);
+  if (!empty($ptResult['ok']) && is_array($ptResult['analysis'])) {
+    $a = $ptResult['analysis'];
+    $species = null;
+    if (!empty($a['species_consensus']['scientific_name'])) {
+      $species = (string)$a['species_consensus']['scientific_name'];
+    } elseif (!empty($a['species_consensus']['common_name'])) {
+      $species = (string)$a['species_consensus']['common_name'];
+    }
+    $meas = $a['measurements'] ?? [];
+    $trunkCm = isset($meas['trunk_diameter_cm']) && is_numeric($meas['trunk_diameter_cm']) ? (float)$meas['trunk_diameter_cm'] : null;
+    $canopyM = isset($meas['canopy_diameter_m']) && is_numeric($meas['canopy_diameter_m']) ? (float)$meas['canopy_diameter_m'] : null;
+    if ($trunkCm !== null && ($trunkCm < 0 || $trunkCm > 500)) {
+      $trunkCm = null;
+    }
+    if ($canopyM !== null && ($canopyM < 0 || $canopyM > 50)) {
+      $canopyM = null;
+    }
+    json_response([
+      'ok' => true,
+      'species' => $species,
+      'trunk_diameter_cm' => $trunkCm,
+      'canopy_diameter_m' => $canopyM,
+      'plant_tree' => true,
+      'inspection_id' => $ptResult['inspection_id'] ?? null,
+      'health' => $a['health'] ?? null,
+      'risk' => $a['risk'] ?? null,
+    ]);
+  }
+}
+
 $langName = \AiPromptBuilder::languageNameForCode($outputLang);
 $system = 'You are a tree identification and measurement assistant. Reply with a JSON object only. Use keys: species (string, common name of the tree in ' . $langName . ', e.g. oak/ash in English or tölgy/kőris in Hungarian, or null if unknown), trunk_diameter_cm (number or null), canopy_diameter_m (number or null). If not visible or uncertain, use null. Write all text in ' . $langName . '.';
 $prompt = 'Analyze this tree photo. Estimate: 1) Tree species (common name in ' . $langName . '). 2) Trunk diameter in cm (at breast height if visible). 3) Canopy/crown diameter in metres. Return JSON with keys: species, trunk_diameter_cm, canopy_diameter_m. Use null for any value you cannot estimate. Respond in ' . $langName . '.';

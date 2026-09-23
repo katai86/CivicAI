@@ -604,6 +604,63 @@ CREATE TABLE IF NOT EXISTS external_data_provider_logs (
   KEY idx_edpl_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ========== 2026-32 City Intelligence ==========
+-- phpMyAdmin: sql/DEPLOY_city_intelligence_phpmyadmin.sql (civicai_core + Budaörs fix)
+-- vagy:       sql/2026-32-city-intelligence.sql
+-- PHP `CityIntelSchema::ensure()` lazy create is.
+
+-- ========== 2026-33 Unified Observation + 2026-34 Plant/Tree CI ==========
+-- phpMyAdmin: sql/2026-33-unified-observation-foundation.sql
+-- phpMyAdmin: sql/2026-34-plant-tree-city-intelligence.sql
+-- vagy:       sql/DEPLOY_full_milestones.sql
+
+-- ========== 2026-35 Report routing + CIV case numbers ==========
+CREATE TABLE IF NOT EXISTS case_serials (
+  city_prefix CHAR(2) NOT NULL,
+  case_date CHAR(8) NOT NULL,
+  last_seq INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (city_prefix, case_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS report_routing_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  report_id INT NOT NULL,
+  routing_target VARCHAR(64) NOT NULL,
+  recipient_email VARCHAR(190) NULL,
+  decision_reason VARCHAR(255) NULL,
+  mail_subject VARCHAR(255) NULL,
+  mail_sent TINYINT(1) NOT NULL DEFAULT 0,
+  mail_error TEXT NULL,
+  payload_json JSON NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_routing_report (report_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS authority_join_requests (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  authority_id INT NULL,
+  municipality_city VARCHAR(120) NOT NULL,
+  organization_name VARCHAR(160) NULL,
+  job_title VARCHAR(120) NULL,
+  message TEXT NULL,
+  status ENUM('pending','approved','rejected','auto_approved') NOT NULL DEFAULT 'pending',
+  reviewed_by INT NULL,
+  reviewed_at TIMESTAMP NULL,
+  review_note VARCHAR(255) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_join_user (user_id, status),
+  KEY idx_join_authority (authority_id, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CALL add_column_if_not_exists('reports', 'case_no', 'VARCHAR(32) NULL');
+CALL add_column_if_not_exists('reports', 'routing_target', 'VARCHAR(64) NULL');
+CALL add_column_if_not_exists('reports', 'routed_at', 'TIMESTAMP NULL');
+CALL add_index_if_not_exists('reports', 'uniq_reports_case_no', '(case_no)');
+CALL add_column_if_not_exists('facilities', 'authority_id', 'INT NULL');
+CALL add_column_if_not_exists('civil_events', 'authority_id', 'INT NULL');
+CALL add_column_if_not_exists('users', 'municipality_city', 'VARCHAR(120) NULL');
+
 -- ========== Eltávolítjuk a segéd procedure-öket ==========
 DROP PROCEDURE IF EXISTS add_column_if_not_exists;
 DROP PROCEDURE IF EXISTS add_index_if_not_exists;

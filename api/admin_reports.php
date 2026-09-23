@@ -52,7 +52,8 @@ if ($whereParts) {
 $sql = "
   SELECT r.id, r.category, r.title, r.description, r.lat, r.lng,
          r.address_approx, r.house_number_approx, r.road, r.suburb, r.city, r.postcode,
-         r.status, r.created_at, r.authority_id,
+         r.status, r.created_at, r.authority_id, r.case_no, r.routing_target,
+         r.routing_override_target, r.external_ticket_id, r.routed_at,
          r.reporter_name, r.reporter_is_anonymous,
          u.id AS reporter_user_id,
          u.display_name AS reporter_display_name,
@@ -146,7 +147,7 @@ try {
 foreach ($rows as &$r) {
   $rid = (int)($r['id'] ?? 0);
   $createdAt = isset($r['created_at']) ? (string)$r['created_at'] : null;
-  $r['case_no'] = $rid > 0 ? case_number($rid, $createdAt) : null;
+  $r['case_no'] = $rid > 0 ? case_number($rid, $createdAt, isset($r['case_no']) ? (string)$r['case_no'] : null) : null;
 }
 unset($r);
 

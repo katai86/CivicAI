@@ -1,16 +1,39 @@
 <?php
 /**
  * Másold át config.local.php néven (a config.php mellett).
- * Ez felülírja a .env / alapértelmezett értékeket. NE commitold Gitbe.
+ * DB_* értékeket a .env felülírja, ha ott meg vannak adva.
+ * NE commitold Gitbe.
  */
 return [
     'DB_HOST' => 'localhost',
-    'DB_NAME' => 'kataia_civicai',
-    'DB_USER' => 'kataia_civicai',
+    'DB_NAME' => 'civicai_core',
+    'DB_USER' => 'civicai_core',
     'DB_PASS' => 'ide_a_mysql_jelszo',
 
     'APP_BASE_URL' => 'https://civicai.hu',
 
     'ADMIN_USER' => 'admin',
     'ADMIN_PASS' => 'ide_az_admin_jelszo',
+
+    // Plant & Tree Intelligence (opcionális – admin UI-ból is beállítható)
+    'PLANTNET_API_KEY' => '',
+    'HUGGINGFACE_API_KEY' => '',
+    'REPLICATE_API_TOKEN' => '',
+    'MISTRAL_API_KEY' => '',
+    'OPENAI_API_KEY' => '',
+
+    // Report routing (mock | email | webhook)
+    'ROUTING_MOCK_ENABLED' => '1',
+    'ROUTING_EMAIL_MUNICIPAL' => 'mock-jegyzo@civicai.test',
+    'ROUTING_EMAIL_STATE_ROAD' => 'mock-kozut@civicai.test',
+    'ROUTING_EMAIL_MVM_LUMEN' => 'mock-mvm-lumen@civicai.test',
+    'ROUTING_MODE_MUNICIPAL_CLERK' => 'mock',
+    'ROUTING_MODE_STATE_ROAD' => 'mock',
+    'ROUTING_MODE_MVM_LUMEN' => 'mock',
+    'ROUTING_MODE_AUTHORITY_INBOX' => 'email',
+    // Webhook példa (éles integráció):
+    // 'ROUTING_MODE_STATE_ROAD' => 'webhook',
+    // 'ROUTING_WEBHOOK_STATE_ROAD_URL' => 'https://api.example.com/kozut/intake',
+    // 'ROUTING_WEBHOOK_MVM_LUMEN_URL' => 'https://api.example.com/mvm/intake',
+    // 'ROUTING_WEBHOOK_TOKEN' => 'your-bearer-token',
 ];

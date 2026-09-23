@@ -142,7 +142,22 @@ CREATE TABLE IF NOT EXISTS urban_observations (
                     ? (float)$vision['confidence_score'] : null,
                 ':uid' => $createdBy,
             ]);
-            return ['ok' => true, 'id' => (int)db()->lastInsertId()];
+            $newId = (int)db()->lastInsertId();
+            // City Intelligence bridge: Vision → city_observations → indicators/insights
+            try {
+                require_once __DIR__ . '/cityintel/CityVisionBridge.php';
+                $visionPayload = $vision;
+                if ($veg !== null) {
+                    $visionPayload['vegetation_pct'] = $veg;
+                }
+                $visionPayload['urgency_level'] = $severity;
+                CityVisionBridge::ingestFromVision($authorityId, $lat, $lng, $visionPayload, $source, $newId > 0 ? $newId : null);
+            } catch (Throwable $bridgeErr) {
+                if (function_exists('log_error')) {
+                    log_error('UrbanObservation→CityIntel bridge: ' . $bridgeErr->getMessage());
+                }
+            }
+            return ['ok' => true, 'id' => $newId];
         } catch (Throwable $e) {
             if (function_exists('log_error')) {
                 log_error('UrbanObservationService::save: ' . $e->getMessage());

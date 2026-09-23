@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
+require_once __DIR__ . '/../services/AuthorityJoinService.php';
 
 require_admin();
 start_secure_session();
@@ -39,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     log_error('admin_authorities assign: ' . $e->getMessage());
     $assign = [];
   }
-  json_response(['ok' => true, 'authorities' => $auth, 'contacts' => $contacts, 'assignments' => $assign]);
+  json_response(['ok' => true, 'authorities' => $auth, 'contacts' => $contacts, 'assignments' => $assign, 'join_requests' => AuthorityJoinService::pendingRequests()]);
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -310,6 +311,29 @@ if ($action === 'remove_user') {
   } catch (Throwable $e) {
     json_response(['ok' => false, 'error' => 'Az authority_users tábla hiányozhat.'], 503);
   }
+}
+
+if ($action === 'approve_join') {
+  $requestId = (int)($body['request_id'] ?? 0);
+  $authorityId = isset($body['authority_id']) ? (int)$body['authority_id'] : null;
+  $note = safe_str($body['note'] ?? null, 255);
+  $reviewerId = (int)($_SESSION['user_id'] ?? 0);
+  if ($requestId <= 0) {
+    json_response(['ok' => false, 'error' => t('api.invalid_id')], 400);
+  }
+  $res = AuthorityJoinService::approve($requestId, $reviewerId, $authorityId ?: null, $note);
+  json_response($res, empty($res['ok']) ? 400 : 200);
+}
+
+if ($action === 'reject_join') {
+  $requestId = (int)($body['request_id'] ?? 0);
+  $note = safe_str($body['note'] ?? null, 255);
+  $reviewerId = (int)($_SESSION['user_id'] ?? 0);
+  if ($requestId <= 0) {
+    json_response(['ok' => false, 'error' => t('api.invalid_id')], 400);
+  }
+  $res = AuthorityJoinService::reject($requestId, $reviewerId, $note);
+  json_response($res, empty($res['ok']) ? 400 : 200);
 }
 
 json_response(['ok' => false, 'error' => 'Unknown action'], 400);

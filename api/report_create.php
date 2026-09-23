@@ -398,7 +398,13 @@ if ($postcode === null || $postcode === '') {
 // email csak akkor kerüljön eltárolásra, ha értesítést kér (különben NULL)
 $storeEmail = ($wantsNotify === 1) ? $reporterEmail : null;
 
-$authorityId = find_authority_for_report($city ?: $addrCity, $category);
+$authCity = $city ?: $addrCity;
+$authorityId = resolve_authority_for_location(
+  is_numeric($lat) ? (float)$lat : null,
+  is_numeric($lng) ? (float)$lng : null,
+  is_string($authCity) && $authCity !== '' ? $authCity : null,
+  $category
+);
 $serviceCode = $category;
 
 $baseInsert = "
@@ -512,6 +518,41 @@ try {
 
 $id = (int)db()->lastInsertId();
 
+if ($id > 0) {
+  try {
+    $pdo = db();
+    $caseCity = is_string($city) && $city !== '' ? $city : (is_string($authCity) ? $authCity : null);
+    $caseNo = generate_case_number($pdo, $caseCity);
+    $pdo->prepare('UPDATE reports SET case_no = ? WHERE id = ?')->execute([$caseNo, $id]);
+  } catch (Throwable $e) {
+    log_error('report_create case_no: ' . $e->getMessage());
+  }
+
+  try {
+    require_once __DIR__ . '/../services/ReportRoutingService.php';
+    ReportRoutingService::routeAfterCreate($id);
+  } catch (Throwable $e) {
+    log_error('report_create routing: ' . $e->getMessage());
+  }
+}
+
+if ($id > 0) {
+  try {
+    require_once __DIR__ . '/../services/cityintel/CityCitizenSignalBridge.php';
+    CityCitizenSignalBridge::fromReport(
+      $id,
+      $authorityId !== null ? (int)$authorityId : null,
+      (string)$category,
+      is_numeric($lat) ? (float)$lat : null,
+      is_numeric($lng) ? (float)$lng : null,
+      is_string($city) ? $city : null,
+      is_string($suburb) ? $suburb : null
+    );
+  } catch (Throwable $e) {
+    log_error('report_create city_intel signal: ' . $e->getMessage());
+  }
+}
+
 if ($id > 0 && isset($adminNorm) && is_array($adminNorm)) {
   try {
     $j = admin_subdivision_to_json($adminNorm);
@@ -618,5 +659,15 @@ json_response([
   'ok' => true,
   'message' => t('modal.thanks'),
   'id' => $id,
+  'case_no' => (function () use ($id, $city, $authCity) {
+    try {
+      $stmt = db()->prepare('SELECT case_no FROM reports WHERE id = ? LIMIT 1');
+      $stmt->execute([$id]);
+      $cn = trim((string)$stmt->fetchColumn());
+      return $cn !== '' ? $cn : null;
+    } catch (Throwable $e) {
+      return null;
+    }
+  })(),
   'admin_subdivision' => isset($adminNorm) && is_array($adminNorm) ? $adminNorm : null,
 ]);

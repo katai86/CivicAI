@@ -26,12 +26,12 @@ class PvgisDataService
         $bbox = self::authorityBbox($authorityId);
         $c = $bbox ? self::bboxCenter($bbox) : ['lat' => 47.16, 'lng' => 19.50];
         $cacheKey = 'pv_' . md5(json_encode($c));
-        $cached = $this->cacheGet($cacheKey);
-        if ($cached) return $cached;
+        $cached = $this->cacheGet($cacheKey, ['annual_kwh', 'co2_kg', 'irradiation']);
+        if ($cached) {
+            return $cached;
+        }
         if ($this->liteFetchGuard()) {
-            $mock = ['ok' => true, 'annual_kwh' => 1150.0, 'co2_kg' => 400.0, 'irradiation' => 1350.0, 'source' => 'pvgis_reference', 'notes' => ['using_reference', 'lite_fetch'], 'cached' => false];
-            $this->cacheSet($cacheKey, $mock, 'reference');
-            return $mock;
+            return $this->noLiveDataResponse($out, ['annual_kwh', 'co2_kg', 'irradiation'], 'lite_fetch_skipped');
         }
 
         $url = 'https://re.jrc.ec.europa.eu/api/v5_2/PVcalc?lat=' . rawurlencode((string)$c['lat'])
@@ -56,9 +56,7 @@ class PvgisDataService
             }
         }
         $this->recordError($resp['error'] ?? 'pvgis_unreachable');
-        $mock = ['ok' => true, 'annual_kwh' => 1150.0, 'co2_kg' => 400.0, 'irradiation' => 1350.0, 'source' => 'pvgis_reference', 'notes' => ['using_reference'], 'cached' => false];
-        $this->cacheSet($cacheKey, $mock, 'reference');
-        return $mock;
+        return $this->noLiveDataResponse($out, ['annual_kwh', 'co2_kg', 'irradiation'], 'pvgis_unreachable', $resp['error'] ?? null);
     }
 
     /** @return array{type:string,features:array} */

@@ -15,6 +15,9 @@ const API_TREE_WATER = `${BASE}/api/tree_watering.php`;
 const API_TREE_CREATE = `${BASE}/api/tree_create.php`;
 const API_TREE_ANALYZE_PHOTO = `${BASE}/api/tree_analyze_photo.php`;
 const API_TREE_HEALTH_ANALYZE = `${BASE}/api/tree_health_analyze.php`;
+const API_TREE_INSPECTIONS = `${BASE}/api/tree_inspections_list.php`;
+const API_PLANT_ANALYZE = `${BASE}/api/plant_analyze.php`;
+const API_PLANT_SESSION = `${BASE}/api/plant_session.php`;
 const API_REPORT_VISION = `${BASE}/api/report_vision_analyze.php`;
 const API_CIVIL_EVENT_CREATE = `${BASE}/api/civil_event_create.php`;
 const API_REPORT_LIKE = `${BASE}/api/report_like.php`;
@@ -139,6 +142,59 @@ async function fetchJson(url, opts){
     throw new Error(`HTTP ${res.status}: ${msg}`);
   }
   return j;
+}
+
+const TREE_SESSION_SHOTS = [
+  { part: 'whole_tree', labelKey: 'plant_tree.session_shot_whole' },
+  { part: 'leaves', labelKey: 'plant_tree.session_shot_leaves' },
+  { part: 'trunk', labelKey: 'plant_tree.session_shot_trunk' },
+];
+
+function plantSpeciesFromAnalyze(j) {
+  if (!j) return '';
+  const sp = j.species;
+  if (typeof sp === 'string') return sp;
+  if (sp && sp.consensus) return sp.consensus.scientific_name || sp.consensus.common_name || '';
+  return '';
+}
+
+function plantHealthToGovStatus(label) {
+  const k = String(label || '').toLowerCase();
+  if (k.includes('critical')) return 'critical';
+  if (k.includes('declin') || k.includes('poor')) return 'poor';
+  if (k.includes('stress') || k.includes('fair')) return 'fair';
+  if (k.includes('health') || k.includes('good')) return 'good';
+  return '';
+}
+
+function formatPlantAnalyzeBits(j) {
+  if (!j || !j.ok) return [];
+  const bits = [];
+  const speciesName = plantSpeciesFromAnalyze(j);
+  if (speciesName) bits.push((t('plant_tree.species_label') || 'Faj') + ': ' + speciesName);
+  const hl = j.health && (j.health.health_label || j.health.status);
+  if (hl) bits.push(t('plant_tree.health_' + String(hl).toLowerCase()) || hl);
+  const hs = j.health && j.health.health_score != null ? j.health.health_score + '/100' : '';
+  if (hs) bits.push(hs);
+  const rl = j.risk && j.risk.risk_level ? j.risk.risk_level : '';
+  if (rl) bits.push(t('plant_tree.risk_' + rl.toLowerCase()) || rl);
+  const conf = j.confidence_label || (j.health && j.health.confidence_label);
+  if (conf) bits.push((t('plant_tree.confidence_label') || 'Biztonság') + ': ' + conf);
+  if (j.guidance) bits.push(String(j.guidance).slice(0, 200));
+  return bits;
+}
+
+function applyPlantAnalyzeToTreeModal(modal, j) {
+  if (!modal || !j || !j.ok) return;
+  const speciesName = plantSpeciesFromAnalyze(j);
+  const mTitle = modal.querySelector('#mTitle');
+  if (speciesName && mTitle) mTitle.value = String(speciesName).slice(0, 120);
+  const trunk = j.trunk_diameter_cm ?? (j.health && j.health.trunk_diameter_cm);
+  const mTrunk = modal.querySelector('#mTrunkDiameter');
+  if (trunk != null && mTrunk) mTrunk.value = String(trunk);
+  const canopy = j.canopy_diameter_m ?? (j.health && j.health.canopy_diameter_m);
+  const mCanopy = modal.querySelector('#mCanopyDiameter');
+  if (canopy != null && mCanopy) mCanopy.value = String(canopy);
 }
 
 function getMapGeocodeProvider(){
@@ -687,8 +743,18 @@ map.on('popupopen', (e) => {
             return;
           }
           const statusLabel = (window.LANG && window.LANG['tree.health_status_' + j.status]) ? window.LANG['tree.health_status_' + j.status] : j.status;
-          if (resultEl) resultEl.textContent = statusLabel + (j.suggestion ? ': ' + j.suggestion : '');
+          let msg = statusLabel + (j.suggestion ? ': ' + j.suggestion : '');
+          if (j.plant_tree && j.health) {
+            const hl = j.health.health_label || '';
+            const hs = j.health.health_score != null ? j.health.health_score + '/100' : '';
+            const rl = j.risk && j.risk.risk_level ? j.risk.risk_level : '';
+            const sp = j.species && j.species.consensus && j.species.consensus.scientific_name ? j.species.consensus.scientific_name : '';
+            const conf = j.health.confidence_label || (j.confidence != null ? Math.round(j.confidence * 100) + '%' : '');
+            msg = [sp ? (t('plant_tree.species_label') + ': ' + sp) : '', hl ? (t('plant_tree.health_' + hl.toLowerCase()) || hl) + (hs ? ' ' + hs : '') : '', rl ? (t('plant_tree.risk_' + rl.toLowerCase()) || rl) : '', conf ? (t('plant_tree.confidence_label') + ': ' + conf) : '', j.suggestion || ''].filter(Boolean).join(' · ');
+          }
+          if (resultEl) resultEl.textContent = msg;
           healthForm.reset();
+          if (treeId > 0) loadTreeInspectionHistory(treeId, healthForm.closest('.tree-actions'));
         } catch (err) {
           if (resultEl) resultEl.textContent = t('tree.water_error');
         }
@@ -725,6 +791,34 @@ function clearTreeMarkers(){
 
 function treeHealthLabel(s){ return (window.LANG && window.LANG['tree.health_' + s]) ? window.LANG['tree.health_' + s] : (s || '–'); }
 function treeRiskLabel(s){ return (window.LANG && window.LANG['tree.risk_' + s]) ? window.LANG['tree.risk_' + s] : (s || '–'); }
+
+async function loadTreeInspectionHistory(treeId, container){
+  if (!treeId || !container || !IS_LOGGED_IN) return;
+  let histEl = container.querySelector('.tree-inspection-history');
+  if (!histEl) {
+    histEl = document.createElement('div');
+    histEl.className = 'tree-inspection-history small text-secondary mt-2';
+    container.appendChild(histEl);
+  }
+  histEl.textContent = t('admin.load') || '…';
+  try {
+    const j = await fetchJson(`${API_TREE_INSPECTIONS}?tree_id=${encodeURIComponent(String(treeId))}`);
+    const rows = (j && j.inspections) ? j.inspections : [];
+    if (!rows.length) {
+      histEl.innerHTML = '<strong>' + esc(t('tree.inspection_history')) + ':</strong> ' + esc(t('tree.no_inspections'));
+      return;
+    }
+    let html = '<strong>' + esc(t('tree.inspection_history')) + ':</strong><ul class="mb-0 ps-3" style="margin-top:4px">';
+    rows.slice(0, 5).forEach(function(r){
+      const dt = r.created_at ? String(r.created_at).slice(0, 16).replace('T', ' ') : '';
+      html += '<li>' + esc(dt) + ' · ' + esc(r.health_label || '—') + (r.health_score != null ? ' (' + esc(r.health_score) + ')' : '') + (r.risk_level ? ' · ' + esc(treeRiskLabel(r.risk_level)) : '') + '</li>';
+    });
+    html += '</ul>';
+    histEl.innerHTML = html;
+  } catch (_) {
+    histEl.textContent = t('common.error_generic') || '—';
+  }
+}
 
 async function loadTrees(){
   clearTreeMarkers();
@@ -782,18 +876,28 @@ async function loadTrees(){
         </div>
       `;
 
-      const ageText = t.estimated_age ? (t.estimated_age + ' év') : (t.planting_year ? (new Date().getFullYear() - parseInt(t.planting_year, 10)) + ' év' : '–');
+      const ageText = t.estimated_age ? (t.estimated_age + ' ' + (window.LANG['tree.age_suffix'] || 'év')) : (t.planting_year ? (new Date().getFullYear() - parseInt(t.planting_year, 10)) + ' ' + (window.LANG['tree.age_suffix'] || 'év') : '–');
       const treeSerial = 'T' + String(Number(t.id)).padStart(4, '0');
-      const speciesLabel = (window.LANG && window.LANG['tree.species_label']) ? window.LANG['tree.species_label'] : 'Fajta';
-      const speciesText = (t.species && String(t.species).trim()) ? esc(t.species) : ((window.LANG && window.LANG['tree.unknown_species']) ? window.LANG['tree.unknown_species'] : '–');
+      const speciesLabel = window.LANG['tree.species_label'] || 'Fajta';
+      const speciesText = (t.species && String(t.species).trim()) ? esc(t.species) : (window.LANG['tree.unknown_species'] || '–');
+      const trunkLine = (t.trunk_diameter != null && t.trunk_diameter !== '') ? ('<small><b>' + esc(window.LANG['tree.trunk_diameter'] || 'Törzs') + ':</b> ' + esc(t.trunk_diameter) + ' cm</small><br>') : '';
+      const canopyLine = (t.canopy_diameter != null && t.canopy_diameter !== '') ? ('<small><b>' + esc(window.LANG['tree.canopy_diameter'] || 'Korona') + ':</b> ' + esc(t.canopy_diameter) + ' m</small><br>') : '';
+      const inspectLine = t.last_inspection ? ('<small><b>' + esc(window.LANG['tree.last_inspection'] || 'Vizsgálat') + ':</b> ' + esc(String(t.last_inspection).slice(0, 16)) + '</small><br>') : '';
       const mk = L.marker([t.lat, t.lng], { icon: treeIcon(t) }).bindPopup(
-        `<b>🌳 ${esc(treeSerial)}</b> · <b>${speciesLabel}:</b> ${speciesText}<br>` +
+        `<b>🌳 ${esc(treeSerial)}</b> · <b>${esc(speciesLabel)}:</b> ${speciesText}<br>` +
         (t.address ? `<small>${esc(t.address)}</small><br>` : '') +
-        `<small><b>${(window.LANG && window.LANG['tree.age']) ? window.LANG['tree.age'] : 'Életkor'}:</b> ${ageText}</small><br>` +
-        `<small><b>${(window.LANG && window.LANG['tree.health']) ? window.LANG['tree.health'] : 'Állapot'}:</b> ${treeHealthLabel(t.health_status)}</small><br>` +
-        `<small><b>${(window.LANG && window.LANG['tree.risk']) ? window.LANG['tree.risk'] : 'Kockázat'}:</b> ${treeRiskLabel(t.risk_level)}</small><br>` +
+        `<small><b>${esc(window.LANG['tree.age'] || 'Életkor')}:</b> ${ageText}</small><br>` +
+        trunkLine + canopyLine + inspectLine +
+        `<small><b>${esc(window.LANG['tree.health'] || 'Állapot')}:</b> ${treeHealthLabel(t.health_status)}</small><br>` +
+        `<small><b>${esc(window.LANG['tree.risk'] || 'Kockázat')}:</b> ${treeRiskLabel(t.risk_level)}</small><br>` +
         actionsHtml
       );
+      mk.on('popupopen', function(){
+        if (IS_LOGGED_IN && canInteract) {
+          const actions = document.querySelector('.tree-actions[data-tree-id="' + t.id + '"]');
+          if (actions) loadTreeInspectionHistory(t.id, actions);
+        }
+      });
       if (typeof L.markerClusterGroup === 'function') {
         if (!treeClusterGroup) treeClusterGroup = L.markerClusterGroup({ chunkedLoading: true });
         treeClusterGroup.addLayer(mk);
@@ -1242,12 +1346,22 @@ function openModal(latlng, options){
           <input id="mImage" type="file" accept="image/*" class="modal-file">
           <button type="button" id="mAnalyzePhotoBtn" class="btn-soft" style="display:none; margin-top:8px">${esc(t('modal.analyze_photo_btn') || t('tree.analyze_photo_btn') || 'Fotó elemzése (AI)')}</button>
           <div id="mTreeAnalyzeResult" class="tree-analyze-result" style="display:none" aria-live="polite"></div>
+          <div id="mTreeSessionBlock" class="modal-note box" style="display:none; margin-top:10px">
+            <div class="small fw-semibold mb-1">${esc(t('plant_tree.session_title') || '3 fotós AI vizsgálat')}</div>
+            <p class="muted small mb-2">${esc(t('plant_tree.session_hint') || '')}</p>
+            <div id="mTreeSessionProgress" class="small mb-2"></div>
+            <button type="button" id="mTreeSessionStartBtn" class="btn-soft btn-sm">${esc(t('plant_tree.session_start') || 'Indítás')}</button>
+            <input id="mTreeSessionFile" type="file" accept="image/*" capture="environment" class="modal-file" style="display:none; margin-top:8px">
+            <button type="button" id="mTreeSessionUploadBtn" class="btn-soft btn-sm" style="display:none; margin-top:8px">${esc(t('plant_tree.session_upload') || 'Feltöltés')}</button>
+            <button type="button" id="mTreeSessionFinishBtn" class="btn-primary btn-sm" style="display:none; margin-top:8px">${esc(t('plant_tree.session_finish') || 'Lezárás')}</button>
+            <div id="mTreeSessionResult" class="tree-analyze-result small" style="display:none; margin-top:8px" aria-live="polite"></div>
+          </div>
         </div>
 
-        <label id="mTitleLabel">${esc(t('modal.category'))} – rövid cím</label>
+        <label id="mTitleLabel">${esc(t('modal.default_title_label'))}</label>
         <input id="mTitle" maxlength="120" placeholder="${esc(t('modal.title_placeholder'))}">
 
-        <label id="mDescLabel">Leírás</label>
+        <label id="mDescLabel">${esc(t('modal.description_label'))}</label>
         <textarea id="mDesc" rows="4" maxlength="5000" placeholder="${esc(t('modal.desc_placeholder'))}"></textarea>
 
         <div id="mTreeSizes" style="display:none">
@@ -1340,14 +1454,14 @@ function openModal(latlng, options){
         </div>
 
         <div class="modal-note">
-          A bejelentés ellenőrzés után jelenik meg.
+          ${esc(t('modal.pending_map_note'))}
         </div>
         </div>
         <div id="mNearby200" class="modal-note" style="display:none"></div>
 
         <div class="modal-actions">
           <button id="mSubmit" class="btn-primary" type="button">${esc(t('modal.submit'))}</button>
-          <button id="mCancel" class="btn-ghost" type="button">${esc(t('modal.cancel') || 'Mégse')}</button>
+          <button id="mCancel" class="btn-ghost" type="button">${esc(t('modal.cancel'))}</button>
         </div>
       </div>
     </div>
@@ -1471,6 +1585,8 @@ function openModal(latlng, options){
     const mTreeSizes = modal.querySelector('#mTreeSizes');
     const mAnalyzePhotoBtn = modal.querySelector('#mAnalyzePhotoBtn');
     if (mTreeSizes) mTreeSizes.style.display = isTree ? 'block' : 'none';
+    const mTreeSessionBlock = modal.querySelector('#mTreeSessionBlock');
+    if (mTreeSessionBlock) mTreeSessionBlock.style.display = isTree ? 'block' : 'none';
     // AI Vision: fa + közterületi bejelentés (civil eseménynél rejtve)
     if (mAnalyzePhotoBtn) {
       mAnalyzePhotoBtn.style.display = isCivil ? 'none' : 'block';
@@ -1528,22 +1644,26 @@ function openModal(latlng, options){
       const fd = new FormData();
       fd.append('photo', fileInput.files[0]);
       if (isTree) {
-        const res = await fetch(API_TREE_ANALYZE_PHOTO, { method: 'POST', body: fd, credentials: 'same-origin' });
-        const j = await res.json().catch(() => null);
+        fd.append('lat', String(coords.lat));
+        fd.append('lng', String(coords.lng));
+        fd.append('plant_part', 'whole_tree');
+        let res = await fetch(API_PLANT_ANALYZE, { method: 'POST', body: fd, credentials: 'same-origin' });
+        let j = await res.json().catch(() => null);
+        if (!j || !j.ok) {
+          const fdLegacy = new FormData();
+          fdLegacy.append('photo', fileInput.files[0]);
+          res = await fetch(API_TREE_ANALYZE_PHOTO, { method: 'POST', body: fdLegacy, credentials: 'same-origin' });
+          j = await res.json().catch(() => null);
+        }
         if (j && j.ok) {
-          const mTitle = modal.querySelector('#mTitle');
-          if (j.species && mTitle) mTitle.value = j.species;
-          const mTrunk = modal.querySelector('#mTrunkDiameter');
-          if (j.trunk_diameter_cm != null && mTrunk) mTrunk.value = String(j.trunk_diameter_cm);
-          const mCanopy = modal.querySelector('#mCanopyDiameter');
-          if (j.canopy_diameter_m != null && mCanopy) mCanopy.value = String(j.canopy_diameter_m);
+          applyPlantAnalyzeToTreeModal(modal, j);
           if (resultEl) {
-            const hasAny = (j.species && j.species.trim()) || j.trunk_diameter_cm != null || j.canopy_diameter_m != null;
-            if (!hasAny) {
-              resultEl.textContent = t('tree.analyze_no_result');
-              resultEl.style.display = 'block';
-            }
+            const bits = formatPlantAnalyzeBits(j);
+            resultEl.textContent = bits.length ? bits.join('\n') : (t('tree.analyze_no_result') || '—');
+            resultEl.style.display = 'block';
+            resultEl.style.whiteSpace = 'pre-wrap';
           }
+          if (j.inspection_id) civicUiToast(t('plant_tree.analyze_btn') || 'AI elemzés kész', 'success');
         } else {
           civicUiToast(civicToastFromApiPayload(j, typeof j?.error === 'string' ? j.error : t('common.error_server')), 'error');
         }
@@ -1584,6 +1704,124 @@ function openModal(latlng, options){
       btn.disabled = false;
       btn.textContent = origText || (isTree ? t('tree.analyze_photo_btn') : t('modal.analyze_photo_btn')) || 'Fotó elemzése (AI)';
     }
+  });
+
+  modal._treeSession = { key: null, index: 0, results: [] };
+  const sessionStartBtn = modal.querySelector('#mTreeSessionStartBtn');
+  const sessionUploadBtn = modal.querySelector('#mTreeSessionUploadBtn');
+  const sessionFinishBtn = modal.querySelector('#mTreeSessionFinishBtn');
+  const sessionFile = modal.querySelector('#mTreeSessionFile');
+  const sessionProgress = modal.querySelector('#mTreeSessionProgress');
+  const sessionResult = modal.querySelector('#mTreeSessionResult');
+
+  function renderTreeSessionProgress() {
+    if (!sessionProgress) return;
+    const st = modal._treeSession || { index: 0, results: [] };
+    sessionProgress.innerHTML = TREE_SESSION_SHOTS.map((shot, i) => {
+      const done = i < st.results.length;
+      const active = st.key && i === st.index;
+      const mark = done ? '✓' : (active ? '→' : '○');
+      return `<div>${mark} ${esc(t(shot.labelKey) || shot.part)}</div>`;
+    }).join('');
+  }
+  renderTreeSessionProgress();
+
+  sessionStartBtn?.addEventListener('click', async () => {
+    if (!IS_LOGGED_IN) {
+      civicUiToast(t('auth.login_required'), 'info');
+      return;
+    }
+    sessionStartBtn.disabled = true;
+    try {
+      const j = await fetchJson(API_PLANT_SESSION, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          action: 'open',
+          required_shots: TREE_SESSION_SHOTS.map((s) => s.part),
+        }),
+      });
+      if (!j.ok || !j.session_key) throw new Error(j.error || 'session');
+      modal._treeSession = { key: j.session_key, index: 0, results: [] };
+      sessionStartBtn.style.display = 'none';
+      if (sessionFile) sessionFile.style.display = 'block';
+      if (sessionUploadBtn) sessionUploadBtn.style.display = 'inline-block';
+      renderTreeSessionProgress();
+    } catch (e) {
+      civicUiToast(t('common.error_server'), 'error');
+    }
+    sessionStartBtn.disabled = false;
+  });
+
+  sessionUploadBtn?.addEventListener('click', async () => {
+    const st = modal._treeSession;
+    if (!st || !st.key) {
+      civicUiToast(t('plant_tree.session_need_start') || 'Indítsd el a vizsgálatot.', 'info');
+      return;
+    }
+    if (!sessionFile?.files?.[0]) {
+      civicUiToast(t('tree.health_analyze_need_photo'), 'info');
+      return;
+    }
+    const shot = TREE_SESSION_SHOTS[st.index];
+    if (!shot) return;
+    sessionUploadBtn.disabled = true;
+    try {
+      const fd = new FormData();
+      fd.append('photo', sessionFile.files[0]);
+      fd.append('lat', String(coords.lat));
+      fd.append('lng', String(coords.lng));
+      fd.append('plant_part', shot.part);
+      fd.append('session_id', st.key);
+      const res = await fetch(API_PLANT_ANALYZE, { method: 'POST', body: fd, credentials: 'same-origin' });
+      const j = await res.json().catch(() => null);
+      if (!j || !j.ok) throw new Error(j?.error || 'analyze');
+      st.results.push(j);
+      applyPlantAnalyzeToTreeModal(modal, j);
+      st.index += 1;
+      sessionFile.value = '';
+      renderTreeSessionProgress();
+      if (st.index >= TREE_SESSION_SHOTS.length && sessionFinishBtn) {
+        sessionFinishBtn.style.display = 'inline-block';
+        sessionUploadBtn.style.display = 'none';
+        if (sessionFile) sessionFile.style.display = 'none';
+      }
+    } catch (e) {
+      civicUiToast(typeof e.message === 'string' ? e.message : t('common.error_server'), 'error');
+    }
+    sessionUploadBtn.disabled = false;
+  });
+
+  sessionFinishBtn?.addEventListener('click', async () => {
+    const st = modal._treeSession;
+    if (!st?.key) return;
+    sessionFinishBtn.disabled = true;
+    try {
+      const j = await fetchJson(API_PLANT_SESSION, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ action: 'close', session_key: st.key }),
+      });
+      const summary = j.summary || {};
+      if (sessionResult) {
+        const lines = [t('plant_tree.session_done') || ''];
+        if (summary.avg_health_score != null) {
+          lines.push((t('plant_tree.session_avg_health') || 'Avg health: %n').replace('%n', String(summary.avg_health_score)));
+        }
+        if (summary.max_risk) {
+          lines.push((t('plant_tree.session_max_risk') || 'Max risk: %n').replace('%n', String(summary.max_risk)));
+        }
+        sessionResult.textContent = lines.join('\n');
+        sessionResult.style.display = 'block';
+        sessionResult.style.whiteSpace = 'pre-wrap';
+      }
+      civicUiToast(t('plant_tree.session_done') || 'Vizsgálat kész', 'success');
+    } catch (e) {
+      civicUiToast(t('common.error_server'), 'error');
+    }
+    sessionFinishBtn.disabled = false;
   });
 
   // Kategória javaslat a leírás alapján (Phase 4 – szabályalapú javaslat)
@@ -1727,9 +1965,15 @@ function openModal(latlng, options){
 
     try{
       if (category === 'tree_upload') {
-        if (modal._treeSubmitting) return;
+        if (modal._treeSubmitting) {
+          btn.disabled = false;
+          btn.textContent = t('modal.submit');
+          return;
+        }
         if (!IS_LOGGED_IN) {
           civicUiToast(t('modal.tree_upload_login'), 'error');
+          btn.disabled = false;
+          btn.textContent = t('modal.submit');
           return;
         }
         modal._treeSubmitting = true;
@@ -1752,11 +1996,15 @@ function openModal(latlng, options){
         try {
           j = rawText ? JSON.parse(rawText) : null;
         } catch (_) {
-          if (res.status >= 400) throw new Error((t('common.error_server') || 'Szerver hiba.') + ' (HTTP ' + res.status + ')');
+          const snip = (rawText || '').replace(/\s+/g, ' ').slice(0, 120);
+          throw new Error((t('common.error_server') || 'Szerver hiba.') + ' (HTTP ' + res.status + (snip ? ': ' + snip : '') + ')');
         }
         if (!j || !j.ok) {
           modal._treeSubmitting = false;
-          throw new Error(j && j.error ? j.error : (t('common.error_server') || 'Fa feltöltés sikertelen.'));
+          btn.disabled = false;
+          btn.textContent = t('modal.submit');
+          const errMsg = (j && j.error) ? j.error : (t('common.error_server') || 'Fa feltöltés sikertelen.');
+          throw new Error(errMsg + (res.status && res.status !== 200 ? ' (HTTP ' + res.status + ')' : ''));
         }
         civicUiToast(t('tree.submit_success'), 'success');
         modal._treeSubmitting = false;

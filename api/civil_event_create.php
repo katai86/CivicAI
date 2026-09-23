@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../util.php';
+require_once __DIR__ . '/../services/ProfileAuthorityLinkService.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
   json_response(['ok'=>false,'error'=>'Method not allowed'], 405);
@@ -32,10 +33,15 @@ if (!$title || !$start || !$end) json_response(['ok'=>false,'error'=>t('api.civi
 if (!is_numeric($lat) || !is_numeric($lng)) json_response(['ok'=>false,'error'=>t('api.facility_lat_lng_required')], 400);
 
 $userId = current_user_id();
+$cityFromAddr = null;
+if ($address && preg_match('/,\s*([^,]+)\s*$/u', $address, $m)) {
+  $cityFromAddr = trim($m[1]);
+}
+$authorityId = ProfileAuthorityLinkService::resolveAuthorityId((float)$lat, (float)$lng, $cityFromAddr);
 
 try {
-  db()->prepare("INSERT INTO civil_events (user_id, title, description, start_date, end_date, lat, lng, address, event_type)
-                VALUES (:uid,:t,:d,:sd,:ed,:lat,:lng,:addr,:etype)")
+  db()->prepare("INSERT INTO civil_events (user_id, title, description, start_date, end_date, lat, lng, address, event_type, authority_id)
+                VALUES (:uid,:t,:d,:sd,:ed,:lat,:lng,:addr,:etype,:aid)")
     ->execute([
       ':uid'=>$userId,
       ':t'=>$title,
@@ -45,7 +51,8 @@ try {
       ':lat'=>(float)$lat,
       ':lng'=>(float)$lng,
       ':addr'=>$address,
-      ':etype'=>$eventType
+      ':etype'=>$eventType,
+      ':aid'=>$authorityId,
     ]);
   json_response(['ok'=>true,'id'=>(int)db()->lastInsertId()]);
 } catch (Throwable $e) {

@@ -56,7 +56,7 @@ if (!is_dir($dir)) {
 $photoFilename = 'health_' . $treeId . '_' . $uid . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
 $dest = $dir . DIRECTORY_SEPARATOR . $photoFilename;
 if (!@move_uploaded_file($tmp, $dest)) {
-  json_response(['ok' => false, 'error' => 'Feltöltés sikertelen.'], 500);
+  json_response(['ok' => false, 'error' => t('api.upload_failed')], 500);
 }
 
 $pdo = db();
@@ -69,6 +69,44 @@ if (!$tree) {
 }
 
 $outputLang = function_exists('current_lang') ? current_lang() : 'hu';
+
+if (plant_tree_enabled() || plantnet_api_key() !== '' || ai_configured()) {
+  require_once __DIR__ . '/../services/plant/PlantTreeVisionRouter.php';
+  $ctx = [
+    'tree_id' => $treeId,
+    'species' => trim($tree['species'] ?? ''),
+    'lang' => $outputLang,
+  ];
+  $stAuth = $pdo->prepare('SELECT authority_id, lat, lng FROM trees WHERE id = ? LIMIT 1');
+  $stAuth->execute([$treeId]);
+  $trow = $stAuth->fetch(PDO::FETCH_ASSOC);
+  if ($trow) {
+    $ctx['authority_id'] = (int)($trow['authority_id'] ?? 0);
+    $ctx['lat'] = isset($trow['lat']) ? (float)$trow['lat'] : null;
+    $ctx['lng'] = isset($trow['lng']) ? (float)$trow['lng'] : null;
+  }
+  $ptRouter = new PlantTreeVisionRouter();
+  $ptResult = $ptRouter->analyze($dest, $mime, $ctx);
+  if (!empty($ptResult['ok']) && is_array($ptResult['analysis'])) {
+    $a = $ptResult['analysis'];
+    $health = $a['health'] ?? [];
+    $statusMap = ['HEALTHY' => 'healthy', 'STRESSED' => 'dry', 'DECLINING' => 'dry', 'CRITICAL' => 'disease_suspected'];
+    $status = $statusMap[strtoupper((string)($health['health_label'] ?? ''))] ?? 'healthy';
+    json_response([
+      'ok' => true,
+      'status' => $status,
+      'suggestion' => (string)($a['guidance'] ?? ''),
+      'confidence' => (float)($health['health_score'] ?? 0) / 100,
+      'image_saved' => $photoFilename,
+      'plant_tree' => true,
+      'inspection_id' => $ptResult['inspection_id'],
+      'species' => $a['species_consensus'] ?? null,
+      'health' => $health,
+      'risk' => $a['risk'] ?? null,
+    ]);
+  }
+}
+
 $langName = \AiPromptBuilder::languageNameForCode($outputLang);
 $prompt = "Analyze this tree photo. Assess: leaf color, dryness, visible disease or damage. Return JSON with: status (exactly one of: healthy, dry, disease_suspected), confidence (0-1), suggestion (one short sentence, in " . $langName . " only). Tree species if known: " . (trim($tree['species'] ?? '') ?: 'unknown') . ".";
 

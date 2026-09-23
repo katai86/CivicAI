@@ -85,11 +85,12 @@ class ExternalHttpClient
     }
 
     /**
-     * POST JSON (pl. STAC / OData).
+     * POST JSON (pl. STAC / OData / Sentinel Hub).
      *
-     * @return array{ok:bool,status:int,body:string,error:?string,url:string}
+     * @param list<string> $extraHeaders pl. ['Authorization: Bearer …']
+     * @return array{ok:bool,status:int,body:string,error:?string,url:string,headers:array<string,string>}
      */
-    public static function postJson(string $url, array $body, ?int $timeoutSeconds = null): array
+    public static function postJson(string $url, array $body, ?int $timeoutSeconds = null, array $extraHeaders = []): array
     {
         $timeout = $timeoutSeconds ?? self::defaultTimeoutSeconds();
         $payload = json_encode($body, JSON_UNESCAPED_UNICODE);
@@ -97,12 +98,28 @@ class ExternalHttpClient
             $payload = '{}';
         }
         if (!function_exists('curl_init')) {
-            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_required', 'url' => $url];
+            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_required', 'url' => $url, 'headers' => []];
         }
         $ch = curl_init($url);
         if ($ch === false) {
-            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_init_failed', 'url' => $url];
+            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_init_failed', 'url' => $url, 'headers' => []];
         }
+        $headers = [
+            'Content-Type: application/json',
+            'Accept: application/geo+json, application/json',
+        ];
+        $hasAccept = false;
+        foreach ($extraHeaders as $eh) {
+            if (stripos($eh, 'Accept:') === 0) {
+                $hasAccept = true;
+                break;
+            }
+        }
+        if ($hasAccept) {
+            $headers = ['Content-Type: application/json'];
+        }
+        $headers = array_merge($headers, $extraHeaders);
+        $respHeaders = [];
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
@@ -110,20 +127,40 @@ class ExternalHttpClient
             CURLOPT_CONNECTTIMEOUT => min(15, $timeout),
             CURLOPT_TIMEOUT => $timeout,
             CURLOPT_USERAGENT => self::userAgent(),
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Accept: application/geo+json, application/json',
-            ],
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_HEADERFUNCTION => static function ($curl, $headerLine) use (&$respHeaders) {
+                $len = strlen($headerLine);
+                $parts = explode(':', $headerLine, 2);
+                if (count($parts) === 2) {
+                    $respHeaders[strtolower(trim($parts[0]))] = trim($parts[1]);
+                }
+                return $len;
+            },
         ]);
         $resp = curl_exec($ch);
         $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $err = curl_error($ch);
         curl_close($ch);
         if ($resp === false) {
-            return ['ok' => false, 'status' => $status, 'body' => '', 'error' => $err !== '' ? $err : 'curl_exec_failed', 'url' => $url];
+            return ['ok' => false, 'status' => $status, 'body' => '', 'error' => $err !== '' ? $err : 'curl_exec_failed', 'url' => $url, 'headers' => $respHeaders];
         }
         $ok = $status >= 200 && $status < 300;
-        return ['ok' => $ok, 'status' => $status, 'body' => (string)$resp, 'error' => $ok ? null : ('http_' . $status), 'url' => $url];
+        return ['ok' => $ok, 'status' => $status, 'body' => (string)$resp, 'error' => $ok ? null : ('http_' . $status), 'url' => $url, 'headers' => $respHeaders];
+    }
+
+    /** Extract Sentinel Hub Processing Units from response headers (if present). */
+    public static function processingUnitsSpent(array $response): ?float
+    {
+        $h = $response['headers'] ?? [];
+        if (!is_array($h)) {
+            return null;
+        }
+        foreach (['x-processingunits-spent', 'x-processing-units-spent'] as $k) {
+            if (isset($h[$k]) && is_numeric($h[$k])) {
+                return (float)$h[$k];
+            }
+        }
+        return null;
     }
 
     /**
@@ -153,6 +190,79 @@ class ExternalHttpClient
                 'Content-Type: application/x-www-form-urlencoded',
                 'Accept: application/json',
             ],
+        ]);
+        $resp = curl_exec($ch);
+        $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if ($resp === false) {
+            return ['ok' => false, 'status' => $status, 'body' => '', 'error' => $err !== '' ? $err : 'curl_exec_failed', 'url' => $url];
+        }
+        $ok = $status >= 200 && $status < 300;
+        return ['ok' => $ok, 'status' => $status, 'body' => (string)$resp, 'error' => $ok ? null : ('http_' . $status), 'url' => $url];
+    }
+
+    /**
+     * POST multipart/form-data (pl. PlantNet image upload).
+     *
+     * @param array<string,mixed> $fields
+     * @return array{ok:bool,status:int,body:string,error:?string,url:string}
+     */
+    public static function postMultipart(string $url, array $fields, ?int $timeoutSeconds = null): array
+    {
+        $timeout = $timeoutSeconds ?? self::defaultTimeoutSeconds();
+        if (!function_exists('curl_init')) {
+            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_required', 'url' => $url];
+        }
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_init_failed', 'url' => $url];
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $fields,
+            CURLOPT_CONNECTTIMEOUT => min(15, $timeout),
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_USERAGENT => self::userAgent(),
+            CURLOPT_HTTPHEADER => ['Accept: application/json'],
+        ]);
+        $resp = curl_exec($ch);
+        $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if ($resp === false) {
+            return ['ok' => false, 'status' => $status, 'body' => '', 'error' => $err !== '' ? $err : 'curl_exec_failed', 'url' => $url];
+        }
+        $ok = $status >= 200 && $status < 300;
+        return ['ok' => $ok, 'status' => $status, 'body' => (string)$resp, 'error' => $ok ? null : ('http_' . $status), 'url' => $url];
+    }
+
+    /**
+     * POST raw body (pl. HuggingFace inference).
+     *
+     * @param list<string> $headers
+     * @return array{ok:bool,status:int,body:string,error:?string,url:string}
+     */
+    public static function postRaw(string $url, string $body, array $headers = [], ?int $timeoutSeconds = null): array
+    {
+        $timeout = $timeoutSeconds ?? self::defaultTimeoutSeconds();
+        if (!function_exists('curl_init')) {
+            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_required', 'url' => $url];
+        }
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return ['ok' => false, 'status' => 0, 'body' => '', 'error' => 'curl_init_failed', 'url' => $url];
+        }
+        $hdr = array_merge(['Accept: application/json'], $headers);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_CONNECTTIMEOUT => min(15, $timeout),
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_USERAGENT => self::userAgent(),
+            CURLOPT_HTTPHEADER => $hdr,
         ]);
         $resp = curl_exec($ch);
         $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);

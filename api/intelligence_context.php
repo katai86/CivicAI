@@ -40,7 +40,17 @@ $hub = new IntelligenceHub();
 try {
     $data = $hub->fetchFullContext($aid, $lite);
     if ($lite) {
-        ExternalDataCache::set('intel_context', $cacheKey, $data, 15, 'ok', null);
+        // Ne cache-eljük a teljesen üres lite választ (mérgezett „nincs adat” 15 percre)
+        $hasLive = false;
+        foreach (['weather', 'gbif', 'pvgis', 'ocm', 'viirs'] as $k) {
+            if (!empty($data[$k]['ok'])) {
+                $hasLive = true;
+                break;
+            }
+        }
+        if ($hasLive) {
+            ExternalDataCache::set('intel_context', $cacheKey, $data, 15, 'ok', null);
+        }
     }
     json_response(['ok' => true, 'data' => $data]);
 } catch (Throwable $e) {

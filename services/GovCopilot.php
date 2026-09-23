@@ -176,7 +176,23 @@ class GovCopilot
             $carbon = round((float)($green['carbon_absorption'] ?? 0), 1);
             $drought = round((float)($green['drought_risk'] ?? 0) * 100, 0);
             $bio = round((float)($green['biodiversity_index'] ?? 0) * 100, 0);
-            $lines[] = "Green: canopy {$canopy}%, carbon ~{$carbon} t CO2/year, drought risk {$drought}%, biodiversity index {$bio}%.";
+            $gLine = "Green: canopy {$canopy}%, carbon ~{$carbon} t CO2/year, drought risk {$drought}%, biodiversity index {$bio}%.";
+            if (isset($green['ndvi_score'])) {
+                $ndviPct = round((float)$green['ndvi_score'] * 100, 0);
+                $deficitPct = round((float)($green['green_deficit_score'] ?? 0) * 100, 0);
+                $vegPct = round((float)($green['vegetation_health_score'] ?? 0) * 100, 0);
+                $satOk = !empty($green['satellite_ndvi_ok']);
+                $raw = isset($green['ndvi_raw']) && $green['ndvi_raw'] !== null
+                    ? round((float)$green['ndvi_raw'], 3)
+                    : null;
+                $src = $satOk ? 'Sentinel-2 L2A Statistical API (Copernicus/CDSE)' : 'local canopy proxy (satellite NDVI unavailable)';
+                $gLine .= " Copernicus NDVI score {$ndviPct}%";
+                if ($raw !== null) {
+                    $gLine .= " (raw mean NDVI={$raw})";
+                }
+                $gLine .= ", green deficit {$deficitPct}%, vegetation health {$vegPct}%. Source: {$src}.";
+            }
+            $lines[] = $gLine;
         } catch (Throwable $e) {}
 
         try {
@@ -235,6 +251,57 @@ class GovCopilot
                 $lines[] = "Recent street vision observations (stored): " . implode('; ', $oparts) . ".";
             } else {
                 $lines[] = "Recent street vision observations: none stored yet.";
+            }
+        } catch (Throwable $e) {}
+
+        try {
+            if ($this->authorityId && class_exists('CityIntelligenceOrchestrator')) {
+                require_once __DIR__ . '/cityintel/CityIntelligenceOrchestrator.php';
+                $dash = (new CityIntelligenceOrchestrator())->dashboard($this->authorityId);
+                $summary = $dash['summary'] ?? [];
+                $lines[] = 'City Intelligence: high insights=' . (int)($summary['insights_high'] ?? 0)
+                    . ', anomalies=' . count($dash['anomalies'] ?? [])
+                    . ', improving signals=' . (int)($summary['improving_count'] ?? 0)
+                    . ', deteriorating signals=' . (int)($summary['deteriorating_count'] ?? 0) . '.';
+                $topPrio = array_slice($dash['priorities'] ?? [], 0, 5);
+                if (!empty($topPrio)) {
+                    $pp = [];
+                    foreach ($topPrio as $p) {
+                        $pp[] = ($p['entity_type'] ?? '') . '#' . (int)($p['entity_id'] ?? 0)
+                            . ' score=' . ($p['priority_score'] ?? 0);
+                    }
+                    $lines[] = 'CI unified priorities (0-100): ' . implode('; ', $pp) . '.';
+                }
+                $topDisc = array_slice($dash['discoveries'] ?? [], 0, 3);
+                if (!empty($topDisc)) {
+                    $dp = [];
+                    foreach ($topDisc as $d) {
+                        $dp[] = ($d['title'] ?? $d['discovery_key'] ?? '') . ' (score ' . ($d['priority_score'] ?? '') . ')';
+                    }
+                    $lines[] = 'CI discoveries: ' . implode('; ', $dp) . '.';
+                }
+                $actions = array_slice($dash['actions'] ?? [], 0, 3);
+                if (!empty($actions)) {
+                    $ap = [];
+                    foreach ($actions as $a) {
+                        $ap[] = is_string($a) ? $a : (string)($a['title'] ?? $a['text'] ?? $a['action'] ?? '');
+                    }
+                    $lines[] = 'CI recommended actions: ' . implode('; ', array_filter($ap)) . '.';
+                }
+                $hv2 = $dash['health_v2'] ?? [];
+                if (!empty($hv2['city_health_score'])) {
+                    $lines[] = 'City Health 2.0 score: ' . (int)$hv2['city_health_score']
+                        . ' (infra=' . (int)($hv2['infrastructure_score'] ?? 0)
+                        . ', env=' . (int)($hv2['environment_score'] ?? 0)
+                        . ', engagement=' . (int)($hv2['engagement_score'] ?? 0)
+                        . ', maintenance=' . (int)($hv2['maintenance_score'] ?? 0)
+                        . ', trend=' . ($hv2['trend'] ?? 'stable') . ').';
+                }
+                $ch = $dash['change_intelligence'] ?? [];
+                if (!empty($ch['trends']['improving']) || !empty($ch['trends']['deteriorating'])) {
+                    $lines[] = 'CI change trends: improving=' . implode(',', array_slice($ch['trends']['improving'] ?? [], 0, 4))
+                        . '; deteriorating=' . implode(',', array_slice($ch['trends']['deteriorating'] ?? [], 0, 4)) . '.';
+                }
             }
         } catch (Throwable $e) {}
 
